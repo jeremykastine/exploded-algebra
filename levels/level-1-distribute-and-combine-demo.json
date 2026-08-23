@@ -1,0 +1,427 @@
+{
+  "kind": "demoOnly",
+  "id": "level1-demo-2026-08-15t15-52-59z",
+  "title": "Demo: Level 1: Distribute and Combine (8/15/2026, 11:52:59 AM)",
+  "sourceLevelId": "level1",
+  "sourceLevelTitle": "Level 1: Distribute and Combine",
+  "createdAt": "2026-08-15T15:49:10.503Z",
+  "completedAt": "2026-08-15T15:52:59.608Z",
+  "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+  "evaluationLevel": 0,
+  "variables": [
+    "x"
+  ],
+  "steps": [
+    {
+      "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "katex": "3(x+7)+2(2x+3)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "katex": "3x+21+4x+6",
+      "label": "Distribute"
+    },
+    {
+      "expression": "(((7)*(x))+(27))",
+      "katex": "7x+27",
+      "label": "Combine like terms and constants"
+    }
+  ],
+  "sourceLevel": {
+    "id": "level1",
+    "title": "Level 1: Distribute and Combine",
+    "evaluationLevel": 0,
+    "arithmeticLevel": 2,
+    "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+    "steps": [
+      {
+        "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+        "katex": "3(x+7)+2(2x+3)",
+        "label": "Start"
+      },
+      {
+        "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+        "katex": "3x+21+4x+6",
+        "label": "Distribute"
+      },
+      {
+        "expression": "(((7)*(x))+(27))",
+        "katex": "7x+27",
+        "label": "Combine like terms and constants"
+      }
+    ],
+    "kind": "interactive",
+    "variables": [
+      "x"
+    ]
+  },
+  "demo": {
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((3)*((x)+(7)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(((2)*(x))+(3)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((3)*(7))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(2))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "4"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(3))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "6"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((21)+((4)*(x)))"
+      },
+      {
+        "type": "tool",
+        "tool": "commute"
+      },
+      {
+        "type": "select",
+        "expression": "(((3)*(x))+((4)*(x)))"
+      },
+      {
+        "type": "tool",
+        "tool": "factorRight"
+      },
+      {
+        "type": "select",
+        "expression": "((3)+(4))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((21)+(6))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((3)*((x)+(7)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "afterExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "index": 1
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(((2)*(x))+(3)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "index": 2
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "index": 3
+    },
+    {
+      "type": "select",
+      "expression": "((3)*(7))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 4
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 5
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 6
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 7
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 8
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(2))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 9
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 10
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "4",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 11
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 12
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(3))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 13
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 14
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "6",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 15
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 16
+    },
+    {
+      "type": "select",
+      "expression": "((21)+((4)*(x)))",
+      "selectedType": "sum",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 17
+    },
+    {
+      "type": "tool",
+      "tool": "commute",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 18
+    },
+    {
+      "type": "select",
+      "expression": "(((3)*(x))+((4)*(x)))",
+      "selectedType": "sum",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "index": 19
+    },
+    {
+      "type": "tool",
+      "tool": "factorRight",
+      "beforeExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "afterExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "index": 20
+    },
+    {
+      "type": "select",
+      "expression": "((3)+(4))",
+      "selectedType": "sum",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 21
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 22
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 23
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 24
+    },
+    {
+      "type": "select",
+      "expression": "((21)+(6))",
+      "selectedType": "sum",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "index": 25
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 26
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 27
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 28
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(27))",
+      "index": 29
+    }
+  ]
+}

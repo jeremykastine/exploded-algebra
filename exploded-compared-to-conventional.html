@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commutative and Distributive Property Examples</title>
+<style>
+html,body{margin:0;padding:0;background:#fff;}
+body{font-family:"Courier New",Courier,"Liberation Mono",monospace;font-size:32px;line-height:1.25;font-variant-ligatures:none;}
+.expr,.number{font-family:"Courier New",Courier,"Liberation Mono",monospace;}
+.expr{white-space:pre;}
+.move-from{margin-bottom:.3em;}
+.blue{background:#DDEFFF;}
+.yellow{background:#FFF3BF;}
+.orange{background:#FFE1C7;}
+.swap{background:#F0F0F0;}
+.example{display:grid;grid-template-columns:2.5ch auto;column-gap:.5ch;align-items:start;}
+.number{font-size:24px;line-height:1.67;}
+hr{border:0;border-top:2px solid #999;margin:8px 0;}
+.section-title{font-size:24px;font-weight:bold;margin:12px 0 10px 3ch;}
+.section-break{border-top:5px solid #777;margin:40px 0 18px;}
+.exploded-example{display:grid;grid-template-columns:2.5ch auto;column-gap:.5ch;align-items:start;}
+.exploded-phases{display:flex;flex-direction:column;align-items:flex-start;}
+.exploded-line{display:block;}
+.exploded-line.move-from{margin-bottom:12px;}
+.exploded-line svg{display:block;overflow:visible;}
+</style>
+</head>
+<body>
+
+<div class="section-title">Conventional notation</div>
+
+<div class="example"><div class="number">1.</div><div>
+<div class="expr">2+x+3</div>
+<div class="expr move-from"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span>+3</div>
+<div class="expr"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span>+3</div>
+<div class="expr">x+2+3</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">2.</div><div>
+<div class="expr">2·x·3</div>
+<div class="expr move-from"><span class="yellow">2</span><span class="swap">·</span><span class="orange">x</span>·3</div>
+<div class="expr"><span class="orange">x</span><span class="swap">·</span><span class="yellow">2</span>·3</div>
+<div class="expr">x·2·3</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">3.</div><div>
+<div class="expr">2+x·3</div>
+<div class="expr move-from"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span>·3</div>
+<div class="expr"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span>·3</div>
+<div class="expr">x+2·3</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">4.</div><div>
+<div class="expr">x+y+5+x</div>
+<div class="expr move-from"><span class="yellow">x+y</span><span class="swap">+</span><span class="orange">5+x</span></div>
+<div class="expr"><span class="orange">5+x</span><span class="swap">+</span><span class="yellow">x+y</span></div>
+<div class="expr">5+x+x+y</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">5.</div><div>
+<div class="expr">x·y·5·x</div>
+<div class="expr move-from"><span class="yellow">x·y</span><span class="swap">·</span><span class="orange">5·x</span></div>
+<div class="expr"><span class="orange">5·x</span><span class="swap">·</span><span class="yellow">x·y</span></div>
+<div class="expr">5·x·x·y</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">6.</div><div>
+<div class="expr">x·y+5·x</div>
+<div class="expr move-from"><span class="yellow">x·y</span><span class="swap">+</span><span class="orange">5·x</span></div>
+<div class="expr"><span class="orange">5·x</span><span class="swap">+</span><span class="yellow">x·y</span></div>
+<div class="expr">5·x+x·y</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">7.</div><div>
+<div class="expr">x+y·5+x</div>
+<div class="expr move-from"><span class="yellow">x+y</span><span class="swap">·</span><span class="orange">5+x</span></div>
+<div class="expr"><span class="orange">5+x</span><span class="swap">·</span><span class="yellow">x+y</span></div>
+<div class="expr">5+x·x+y</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">8.</div><div>
+<div class="expr">2·(x+3)+4</div>
+<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span>+4</div>
+<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span>+4</div>
+<div class="expr">2·x+2·3+4</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">9.</div><div>
+<div class="expr">2·(x+3)·4</div>
+<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span>·4</div>
+<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span>·4</div>
+<div class="expr">2·x+2·3·4</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">10.</div><div>
+<div class="expr">2·(3+4·x)</div>
+<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4·x</span><span class="swap">)</span></div>
+<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4·x</span></div>
+<div class="expr">2·3+2·4·x</div>
+</div></div>
+
+<hr>
+
+<div class="example"><div class="number">11.</div><div>
+<div class="expr">2·(3+4+x)</div>
+<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4+x</span><span class="swap">)</span></div>
+<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4+x</span></div>
+<div class="expr">2·3+2·4+x</div>
+</div></div>
+
+<hr class="section-break">
+
+<div class="section-title">Exploded notation</div>
+<div id="exploded-examples"></div>
+
+<script src="exploded-algebra-renderer.js"></script>
+<script>
+(() => {
+    const Renderer = window.ExplodedAlgebraRenderer;
+    const colors = {
+        blue: "#DDEFFF",
+        yellow: "#FFF3BF",
+        orange: "#FFE1C7",
+        gray: "#F0F0F0"
+    };
+
+    const value = text => ({ type: "value", value: String(text) });
+    const sum = (...args) => ({ type: "sum", args });
+    const product = (...args) => ({ type: "prod", args });
+
+    const shadeNode = (path, color) => ({ kind: "node", path, color });
+    const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color });
+    const shadeRange = (path, first, last, color) => ({ kind: "range", path, first, last, color });
+
+    const examples = [
+        {
+            before: sum(value(2), value("x"), value(3)),
+            after: sum(value("x"), value(2), value(3)),
+            beforeShading: [
+                shadeNode([0], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0], colors.orange),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.yellow)
+            ]
+        },
+        {
+            before: product(value(2), value("x"), value(3)),
+            after: product(value("x"), value(2), value(3)),
+            beforeShading: [
+                shadeNode([0], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0], colors.orange),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.yellow)
+            ]
+        },
+        {
+            before: sum(value(2), product(value("x"), value(3))),
+            after: sum(value("x"), product(value(2), value(3))),
+            beforeShading: [
+                shadeNode([0], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0], colors.orange),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.yellow)
+            ]
+        },
+        {
+            before: sum(value("x"), value("y"), value(5), value("x")),
+            after: sum(value(5), value("x"), value("x"), value("y")),
+            beforeShading: [
+                shadeRange([], 0, 1, colors.yellow),
+                shadeSeparator([], 1, colors.gray),
+                shadeRange([], 2, 3, colors.orange)
+            ],
+            afterShading: [
+                shadeRange([], 0, 1, colors.orange),
+                shadeSeparator([], 1, colors.gray),
+                shadeRange([], 2, 3, colors.yellow)
+            ]
+        },
+        {
+            before: product(value("x"), value("y"), value(5), value("x")),
+            after: product(value(5), value("x"), value("x"), value("y")),
+            beforeShading: [
+                shadeRange([], 0, 1, colors.yellow),
+                shadeSeparator([], 1, colors.gray),
+                shadeRange([], 2, 3, colors.orange)
+            ],
+            afterShading: [
+                shadeRange([], 0, 1, colors.orange),
+                shadeSeparator([], 1, colors.gray),
+                shadeRange([], 2, 3, colors.yellow)
+            ]
+        },
+        {
+            before: sum(product(value("x"), value("y")), product(value(5), value("x"))),
+            after: sum(product(value(5), value("x")), product(value("x"), value("y"))),
+            beforeShading: [
+                shadeNode([0], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0], colors.orange),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1], colors.yellow)
+            ]
+        },
+        {
+            before: sum(value("x"), product(value("y"), value(5)), value("x")),
+            after: sum(value(5), product(value("x"), value("x")), value("y")),
+            beforeShading: [
+                shadeNode([0], colors.yellow),
+                shadeSeparator([], 0, colors.yellow),
+                shadeNode([1, 0], colors.yellow),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange),
+                shadeSeparator([], 1, colors.orange),
+                shadeNode([2], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0], colors.orange),
+                shadeSeparator([], 0, colors.orange),
+                shadeNode([1, 0], colors.orange),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.yellow),
+                shadeSeparator([], 1, colors.yellow),
+                shadeNode([2], colors.yellow)
+            ]
+        },
+        {
+            before: sum(product(value(2), sum(value("x"), value(3))), value(4)),
+            after: sum(product(value(2), value("x")), product(value(2), value(3)), value(4)),
+            beforeShading: [
+                shadeNode([0, 0], colors.blue),
+                shadeSeparator([0], 0, colors.gray),
+                shadeNode([0, 1, 0], colors.yellow),
+                shadeSeparator([0, 1], 0, colors.gray),
+                shadeNode([0, 1, 1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0, 0], colors.blue),
+                shadeSeparator([0], 0, colors.gray),
+                shadeNode([0, 1], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.blue),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange)
+            ]
+        },
+        {
+            before: product(value(2), sum(value("x"), value(3)), value(4)),
+            after: sum(product(value(2), value("x")), product(value(2), value(3), value(4))),
+            beforeShading: [
+                shadeNode([0], colors.blue),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.yellow),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0, 0], colors.blue),
+                shadeSeparator([0], 0, colors.gray),
+                shadeNode([0, 1], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.blue),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange)
+            ]
+        },
+        {
+            before: product(value(2), sum(value(3), product(value(4), value("x")))),
+            after: sum(product(value(2), value(3)), product(value(2), value(4), value("x"))),
+            beforeShading: [
+                shadeNode([0], colors.blue),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.yellow),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0, 0], colors.blue),
+                shadeSeparator([0], 0, colors.gray),
+                shadeNode([0, 1], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.blue),
+                shadeSeparator([1], 0, colors.gray),
+                shadeRange([1], 1, 2, colors.orange)
+            ]
+        },
+        {
+            before: product(value(2), sum(value(3), value(4), value("x"))),
+            after: sum(product(value(2), value(3)), product(value(2), value(4)), value("x")),
+            beforeShading: [
+                shadeNode([0], colors.blue),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.yellow),
+                shadeSeparator([1], 0, colors.gray),
+                shadeRange([1], 1, 2, colors.orange)
+            ],
+            afterShading: [
+                shadeNode([0, 0], colors.blue),
+                shadeSeparator([0], 0, colors.gray),
+                shadeNode([0, 1], colors.yellow),
+                shadeSeparator([], 0, colors.gray),
+                shadeNode([1, 0], colors.blue),
+                shadeSeparator([1], 0, colors.gray),
+                shadeNode([1, 1], colors.orange),
+                shadeSeparator([], 1, colors.orange),
+                shadeNode([2], colors.orange)
+            ]
+        }
+    ];
+
+    const renderOptions = {
+        className: "exploded-expression-svg",
+        role: "img",
+        settings: {
+            marginX: 20,
+            marginY: 14,
+            textFont: "20px Verdana, Arial, Helvetica, sans-serif"
+        }
+    };
+
+    const target = document.getElementById("exploded-examples");
+    examples.forEach((example, index) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "exploded-example";
+
+        const number = document.createElement("div");
+        number.className = "number";
+        number.textContent = `${index + 1}.`;
+
+        const phases = document.createElement("div");
+        phases.className = "exploded-phases";
+
+        [
+            { data: example.before },
+            { data: example.before, shading: example.beforeShading, moveFrom: true },
+            { data: example.after, shading: example.afterShading },
+            { data: example.after }
+        ].forEach((phase, phaseIndex) => {
+            const line = document.createElement("div");
+            line.className = `exploded-line${phase.moveFrom ? " move-from" : ""}`;
+            phases.appendChild(line);
+            Renderer.renderExpressionInto(line, phase.data, {
+                ...renderOptions,
+                shading: phase.shading,
+                ariaLabel: `Exploded example ${index + 1}, phase ${phaseIndex + 1}`
+            });
+        });
+
+        wrapper.append(number, phases);
+        target.appendChild(wrapper);
+        if (index < examples.length - 1) {
+            target.appendChild(document.createElement("hr"));
+        }
+    });
+})();
+</script>
+
+</body>
+</html>
