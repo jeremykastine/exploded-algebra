@@ -166,14 +166,14 @@ function drawDebugComponentBounds(drawingContext, left, top, right, bottom, sett
 }
 
 
-function drawOperatorSquare(drawingContext, centerX, centerY, sideLength, fillStyle, strokeStyle, lineWidth) {
-    const half = sideLength / 2;
+function drawOperatorCircle(drawingContext, centerX, centerY, diameter, fillStyle, strokeStyle, lineWidth) {
+    const radius = diameter / 2;
     drawingContext.save();
     drawingContext.fillStyle = fillStyle;
     drawingContext.strokeStyle = strokeStyle;
     drawingContext.lineWidth = lineWidth;
     drawingContext.beginPath();
-    drawingContext.rect(centerX - half, centerY - half, sideLength, sideLength);
+    drawingContext.arc(centerX, centerY, radius, 0, Math.PI * 2);
     drawingContext.fill();
     drawingContext.stroke();
     drawingContext.restore();
@@ -631,12 +631,30 @@ function drawNodeRecursiveToContext(
     drawingContext,
     settings,
     separatorHidden = () => false,
-    separatorFill = () => null
+    separatorFill = () => null,
+    nodeForeground = () => null,
+    separatorForeground = () => null
 ) {
     for (const child of node.args) {
-        drawNodeRecursiveToContext(child, drawingContext, settings, separatorHidden, separatorFill);
+        drawNodeRecursiveToContext(
+            child,
+            drawingContext,
+            settings,
+            separatorHidden,
+            separatorFill,
+            nodeForeground,
+            separatorForeground
+        );
     }
-    drawNodeToContext(node, drawingContext, settings, separatorHidden, separatorFill);
+    drawNodeToContext(
+        node,
+        drawingContext,
+        settings,
+        separatorHidden,
+        separatorFill,
+        nodeForeground,
+        separatorForeground
+    );
 }
 
 function nodeNeedsSeparatorFlares(node) {
@@ -651,17 +669,20 @@ function drawNodeToContext(
     drawingContext,
     settings,
     separatorHidden = () => false,
-    separatorFill = () => null
+    separatorFill = () => null,
+    nodeForeground = () => null,
+    separatorForeground = () => null
 ) {
     const flare = getOperatorHalfSize(settings);
+    const nodeColor = nodeForeground(node) || settings.expressionStrokeFill;
 
     if (node.type === "value") {
-        drawValueNodeToContext(node, drawingContext, settings);
+        drawValueNodeToContext(node, drawingContext, settings, nodeColor);
         return;
     }
 
-    drawingContext.strokeStyle = settings.expressionStrokeFill;
-    drawingContext.fillStyle = settings.expressionStrokeFill;
+    drawingContext.strokeStyle = nodeColor;
+    drawingContext.fillStyle = nodeColor;
     drawingContext.lineWidth = getStructuralStrokeWidth(settings);
 
     if (node.type === "prod") {
@@ -673,35 +694,38 @@ function drawNodeToContext(
             const y1 = node.top();
             const y2 = node.bottom();
             const centerY = (y1 + y2) / 2;
-            const squareSide = flare * 2;
-            const squareTop = centerY - flare;
-            const squareBottom = centerY + flare;
+            const operatorDiameter = flare * 2;
+            const circleTop = centerY - flare;
+            const circleBottom = centerY + flare;
+            const operatorColor = separatorForeground(node, j - 1) || nodeColor;
+            drawingContext.strokeStyle = operatorColor;
+            drawingContext.fillStyle = operatorColor;
 
             if (nodeNeedsSeparatorFlares(node)) {
                 drawingContext.beginPath();
-                drawingContext.moveTo(x, squareTop);
+                drawingContext.moveTo(x, circleTop);
                 drawingContext.quadraticCurveTo(x, y1, x + flare, y1);
                 drawingContext.lineTo(x - flare, y1);
-                drawingContext.quadraticCurveTo(x, y1, x, squareTop);
+                drawingContext.quadraticCurveTo(x, y1, x, circleTop);
                 drawingContext.fill();
                 drawingContext.stroke();
 
                 drawingContext.beginPath();
-                drawingContext.moveTo(x, squareBottom);
+                drawingContext.moveTo(x, circleBottom);
                 drawingContext.quadraticCurveTo(x, y2, x + flare, y2);
                 drawingContext.lineTo(x - flare, y2);
-                drawingContext.quadraticCurveTo(x, y2, x, squareBottom);
+                drawingContext.quadraticCurveTo(x, y2, x, circleBottom);
                 drawingContext.fill();
                 drawingContext.stroke();
             }
 
-            drawOperatorSquare(
+            drawOperatorCircle(
                 drawingContext,
                 x,
                 centerY,
-                squareSide,
+                operatorDiameter,
                 separatorFill(node, j - 1) || "white",
-                settings.expressionStrokeFill,
+                operatorColor,
                 getOperatorCircleStrokeWidth(settings)
             );
 
@@ -722,34 +746,37 @@ function drawNodeToContext(
             const x2 = node.right();
             const y = relHLine(node, j);
             const centerX = (x1 + x2) / 2;
-            const squareSide = flare * 2;
-            const squareLeft = centerX - flare;
-            const squareRight = centerX + flare;
+            const operatorDiameter = flare * 2;
+            const circleLeft = centerX - flare;
+            const circleRight = centerX + flare;
+            const operatorColor = separatorForeground(node, j - 1) || nodeColor;
+            drawingContext.strokeStyle = operatorColor;
+            drawingContext.fillStyle = operatorColor;
             if (nodeNeedsSeparatorFlares(node)) {
                 drawingContext.beginPath();
-                drawingContext.moveTo(squareLeft, y);
+                drawingContext.moveTo(circleLeft, y);
                 drawingContext.quadraticCurveTo(x1, y, x1, y + flare);
                 drawingContext.lineTo(x1, y - flare);
-                drawingContext.quadraticCurveTo(x1, y, squareLeft, y);
+                drawingContext.quadraticCurveTo(x1, y, circleLeft, y);
                 drawingContext.fill();
                 drawingContext.stroke();
 
                 drawingContext.beginPath();
-                drawingContext.moveTo(squareRight, y);
+                drawingContext.moveTo(circleRight, y);
                 drawingContext.quadraticCurveTo(x2, y, x2, y + flare);
                 drawingContext.lineTo(x2, y - flare);
-                drawingContext.quadraticCurveTo(x2, y, squareRight, y);
+                drawingContext.quadraticCurveTo(x2, y, circleRight, y);
                 drawingContext.fill();
                 drawingContext.stroke();
             }
 
-            drawOperatorSquare(
+            drawOperatorCircle(
                 drawingContext,
                 centerX,
                 y,
-                squareSide,
+                operatorDiameter,
                 separatorFill(node, j - 1) || "white",
-                settings.expressionStrokeFill,
+                operatorColor,
                 getOperatorCircleStrokeWidth(settings)
             );
 
@@ -846,6 +873,7 @@ function shadingEntries(shading) {
 //   { kind: "node", path, color }                    entire subexpression
 //   { kind: "range", path, first, last, color }      adjacent terms/factors and their separators
 //   { kind: "separator", path, index, color }        one + or multiplication separator
+// Each region may also include foregroundColor to recolor the affected mathematical objects.
 // The same array can be supplied declaratively with data-oops-shading.
 function addDescendantSeparatorFills(node, color, separatorFills) {
     if (!node) {
@@ -861,9 +889,26 @@ function addDescendantSeparatorFills(node, color, separatorFills) {
     }
 }
 
+function addDescendantForegrounds(node, color, nodeForegrounds, separatorForegrounds) {
+    if (!node || !color) {
+        return;
+    }
+    nodeForegrounds.set(node.id, color);
+    if (node.type === "sum" || node.type === "prod") {
+        for (let index = 0; index < Math.max(0, node.args.length - 1); index++) {
+            separatorForegrounds.set(`${node.id}:${index}`, color);
+        }
+    }
+    for (const child of node.args || []) {
+        addDescendantForegrounds(child, color, nodeForegrounds, separatorForegrounds);
+    }
+}
+
 function compileShading(root, shading) {
     const rectangles = [];
     const separatorFills = new Map();
+    const nodeForegrounds = new Map();
+    const separatorForegrounds = new Map();
 
     for (const entry of shadingEntries(shading)) {
         if (!entry || !entry.color) {
@@ -880,6 +925,9 @@ function compileShading(root, shading) {
             const index = Number(entry.index);
             if ((node.type === "sum" || node.type === "prod") && Number.isInteger(index) && index >= 0 && index < node.args.length - 1) {
                 separatorFills.set(`${node.id}:${index}`, entry.color);
+                if (entry.foregroundColor) {
+                    separatorForegrounds.set(`${node.id}:${index}`, entry.foregroundColor);
+                }
             }
             continue;
         }
@@ -910,9 +958,18 @@ function compileShading(root, shading) {
 
             for (let index = first; index < last; index++) {
                 separatorFills.set(`${node.id}:${index}`, entry.color);
+                if (entry.foregroundColor) {
+                    separatorForegrounds.set(`${node.id}:${index}`, entry.foregroundColor);
+                }
             }
             for (let index = first; index <= last; index++) {
                 addDescendantSeparatorFills(node.args[index], entry.color, separatorFills);
+                addDescendantForegrounds(
+                    node.args[index],
+                    entry.foregroundColor,
+                    nodeForegrounds,
+                    separatorForegrounds
+                );
             }
         } else {
             left = node.left();
@@ -920,6 +977,7 @@ function compileShading(root, shading) {
             right = node.right();
             bottom = node.bottom();
             addDescendantSeparatorFills(node, entry.color, separatorFills);
+            addDescendantForegrounds(node, entry.foregroundColor, nodeForegrounds, separatorForegrounds);
         }
 
         const padding = Number(entry.padding) || 0;
@@ -933,7 +991,7 @@ function compileShading(root, shading) {
         });
     }
 
-    return { rectangles, separatorFills };
+    return { rectangles, separatorFills, nodeForegrounds, separatorForegrounds };
 }
 
 function drawShadingToContext(compiledShading, drawingContext) {
@@ -951,7 +1009,7 @@ function drawShadingToContext(compiledShading, drawingContext) {
     }
 }
 
-function drawValueNodeToContext(node, drawingContext, settings) {
+function drawValueNodeToContext(node, drawingContext, settings, foregroundColor = settings.expressionStrokeFill) {
     const cx = (node.left() + node.right()) / 2;
     const cy = (node.top() + node.bottom()) / 2;
     const metrics = drawingContext.measureText(node.value);
@@ -970,7 +1028,7 @@ function drawValueNodeToContext(node, drawingContext, settings) {
         const borderWidth = Math.max(0, node.layout.width - lineWidth);
         const borderHeight = Math.max(0, node.layout.height - lineWidth);
         drawingContext.save();
-        drawingContext.strokeStyle = settings.expressionStrokeFill;
+        drawingContext.strokeStyle = foregroundColor;
         drawingContext.lineWidth = lineWidth;
         drawingContext.beginPath();
         drawingContext.rect(borderLeft, borderTop, borderWidth, borderHeight);
@@ -983,7 +1041,7 @@ function drawValueNodeToContext(node, drawingContext, settings) {
     }
 
     drawDebugComponentBounds(drawingContext, tightLeft, tightTop, tightRight, tightBottom, settings);
-    drawingContext.fillStyle = settings.expressionStrokeFill;
+    drawingContext.fillStyle = foregroundColor;
     drawingContext.fillText(node.value, cx, cy);
 }
 
@@ -1042,7 +1100,9 @@ function renderExpressionSvgMarkup(root, options = {}) {
         drawingContext,
         settings,
         () => false,
-        (node, separatorIndex) => compiledShading.separatorFills.get(`${node.id}:${separatorIndex}`) || null
+        (node, separatorIndex) => compiledShading.separatorFills.get(`${node.id}:${separatorIndex}`) || null,
+        node => compiledShading.nodeForegrounds.get(node.id) || null,
+        (node, separatorIndex) => compiledShading.separatorForegrounds.get(`${node.id}:${separatorIndex}`) || null
     );
     return svg.outerHTML;
 }
