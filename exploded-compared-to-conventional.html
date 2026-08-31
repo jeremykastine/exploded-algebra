@@ -24,6 +24,28 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .exploded-line{display:block;}
 .exploded-line.move-from{margin-bottom:12px;}
 .exploded-line svg{display:block;overflow:visible;}
+.comparison-player{box-sizing:border-box;min-height:100vh;padding:24px;display:flex;flex-direction:column;gap:18px;}
+.player-heading{text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:bold;}
+.animation-stage{flex:1;min-height:220px;display:flex;align-items:center;justify-content:center;overflow:auto;}
+.animation-slide{display:none;}
+.animation-slide.is-current{display:grid;}
+.animation-phases{display:grid!important;align-items:start;}
+.animation-phase{grid-area:1/1;opacity:0;pointer-events:none;will-change:opacity;}
+.player-ready .animation-phase.move-from{margin-bottom:0;}
+.player-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;}
+.player-controls button{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;}
+.player-controls button:hover{background:#f3f3f3;}
+.player-controls button:focus-visible{outline:3px solid #78aeda;outline-offset:2px;}
+.player-position{min-width:8.5em;text-align:center;}
+body.player-ready>.section-title,
+body.player-ready>.example,
+body.player-ready>hr,
+body.player-ready>#exploded-examples{display:none;}
+@media (max-width:600px){
+    body{font-size:24px;}
+    .comparison-player{padding:16px;}
+    .animation-stage{justify-content:flex-start;}
+}
 </style>
 </head>
 <body>
@@ -386,6 +408,159 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
             target.appendChild(document.createElement("hr"));
         }
     });
+
+    const conventionalSlides = [...document.querySelectorAll("body > .example")];
+    const explodedSlides = [...target.querySelectorAll(".exploded-example")];
+    const slides = [
+        ...conventionalSlides.map((element, index) => ({ element, kind: "Conventional notation", example: index + 1 })),
+        ...explodedSlides.map((element, index) => ({ element, kind: "Exploded notation", example: index + 1 }))
+    ];
+
+    const player = document.createElement("main");
+    player.className = "comparison-player";
+
+    const heading = document.createElement("div");
+    heading.className = "player-heading";
+
+    const stage = document.createElement("div");
+    stage.className = "animation-stage";
+    stage.setAttribute("aria-live", "polite");
+
+    const controls = document.createElement("nav");
+    controls.className = "player-controls";
+    controls.setAttribute("aria-label", "Example navigation");
+
+    const previousButton = document.createElement("button");
+    previousButton.type = "button";
+    previousButton.textContent = "Previous";
+    previousButton.setAttribute("aria-label", "Show previous animation");
+
+    const position = document.createElement("span");
+    position.className = "player-position";
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.textContent = "Next";
+    nextButton.setAttribute("aria-label", "Show next animation");
+
+    controls.append(previousButton, position, nextButton);
+    player.append(heading, stage, controls);
+    document.body.insertBefore(player, document.body.firstChild);
+
+    slides.forEach(({ element, kind, example }) => {
+        element.classList.add("animation-slide");
+        element.setAttribute("aria-label", `${kind}, example ${example}`);
+
+        const phases = element.querySelector(".exploded-phases") || element.children[1];
+        phases.classList.add("animation-phases");
+        [...phases.children].forEach(phase => phase.classList.add("animation-phase"));
+        stage.appendChild(element);
+    });
+
+    document.body.classList.add("player-ready");
+
+    const holdPlain = 1200;
+    const holdShaded = 650;
+    const fadeTime = 1100;
+    let currentIndex = 0;
+    let runId = 0;
+
+    const wait = milliseconds => new Promise(resolve => window.setTimeout(resolve, milliseconds));
+
+    function setOnlyVisible(frames, visibleIndex) {
+        frames.forEach((frame, index) => {
+            frame.getAnimations().forEach(animation => animation.cancel());
+            frame.style.opacity = index === visibleIndex ? "1" : "0";
+        });
+    }
+
+    async function fadeShadingIn(frames, plainIndex, shadedIndex) {
+        setOnlyVisible(frames, plainIndex);
+        const shaded = frames[shadedIndex];
+        shaded.style.opacity = "0";
+        const animation = shaded.animate([{ opacity: 0 }, { opacity: 1 }], {
+            duration: fadeTime,
+            easing: "linear",
+            fill: "forwards"
+        });
+        await animation.finished.catch(() => {});
+        shaded.style.opacity = "1";
+        frames[plainIndex].style.opacity = "0";
+    }
+
+    async function fadeShadingOut(frames, shadedIndex, plainIndex) {
+        setOnlyVisible(frames, plainIndex);
+        const shaded = frames[shadedIndex];
+        shaded.style.opacity = "1";
+        const animation = shaded.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: fadeTime,
+            easing: "linear",
+            fill: "forwards"
+        });
+        await animation.finished.catch(() => {});
+        shaded.style.opacity = "0";
+        frames[plainIndex].style.opacity = "1";
+    }
+
+    async function runAnimation(slide, thisRun) {
+        const frames = [...slide.querySelectorAll(".animation-phase")];
+        if (frames.length !== 4) return;
+
+        while (thisRun === runId) {
+            setOnlyVisible(frames, 0);
+            await wait(holdPlain);
+            if (thisRun !== runId) return;
+
+            await fadeShadingIn(frames, 0, 1);
+            if (thisRun !== runId) return;
+            await wait(holdShaded);
+            if (thisRun !== runId) return;
+
+            setOnlyVisible(frames, 2);
+            await wait(holdShaded);
+            if (thisRun !== runId) return;
+
+            await fadeShadingOut(frames, 2, 3);
+            if (thisRun !== runId) return;
+            await wait(holdPlain);
+            if (thisRun !== runId) return;
+
+            await fadeShadingIn(frames, 3, 2);
+            if (thisRun !== runId) return;
+            await wait(holdShaded);
+            if (thisRun !== runId) return;
+
+            setOnlyVisible(frames, 1);
+            await wait(holdShaded);
+            if (thisRun !== runId) return;
+
+            await fadeShadingOut(frames, 1, 0);
+        }
+    }
+
+    function showSlide(index) {
+        runId += 1;
+        currentIndex = (index + slides.length) % slides.length;
+
+        slides.forEach(({ element }, slideIndex) => {
+            element.classList.toggle("is-current", slideIndex === currentIndex);
+        });
+
+        const current = slides[currentIndex];
+        heading.textContent = `${current.kind} — Example ${current.example} of ${examples.length}`;
+        position.textContent = `${currentIndex + 1} of ${slides.length}`;
+        stage.setAttribute("aria-label", `${current.kind}, example ${current.example} of ${examples.length}`);
+        runAnimation(current.element, runId);
+    }
+
+    previousButton.addEventListener("click", () => showSlide(currentIndex - 1));
+    nextButton.addEventListener("click", () => showSlide(currentIndex + 1));
+    document.addEventListener("keydown", event => {
+        if (event.key === "ArrowLeft") showSlide(currentIndex - 1);
+        if (event.key === "ArrowRight") showSlide(currentIndex + 1);
+    });
+
+    showSlide(0);
 })();
 </script>
 
