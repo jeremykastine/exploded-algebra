@@ -33,6 +33,16 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .animation-phases{display:grid!important;align-items:start;}
 .animation-phase{grid-area:1/1;opacity:0;pointer-events:none;will-change:opacity;}
 .player-ready .animation-phase.move-from{margin-bottom:0;}
+.player-explanation{box-sizing:border-box;width:min(100%,980px);min-height:4.2em;margin:0 auto;padding:14px 18px;border-top:2px solid #bbb;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1.4;color:#111;}
+.explanation-status{font-weight:bold;}
+.parallel-slide,.intro-slide{width:min(100%,1120px);}
+.parallel-comparison,.intro-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;width:100%;}
+.notation-panel{min-width:0;display:flex;flex-direction:column;align-items:center;gap:18px;}
+.notation-label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#444;}
+.notation-panel>.example,.notation-panel>.exploded-example{display:block;}
+.notation-panel .number{display:none;}
+.intro-conventional{display:flex;min-height:140px;align-items:center;justify-content:center;font-size:34px;}
+.intro-exploded{display:flex;min-height:140px;align-items:center;justify-content:center;}
 .player-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;}
 .player-controls button{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;}
 .player-controls button:hover{background:#f3f3f3;}
@@ -46,6 +56,8 @@ body.player-ready>#exploded-examples{display:none;}
     body{font-size:24px;}
     .comparison-player{padding:16px;}
     .animation-stage{justify-content:flex-start;}
+    .parallel-comparison,.intro-comparison{grid-template-columns:1fr;gap:24px;}
+    .player-explanation{font-size:18px;}
 }
 </style>
 </head>
@@ -406,6 +418,100 @@ body.player-ready>#exploded-examples{display:none;}
         }
     ];
 
+    const conventionalExplanations = [
+        {
+            valid: true,
+            text: "The commutative property of addition swaps the addends 2 and x. The addend 3 stays in place, so the value does not change."
+        },
+        {
+            valid: true,
+            text: "The commutative property of multiplication swaps the factors 2 and x. The factor 3 stays in place, so the value does not change."
+        },
+        {
+            valid: false,
+            text: "This attempts to swap 2 and x, but they are not both addends. Order of operations makes x part of x·3, so changing 2+x·3 to x+2·3 changes the expression."
+        },
+        {
+            valid: true,
+            text: "The two groups of addends, x+y and 5+x, exchange places. Since every item belongs to the same sum, this reordering is valid."
+        },
+        {
+            valid: true,
+            text: "The two groups of factors, x·y and 5·x, exchange places. Since every item belongs to the same product, this reordering is valid."
+        },
+        {
+            valid: true,
+            text: "The commutative property of addition swaps two complete addends: x·y and 5·x. Each product remains intact."
+        },
+        {
+            valid: false,
+            text: "This treats x+y and 5+x as the factors on opposite sides of the dot. Order of operations says the dot multiplies only y and 5; the two x's are separate addends, so the proposed swap is invalid."
+        },
+        {
+            valid: true,
+            text: "The distributive property multiplies both addends inside x+3 by 2. The outside addend 4 is not part of that distribution."
+        },
+        {
+            valid: false,
+            text: "After distributing 2, the result must remain grouped before multiplication by 4: (2·x+2·3)·4. Without those parentheses, 4 multiplies only 2·3, so the displayed result is not equivalent."
+        },
+        {
+            valid: true,
+            text: "The 2 is distributed to both addends: 3 and the complete product 4·x. The factors 4 and x remain together."
+        },
+        {
+            valid: false,
+            text: "The 2 must multiply every addend inside the parentheses. The proposed result leaves x undistributed, so 2·3+2·4+x is not equivalent to the original expression."
+        }
+    ];
+
+    const comparisonExplanations = [
+        {
+            valid: true,
+            text: "Exploded notation shows all three addends as peers in one vertical sum. Moving 2 and x simply exchanges two complete rows."
+        },
+        {
+            valid: true,
+            text: "Exploded notation places all three factors on one horizontal multiplication row. Moving 2 and x simply exchanges two complete factors."
+        },
+        {
+            valid: false,
+            text: "In conventional notation, 2 and x can look like neighboring pieces to swap. Exploded notation places x beside 3 on a multiplication row and 2 on a separate addition row, showing that they are not peers."
+        },
+        {
+            valid: true,
+            text: "Exploded notation displays all four addends as separate vertical entries. The two shaded blocks can exchange places without splitting any addend."
+        },
+        {
+            valid: true,
+            text: "Exploded notation displays all four factors on the same horizontal row. The two shaded blocks can exchange places without splitting the product."
+        },
+        {
+            valid: true,
+            text: "Exploded notation shows each product as one complete row of a larger sum. The move swaps those rows while preserving both products."
+        },
+        {
+            valid: false,
+            text: "The conventional form makes the shaded pieces look like groups around the dot. Exploded notation reveals that only y and 5 are factors; each x lies on a separate addition row, so the shaded pieces are not swappable units."
+        },
+        {
+            valid: true,
+            text: "Exploded notation shows x+3 as a vertical sum attached to the factor 2. Distribution creates a separate factor 2 for each addend, while 4 remains outside as its own row."
+        },
+        {
+            valid: false,
+            text: "Before the move, 4 multiplies the entire grouped product. In the proposed result, exploded notation places 4 only on the 2·3 row, exposing that it no longer multiplies 2·x."
+        },
+        {
+            valid: true,
+            text: "Exploded notation shows two addends inside the group: 3 and the product 4·x. Distribution gives each complete row its own factor 2, so 4·x remains intact."
+        },
+        {
+            valid: false,
+            text: "Exploded notation shows three addends inside the group. After the proposed move, only the first two rows receive a factor 2; x remains alone, making the incomplete distribution immediately visible."
+        }
+    ];
+
     const renderOptions = {
         className: "exploded-expression-svg",
         role: "img",
@@ -452,11 +558,115 @@ body.player-ready>#exploded-examples{display:none;}
         }
     });
 
+    const introExamples = [
+        {
+            title: "Addition",
+            conventional: "2+x+3",
+            exploded: sum(value(2), value("x"), value(3)),
+            explanation: "In exploded notation, addition extends vertically. Each row is one addend, and the shared column shows that the addends belong to the same sum."
+        },
+        {
+            title: "Multiplication",
+            conventional: "2·x·3",
+            exploded: product(value(2), value("x"), value(3)),
+            explanation: "In exploded notation, multiplication extends horizontally. The entries on one row are factors in the same product."
+        },
+        {
+            title: "Mixed operations",
+            conventional: "2+x·3",
+            exploded: sum(value(2), product(value("x"), value(3))),
+            explanation: "Vertical placement separates the two addends, while horizontal placement keeps x and 3 together as factors. The order of operations is built into the layout."
+        },
+        {
+            title: "Grouping",
+            conventional: "2·(x+3)",
+            exploded: product(value(2), sum(value("x"), value(3))),
+            explanation: "The vertical sum x+3 is nested as one factor beside 2. Spatial nesting takes the role played by parentheses in conventional notation."
+        }
+    ];
+
+    function buildIntroSlide(intro, index) {
+        const slide = document.createElement("section");
+        slide.className = "intro-slide";
+
+        const comparison = document.createElement("div");
+        comparison.className = "intro-comparison";
+
+        const conventionalPanel = document.createElement("div");
+        conventionalPanel.className = "notation-panel";
+        const conventionalLabel = document.createElement("div");
+        conventionalLabel.className = "notation-label";
+        conventionalLabel.textContent = "Conventional notation";
+        const conventionalExpression = document.createElement("div");
+        conventionalExpression.className = "expr intro-conventional";
+        conventionalExpression.textContent = intro.conventional;
+        conventionalPanel.append(conventionalLabel, conventionalExpression);
+
+        const explodedPanel = document.createElement("div");
+        explodedPanel.className = "notation-panel";
+        const explodedLabel = document.createElement("div");
+        explodedLabel.className = "notation-label";
+        explodedLabel.textContent = "Exploded notation";
+        const explodedExpression = document.createElement("div");
+        explodedExpression.className = "intro-exploded";
+        Renderer.renderExpressionInto(explodedExpression, intro.exploded, {
+            ...renderOptions,
+            ariaLabel: `Exploded notation introduction ${index + 1}: ${intro.title}`
+        });
+        explodedPanel.append(explodedLabel, explodedExpression);
+
+        comparison.append(conventionalPanel, explodedPanel);
+        slide.appendChild(comparison);
+        return slide;
+    }
+
+    function buildParallelSlide(conventional, exploded) {
+        const slide = document.createElement("section");
+        slide.className = "parallel-slide";
+
+        const comparison = document.createElement("div");
+        comparison.className = "parallel-comparison";
+
+        const conventionalPanel = document.createElement("div");
+        conventionalPanel.className = "notation-panel";
+        const conventionalLabel = document.createElement("div");
+        conventionalLabel.className = "notation-label";
+        conventionalLabel.textContent = "Conventional notation";
+        conventionalPanel.append(conventionalLabel, conventional.cloneNode(true));
+
+        const explodedPanel = document.createElement("div");
+        explodedPanel.className = "notation-panel";
+        const explodedLabel = document.createElement("div");
+        explodedLabel.className = "notation-label";
+        explodedLabel.textContent = "Exploded notation";
+        explodedPanel.append(explodedLabel, exploded);
+
+        comparison.append(conventionalPanel, explodedPanel);
+        slide.appendChild(comparison);
+        return slide;
+    }
+
     const conventionalSlides = [...document.querySelectorAll("body > .example")];
     const explodedSlides = [...target.querySelectorAll(".exploded-example")];
     const slides = [
-        ...conventionalSlides.map((element, index) => ({ element, kind: "Conventional notation", example: index + 1 })),
-        ...explodedSlides.map((element, index) => ({ element, kind: "Exploded notation", example: index + 1 }))
+        ...conventionalSlides.map((element, index) => ({
+            element,
+            heading: `Conventional notation — Example ${index + 1} of ${examples.length}`,
+            ariaLabel: `Conventional notation, example ${index + 1} of ${examples.length}`,
+            explanation: conventionalExplanations[index]
+        })),
+        ...introExamples.map((intro, index) => ({
+            element: buildIntroSlide(intro, index),
+            heading: `Introducing exploded notation — ${intro.title}`,
+            ariaLabel: `Introducing exploded notation: ${intro.title}`,
+            explanation: { valid: null, text: intro.explanation }
+        })),
+        ...conventionalSlides.map((conventional, index) => ({
+            element: buildParallelSlide(conventional, explodedSlides[index]),
+            heading: `Conventional and exploded notation — Example ${index + 1} of ${examples.length}`,
+            ariaLabel: `Conventional and exploded notation, example ${index + 1} of ${examples.length}`,
+            explanation: comparisonExplanations[index]
+        }))
     ];
 
     const player = document.createElement("main");
@@ -468,6 +678,9 @@ body.player-ready>#exploded-examples{display:none;}
     const stage = document.createElement("div");
     stage.className = "animation-stage";
     stage.setAttribute("aria-live", "polite");
+
+    const explanation = document.createElement("div");
+    explanation.className = "player-explanation";
 
     const controls = document.createElement("nav");
     controls.className = "player-controls";
@@ -487,16 +700,26 @@ body.player-ready>#exploded-examples{display:none;}
     nextButton.setAttribute("aria-label", "Show next animation");
 
     controls.append(previousButton, position, nextButton);
-    player.append(heading, stage, controls);
+    player.append(heading, stage, explanation, controls);
     document.body.insertBefore(player, document.body.firstChild);
 
-    slides.forEach(({ element, kind, example }) => {
-        element.classList.add("animation-slide");
-        element.setAttribute("aria-label", `${kind}, example ${example}`);
+    function prepareAnimationGroups(element) {
+        const expressions = [];
+        if (element.matches(".example, .exploded-example")) expressions.push(element);
+        expressions.push(...element.querySelectorAll(".example, .exploded-example"));
 
-        const phases = element.querySelector(".exploded-phases") || element.children[1];
-        phases.classList.add("animation-phases");
-        [...phases.children].forEach(phase => phase.classList.add("animation-phase"));
+        expressions.forEach(expression => {
+            const phases = expression.querySelector(":scope > .exploded-phases") || expression.children[1];
+            if (!phases || phases.children.length !== 4) return;
+            phases.classList.add("animation-phases");
+            [...phases.children].forEach(phase => phase.classList.add("animation-phase"));
+        });
+    }
+
+    slides.forEach(({ element, ariaLabel }) => {
+        element.classList.add("animation-slide");
+        element.setAttribute("aria-label", ariaLabel);
+        prepareAnimationGroups(element);
         stage.appendChild(element);
     });
 
@@ -545,40 +768,57 @@ body.player-ready>#exploded-examples{display:none;}
         frames[plainIndex].style.opacity = "1";
     }
 
+    function getFrameGroups(slide) {
+        return [...slide.querySelectorAll(".animation-phases")]
+            .map(group => [...group.querySelectorAll(":scope > .animation-phase")])
+            .filter(frames => frames.length === 4);
+    }
+
     async function runAnimation(slide, thisRun) {
-        const frames = [...slide.querySelectorAll(".animation-phase")];
-        if (frames.length !== 4) return;
+        const frameGroups = getFrameGroups(slide);
+        if (!frameGroups.length) return;
 
         while (thisRun === runId) {
-            setOnlyVisible(frames, 0);
+            frameGroups.forEach(frames => setOnlyVisible(frames, 0));
             await wait(holdPlain);
             if (thisRun !== runId) return;
 
-            await fadeShadingIn(frames, 0, 1);
+            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 0, 1)));
             if (thisRun !== runId) return;
             await wait(holdShaded);
             if (thisRun !== runId) return;
 
-            setOnlyVisible(frames, 2);
+            frameGroups.forEach(frames => setOnlyVisible(frames, 2));
             await wait(holdShaded);
             if (thisRun !== runId) return;
 
-            await fadeShadingOut(frames, 2, 3);
+            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 2, 3)));
             if (thisRun !== runId) return;
             await wait(holdPlain);
             if (thisRun !== runId) return;
 
-            await fadeShadingIn(frames, 3, 2);
+            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 3, 2)));
             if (thisRun !== runId) return;
             await wait(holdShaded);
             if (thisRun !== runId) return;
 
-            setOnlyVisible(frames, 1);
+            frameGroups.forEach(frames => setOnlyVisible(frames, 1));
             await wait(holdShaded);
             if (thisRun !== runId) return;
 
-            await fadeShadingOut(frames, 1, 0);
+            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 1, 0)));
         }
+    }
+
+    function showExplanation(details) {
+        explanation.replaceChildren();
+        if (details.valid !== null) {
+            const status = document.createElement("span");
+            status.className = "explanation-status";
+            status.textContent = details.valid ? "Valid move. " : "Invalid move. ";
+            explanation.appendChild(status);
+        }
+        explanation.appendChild(document.createTextNode(details.text));
     }
 
     function showSlide(index) {
@@ -590,9 +830,10 @@ body.player-ready>#exploded-examples{display:none;}
         });
 
         const current = slides[currentIndex];
-        heading.textContent = `${current.kind} — Example ${current.example} of ${examples.length}`;
+        heading.textContent = current.heading;
         position.textContent = `${currentIndex + 1} of ${slides.length}`;
-        stage.setAttribute("aria-label", `${current.kind}, example ${current.example} of ${examples.length}`);
+        stage.setAttribute("aria-label", current.ariaLabel);
+        showExplanation(current.explanation);
         runAnimation(current.element, runId);
     }
 
