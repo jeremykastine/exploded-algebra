@@ -873,6 +873,7 @@ function shadingEntries(shading) {
 //   { kind: "node", path, color }                    entire subexpression
 //   { kind: "range", path, first, last, color }      adjacent terms/factors and their separators
 //   { kind: "separator", path, index, color }        one + or multiplication separator
+// Set convexHull to shade the convex hull of selected descendant value boxes, grouped by color.
 // Each region may also include foregroundColor to recolor the affected mathematical objects.
 // The same array can be supplied declaratively with data-oops-shading.
 function addDescendantSeparatorFills(node, color, separatorFills) {
@@ -886,6 +887,110 @@ function addDescendantSeparatorFills(node, color, separatorFills) {
     }
     for (const child of node.args || []) {
         addDescendantSeparatorFills(child, color, separatorFills);
+    }
+}
+
+function collectDescendantValueNodes(node, values) {
+    if (!node) {
+        return;
+    }
+    if (node.type === "value") {
+        values.push(node);
+        return;
+    }
+    for (const child of node.args || []) {
+        collectDescendantValueNodes(child, values);
+    }
+}
+
+function convexHull(points) {
+    const uniquePoints = [...new Map(points.map(point => [`${point.x}:${point.y}`, point])).values()]
+        .sort((a, b) => a.x - b.x || a.y - b.y);
+    if (uniquePoints.length <= 2) {
+        return uniquePoints;
+    }
+
+    const cross = (origin, a, b) =>
+        (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x);
+    const lower = [];
+    for (const point of uniquePoints) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) {
+            lower.pop();
+        }
+        lower.push(point);
+    }
+    const upper = [];
+    for (let index = uniquePoints.length - 1; index >= 0; index--) {
+        const point = uniquePoints[index];
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) {
+            upper.pop();
+        }
+        upper.push(point);
+    }
+    lower.pop();
+    upper.pop();
+    return lower.concat(upper);
+}
+
+function pointOnSegment(point, a, b) {
+    const cross = (point.x - a.x) * (b.y - a.y) - (point.y - a.y) * (b.x - a.x);
+    if (Math.abs(cross) > 0.0001) {
+        return false;
+    }
+    return point.x >= Math.min(a.x, b.x) - 0.0001 &&
+        point.x <= Math.max(a.x, b.x) + 0.0001 &&
+        point.y >= Math.min(a.y, b.y) - 0.0001 &&
+        point.y <= Math.max(a.y, b.y) + 0.0001;
+}
+
+function pointInPolygon(point, polygon) {
+    let inside = false;
+    for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
+        const a = polygon[previous];
+        const b = polygon[index];
+        if (pointOnSegment(point, a, b)) {
+            return true;
+        }
+        const crossesRay = (a.y > point.y) !== (b.y > point.y) &&
+            point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+        if (crossesRay) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+function addSeparatorFillsInsidePolygons(node, polygons, separatorFills) {
+    if (!node) {
+        return;
+    }
+    if (node.type === "prod") {
+        for (let lineIndex = 1; lineIndex < node.layout.vLines.length - 1; lineIndex++) {
+            const center = {
+                x: relVLine(node, lineIndex),
+                y: (node.top() + node.bottom()) / 2
+            };
+            for (const polygon of polygons) {
+                if (pointInPolygon(center, polygon.points)) {
+                    separatorFills.set(`${node.id}:${lineIndex - 1}`, polygon.color);
+                }
+            }
+        }
+    } else if (node.type === "sum") {
+        for (let lineIndex = 1; lineIndex < node.layout.hLines.length - 1; lineIndex++) {
+            const center = {
+                x: (node.left() + node.right()) / 2,
+                y: relHLine(node, lineIndex)
+            };
+            for (const polygon of polygons) {
+                if (pointInPolygon(center, polygon.points)) {
+                    separatorFills.set(`${node.id}:${lineIndex - 1}`, polygon.color);
+                }
+            }
+        }
+    }
+    for (const child of node.args || []) {
+        addSeparatorFillsInsidePolygons(child, polygons, separatorFills);
     }
 }
 
@@ -906,9 +1011,11 @@ function addDescendantForegrounds(node, color, nodeForegrounds, separatorForegro
 
 function compileShading(root, shading) {
     const rectangles = [];
+    const polygons = [];
     const separatorFills = new Map();
     const nodeForegrounds = new Map();
     const separatorForegrounds = new Map();
+    const hullGroups = new Map();
 
     for (const entry of shadingEntries(shading)) {
         if (!entry || !entry.color) {
@@ -918,6 +1025,50 @@ function compileShading(root, shading) {
         const kind = entry.kind || entry.target || "node";
         const node = nodeAtPath(root, Array.isArray(entry.path) ? entry.path : []);
         if (!node) {
+            continue;
+        }
+
+        if (entry.convexHull) {
+            if (kind === "separator") {
+                continue;
+            }
+
+            const selectedValues = [];
+            if (kind === "range" && (node.type === "sum" || node.type === "prod")) {
+                const first = Math.max(0, Number(entry.first));
+                const last = Math.min(node.args.length - 1, Number(entry.last));
+                if (!Number.isInteger(first) || !Number.isInteger(last) || first > last) {
+                    continue;
+                }
+                for (let index = first; index <= last; index++) {
+                    collectDescendantValueNodes(node.args[index], selectedValues);
+                }
+            } else {
+                collectDescendantValueNodes(node, selectedValues);
+            }
+
+            const groupKey = entry.hullGroup || entry.color;
+            if (!hullGroups.has(groupKey)) {
+                hullGroups.set(groupKey, {
+                    color: entry.color,
+                    opacity: entry.opacity === undefined ? 1 : Math.max(0, Math.min(1, Number(entry.opacity))),
+                    points: []
+                });
+            }
+            const group = hullGroups.get(groupKey);
+            const padding = Number(entry.padding) || 0;
+            for (const valueNode of selectedValues) {
+                const left = valueNode.left() - padding;
+                const top = valueNode.top() - padding;
+                const right = valueNode.right() + padding;
+                const bottom = valueNode.bottom() + padding;
+                group.points.push(
+                    { x: left, y: top },
+                    { x: right, y: top },
+                    { x: right, y: bottom },
+                    { x: left, y: bottom }
+                );
+            }
             continue;
         }
 
@@ -991,10 +1142,36 @@ function compileShading(root, shading) {
         });
     }
 
-    return { rectangles, separatorFills, nodeForegrounds, separatorForegrounds };
+    for (const group of hullGroups.values()) {
+        const points = convexHull(group.points);
+        if (points.length >= 3) {
+            polygons.push({
+                points,
+                color: group.color,
+                opacity: group.opacity
+            });
+        }
+    }
+
+    addSeparatorFillsInsidePolygons(root, polygons, separatorFills);
+
+    return { rectangles, polygons, separatorFills, nodeForegrounds, separatorForegrounds };
 }
 
 function drawShadingToContext(compiledShading, drawingContext) {
+    for (const polygon of compiledShading.polygons || []) {
+        drawingContext.save();
+        drawingContext.fillStyle = polygon.color;
+        drawingContext.globalAlpha = Number.isFinite(polygon.opacity) ? polygon.opacity : 1;
+        drawingContext.beginPath();
+        drawingContext.moveTo(polygon.points[0].x, polygon.points[0].y);
+        for (let index = 1; index < polygon.points.length; index++) {
+            drawingContext.lineTo(polygon.points[index].x, polygon.points[index].y);
+        }
+        drawingContext.lineTo(polygon.points[0].x, polygon.points[0].y);
+        drawingContext.fill();
+        drawingContext.restore();
+    }
     for (const rectangle of compiledShading.rectangles) {
         drawingContext.save();
         drawingContext.fillStyle = rectangle.color;
