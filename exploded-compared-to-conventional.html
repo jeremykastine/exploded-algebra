@@ -169,7 +169,7 @@ body.player-ready>#exploded-examples{display:none;}
     const sum = (...args) => ({ type: "sum", args });
     const product = (...args) => ({ type: "prod", args });
 
-    const shadeNode = (path, color) => ({ kind: "node", path, color, convexHull: true });
+    const shadeNode = (path, color, hullGroup) => ({ kind: "node", path, color, convexHull: true, hullGroup });
     const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color, convexHull: true });
     const shadeRange = (path, first, last, color) => ({ kind: "range", path, first, last, color, convexHull: true });
 
@@ -333,11 +333,11 @@ body.player-ready>#exploded-examples{display:none;}
                 shadeNode([0, 1, 1], colors.orange)
             ],
             afterShading: [
-                shadeNode([0, 0], colors.blue),
+                shadeNode([0, 0], colors.blue, "distributed-blue-1"),
                 shadeSeparator([0], 0, colors.gray),
                 shadeNode([0, 1], colors.yellow),
                 shadeSeparator([], 0, colors.gray),
-                shadeNode([1, 0], colors.blue),
+                shadeNode([1, 0], colors.blue, "distributed-blue-2"),
                 shadeSeparator([1], 0, colors.gray),
                 shadeNode([1, 1], colors.orange)
             ]
@@ -353,11 +353,11 @@ body.player-ready>#exploded-examples{display:none;}
                 shadeNode([1, 1], colors.orange)
             ],
             afterShading: [
-                shadeNode([0, 0], colors.blue),
+                shadeNode([0, 0], colors.blue, "distributed-blue-1"),
                 shadeSeparator([0], 0, colors.gray),
                 shadeNode([0, 1], colors.yellow),
                 shadeSeparator([], 0, colors.gray),
-                shadeNode([1, 0], colors.blue),
+                shadeNode([1, 0], colors.blue, "distributed-blue-2"),
                 shadeSeparator([1], 0, colors.gray),
                 shadeNode([1, 1], colors.orange)
             ]
@@ -373,11 +373,11 @@ body.player-ready>#exploded-examples{display:none;}
                 shadeNode([1, 1], colors.orange)
             ],
             afterShading: [
-                shadeNode([0, 0], colors.blue),
+                shadeNode([0, 0], colors.blue, "distributed-blue-1"),
                 shadeSeparator([0], 0, colors.gray),
                 shadeNode([0, 1], colors.yellow),
                 shadeSeparator([], 0, colors.gray),
-                shadeNode([1, 0], colors.blue),
+                shadeNode([1, 0], colors.blue, "distributed-blue-2"),
                 shadeSeparator([1], 0, colors.gray),
                 shadeRange([1], 1, 2, colors.orange)
             ]
@@ -393,11 +393,11 @@ body.player-ready>#exploded-examples{display:none;}
                 shadeRange([1], 1, 2, colors.orange)
             ],
             afterShading: [
-                shadeNode([0, 0], colors.blue),
+                shadeNode([0, 0], colors.blue, "distributed-blue-1"),
                 shadeSeparator([0], 0, colors.gray),
                 shadeNode([0, 1], colors.yellow),
                 shadeSeparator([], 0, colors.gray),
-                shadeNode([1, 0], colors.blue),
+                shadeNode([1, 0], colors.blue, "distributed-blue-2"),
                 shadeSeparator([1], 0, colors.gray),
                 shadeNode([1, 1], colors.orange),
                 shadeSeparator([], 1, colors.orange),
