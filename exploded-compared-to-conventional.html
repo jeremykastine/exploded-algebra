@@ -10,9 +10,9 @@ body{font-family:"Courier New",Courier,"Liberation Mono",monospace;font-size:32p
 .expr,.number{font-family:"Courier New",Courier,"Liberation Mono",monospace;}
 .expr{white-space:pre;}
 .move-from{margin-bottom:.3em;}
-.blue{background:#DDEFFF;}
-.yellow{background:#FFF3BF;}
-.orange{background:#FFE1C7;}
+.blue{background:#DDEFFF;color:#245B86;}
+.yellow{background:#FFF3BF;color:#765500;}
+.orange{background:#FFE1C7;color:#8C3F0D;}
 .swap{background:transparent;}
 .transform-domain{display:inline-block;outline:2px solid #777;outline-offset:3px;border-radius:3px;}
 .example{display:grid;grid-template-columns:2.5ch auto;column-gap:.5ch;align-items:start;}
@@ -165,14 +165,19 @@ body.player-ready>#exploded-examples{display:none;}
         orange: "#FFE1C7",
         gray: "transparent"
     };
+    const foregroundColors = {
+        [colors.blue]: "#245B86",
+        [colors.yellow]: "#765500",
+        [colors.orange]: "#8C3F0D"
+    };
 
     const value = text => ({ type: "value", value: String(text) });
     const sum = (...args) => ({ type: "sum", args });
     const product = (...args) => ({ type: "prod", args });
 
-    const shadeNode = (path, color) => ({ kind: "node", path, color });
-    const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color });
-    const shadeRange = (path, first, last, color) => ({ kind: "range", path, first, last, color });
+    const shadeNode = (path, color) => ({ kind: "node", path, color, foregroundColor: foregroundColors[color] });
+    const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color, foregroundColor: foregroundColors[color] });
+    const shadeRange = (path, first, last, color) => ({ kind: "range", path, first, last, color, foregroundColor: foregroundColors[color] });
 
     const domainFillColors = new Set([colors.blue, colors.yellow, colors.orange].map(color => color.toLowerCase()));
 
