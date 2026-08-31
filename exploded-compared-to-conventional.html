@@ -427,6 +427,8 @@ body.player-ready>#exploded-examples{display:none;}
 
         const phases = document.createElement("div");
         phases.className = "exploded-phases";
+        wrapper.append(number, phases);
+        target.appendChild(wrapper);
 
         [
             { data: example.before },
@@ -445,8 +447,6 @@ body.player-ready>#exploded-examples{display:none;}
             if (phase.shading) addDomainOutline(line);
         });
 
-        wrapper.append(number, phases);
-        target.appendChild(wrapper);
         if (index < examples.length - 1) {
             target.appendChild(document.createElement("hr"));
         }
