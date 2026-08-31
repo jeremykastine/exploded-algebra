@@ -25,24 +25,28 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .exploded-line{display:block;}
 .exploded-line.move-from{margin-bottom:12px;}
 .exploded-line svg{display:block;overflow:visible;}
-.comparison-player{box-sizing:border-box;min-height:100vh;padding:24px;display:flex;flex-direction:column;gap:18px;}
+.comparison-player{box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:12px;}
 .player-heading{text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:bold;}
-.animation-stage{flex:1;min-height:220px;display:flex;align-items:center;justify-content:center;overflow:auto;}
+.animation-stage{min-height:0;padding:16px 0;display:flex;align-items:center;justify-content:center;overflow:auto;}
 .animation-slide{display:none;}
 .animation-slide.is-current{display:grid;}
+.animation-stage>.example.is-current{display:block;}
+.animation-stage>.example>.number{display:none;}
 .animation-phases{display:grid!important;align-items:start;}
 .animation-phase{grid-area:1/1;opacity:0;pointer-events:none;will-change:opacity;}
 .player-ready .animation-phase.move-from{margin-bottom:0;}
-.player-explanation{box-sizing:border-box;width:min(100%,980px);min-height:4.2em;margin:0 auto;padding:14px 18px;border-top:2px solid #bbb;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1.4;color:#111;}
+.player-prompt,.player-explanation{box-sizing:border-box;width:min(100%,980px);margin:0 auto;padding:10px 18px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1.4;color:#111;}
+.player-prompt{padding-bottom:4px;}
+.player-explanation{padding-top:12px;border-top:2px solid #bbb;}
 .explanation-status{font-weight:bold;}
 .parallel-slide,.intro-slide{width:min(100%,1120px);}
-.parallel-comparison,.intro-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;width:100%;}
-.notation-panel{min-width:0;display:flex;flex-direction:column;align-items:center;gap:18px;}
+.parallel-comparison,.intro-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;width:100%;}
+.notation-panel{min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;}
 .notation-label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#444;}
-.notation-panel>.example,.notation-panel>.exploded-example{display:block;}
-.notation-panel .number{display:none;}
-.intro-conventional{display:flex;min-height:140px;align-items:center;justify-content:center;font-size:34px;}
-.intro-exploded{display:flex;min-height:140px;align-items:center;justify-content:center;}
+.notation-expression-frame{display:flex;min-height:170px;width:100%;align-items:center;justify-content:center;font-size:32px;}
+.notation-expression-frame>.example,.notation-expression-frame>.exploded-example{display:block;}
+.notation-expression-frame .number{display:none;}
+.intro-conventional,.intro-exploded{display:flex;align-items:center;justify-content:center;font-size:32px;}
 .player-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;}
 .player-controls button{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;}
 .player-controls button:hover{background:#f3f3f3;}
@@ -57,7 +61,9 @@ body.player-ready>#exploded-examples{display:none;}
     .comparison-player{padding:16px;}
     .animation-stage{justify-content:flex-start;}
     .parallel-comparison,.intro-comparison{grid-template-columns:1fr;gap:24px;}
-    .player-explanation{font-size:18px;}
+    .player-prompt,.player-explanation{font-size:18px;}
+    .notation-expression-frame{min-height:130px;font-size:24px;}
+    .intro-conventional,.intro-exploded{font-size:24px;}
 }
 </style>
 </head>
@@ -418,6 +424,20 @@ body.player-ready>#exploded-examples{display:none;}
         }
     ];
 
+    const conventionalPrompts = [
+        "This step attempts to use the commutative property of addition to swap 2 and x.",
+        "This step attempts to use the commutative property of multiplication to swap 2 and x.",
+        "This step attempts to use the commutative property of addition to swap 2 and x.",
+        "This step attempts to use the commutative property of addition to exchange the groups x+y and 5+x.",
+        "This step attempts to use the commutative property of multiplication to exchange the groups x·y and 5·x.",
+        "This step attempts to use the commutative property of addition to swap the complete products x·y and 5·x.",
+        "This step attempts to use the commutative property of multiplication to exchange x+y and 5+x around the multiplication dot.",
+        "This step attempts to distribute 2 across the addends x and 3 while leaving the outside addend 4 unchanged.",
+        "This step attempts to distribute 2 across x+3 while leaving the outside factor 4 in place.",
+        "This step attempts to distribute 2 across the addends 3 and 4·x.",
+        "This step attempts to distribute 2 across the three addends 3, 4, and x."
+    ];
+
     const conventionalExplanations = [
         {
             valid: true,
@@ -429,7 +449,7 @@ body.player-ready>#exploded-examples{display:none;}
         },
         {
             valid: false,
-            text: "This attempts to swap 2 and x, but they are not both addends. Order of operations makes x part of x·3, so changing 2+x·3 to x+2·3 changes the expression."
+            text: "It looks reasonable because 2 and x appear next to the same plus sign. However, they are not both addends: order of operations makes x part of x·3, so the step changes the expression."
         },
         {
             valid: true,
@@ -445,7 +465,7 @@ body.player-ready>#exploded-examples{display:none;}
         },
         {
             valid: false,
-            text: "This treats x+y and 5+x as the factors on opposite sides of the dot. Order of operations says the dot multiplies only y and 5; the two x's are separate addends, so the proposed swap is invalid."
+            text: "It looks reasonable because x+y and 5+x appear on opposite sides of the multiplication dot. However, the dot multiplies only y and 5; the two x's are separate addends."
         },
         {
             valid: true,
@@ -453,7 +473,7 @@ body.player-ready>#exploded-examples{display:none;}
         },
         {
             valid: false,
-            text: "After distributing 2, the result must remain grouped before multiplication by 4: (2·x+2·3)·4. Without those parentheses, 4 multiplies only 2·3, so the displayed result is not equivalent."
+            text: "It looks reasonable because distributing 2 across x+3 is valid. However, the resulting sum must remain grouped as (2·x+2·3)·4; without those parentheses, 4 multiplies only 2·3."
         },
         {
             valid: true,
@@ -461,54 +481,68 @@ body.player-ready>#exploded-examples{display:none;}
         },
         {
             valid: false,
-            text: "The 2 must multiply every addend inside the parentheses. The proposed result leaves x undistributed, so 2·3+2·4+x is not equivalent to the original expression."
+            text: "It looks reasonable because 2 has been multiplied by the first two visible addends. However, distribution must reach every addend, and the proposed result leaves x undistributed."
         }
+    ];
+
+    const comparisonPrompts = [
+        "Recall that the step below is valid: it swaps the addends 2 and x.",
+        "Recall that the step below is valid: it swaps the factors 2 and x.",
+        "Recall that the step below is invalid: it attempts to swap 2 and x even though x belongs to the product x·3.",
+        "Recall that the step below is valid: it exchanges two groups within the same sum.",
+        "Recall that the step below is valid: it exchanges two groups within the same product.",
+        "Recall that the step below is valid: it swaps two complete products within a sum.",
+        "Recall that the step below is invalid: it treats x+y and 5+x as the factors on opposite sides of the multiplication dot.",
+        "Recall that the step below is valid: it distributes 2 across x+3 while leaving the outside addend 4 unchanged.",
+        "Recall that the step below is invalid: it loses the grouping needed before multiplication by 4.",
+        "Recall that the step below is valid: it distributes 2 to both 3 and the complete product 4·x.",
+        "Recall that the step below is invalid: it leaves x undistributed."
     ];
 
     const comparisonExplanations = [
         {
-            valid: true,
-            text: "Exploded notation shows all three addends as peers in one vertical sum. Moving 2 and x simply exchanges two complete rows."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because 2 and x are complete rows within the same vertical sum."
         },
         {
-            valid: true,
-            text: "Exploded notation places all three factors on one horizontal multiplication row. Moving 2 and x simply exchanges two complete factors."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because 2 and x are complete factors on the same horizontal multiplication row."
         },
         {
-            valid: false,
-            text: "In conventional notation, 2 and x can look like neighboring pieces to swap. Exploded notation places x beside 3 on a multiplication row and 2 on a separate addition row, showing that they are not peers."
+            valid: null,
+            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation shows x attached to 3 on a multiplication row, while 2 occupies a separate addition row."
         },
         {
-            valid: true,
-            text: "Exploded notation displays all four addends as separate vertical entries. The two shaded blocks can exchange places without splitting any addend."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because the shaded blocks contain complete addends from the same vertical sum."
         },
         {
-            valid: true,
-            text: "Exploded notation displays all four factors on the same horizontal row. The two shaded blocks can exchange places without splitting the product."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because the shaded blocks contain complete factors from the same horizontal product."
         },
         {
-            valid: true,
-            text: "Exploded notation shows each product as one complete row of a larger sum. The move swaps those rows while preserving both products."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because each product is one complete row of the larger sum."
         },
         {
-            valid: false,
-            text: "The conventional form makes the shaded pieces look like groups around the dot. Exploded notation reveals that only y and 5 are factors; each x lies on a separate addition row, so the shaded pieces are not swappable units."
+            valid: null,
+            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation reveals that only y and 5 are factors; each x lies on a separate addition row."
         },
         {
-            valid: true,
-            text: "Exploded notation shows x+3 as a vertical sum attached to the factor 2. Distribution creates a separate factor 2 for each addend, while 4 remains outside as its own row."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because each row of the nested sum receives its own factor 2, while 4 remains outside as a separate row."
         },
         {
-            valid: false,
-            text: "Before the move, 4 multiplies the entire grouped product. In the proposed result, exploded notation places 4 only on the 2·3 row, exposing that it no longer multiplies 2·x."
+            valid: null,
+            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. After the move, exploded notation places 4 only on the 2·3 row, exposing that it no longer multiplies 2·x."
         },
         {
-            valid: true,
-            text: "Exploded notation shows two addends inside the group: 3 and the product 4·x. Distribution gives each complete row its own factor 2, so 4·x remains intact."
+            valid: null,
+            text: "This transformation looks very reasonable in exploded notation because both rows of the nested sum receive a factor 2, while the product 4·x remains intact."
         },
         {
-            valid: false,
-            text: "Exploded notation shows three addends inside the group. After the proposed move, only the first two rows receive a factor 2; x remains alone, making the incomplete distribution immediately visible."
+            valid: null,
+            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation leaves x alone without a factor 2, making the incomplete distribution immediately visible."
         }
     ];
 
@@ -600,7 +634,10 @@ body.player-ready>#exploded-examples{display:none;}
         const conventionalExpression = document.createElement("div");
         conventionalExpression.className = "expr intro-conventional";
         conventionalExpression.textContent = intro.conventional;
-        conventionalPanel.append(conventionalLabel, conventionalExpression);
+        const conventionalFrame = document.createElement("div");
+        conventionalFrame.className = "notation-expression-frame";
+        conventionalFrame.appendChild(conventionalExpression);
+        conventionalPanel.append(conventionalLabel, conventionalFrame);
 
         const explodedPanel = document.createElement("div");
         explodedPanel.className = "notation-panel";
@@ -613,7 +650,10 @@ body.player-ready>#exploded-examples{display:none;}
             ...renderOptions,
             ariaLabel: `Exploded notation introduction ${index + 1}: ${intro.title}`
         });
-        explodedPanel.append(explodedLabel, explodedExpression);
+        const explodedFrame = document.createElement("div");
+        explodedFrame.className = "notation-expression-frame";
+        explodedFrame.appendChild(explodedExpression);
+        explodedPanel.append(explodedLabel, explodedFrame);
 
         comparison.append(conventionalPanel, explodedPanel);
         slide.appendChild(comparison);
@@ -632,14 +672,20 @@ body.player-ready>#exploded-examples{display:none;}
         const conventionalLabel = document.createElement("div");
         conventionalLabel.className = "notation-label";
         conventionalLabel.textContent = "Conventional notation";
-        conventionalPanel.append(conventionalLabel, conventional.cloneNode(true));
+        const conventionalFrame = document.createElement("div");
+        conventionalFrame.className = "notation-expression-frame";
+        conventionalFrame.appendChild(conventional.cloneNode(true));
+        conventionalPanel.append(conventionalLabel, conventionalFrame);
 
         const explodedPanel = document.createElement("div");
         explodedPanel.className = "notation-panel";
         const explodedLabel = document.createElement("div");
         explodedLabel.className = "notation-label";
         explodedLabel.textContent = "Exploded notation";
-        explodedPanel.append(explodedLabel, exploded);
+        const explodedFrame = document.createElement("div");
+        explodedFrame.className = "notation-expression-frame";
+        explodedFrame.appendChild(exploded);
+        explodedPanel.append(explodedLabel, explodedFrame);
 
         comparison.append(conventionalPanel, explodedPanel);
         slide.appendChild(comparison);
@@ -653,18 +699,21 @@ body.player-ready>#exploded-examples{display:none;}
             element,
             heading: `Conventional notation — Example ${index + 1} of ${examples.length}`,
             ariaLabel: `Conventional notation, example ${index + 1} of ${examples.length}`,
+            prompt: conventionalPrompts[index],
             explanation: conventionalExplanations[index]
         })),
         ...introExamples.map((intro, index) => ({
             element: buildIntroSlide(intro, index),
             heading: `Introducing exploded notation — ${intro.title}`,
             ariaLabel: `Introducing exploded notation: ${intro.title}`,
+            prompt: "",
             explanation: { valid: null, text: intro.explanation }
         })),
         ...conventionalSlides.map((conventional, index) => ({
             element: buildParallelSlide(conventional, explodedSlides[index]),
             heading: `Conventional and exploded notation — Example ${index + 1} of ${examples.length}`,
             ariaLabel: `Conventional and exploded notation, example ${index + 1} of ${examples.length}`,
+            prompt: comparisonPrompts[index],
             explanation: comparisonExplanations[index]
         }))
     ];
@@ -674,6 +723,9 @@ body.player-ready>#exploded-examples{display:none;}
 
     const heading = document.createElement("div");
     heading.className = "player-heading";
+
+    const prompt = document.createElement("div");
+    prompt.className = "player-prompt";
 
     const stage = document.createElement("div");
     stage.className = "animation-stage";
@@ -700,7 +752,7 @@ body.player-ready>#exploded-examples{display:none;}
     nextButton.setAttribute("aria-label", "Show next animation");
 
     controls.append(previousButton, position, nextButton);
-    player.append(heading, stage, explanation, controls);
+    player.append(heading, controls, prompt, stage, explanation);
     document.body.insertBefore(player, document.body.firstChild);
 
     function prepareAnimationGroups(element) {
@@ -833,6 +885,8 @@ body.player-ready>#exploded-examples{display:none;}
         heading.textContent = current.heading;
         position.textContent = `${currentIndex + 1} of ${slides.length}`;
         stage.setAttribute("aria-label", current.ariaLabel);
+        prompt.textContent = current.prompt;
+        prompt.hidden = !current.prompt;
         showExplanation(current.explanation);
         runAnimation(current.element, runId);
     }
