@@ -30,7 +30,7 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .animation-stage{min-height:0;padding:16px 0;display:flex;align-items:center;justify-content:center;overflow:auto;}
 .animation-slide{display:none;}
 .animation-slide.is-current{display:grid;}
-.animation-stage>.example.is-current{display:block;}
+.animation-stage>.example.is-current{display:block;margin-inline:auto;}
 .animation-stage>.example>.number{display:none;}
 .animation-phases{display:grid!important;align-items:start;}
 .animation-phase{grid-area:1/1;opacity:0;pointer-events:none;will-change:opacity;}
@@ -40,6 +40,8 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-explanation{padding-top:12px;border-top:2px solid #bbb;}
 .explanation-status{font-weight:bold;}
 .parallel-slide,.intro-slide{width:min(100%,1120px);}
+.goal-slide{width:min(100%,900px);}
+.goal-message{padding:28px 20px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:1.45;color:#111;}
 .parallel-comparison,.intro-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;width:100%;}
 .notation-panel{min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;}
 .notation-label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#444;}
@@ -64,6 +66,7 @@ body.player-ready>#exploded-examples{display:none;}
     .player-prompt,.player-explanation{font-size:18px;}
     .notation-expression-frame{min-height:130px;font-size:24px;}
     .intro-conventional,.intro-exploded{font-size:24px;}
+    .goal-message{padding:20px 8px;font-size:22px;}
 }
 </style>
 </head>
@@ -692,6 +695,17 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
+    function buildGoalSlide() {
+        const slide = document.createElement("section");
+        slide.className = "goal-slide";
+
+        const message = document.createElement("div");
+        message.className = "goal-message";
+        message.textContent = "The goal of exploded algebra is to make correct algebraic steps look reasonable and incorrect algebraic steps look unreasonable. By making the structure of an expression visible, the notation helps valid transformations look natural and invalid transformations look visibly out of place.";
+        slide.appendChild(message);
+        return slide;
+    }
+
     const conventionalSlides = [...document.querySelectorAll("body > .example")];
     const explodedSlides = [...target.querySelectorAll(".exploded-example")];
     const slides = [
@@ -702,6 +716,13 @@ body.player-ready>#exploded-examples{display:none;}
             prompt: conventionalPrompts[index],
             explanation: conventionalExplanations[index]
         })),
+        {
+            element: buildGoalSlide(),
+            heading: "The goal of exploded algebra",
+            ariaLabel: "The goal of exploded algebra",
+            prompt: "",
+            explanation: { valid: null, text: "" }
+        },
         ...introExamples.map((intro, index) => ({
             element: buildIntroSlide(intro, index),
             heading: `Introducing exploded notation — ${intro.title}`,
@@ -864,6 +885,8 @@ body.player-ready>#exploded-examples{display:none;}
 
     function showExplanation(details) {
         explanation.replaceChildren();
+        explanation.hidden = !details.text;
+        if (!details.text) return;
         if (details.valid !== null) {
             const status = document.createElement("span");
             status.className = "explanation-status";
