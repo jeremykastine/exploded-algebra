@@ -13,7 +13,8 @@ body{font-family:"Courier New",Courier,"Liberation Mono",monospace;font-size:32p
 .blue{background:#DDEFFF;}
 .yellow{background:#FFF3BF;}
 .orange{background:#FFE1C7;}
-.swap{background:#F0F0F0;}
+.swap{background:transparent;}
+.transform-domain{display:inline-block;outline:2px solid #777;outline-offset:3px;border-radius:3px;}
 .example{display:grid;grid-template-columns:2.5ch auto;column-gap:.5ch;align-items:start;}
 .number{font-size:24px;line-height:1.67;}
 hr{border:0;border-top:2px solid #999;margin:8px 0;}
@@ -54,8 +55,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">1.</div><div>
 <div class="expr">2+x+3</div>
-<div class="expr move-from"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span>+3</div>
-<div class="expr"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span>+3</div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span></span>+3</div>
+<div class="expr"><span class="transform-domain"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span></span>+3</div>
 <div class="expr">x+2+3</div>
 </div></div>
 
@@ -63,8 +64,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">2.</div><div>
 <div class="expr">2·x·3</div>
-<div class="expr move-from"><span class="yellow">2</span><span class="swap">·</span><span class="orange">x</span>·3</div>
-<div class="expr"><span class="orange">x</span><span class="swap">·</span><span class="yellow">2</span>·3</div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">2</span><span class="swap">·</span><span class="orange">x</span></span>·3</div>
+<div class="expr"><span class="transform-domain"><span class="orange">x</span><span class="swap">·</span><span class="yellow">2</span></span>·3</div>
 <div class="expr">x·2·3</div>
 </div></div>
 
@@ -72,8 +73,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">3.</div><div>
 <div class="expr">2+x·3</div>
-<div class="expr move-from"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span>·3</div>
-<div class="expr"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span>·3</div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">2</span><span class="swap">+</span><span class="orange">x</span></span>·3</div>
+<div class="expr"><span class="transform-domain"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span></span>·3</div>
 <div class="expr">x+2·3</div>
 </div></div>
 
@@ -81,8 +82,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">4.</div><div>
 <div class="expr">x+y+5+x</div>
-<div class="expr move-from"><span class="yellow">x+y</span><span class="swap">+</span><span class="orange">5+x</span></div>
-<div class="expr"><span class="orange">5+x</span><span class="swap">+</span><span class="yellow">x+y</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">x+y</span><span class="swap">+</span><span class="orange">5+x</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="orange">5+x</span><span class="swap">+</span><span class="yellow">x+y</span></span></div>
 <div class="expr">5+x+x+y</div>
 </div></div>
 
@@ -90,8 +91,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">5.</div><div>
 <div class="expr">x·y·5·x</div>
-<div class="expr move-from"><span class="yellow">x·y</span><span class="swap">·</span><span class="orange">5·x</span></div>
-<div class="expr"><span class="orange">5·x</span><span class="swap">·</span><span class="yellow">x·y</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">x·y</span><span class="swap">·</span><span class="orange">5·x</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="orange">5·x</span><span class="swap">·</span><span class="yellow">x·y</span></span></div>
 <div class="expr">5·x·x·y</div>
 </div></div>
 
@@ -99,8 +100,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">6.</div><div>
 <div class="expr">x·y+5·x</div>
-<div class="expr move-from"><span class="yellow">x·y</span><span class="swap">+</span><span class="orange">5·x</span></div>
-<div class="expr"><span class="orange">5·x</span><span class="swap">+</span><span class="yellow">x·y</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">x·y</span><span class="swap">+</span><span class="orange">5·x</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="orange">5·x</span><span class="swap">+</span><span class="yellow">x·y</span></span></div>
 <div class="expr">5·x+x·y</div>
 </div></div>
 
@@ -108,8 +109,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">7.</div><div>
 <div class="expr">x+y·5+x</div>
-<div class="expr move-from"><span class="yellow">x+y</span><span class="swap">·</span><span class="orange">5+x</span></div>
-<div class="expr"><span class="orange">5+x</span><span class="swap">·</span><span class="yellow">x+y</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">x+y</span><span class="swap">·</span><span class="orange">5+x</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="orange">5+x</span><span class="swap">·</span><span class="yellow">x+y</span></span></div>
 <div class="expr">5+x·x+y</div>
 </div></div>
 
@@ -117,8 +118,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">8.</div><div>
 <div class="expr">2·(x+3)+4</div>
-<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span>+4</div>
-<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span>+4</div>
+<div class="expr move-from"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span></span>+4</div>
+<div class="expr"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span></span>+4</div>
 <div class="expr">2·x+2·3+4</div>
 </div></div>
 
@@ -126,8 +127,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">9.</div><div>
 <div class="expr">2·(x+3)·4</div>
-<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span>·4</div>
-<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span>·4</div>
+<div class="expr move-from"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">x</span><span class="swap">+</span><span class="orange">3</span><span class="swap">)</span></span>·4</div>
+<div class="expr"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="yellow">x</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">3</span></span>·4</div>
 <div class="expr">2·x+2·3·4</div>
 </div></div>
 
@@ -135,8 +136,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">10.</div><div>
 <div class="expr">2·(3+4·x)</div>
-<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4·x</span><span class="swap">)</span></div>
-<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4·x</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4·x</span><span class="swap">)</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4·x</span></span></div>
 <div class="expr">2·3+2·4·x</div>
 </div></div>
 
@@ -144,8 +145,8 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="example"><div class="number">11.</div><div>
 <div class="expr">2·(3+4+x)</div>
-<div class="expr move-from"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4+x</span><span class="swap">)</span></div>
-<div class="expr"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4+x</span></div>
+<div class="expr move-from"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="swap">(</span><span class="yellow">3</span><span class="swap">+</span><span class="orange">4+x</span><span class="swap">)</span></span></div>
+<div class="expr"><span class="transform-domain"><span class="blue">2</span><span class="swap">·</span><span class="yellow">3</span><span class="swap">+</span><span class="blue">2</span><span class="swap">·</span><span class="orange">4+x</span></span></div>
 <div class="expr">2·3+2·4+x</div>
 </div></div>
 
@@ -162,7 +163,7 @@ body.player-ready>#exploded-examples{display:none;}
         blue: "#DDEFFF",
         yellow: "#FFF3BF",
         orange: "#FFE1C7",
-        gray: "#F0F0F0"
+        gray: "transparent"
     };
 
     const value = text => ({ type: "value", value: String(text) });
@@ -172,6 +173,45 @@ body.player-ready>#exploded-examples{display:none;}
     const shadeNode = (path, color) => ({ kind: "node", path, color });
     const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color });
     const shadeRange = (path, first, last, color) => ({ kind: "range", path, first, last, color });
+
+    const domainFillColors = new Set([colors.blue, colors.yellow, colors.orange].map(color => color.toLowerCase()));
+
+    function addDomainOutline(container) {
+        const svg = container.querySelector("svg");
+        if (!svg) return;
+
+        const highlightedRects = [...svg.querySelectorAll("rect")].filter(rect =>
+            domainFillColors.has((rect.getAttribute("fill") || "").toLowerCase())
+        );
+        if (!highlightedRects.length) return;
+
+        const bounds = highlightedRects.map(rect => ({
+            left: Number(rect.getAttribute("x")),
+            top: Number(rect.getAttribute("y")),
+            right: Number(rect.getAttribute("x")) + Number(rect.getAttribute("width")),
+            bottom: Number(rect.getAttribute("y")) + Number(rect.getAttribute("height"))
+        }));
+        const left = Math.min(...bounds.map(bound => bound.left));
+        const top = Math.min(...bounds.map(bound => bound.top));
+        const right = Math.max(...bounds.map(bound => bound.right));
+        const bottom = Math.max(...bounds.map(bound => bound.bottom));
+        const padding = 5;
+
+        const outline = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        outline.setAttribute("class", "transform-domain-box");
+        outline.setAttribute("x", String(left - padding));
+        outline.setAttribute("y", String(top - padding));
+        outline.setAttribute("width", String(right - left + 2 * padding));
+        outline.setAttribute("height", String(bottom - top + 2 * padding));
+        outline.setAttribute("rx", "4");
+        outline.setAttribute("ry", "4");
+        outline.setAttribute("fill", "none");
+        outline.setAttribute("stroke", "#777");
+        outline.setAttribute("stroke-width", "2");
+        outline.setAttribute("vector-effect", "non-scaling-stroke");
+        outline.setAttribute("pointer-events", "none");
+        svg.appendChild(outline);
+    }
 
     const examples = [
         {
@@ -400,6 +440,7 @@ body.player-ready>#exploded-examples{display:none;}
                 shading: phase.shading,
                 ariaLabel: `Exploded example ${index + 1}, phase ${phaseIndex + 1}`
             });
+            if (phase.shading) addDomainOutline(line);
         });
 
         wrapper.append(number, phases);
