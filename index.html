@@ -3,43 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <title>Exploded Algebra: Why and How</title>
+  <title>Exploded Algebra</title>
   <style>
-    :root {
-      --ink: #1f1f1f;
-      --muted: #5d5d5d;
-    }
-
-    html { scroll-behavior: smooth; }
-
     body {
       margin: 0;
       background: white;
-      color: var(--ink);
+      color: #1f1f1f;
       font-family: Verdana, Arial, Helvetica, sans-serif;
       font-size: 16px;
-      line-height: 1.65;
+      line-height: 1.5;
     }
 
     main {
-      max-width: 850px;
+      max-width: 680px;
       margin: 0 auto;
-      padding: 48px 22px 72px;
+      padding: 48px 22px;
     }
-
-    header { margin-bottom: 28px; }
 
     h1 {
-      margin: 0;
-      font-size: clamp(2rem, 5vw, 3.25rem);
-      line-height: 1.12;
-      font-weight: 500;
-      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 7vw, 3rem);
+      line-height: 1.15;
     }
 
-    p { margin: 0 0 16px; }
+    h2 { margin: 32px 0 16px; }
+
+    p { margin: 0 0 14px; }
 
     a {
       color: #111;
@@ -47,67 +36,43 @@
       text-underline-offset: 3px;
     }
 
-    .math-line {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: auto;
-      margin: 12px 0 18px;
-      padding: 2px 0;
-    }
+    .launcher { padding: 22px; border: 1px solid #bbb; border-radius: 10px; }
+    .launcher h2 { margin-top: 0; }
+    .launcher-row { display: grid; gap: 8px; margin-bottom: 20px; }
+    .launcher-row:last-child { margin-bottom: 0; }
+    label { font-weight: bold; }
+    select, button, input { font: inherit; }
+    select, button { padding: 9px 12px; }
+    button { cursor: pointer; }
+    #customLevelFileStatus { min-height: 1.5em; color: #555; }
 
-    .math-line .katex-display { margin: 0; }
-
-    .exploded-line {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-x: auto;
-      margin: 14px 0 20px;
-      padding: 2px 0;
-    }
-
-    .oops-wrap {
-      overflow-x: auto;
-      min-height: 76px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .oops-wrap svg {
-      display: block;
-      max-width: none;
-      background: transparent;
-    }
-
-    .note {
-      color: var(--muted);
-      font-size: 0.94rem;
+    @media (max-width: 520px) {
+      main { padding: 30px 16px; }
+      .launcher { padding: 16px; }
     }
   </style>
 </head>
 <body>
   <main>
-    <header>
-      <h1>Exploded Algebra: Why and How — I’m ChatGPT, and I can make changes to the document.</h1>
-    </header>
+    <h1>Welcome to Exploded Algebra</h1>
+    <p>Choose a built-in level or upload a level file to begin.</p>
+    <p><a href="exploded-compared-to-conventional.html">See exploded algebra compared with conventional notation</a>.</p>
 
-    <section id="level-launcher">
-      <h2>Open Exploded Algebra</h2>
-      <p>
+    <section id="level-launcher" class="launcher">
+      <h2>Launch Exploded Algebra</h2>
+      <div class="launcher-row">
         <label for="builtInLevelSelect">Built-in level:</label>
         <select id="builtInLevelSelect">
           <option value="levels/level-1-distribute-and-combine.json">Level 1: Distribute and Combine</option>
           <option value="levels/level-1-distribute-and-combine-demo.json">Demo: Level 1: Distribute and Combine</option>
         </select>
         <button id="openBuiltInLevelButton" type="button">Open level</button>
-      </p>
-      <p>
-        <label for="customLevelFileInput">Custom level file:</label>
+      </div>
+      <div class="launcher-row">
+        <label for="customLevelFileInput">Upload a level file:</label>
         <input id="customLevelFileInput" type="file" accept=".json,application/json">
-        <span id="customLevelFileStatus"></span>
-      </p>
+        <span id="customLevelFileStatus" aria-live="polite"></span>
+      </div>
     </section>
 
     <!--
@@ -574,124 +539,8 @@
 
     </script>
 
-    <p>test Students are often told that algebraic work rests on a relatively small number of basic properties, such as the commutative property and the distributive property. That is true. But what would happen if we actually expected students to work with those properties directly?</p>
-
-    <p>Imagine that we gave students the rules of algebraic manipulation, gave them some expressions to transform, and then left them alone in a room with no extra guidance. Not students who are careless, lazy, or unmotivated. Bright students. Careful students. Students who are trying hard to take the rules seriously. What kinds of things might happen?</p>
-
-    <p>Suppose a student was given an expression that looks like this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2+3+4"></span></div>
-
-    <p>They could reasonably apply the commutative property of addition by switching the 2 and the 3 to get this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3+2+4"></span></div>
-
-    <p>That is fine. The 2 and the 3 are both complete terms of the same sum, so the commutative property applies cleanly.</p>
-
-    <p>But now suppose the student was given this expression instead.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2+3\cdot4"></span></div>
-
-    <p>From the student’s point of view, this may feel very similar. There is still a 2. There is still a 3. There is still a plus sign nearby. So the student might try to switch the 2 and the 3 and write this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3+2\cdot4"></span></div>
-
-    <p>But that does not work. The 3 is not a complete term sitting next to the 2. It is part of the product 3·4. The rule being used in the first example did not give permission to reach into that product, pull out the 3, and treat it as though it had been available at the same level as the 2.</p>
-
-    <p>The same kind of thing can happen with the distributive property. A student might see this expression.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3\cdot(4+5)+6"></span></div>
-
-    <p>They might distribute the 3 across the sum 4+5 and get this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3\cdot4+3\cdot5+6"></span></div>
-
-    <p>That works. The 3 is attached to the whole sum 4+5, and the +6 is outside the distribution step.</p>
-
-    <p>But now consider this expression.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3\cdot(4+5)\cdot6"></span></div>
-
-    <p>A student could easily think, “I will distribute the 3 across the 4+5 and leave the 6 where it is,” producing this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="3\cdot4+3\cdot5\cdot6"></span></div>
-
-    <p>Again, that does not preserve the original structure. The 6 was part of the whole product 3·(4+5)·6. It was not a little extra piece sitting safely outside the distribution step, waiting to be attached to only one term afterward.</p>
-
-    <p>Here is another version of the same problem. Suppose a student sees this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2\cdot3+4"></span></div>
-
-    <p>The student might commute the two complete terms and write this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="4+2\cdot3"></span></div>
-
-    <p>That is also fine. The whole product 2·3 is one term, and 4 is another term. The student is moving complete terms of the same sum.</p>
-
-    <p>But if the student sees this expression again,</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2+3\cdot4"></span></div>
-
-    <p>they might try to move the 4 next to the 2 and write this.</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="4\cdot2+3"></span></div>
-
-    <p>That also does not work. The 2 and the 4 are not factors in the same product. The 2 is a term of the top-level sum, while the 4 is a factor inside the product 3·4.</p>
-
-    <p>The point is not that these are foolish mistakes. The point is that they are realistic mistakes. They are the kinds of things a serious student could try if they were honestly attempting to use the basic properties of algebra directly. Some steps that look reasonable really are reasonable. Other steps that look reasonable are not. Conventional notation does not always make that difference easy to see.</p>
-
-    <p>Of course, the order of operations explains the difference. It determines what counts as a complete piece of the expression, what can be moved, what can be distributed, and what must stay attached to what. But order of operations is usually taught as a procedure for evaluating expressions: do parentheses first, then exponents, then multiplication and division, then addition and subtraction. It is much less often taught as the structure that decides which parts of an expression are available for the basic algebraic properties to act on.</p>
-
-    <p>That is already an uphill battle. But even if we could get students to see all of this clearly in conventional notation, another problem would remain. Working directly from the basic properties would require an enormous amount of rewriting. Each line would differ only slightly from the previous line, but the student would still have to copy most of the expression again and again.</p>
-
-    <p>That is not a trivial burden. When a student has to rewrite nearly identical expressions over and over, it becomes easier to lose track of the larger strategy. The student is not just thinking about the algebraic move. The student is also managing the copying, the spacing, the risk of accidentally changing something, and the physical discomfort of all that writing.</p>
-
-    <p>At this point, many people would ask whether students really need to understand the minutia at this level. Should we expect them to see exactly how the basic properties interact with the structure of an expression? Should we ask them to work at that level of detail?</p>
-
-    <p>My answer goes in the opposite direction. Students are entitled to that level of understanding. We do them a disservice when we hide the structural nature of algebraic expressions and then ask them to imitate larger classroom procedures without seeing what those procedures are made of. The question is not whether students deserve to work in this realm. The question is whether we can give them a way to work in this realm without making the work needlessly ambiguous, tedious, or physically exhausting.</p>
-
-    <p>That is where Exploded Algebra comes in. The word “exploded” is meant in the sense of an exploded view diagram: a drawing of a machine or object pulled apart just far enough that the pieces can be seen clearly, along with the way they fit together. Exploded Algebra does the same thing for algebraic expressions. It does not replace ordinary notation. It spreads the expression apart so the legal pieces, groupings, and possible transformations are visible.</p>
-
-    <p>For example, the ordinary expression</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2+3+4"></span></div>
-
-    <p>can be displayed so that the 2, 3, and 4 are visibly three pieces of one sum.</p>
-
-    <div class="exploded-line"><div class="oops-wrap" data-oops="{&quot;type&quot;:&quot;sum&quot;,&quot;args&quot;:[{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;2&quot;},{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;3&quot;},{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;4&quot;}]}" aria-label="2 plus 3 plus 4 in Exploded Algebra display"></div></div>
-
-    <p>That makes it natural to select two complete terms and commute them. The legal pieces are not being inferred from a compact string; they are visible as pieces.</p>
-
-    <p>On the other hand, the expression</p>
-
-    <div class="math-line"><span class="katex-placeholder" data-display="true" data-expr="2+3\cdot4"></span></div>
-
-    <p>can be displayed so that the 3 is visibly inside the product 3·4.</p>
-
-    <div class="exploded-line"><div class="oops-wrap" data-oops="{&quot;type&quot;:&quot;sum&quot;,&quot;args&quot;:[{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;2&quot;},{&quot;type&quot;:&quot;prod&quot;,&quot;args&quot;:[{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;3&quot;},{&quot;type&quot;:&quot;value&quot;,&quot;value&quot;:&quot;4&quot;}]}]}" aria-label="2 plus the product 3 times 4 in Exploded Algebra display"></div></div>
-
-    <p>That does not make the correct move automatic, but it makes the structure honest. The student can see that the 2 and the 3 are not simply two neighboring terms of one sum. The tempting move now looks like what it really is: reaching into a product and pretending that one of its factors had been available at the surface.</p>
-
-    <p>The system lets students interact directly with the basic properties algebra is based on, without having to rewrite the entire expression after every small move. A piece that may be moved is shown as a complete piece. A piece that only looks movable in ordinary notation is shown as part of a larger piece. The goal is not to hide the structure from students, and it is not to bury them under copying. The goal is to give them a way to work with the structure clearly.</p>
-
-    <p>You can open the working tool using the <a href="#level-launcher">level chooser at the top of this page</a>.</p>
-
-    <p>The first levels should be small. The purpose is not to test difficult algebra. The purpose is to let the learner feel what the interface treats as a complete term, a complete factor, a complete sum, or a complete product.</p>
-
-    <p>A typical example might begin with 2+3+4 and ask for 3+2+4. The learner should select the relevant complete terms and use the left menu to commute terms. Another might begin with 2·3·4 and ask for 4·2·3. The learner should select complete factors and use the same kind of commuting tool for products.</p>
-
-    <p>Numerical examples should be just as small. A level might ask the learner to evaluate 2+3, or 3·4, or to first commute the pieces and then evaluate the resulting sum or product. In these cases, the interface should make the learner select the whole sum or the whole product before using the evaluate tool.</p>
-
-    <p>It is also useful to include a few arithmetic splitting levels. One level might ask the learner to turn 12 into 3·4. Another might ask the learner to turn 10 into 7+3. These are not meant to be clever puzzles. They are meant to show that rewriting a number as a product or as a sum is also a controlled algebraic step.</p>
-
-    <p>In each level, the learner should follow the pattern given in the left menu or in the left step cards. Sometimes one step card will require more than one small action in the interface. That is not a failure of the level. It is part of the point. A conventional line of work often compresses several legitimate steps into one written change. The interface should let the learner carry out those smaller steps without pretending they are one step.</p>
-
-    <p>The bundled examples can also be opened directly: <a class="built-in-level-link" data-level-file="levels/level-1-distribute-and-combine.json" href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json">Level 1: Distribute and Combine</a> and <a class="built-in-level-link" data-level-file="levels/level-1-distribute-and-combine-demo.json" href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json">its recorded demo</a>.</p>
-
-    <p class="note">Exploded Algebra diagrams on this page are rendered by the shared Exploded Algebra SVG renderer. The linked levels open in the Exploded Algebra tool bundled with this page.</p>
   </main>
 
-  <script src="exploded-algebra-renderer.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const customLevelStorageKey = 'explodedAlgebra.currentCustomLevel';
@@ -770,22 +619,6 @@
         });
       }
 
-      document.querySelectorAll('.built-in-level-link').forEach(function (link) {
-        link.addEventListener('click', function (event) {
-          const levelFile = link.getAttribute('data-level-file');
-          if (!levelFile) {
-            return;
-          }
-          event.preventDefault();
-          try {
-            openBuiltInLevel(levelFile);
-          } catch (error) {
-            // Keep the ordinary href as a hosted-site fallback if transfer storage fails.
-            window.location.href = link.href;
-          }
-        });
-      });
-
       if (customLevelFileInput) {
         customLevelFileInput.addEventListener('change', async function (event) {
           const file = event.target.files && event.target.files[0];
@@ -810,20 +643,6 @@
             customLevelFileInput.value = '';
           }
         });
-      }
-      document.querySelectorAll('.katex-placeholder').forEach(function (node) {
-        if (!window.katex) {
-          node.textContent = node.getAttribute('data-expr') || '';
-          return;
-        }
-        katex.render(node.getAttribute('data-expr') || '', node, {
-          throwOnError: false,
-          displayMode: node.getAttribute('data-display') === 'true'
-        });
-      });
-
-      if (window.ExplodedAlgebraRenderer) {
-        window.ExplodedAlgebraRenderer.renderAllInDocument(document);
       }
     });
   </script>
