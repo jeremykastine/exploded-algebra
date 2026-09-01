@@ -2467,7 +2467,7 @@ Promise.resolve().then(() => {
             refreshDemoPromptAfterAdvance();
         }
 
-        function validateDemoSelectionAfterMouseUp() {
+        function validateDemoSelectionAfterPointerUp() {
             if (!isDemoModeActive()) {
                 return true;
             }
@@ -2946,6 +2946,8 @@ ctx.font = SETTINGS.textFont;
         ctx.textBaseline = "middle";
 
         const selectionArea = [-1, -1, -1, -1];
+        let activeWorkspacePointerId = null;
+        let selectionHitPadding = 0;
         const selection = {
             status: "no",
             node: null,
@@ -4063,7 +4065,11 @@ ctx.font = SETTINGS.textFont;
         }
 
         function boxFromSelectionArea() {
-            return [selectionArea[0], selectionArea[1], selectionArea[2], selectionArea[3]];
+            const left = Math.min(selectionArea[0], selectionArea[2]) - selectionHitPadding;
+            const top = Math.min(selectionArea[1], selectionArea[3]) - selectionHitPadding;
+            const right = Math.max(selectionArea[0], selectionArea[2]) + selectionHitPadding;
+            const bottom = Math.max(selectionArea[1], selectionArea[3]) + selectionHitPadding;
+            return [left, top, right, bottom];
         }
 
         function boxesIntersect(box1, box2) {
@@ -8651,7 +8657,67 @@ function renderToolArea() {
             return -1;
         }
 
-        workspaceSvg.addEventListener("mousedown", e => {
+        function releaseWorkspacePointer(e) {
+            const pointerId = activeWorkspacePointerId;
+            activeWorkspacePointerId = null;
+            selectionHitPadding = 0;
+            if (
+                pointerId !== null &&
+                workspaceSvg.hasPointerCapture &&
+                workspaceSvg.hasPointerCapture(pointerId)
+            ) {
+                try {
+                    workspaceSvg.releasePointerCapture(pointerId);
+                } catch (error) {
+                    // The browser may already have released capture.
+                }
+            }
+        }
+
+        function finishWorkspaceSelection(e) {
+            if (e.pointerId !== activeWorkspacePointerId) {
+                return;
+            }
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            updateSelectionFromEvent(e);
+            if (selection.status === "inProg") {
+                selection.status = selection.node ? "yes" : "no";
+                if (!validateDemoSelectionAfterPointerUp()) {
+                    releaseWorkspacePointer(e);
+                    return;
+                }
+                recordCurrentSelectionForSolution();
+                clearInteraction();
+                refreshStatus();
+                drawExpression();
+                renderToolArea();
+            }
+            releaseWorkspacePointer(e);
+        }
+
+        function cancelWorkspaceSelection(e) {
+            if (e.pointerId !== activeWorkspacePointerId) {
+                return;
+            }
+            if (selection.status === "inProg") {
+                clearSelection();
+                clearInteraction();
+                refreshStatus();
+                drawExpression();
+                renderToolArea();
+            }
+            releaseWorkspacePointer(e);
+        }
+
+        workspaceSvg.addEventListener("pointerdown", e => {
+            if (e.pointerType === "mouse" && e.button !== 0) {
+                return;
+            }
+            if (activeWorkspacePointerId !== null) {
+                return;
+            }
             if (uiState.mode !== "edit") {
                 return;
             }
@@ -8667,6 +8733,21 @@ function renderToolArea() {
                     (step.type === "commuteChoice" || step.type !== "tool");
                 if (!selectingExpression && !choosingCommuteOrder) {
                     return;
+                }
+            }
+
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            activeWorkspacePointerId = e.pointerId;
+            selectionHitPadding = e.pointerType === "touch" || e.pointerType === "pen"
+                ? Math.max(10, Math.min(18, Math.max(e.width || 0, e.height || 0) / 2))
+                : 0;
+            if (workspaceSvg.setPointerCapture) {
+                try {
+                    workspaceSvg.setPointerCapture(e.pointerId);
+                } catch (error) {
+                    // Continue without capture on older implementations.
                 }
             }
 
@@ -8714,50 +8795,29 @@ function renderToolArea() {
             refreshStatus();
         });
 
-        workspaceSvg.addEventListener("mousemove", e => {
-            if (uiState.mode !== "edit") {
+        workspaceSvg.addEventListener("pointermove", e => {
+            if (e.pointerId !== activeWorkspacePointerId || uiState.mode !== "edit") {
                 return;
+            }
+            if (e.cancelable) {
+                e.preventDefault();
             }
             updateSelectionFromEvent(e);
         });
 
-        workspaceSvg.addEventListener("mouseup", e => {
-            if (uiState.mode !== "edit") {
-                return;
-            }
-            updateSelectionFromEvent(e);
-            if (selection.status === "inProg") {
-                selection.status = selection.node ? "yes" : "no";
-                if (!validateDemoSelectionAfterMouseUp()) {
-                    return;
-                }
-                recordCurrentSelectionForSolution();
-                clearInteraction();
-                refreshStatus();
-                drawExpression();
-                renderToolArea();
-            }
+        workspaceSvg.addEventListener("pointerup", e => {
+            finishWorkspaceSelection(e);
         });
 
-        workspaceSvg.addEventListener("mouseleave", e => {
-            if (uiState.mode !== "edit") {
-                return;
-            }
-            if (selection.status === "inProg") {
-                updateSelectionFromEvent(e);
-                selection.status = selection.node ? "yes" : "no";
-                if (!validateDemoSelectionAfterMouseUp()) {
-                    return;
-                }
-                recordCurrentSelectionForSolution();
-                clearInteraction();
-                refreshStatus();
-                drawExpression();
-                renderToolArea();
-            }
+        workspaceSvg.addEventListener("pointercancel", e => {
+            cancelWorkspaceSelection(e);
         });
 
-        document.addEventListener("mousedown", e => {
+        workspaceSvg.addEventListener("lostpointercapture", e => {
+            cancelWorkspaceSelection(e);
+        });
+
+        document.addEventListener("pointerdown", e => {
             if (floatingToolMenu.classList.contains("hidden")) {
                 return;
             }
