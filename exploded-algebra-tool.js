@@ -838,12 +838,19 @@ Promise.resolve().then(() => {
             let html = `<button class="panel-menu-back-button" data-action="backToIntentCategories">← Back to categories</button>`;
             html += `<div class="panel-menu-title">${escapeHtml(category ? category.label : "Choose a rule")}</div>`;
             if (categoryId === "insert") {
+                const compactInsertLabels = {
+                    insertIdentityAddZeroBottom: "Add",
+                    insertIdentityMultiplyByOneRight: "Multiply",
+                    insertDoubleInverse: "Inverse",
+                    insertExponentOne: "Exponent"
+                };
                 html += `<div class="compact-insert-grid">`;
                 tools.forEach(toolName => {
                     const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
                     if (entry) {
                         html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml((TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim())}">
-                            ${renderMiniOopsSvg(entry.toMini)}
+                            <span class="compact-insert-symbol">${renderMiniOopsSvg(entry.toMini)}</span>
+                            <span class="compact-insert-caption">${compactInsertLabels[entry.tool] || "Insert"}</span>
                         </button>`;
                     }
                 });
