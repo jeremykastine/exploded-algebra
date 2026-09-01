@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 93205)
-Total output lines: 8773
-
 Promise.resolve().then(() => {
         // Change this to true if you want the faded gray parenthesis/operator/value
         // characters to become visible again in the top expression SVG.
@@ -2673,7 +2670,3373 @@ Promise.resolve().then(() => {
             if (!step) {
                 return;
             }
-            if (step.type === "commuteCho…33205 tokens truncated…   selection.node.args = [...before, factoredNode, ...after];
+            if (step.type === "commuteChoice" && uiState.stage === "preview") {
+                const targetIndex = getDemoCommuteChoiceAbsoluteIndex(step);
+                if (targetIndex >= 0) {
+                    drawDashedDemoSelectionRectangle(selection.node, targetIndex, targetIndex);
+                }
+                return;
+            }
+            if (uiState.stage === "preview" || step.type !== "select") {
+                return;
+            }
+            const target = findDemoSelectionTarget(step);
+            if (!target) {
+                return;
+            }
+            drawDashedDemoSelectionRectangle(target.node, target.firstPart, target.lastPart);
+        }
+
+        function expressionMatchesParenthesizedText(parenthesizedText) {
+            try {
+                const targetNode = parseParenthesizedExpressionStrict(parenthesizedText);
+                return sameExpression(currentExpressionRoot || expressionRoot, targetNode);
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function updateStepCompletion(level) {
+            if (!level || !Array.isArray(level.steps)) {
+                return;
+            }
+            if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
+                completedSteps = new Array(level.steps.length).fill(false);
+            }
+            for (let i = 0; i < level.steps.length; i++) {
+                if (!completedSteps[i] && expressionMatchesParenthesizedText(level.steps[i].expression)) {
+                    completedSteps[i] = true;
+                }
+            }
+            maybePrepareCompletedLevelExport(level);
+        }
+
+        function getStepCompletionStates(level) {
+            if (!level || !Array.isArray(level.steps)) {
+                return [];
+            }
+            if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
+                completedSteps = new Array(level.steps.length).fill(false);
+            }
+            updateStepCompletion(level);
+            return completedSteps.slice();
+        }
+
+        function renderMoveHistoryControls(level) {
+            if (!moveHistoryControls) {
+                return;
+            }
+            if (!isInteractiveLevel(level)) {
+                moveHistoryControls.innerHTML = "";
+                return;
+            }
+
+            moveHistoryControls.innerHTML = '<button type="button" class="completion-export-button">Download Move History</button>';
+            const button = moveHistoryControls.querySelector(".completion-export-button");
+            button.addEventListener("click", () => {
+                if (!solutionRecorder) {
+                    return;
+                }
+                const historyDate = completionExportCompletedAtDate || new Date();
+                solutionRecorder.finalExpression = getExpressionTextForTrace();
+                downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
+            });
+        }
+
+        function renderLevelInfo(levelIndex) {
+            const level = LEVELS[levelIndex];
+            if (!level) {
+                levelContent.innerHTML = "";
+                renderMoveHistoryControls(null);
+                return;
+            }
+
+            const completion = getStepCompletionStates(level);
+
+            const stepsHtml = (level.steps || []).map((step, index) => `
+                <div class="step-card ${completion[index] ? "completed-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                    <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(step.katex || "")}"></span></div>
+                </div>
+            `).join("");
+
+            levelContent.innerHTML = `
+                ${stepsHtml}
+            `;
+            renderMoveHistoryControls(level);
+
+            renderLeftPanelMath();
+            levelContent.querySelectorAll(".step-card").forEach(card => {
+                card.addEventListener("click", event => {
+                    if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
+                        // Preview comparison is disabled for now. Leave the listener
+                        // here so it can be restored by changing the flag above.
+                        event.stopPropagation();
+                        return;
+                    }
+
+                    const stepIndex = Number(card.getAttribute("data-step-index"));
+
+                    if (uiState.mode === "inspect") {
+                        enterInspectMode(stepIndex);
+                        event.stopPropagation();
+                        return;
+                    }
+
+                    enterInspectMode(stepIndex);
+
+                    // Do not let the same click that entered inspect mode
+                    // immediately bubble up and exit inspect mode.
+                    event.stopPropagation();
+                });
+            });
+
+        }
+        function loadLevel(levelIndex) {
+            const level = LEVELS[levelIndex];
+            if (!level) {
+                return;
+            }
+
+            currentLevelIndex = levelIndex;
+            resetDemoStateForCurrentLevel();
+            resetSolutionRecorderForCurrentLevel();
+            completedSteps = new Array((level.steps || []).length).fill(false);
+            currentExpressionRoot = textToExpression(level.startExpression);
+            currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
+            expressionRoot = currentExpressionRoot;
+            inspectSavedExpressionRoot = null;
+            uiState.mode = "edit";
+            uiState.inspectStepIndex = -1;
+            document.body.classList.remove("inspect-mode");
+            if (inspectExitButton) {
+                inspectExitButton.classList.add("hidden");
+            }
+            clearSelection();
+            clearInteraction();
+            layoutExpression(expressionRoot);
+            updateStepCompletion(getCurrentLevel());
+            renderLevelInfo(currentLevelIndex);
+            renderCurrentExpressionDisplay();
+            refreshStatus();
+            drawExpression();
+        }
+
+        function initializeExplodedAlgebra() {
+            document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
+            loadInitialLevelFromNavigation();
+
+            document.addEventListener("click", event => {
+                if (uiState.mode !== "inspect") {
+                    return;
+                }
+
+                exitInspectMode();
+            });
+
+            document.addEventListener("keydown", event => {
+                if (handleExpressionBuilderKeydown(event)) {
+                    return;
+                }
+                if (event.key === "Escape" && uiState.mode === "inspect") {
+                    exitInspectMode();
+                }
+            });
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initializeExplodedAlgebra, { once: true });
+        } else {
+            // The JSON loader can finish after DOMContentLoaded. Queue startup so
+            // this file's remaining declarations are initialized first.
+            queueMicrotask(initializeExplodedAlgebra);
+        }
+
+        window.addEventListener("resize", () => {
+            if (expressionRoot) {
+                renderCurrentExpressionDisplay();
+            }
+        });
+
+
+
+        function getExpressionBounds() {
+            return {
+                left: expressionRoot.left(),
+                top: expressionRoot.top(),
+                right: expressionRoot.right(),
+                bottom: expressionRoot.bottom()
+            };
+        }
+
+        function getSelectionAreaBounds() {
+            if (selection.status !== "inProg") {
+                return null;
+            }
+
+            return {
+                left: Math.min(selectionArea[0], selectionArea[2]),
+                top: Math.min(selectionArea[1], selectionArea[3]),
+                right: Math.max(selectionArea[0], selectionArea[2]),
+                bottom: Math.max(selectionArea[1], selectionArea[3])
+            };
+        }
+
+        function getFloatingMenuBounds() {
+            if (floatingToolMenu.classList.contains("hidden")) {
+                return null;
+            }
+
+            const x = uiState.floatingMenuX;
+            const y = uiState.floatingMenuY;
+            const width = floatingToolMenu.offsetWidth || 0;
+            const height = floatingToolMenu.offsetHeight || 0;
+
+            return {
+                left: x,
+                top: y,
+                right: x + width,
+                bottom: y + height
+            };
+        }
+
+        function resizeSvgToFitContent() {
+            layoutExpression(expressionRoot);
+
+            const padding = 40;
+            const expressionBounds = getExpressionBounds();
+            const mainWidth = svgContainer.clientWidth;
+            const mainHeight = svgContainer.clientHeight;
+
+            let maxRight = expressionBounds.right;
+            let maxBottom = expressionBounds.bottom;
+
+            const selectionBounds = getSelectionAreaBounds();
+            if (selectionBounds) {
+                maxRight = Math.max(maxRight, selectionBounds.right);
+                maxBottom = Math.max(maxBottom, selectionBounds.bottom);
+            }
+
+            const menuBounds = getFloatingMenuBounds();
+            if (menuBounds) {
+                maxRight = Math.max(maxRight, menuBounds.right);
+                maxBottom = Math.max(maxBottom, menuBounds.bottom);
+            }
+
+            const neededWidth = Math.max(mainWidth, Math.ceil(maxRight + padding));
+            const neededHeight = Math.max(mainHeight, Math.ceil(maxBottom + padding));
+
+            if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
+                setSvgSize(workspaceSvg, neededWidth, neededHeight);
+
+                ctx.font = SETTINGS.textFont;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                layoutExpression(expressionRoot);
+            }
+        }
+
+ctx.font = SETTINGS.textFont;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const selectionArea = [-1, -1, -1, -1];
+        const selection = {
+            status: "no",
+            node: null,
+            firstPart: -1,
+            lastPart: -1
+        };
+
+        const uiState = {
+            activeTool: null,
+            stage: "idle",
+            chosenDirection: null,
+            chosenIdentity: null,
+            inputText: "",
+            expressionBuilder: null,
+            message: "",
+            commuteSelectedIndex: -1,
+            commuteOrder: [],
+            previewColors: null,
+            postviewData: null,
+            postviewTimerId: null,
+            previewTimerId: null,
+            showFloatingMenu: true,
+            activeToolCategory: null,
+            toolExponentMode: TOOL_EXPONENT_MODES.plain,
+            toolNotationMode: "categories",
+            zeroProductOrientation: "left",
+            floatingMenuX: 0,
+            floatingMenuY: 0,
+            mode: "edit",
+            inspectStepIndex: -1
+        };
+
+        function setStatus(message) {
+        }
+
+        function textToExpression(text) {
+            ExprNode.nextId = 1;
+            return parseParenthesizedExpressionStrict(text.trim());
+        }
+
+        function findMatchingCloseParen(s, openIndex) {
+            if (s[openIndex] !== "(") {
+                return -1;
+            }
+
+            let level = 0;
+            for (let i = openIndex; i < s.length; i++) {
+                if (s[i] === "(") {
+                    level += 1;
+                } else if (s[i] === ")") {
+                    level -= 1;
+                    if (level === 0) {
+                        return i;
+                    }
+                    if (level < 0) {
+                        return -1;
+                    }
+                }
+            }
+
+            return -1;
+        }
+
+        function isWrappedBySingleOuterPair(s) {
+            if (!s.startsWith("(") || !s.endsWith(")")) {
+                return false;
+            }
+            return findMatchingCloseParen(s, 0) === s.length - 1;
+        }
+
+        function splitTopLevelByOperator(s, operator) {
+            const parts = [];
+            let level = 0;
+            let start = 0;
+
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                if (ch === "(") {
+                    level += 1;
+                } else if (ch === ")") {
+                    level -= 1;
+                    if (level < 0) {
+                        throw new Error("Too many closing parentheses.");
+                    }
+                } else if (ch === operator && level === 0) {
+                    const part = s.slice(start, i).trim();
+                    if (!part) {
+                        throw new Error("Missing expression near " + operator + ".");
+                    }
+                    parts.push(part);
+                    start = i + 1;
+                }
+            }
+
+            if (level !== 0) {
+                throw new Error("Unmatched parentheses.");
+            }
+
+            if (parts.length === 0) {
+                return null;
+            }
+
+            const last = s.slice(start).trim();
+            if (!last) {
+                throw new Error("Missing expression after " + operator + ".");
+            }
+            parts.push(last);
+            return parts;
+        }
+
+        function findTopLevelOperatorIndex(s, operator) {
+            let level = 0;
+            let found = -1;
+
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                if (ch === "(") {
+                    level += 1;
+                } else if (ch === ")") {
+                    level -= 1;
+                    if (level < 0) {
+                        throw new Error("Too many closing parentheses.");
+                    }
+                } else if (ch === operator && level === 0) {
+                    if (found !== -1) {
+                        throw new Error("Use parentheses to make " + operator + " unambiguous.");
+                    }
+                    found = i;
+                }
+            }
+
+            if (level !== 0) {
+                throw new Error("Unmatched parentheses.");
+            }
+            return found;
+        }
+
+        function parseParenthesizedExpressionStrict(source) {
+            const s = String(source).trim().replace(/\s+/g, "");
+            if (!s) {
+                throw new Error("Empty expression.");
+            }
+
+            if (!isWrappedBySingleOuterPair(s)) {
+                if (/^[A-Za-z][A-Za-z0-9_]*$/.test(s) || /^-?\d+(?:\.\d+)?$/.test(s)) {
+                    return new ExprNode("value", [], s);
+                }
+                throw new Error("Every value and every operation must be enclosed in parentheses.");
+            }
+
+            const inside = s.slice(1, -1).trim();
+            if (!inside) {
+                throw new Error("Empty parentheses are not an expression.");
+            }
+
+            const sumParts = splitTopLevelByOperator(inside, "+");
+            if (sumParts && sumParts.length > 1) {
+                return new ExprNode("sum", sumParts.map(parseParenthesizedExpressionStrict), null);
+            }
+
+            const productParts = splitTopLevelByOperator(inside, "*");
+            if (productParts && productParts.length > 1) {
+                return new ExprNode("prod", productParts.map(parseParenthesizedExpressionStrict), null);
+            }
+
+            const quotientIndex = findTopLevelOperatorIndex(inside, "/");
+            if (quotientIndex !== -1) {
+                const numeratorText = inside.slice(0, quotientIndex).trim();
+                const denominatorText = inside.slice(quotientIndex + 1).trim();
+                if (!numeratorText || !denominatorText) {
+                    throw new Error("A quotient needs both a numerator and a denominator.");
+                }
+                const numerator = parseParenthesizedExpressionStrict(numeratorText);
+                const denominator = parseParenthesizedExpressionStrict(denominatorText);
+                if (numerator.type === "value" && numerator.value === "1") {
+                    return makeInverseNode(denominator);
+                }
+                return normalizeExpressionTree(new ExprNode("prod", [numerator, makeInverseNode(denominator)], null));
+            }
+
+            const exponentIndex = findTopLevelOperatorIndex(inside, "^");
+            if (exponentIndex !== -1) {
+                const baseText = inside.slice(0, exponentIndex).trim();
+                const exponentText = inside.slice(exponentIndex + 1).trim();
+                if (!baseText || !exponentText) {
+                    throw new Error("A power needs both a base and an exponent.");
+                }
+                return new ExprNode("exp", [
+                    parseParenthesizedExpressionStrict(baseText),
+                    parseParenthesizedExpressionStrict(exponentText)
+                ], null);
+            }
+
+            if (isWrappedBySingleOuterPair(inside)) {
+                return parseParenthesizedExpressionStrict(inside);
+            }
+
+            if (inside.includes(",")) {
+                throw new Error("Use +, *, /, and ^ instead of commas.");
+            }
+            if (/[()+*/^]/.test(inside)) {
+                throw new Error("Could not parse this fully parenthesized expression.");
+            }
+
+            return new ExprNode("value", [], inside);
+        }
+
+        function tryParseParenthesizedExpression(text) {
+            const s = String(text).trim();
+
+            if (!s) {
+                return { ok: false, error: "Enter an expression." };
+            }
+
+            try {
+                ExprNode.nextId = 1;
+                const node = parseParenthesizedExpressionStrict(s);
+                return { ok: true, node };
+            } catch (err) {
+                return { ok: false, error: err.message || "That is not valid fully parenthesized expression text." };
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function expressionToText(node) {
+            return expressionToFullyParenthesizedText(node);
+        }
+
+        function expressionToFullyParenthesizedText(node) {
+            if (!node) {
+                return "";
+            }
+
+            if (node.type === "value") {
+                return `(${node.value})`;
+            }
+
+            const parts = node.args.map(expressionToFullyParenthesizedText);
+
+            if (node.type === "sum") {
+                return `(${parts.join("+")})`;
+            }
+
+            if (node.type === "prod") {
+                return `(${parts.join("*")})`;
+            }
+
+            if (node.type === "exp") {
+                return `(${parts[0]}^${parts[1]})`;
+            }
+
+            if (node.type === "inv") {
+                // Preserve the existing fully-parenthesized text format by
+                // serializing the dedicated inverse operator as 1 divided by A.
+                // The parser maps that form straight back to an inv node.
+                return `((1)/${parts[0]})`;
+            }
+
+            return `(${expressionToText(node)})`;
+        }
+
+        function traversePreOrder(node, fn) {
+            fn(node);
+            for (const child of node.args) {
+                traversePreOrder(child, fn);
+            }
+        }
+
+        function cloneNode(node) {
+            return new ExprNode(
+                node.type,
+                node.args.map(cloneNode),
+                node.value
+            );
+        }
+
+        function sameExpression(a, b) {
+            if (!a || !b || a.type !== b.type) {
+                return false;
+            }
+            if (a.type === "value") {
+                return a.value === b.value;
+            }
+            if (a.args.length !== b.args.length) {
+                return false;
+            }
+            for (let i = 0; i < a.args.length; i++) {
+                if (!sameExpression(a.args[i], b.args[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function normalizeCloneForMatching(node) {
+            return node ? normalizeExpressionTree(cloneNode(node)) : null;
+        }
+
+        function sameExpressionForMatching(a, b) {
+            return sameExpression(normalizeCloneForMatching(a), normalizeCloneForMatching(b));
+        }
+
+        function getSumTermsForMatching(node) {
+            const normalized = normalizeCloneForMatching(node);
+            if (!normalized) {
+                return [];
+            }
+            return normalized.type === "sum"
+                ? normalized.args.map(cloneNode)
+                : [normalized];
+        }
+
+        function getProductFactorsForMatching(node) {
+            const normalized = normalizeCloneForMatching(node);
+            if (!normalized) {
+                return [];
+            }
+            return normalized.type === "prod"
+                ? normalized.args.map(cloneNode)
+                : [normalized];
+        }
+
+        function findMatchingNodeIndices(requiredNodes, candidateNodes, usedIndices = new Set(), excludeIndex = -1) {
+            const matchedIndices = [];
+            for (const requiredNode of requiredNodes) {
+                let foundIndex = -1;
+                for (let i = 0; i < candidateNodes.length; i++) {
+                    if (i === excludeIndex || usedIndices.has(i) || matchedIndices.includes(i)) {
+                        continue;
+                    }
+                    if (sameExpressionForMatching(candidateNodes[i], requiredNode)) {
+                        foundIndex = i;
+                        break;
+                    }
+                }
+                if (foundIndex === -1) {
+                    return null;
+                }
+                matchedIndices.push(foundIndex);
+            }
+            return matchedIndices;
+        }
+
+        function normalizeExpressionTree(node) {
+            if (!node || node.type === "value") {
+                return node;
+            }
+
+            node.args = node.args.map(normalizeExpressionTree);
+
+            if (node.type === "sum" || node.type === "prod") {
+                const flattenedArgs = [];
+                for (const child of node.args) {
+                    if (child.type === node.type) {
+                        flattenedArgs.push(...child.args);
+                    } else {
+                        flattenedArgs.push(child);
+                    }
+                }
+                node.args = flattenedArgs;
+
+                if (node.args.length === 0) {
+                    return node.type === "sum"
+                        ? new ExprNode("value", [], "0")
+                        : new ExprNode("value", [], "1");
+                }
+
+                if (node.args.length === 1) {
+                    return node.args[0];
+                }
+            }
+
+            return node;
+        }
+        function finishOperation() {
+            expressionRoot = normalizeExpressionTree(expressionRoot);
+            syncCurrentExpressionRoot();
+            clearSelection();
+            clearInteraction();
+            layoutExpression(expressionRoot);
+            renderLevelInfo(currentLevelIndex);
+            refreshStatus();
+            drawExpression();
+        }
+
+        function layoutExpression(root) {
+            layoutExpressionWithSettings(root, ctx, SETTINGS, SETTINGS.marginX, SETTINGS.marginY);
+        }
+
+        function drawExpression() {
+            renderCurrentExpressionDisplay();
+
+            if (!expressionRoot) {
+                workspaceSvg.replaceChildren();
+                return;
+            }
+
+            if (uiState.mode === "inspect") {
+                return;
+            }
+
+            resizeSvgToFitContent();
+            ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
+
+            drawNodeRecursive(expressionRoot);
+            drawExpressionBuilderHighlights();
+
+            if (uiState.stage === "postview" && uiState.postviewData) {
+                drawPostview();
+            } else if (selection.node) {
+                drawSelectionAndPreview();
+            }
+
+            drawDemoSelectionPrompt();
+
+            if (selection.status === "inProg") {
+                ctx.beginPath();
+                ctx.strokeStyle = "blue";
+                ctx.rect(
+                    selectionArea[0],
+                    selectionArea[1],
+                    selectionArea[2] - selectionArea[0],
+                    selectionArea[3] - selectionArea[1]
+                );
+                ctx.stroke();
+                ctx.strokeStyle = SETTINGS.expressionStrokeFill;
+            }
+        }
+
+        function drawSelectionAndPreview() {
+            const partitionPreviewActive =
+                (
+                    uiState.activeTool === "distributeLeftToRight" ||
+                    uiState.activeTool === "distributeRightToLeft" ||
+                    uiState.activeTool === "commute" ||
+                    uiState.activeTool === "commuteFirstToLast" ||
+                    uiState.activeTool === "commuteLastToFirst" ||
+                    uiState.activeTool === "commuteTerms" ||
+                    uiState.activeTool === "commuteFactors" ||
+                    uiState.activeTool === "factorLeft" ||
+                    uiState.activeTool === "factorRight" ||
+                    uiState.activeTool === "distributeInverseOverProduct" ||
+                    uiState.activeTool === "factorProductOfInverses"
+                ) &&
+                uiState.stage === "preview";
+
+            if (!partitionPreviewActive) {
+                drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
+            }
+
+            if (!uiState.activeTool) {
+                return;
+            }
+
+            if (
+                (uiState.activeTool === "commute" || uiState.activeTool === "commuteFirstToLast" || uiState.activeTool === "commuteLastToFirst" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
+                uiState.stage === "preview"
+            ) {
+                drawCommutePreview();
+                return;
+            }
+
+            if (uiState.activeTool === "distributeLeftToRight" && uiState.stage === "preview") {
+                drawDistributionPreview("left");
+                return;
+            }
+
+            if (uiState.activeTool === "distributeRightToLeft" && uiState.stage === "preview") {
+                drawDistributionPreview("right");
+                return;
+            }
+
+            if (uiState.activeTool === "factorLeft" && uiState.stage === "preview") {
+                drawFactoringPreview("left");
+                return;
+            }
+
+            if (uiState.activeTool === "factorRight" && uiState.stage === "preview") {
+                drawFactoringPreview("right");
+                return;
+            }
+
+            if (uiState.activeTool === "distributeInverseOverProduct" && uiState.stage === "preview") {
+                drawInverseDistributionPreview();
+                return;
+            }
+
+            if (uiState.activeTool === "factorProductOfInverses" && uiState.stage === "preview") {
+                drawInverseFactoringPreview();
+                return;
+            }
+
+            if (uiState.activeTool === "eliminateDoubleInverse" && uiState.stage === "preview") {
+                drawEliminateDoubleInversePreview();
+                return;
+            }
+
+            if (uiState.activeTool === "cancelProductWithInverse" && uiState.stage === "preview") {
+                drawCancelProductWithInversePreview();
+                return;
+            }
+
+            if (uiState.activeTool === "insertIdentity" && uiState.stage === "choosePosition" && uiState.chosenIdentity) {
+                drawIdentityInsertionPreview(uiState.chosenIdentity);
+                return;
+            }
+
+            if (uiState.activeTool === "eliminateIdentities" && uiState.stage === "preview") {
+                drawIdentityEliminationPreview();
+                return;
+            }
+
+            if (uiState.activeTool === "cancelOpposites" && uiState.stage === "preview") {
+                drawCancelOppositesPreview();
+                return;
+            }
+
+            if (uiState.activeTool === "doubleNegative" && uiState.stage === "preview") {
+                drawDoubleNegativePreview();
+                return;
+            }
+
+            if (uiState.activeTool === "zeroProduct" && uiState.stage === "preview") {
+                drawZeroProductPreview();
+                return;
+            }
+
+            if ((uiState.activeTool === "factorNumber" || uiState.activeTool === "writeNumberAsSum") && uiState.stage === "input") {
+                drawBoldHighlightForSelection(selection.node, selection.firstPart, selection.lastPart, "rgb(0, 170, 0)");
+            }
+        }
+
+        function fillOverlayRect(x, y, width, height, color) {
+            ctx.save();
+            ctx.globalAlpha = SETTINGS.overlayAlpha;
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+            ctx.restore();
+        }
+
+        function fillSelectionRegion(node, firstPart, lastPart, color) {
+            const margin = getSelectionMargin();
+            if (node.type === "prod") {
+                const x1 = node.args[firstPart].left() - margin;
+                const x2 = node.args[lastPart].right() + margin;
+                fillOverlayRect(x1, node.top() - margin, x2 - x1, node.bottom() - node.top() + margin * 2, color);
+            } else if (node.type === "sum") {
+                const y1 = node.args[firstPart].top() - margin;
+                const y2 = node.args[lastPart].bottom() + margin;
+                fillOverlayRect(node.left() - margin, y1, node.right() - node.left() + margin * 2, y2 - y1, color);
+            } else {
+                fillOverlayRect(node.left() - margin, node.top() - margin, node.right() - node.left() + margin * 2, node.bottom() - node.top() + margin * 2, color);
+            }
+        }
+
+        function fillProductFactorRange(node, firstIndex, lastIndex, color) {
+            const margin = getSelectionMargin();
+            const x1 = node.args[firstIndex].left() - margin;
+            const x2 = node.args[lastIndex].right() + margin;
+            fillOverlayRect(x1, node.top() - margin, x2 - x1, node.bottom() - node.top() + margin * 2, color);
+        }
+
+        function fillSingleSumTermRegion(sumNode, termIndex, color) {
+            const margin = getSelectionMargin();
+            const term = sumNode.args[termIndex];
+            const y1 = term.top() - margin;
+            const y2 = term.bottom() + margin;
+            fillOverlayRect(sumNode.left() - margin, y1, sumNode.right() - sumNode.left() + margin * 2, y2 - y1, color);
+        }
+
+        function getDistinctRandomColors(n) {
+            if (n <= 0) {
+                return [];
+            }
+
+            const startHue = Math.random() * 360;
+            const step = 360 / n;
+            const colors = [];
+
+            for (let i = 0; i < n; i++) {
+                const hue = (startHue + i * step) % 360;
+                colors.push(`hsl(${hue}, 75%, 60%)`);
+            }
+
+            return colors;
+        }
+
+        function darkenPreviewColor(color, amount = 18) {
+            const match = String(color || "").match(/^hsl\(([-\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)$/i);
+            if (!match) {
+                return color || SETTINGS.selectionBlue;
+            }
+            const hue = Number(match[1]);
+            const saturation = Number(match[2]);
+            const lightness = Math.max(15, Number(match[3]) - amount);
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        function drawBasicSelectionHighlight(node, firstPart, lastPart) {
+            fillSelectionRegion(node, firstPart, lastPart, SETTINGS.selectionBlue);
+        }
+
+        function fillHighlightRect(node, color) {
+            fillOverlayRect(
+                node.left(),
+                node.top(),
+                node.right() - node.left(),
+                node.bottom() - node.top(),
+                color
+            );
+        }
+
+        function fillBoldHighlightRect(node, color) {
+            fillOverlayRect(
+                node.left(),
+                node.top(),
+                node.right() - node.left(),
+                node.bottom() - node.top(),
+                color
+            );
+
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+            ctx.strokeRect(
+                node.left(),
+                node.top(),
+                node.right() - node.left(),
+                node.bottom() - node.top()
+            );
+            ctx.restore();
+        }
+
+        function drawBoldHighlightForSelection(node, firstPart, lastPart, color) {
+            const margin = getSelectionMargin();
+            let x;
+            let y;
+            let width;
+            let height;
+
+            if (node.type === "prod") {
+                x = node.args[firstPart].left() - margin;
+                y = node.top() - margin;
+                width = node.args[lastPart].right() + margin - x;
+                height = node.bottom() + margin - y;
+            } else if (node.type === "sum") {
+                x = node.left() - margin;
+                y = node.args[firstPart].top() - margin;
+                width = node.right() + margin - x;
+                height = node.args[lastPart].bottom() + margin - y;
+            } else {
+                x = node.left() - margin;
+                y = node.top() - margin;
+                width = node.right() + margin - x;
+                height = node.bottom() + margin - y;
+            }
+
+            fillOverlayRect(x, y, width, height, color);
+
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+            ctx.strokeRect(x, y, width, height);
+            ctx.restore();
+        }
+
+        function isDirectionalCommuteTool(toolName) {
+            return toolName === "commuteFirstToLast" || toolName === "commuteLastToFirst";
+        }
+
+        function getDirectionalCommuteMovingIndex(toolName, firstIndex, lastIndex) {
+            return toolName === "commuteLastToFirst" ? lastIndex : firstIndex;
+        }
+
+        function fillSingleCommutePartRegion(node, index, color) {
+            if (!node || !node.args || index < 0 || index >= node.args.length) {
+                return;
+            }
+            if (node.type === "sum") {
+                fillSingleSumTermRegion(node, index, color);
+            } else if (node.type === "prod") {
+                fillProductFactorRange(node, index, index, color);
+            }
+        }
+
+        function strokeSingleCommutePartRegion(node, index, color) {
+            if (!node || !node.args || index < 0 || index >= node.args.length) {
+                return;
+            }
+
+            ctx.save();
+            ctx.globalAlpha = 1;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = color;
+
+            const margin = getSelectionMargin();
+            if (node.type === "sum") {
+                const term = node.args[index];
+                const y1 = term.top() - margin;
+                const y2 = term.bottom() + margin;
+                ctx.strokeRect(
+                    node.left() - margin,
+                    y1,
+                    node.right() - node.left() + margin * 2,
+                    y2 - y1
+                );
+            } else if (node.type === "prod") {
+                const x1 = node.args[index].left() - margin;
+                const x2 = node.args[index].right() + margin;
+                ctx.strokeRect(
+                    x1,
+                    node.top() - margin,
+                    x2 - x1,
+                    node.bottom() - node.top() + margin * 2
+                );
+            }
+
+            ctx.restore();
+        }
+
+        function drawCommutePreview() {
+            if (!selection.node || (selection.node.type !== "sum" && selection.node.type !== "prod")) {
+                return;
+            }
+
+            const partCount = selection.lastPart - selection.firstPart + 1;
+            const colors = uiState.previewColors || getDistinctRandomColors(partCount);
+
+            if (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") {
+                const chosen = new Set(Array.isArray(uiState.commuteOrder) ? uiState.commuteOrder : []);
+                for (let j = selection.firstPart; j <= selection.lastPart; j++) {
+                    const baseColor = colors[j - selection.firstPart] || SETTINGS.selectionBlue;
+                    const displayColor = chosen.has(j) ? darkenPreviewColor(baseColor) : baseColor;
+                    fillSingleCommutePartRegion(selection.node, j, displayColor);
+                    if (chosen.has(j)) {
+                        strokeSingleCommutePartRegion(selection.node, j, displayColor);
+                    }
+                }
+                return;
+            }
+
+            // Preserve directional behavior for legacy demo traces that explicitly
+            // name the old first-to-last / last-to-first tools.
+            const singleMoverDirectionalPreview = isDirectionalCommuteTool(uiState.activeTool) && partCount >= 3;
+            if (singleMoverDirectionalPreview) {
+                const movingIndex = getDirectionalCommuteMovingIndex(uiState.activeTool, selection.firstPart, selection.lastPart);
+                const color = colors[movingIndex - selection.firstPart] || colors[0] || SETTINGS.selectionBlue;
+                fillSingleCommutePartRegion(selection.node, movingIndex, color);
+                strokeSingleCommutePartRegion(selection.node, movingIndex, color);
+                return;
+            }
+
+            for (let j = selection.firstPart; j <= selection.lastPart; j++) {
+                const color = colors[j - selection.firstPart];
+                fillSingleCommutePartRegion(selection.node, j, color);
+            }
+        }
+
+        function drawDistributionPreview(direction) {
+            const data = getDistributionData(direction);
+            if (!data) {
+                return;
+            }
+
+            const sumNode = data.sumNode;
+            const partitionCount = 1 + sumNode.args.length;
+            const colors = uiState.previewColors || getDistinctRandomColors(partitionCount);
+
+            if (direction === "left") {
+                fillProductFactorRange(selection.node, selection.firstPart, selection.lastPart - 1, colors[0]);
+                for (let i = 0; i < sumNode.args.length; i++) {
+                    fillSingleSumTermRegion(sumNode, i, colors[i + 1]);
+                }
+            } else {
+                fillProductFactorRange(selection.node, selection.firstPart + 1, selection.lastPart, colors[0]);
+                for (let i = 0; i < sumNode.args.length; i++) {
+                    fillSingleSumTermRegion(sumNode, i, colors[i + 1]);
+                }
+            }
+        }
+
+        function drawFactoringPreview(direction) {
+            const data = getFactoringData(direction);
+            if (!data || data.commonCount <= 0) {
+                return;
+            }
+
+            const termCount = selection.lastPart - selection.firstPart + 1;
+            const partitionCount = 1 + termCount;
+            const colors = uiState.previewColors || getDistinctRandomColors(partitionCount);
+
+            for (let termOffset = 0; termOffset < termCount; termOffset++) {
+                const termIndex = selection.firstPart + termOffset;
+                const termNode = selection.node.args[termIndex];
+                const factorNodes = getTermFactors(termNode);
+
+                if (direction === "left") {
+                    if (data.commonCount === 1) {
+                        fillHighlightRect(factorNodes[0], colors[0]);
+                    } else {
+                        fillProductFactorRange(termNode, 0, data.commonCount - 1, colors[0]);
+                    }
+
+                    const remainderFirst = data.commonCount;
+                    const remainderLast = factorNodes.length - 1;
+                    if (remainderFirst <= remainderLast) {
+                        if (termNode.type === "prod") {
+                            fillProductFactorRange(termNode, remainderFirst, remainderLast, colors[1 + termOffset]);
+                        } else {
+                            fillHighlightRect(termNode, colors[1 + termOffset]);
+                        }
+                    }
+                } else {
+                    const firstCommon = factorNodes.length - data.commonCount;
+                    const lastCommon = factorNodes.length - 1;
+
+                    if (data.commonCount === 1) {
+                        fillHighlightRect(factorNodes[lastCommon], colors[0]);
+                    } else {
+                        fillProductFactorRange(termNode, firstCommon, lastCommon, colors[0]);
+                    }
+
+                    const remainderFirst = 0;
+                    const remainderLast = factorNodes.length - data.commonCount - 1;
+                    if (remainderFirst <= remainderLast) {
+                        if (termNode.type === "prod") {
+                            fillProductFactorRange(termNode, remainderFirst, remainderLast, colors[1 + termOffset]);
+                        } else {
+                            fillHighlightRect(termNode, colors[1 + termOffset]);
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawIdentityInsertionPreview(identityKind) {
+            drawBoldHighlightForSelection(selection.node, selection.firstPart, selection.lastPart, "rgb(0, 170, 0)");
+            const box = getSelectionBox();
+            ctx.save();
+            ctx.font = "bold 22px Verdana, Arial, Helvetica, sans-serif";
+            ctx.fillStyle = "rgb(0, 170, 0)";
+            if (identityKind === "addZero") {
+                ctx.fillText("0", box.centerX, box.top - 18);
+                ctx.fillText("0", box.centerX, box.bottom + 18);
+            } else if (identityKind === "multiplyByOne") {
+                ctx.fillText("1", box.left - 18, box.centerY);
+                ctx.fillText("1", box.right + 18, box.centerY);
+            } else if (identityKind === "doubleNegative") {
+                ctx.fillText("-1", box.left - 24, box.centerY - 14);
+                ctx.fillText("-1", box.left - 24, box.centerY + 14);
+                ctx.fillText("-1", box.right + 24, box.centerY - 14);
+                ctx.fillText("-1", box.right + 24, box.centerY + 14);
+            }
+            ctx.restore();
+        }
+
+        function drawIdentityEliminationPreview() {
+            const data = getIdentityEliminationData();
+            if (!data) {
+                return;
+            }
+            for (const node of data.targets) {
+                fillBoldHighlightRect(node, "rgb(0, 170, 0)");
+            }
+        }
+
+        function drawDoubleNegativePreview() {
+            const data = getDoubleNegativeData();
+            if (!data) {
+                return;
+            }
+            for (const idx of data.indices) {
+                fillBoldHighlightRect(data.wrapper.args[idx], "rgb(0, 170, 0)");
+            }
+        }
+
+        function drawZeroProductPreview() {
+            const data = getZeroProductData();
+            if (!data) {
+                return;
+            }
+            fillBoldHighlightRect(data.zeroNode, "rgb(0, 170, 0)");
+        }
+
+        function drawCancelOppositesPreview() {
+            const data = getCancelOppositesData();
+            if (!data) {
+                return;
+            }
+            for (const pair of data.pairs) {
+                const posIndices = Array.isArray(pair.posIndices) ? pair.posIndices : [pair.posIndex];
+                for (const posIndex of posIndices) {
+                    fillBoldHighlightRect(data.wrapper.args[posIndex], "rgb(0, 170, 0)");
+                }
+                fillBoldHighlightRect(data.wrapper.args[pair.negIndex], "rgb(0, 170, 0)");
+            }
+        }
+
+        function drawInverseDistributionPreview() {
+            const data = getInverseDistributionData();
+            if (!data) {
+                return;
+            }
+            fillBoldHighlightRect(data.productNode, "rgb(0, 170, 0)");
+        }
+
+        function drawInverseFactoringPreview() {
+            const data = getInverseFactoringData();
+            if (!data) {
+                return;
+            }
+            for (const node of data.inverseNodes) {
+                fillBoldHighlightRect(node, "rgb(0, 170, 0)");
+            }
+        }
+
+        function drawEliminateDoubleInversePreview() {
+            const data = getDoubleInverseData();
+            if (!data) {
+                return;
+            }
+            fillBoldHighlightRect(data.outerInverse, "rgb(0, 170, 0)");
+        }
+
+        function drawCancelProductWithInversePreview() {
+            const data = getProductInverseCancellationData();
+            if (!data) {
+                return;
+            }
+            fillBoldHighlightRect(data.productNode, "rgb(0, 170, 0)");
+        }
+
+        function drawPostview() {
+            const data = uiState.postviewData;
+            if (!data) {
+                return;
+            }
+
+            if (data.type === "commuteRotate") {
+                if (!data.node) {
+                    return;
+                }
+
+                if (data.movedOnly) {
+                    const color = data.color || SETTINGS.selectionBlue;
+                    fillSingleCommutePartRegion(data.node, data.movedIndex, color);
+                    strokeSingleCommutePartRegion(data.node, data.movedIndex, color);
+                    return;
+                }
+
+                if (!Array.isArray(data.colors)) {
+                    return;
+                }
+
+                for (let index = data.firstIndex; index <= data.lastIndex; index++) {
+                    const color = data.colors[index - data.firstIndex];
+                    fillSingleCommutePartRegion(data.node, index, color);
+                }
+                return;
+            }
+
+            if (data.type === "commute") {
+                if (!data.node || !Array.isArray(data.colors)) {
+                    return;
+                }
+
+                if (data.node.type === "sum") {
+                    fillSingleSumTermRegion(data.node, data.firstIndex, data.colors[0]);
+                    fillSingleSumTermRegion(data.node, data.secondIndex, data.colors[1]);
+                } else if (data.node.type === "prod") {
+                    fillProductFactorRange(data.node, data.firstIndex, data.firstIndex, data.colors[0]);
+                    fillProductFactorRange(data.node, data.secondIndex, data.secondIndex, data.colors[1]);
+                }
+                return;
+            }
+
+            if (data.type === "distribution") {
+                for (const region of data.factorRegions) {
+                    if (region.firstIndex === region.lastIndex) {
+                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[0]);
+                    } else {
+                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[0]);
+                    }
+                }
+                for (let i = 0; i < data.termRegions.length; i++) {
+                    const region = data.termRegions[i];
+                    if (region.firstIndex === region.lastIndex) {
+                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[i + 1]);
+                    } else {
+                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[i + 1]);
+                    }
+                }
+                return;
+            }
+
+            if (data.type === "factoring") {
+                for (const region of data.commonFactorRegions) {
+                    if (region.firstIndex === region.lastIndex) {
+                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[0]);
+                    } else {
+                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[0]);
+                    }
+                }
+                for (let i = 0; i < data.remainderNodes.length; i++) {
+                    fillHighlightRect(
+                        data.remainderNodes[i],
+                        data.colors[1 + i]
+                    );
+                }
+            }
+        }
+
+        function drawNodeRecursive(node) {
+            drawNodeRecursiveToContext(node, ctx, SETTINGS, isCommuteSeparatorHidden);
+        }
+
+        function isCommuteSeparatorHidden(node, separatorIndex) {
+            return false;
+        }
+
+        function drawNode(node) {
+            drawNodeToContext(node, ctx, SETTINGS, isCommuteSeparatorHidden);
+        }
+
+        function drawValueNode(node) {
+            drawValueNodeToContext(node, ctx, SETTINGS);
+        }
+
+        function drawRoundedNodeHighlight(node, color, lineWidth, padding) {
+            if (!node || !node.layout) {
+                return;
+            }
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.setLineDash([]);
+            const x = node.left() - padding;
+            const y = node.top() - padding;
+            const w = node.layout.width + padding * 2;
+            const h = node.layout.height + padding * 2;
+            ctx.strokeRect(x, y, w, h);
+            ctx.restore();
+        }
+
+        function drawExpressionBuilderHighlightsForNode(node) {
+            if (!node) {
+                return;
+            }
+            if (node.isBuilderOuter) {
+                drawRoundedNodeHighlight(node, "rgba(80, 140, 255, 0.45)", 3, 7);
+            }
+            if (node.isBuilderActive) {
+                drawRoundedNodeHighlight(node, "rgba(10, 70, 210, 0.95)", 5, 4);
+            }
+            if (node.args) {
+                node.args.forEach(drawExpressionBuilderHighlightsForNode);
+            }
+        }
+
+        function drawExpressionBuilderHighlights() {
+            if (!uiState.expressionBuilder || uiState.stage !== "builder") {
+                return;
+            }
+            drawExpressionBuilderHighlightsForNode(expressionRoot);
+        }
+
+        function myRect(c, x1, y1, x2, y2) {
+            c.rect(x1, y1, x2 - x1, y2 - y1);
+        }
+
+        function clearSelection() {
+            selection.status = "no";
+            selection.node = null;
+            selection.firstPart = -1;
+            selection.lastPart = -1;
+        }
+
+        function clearInteraction() {
+            if (uiState.postviewTimerId !== null) {
+                clearTimeout(uiState.postviewTimerId);
+            }
+            if (uiState.previewTimerId !== null) {
+                clearTimeout(uiState.previewTimerId);
+            }
+            uiState.postviewTimerId = null;
+            uiState.previewTimerId = null;
+            uiState.postviewData = null;
+            uiState.activeTool = null;
+            uiState.activeToolCategory = null;
+            uiState.expressionBuilder = null;
+            uiState.toolExponentMode = getDefaultToolExponentModeForSelection();
+            uiState.stage = "idle";
+            uiState.chosenDirection = null;
+            uiState.chosenIdentity = null;
+            uiState.inputText = "";
+            uiState.message = "";
+            uiState.commuteSelectedIndex = -1;
+            uiState.commuteOrder = [];
+            uiState.previewColors = null;
+            renderToolArea();
+        }
+
+        function resetInteractionOnly() {
+            clearInteraction();
+            refreshStatus();
+            drawExpression();
+        }
+
+        function boxFromSelectionArea() {
+            return [selectionArea[0], selectionArea[1], selectionArea[2], selectionArea[3]];
+        }
+
+        function boxesIntersect(box1, box2) {
+            if (
+                Math.max(box2[0], box2[2]) <= Math.min(box1[0], box1[2]) ||
+                Math.max(box1[0], box1[2]) <= Math.min(box2[0], box2[2]) ||
+                Math.max(box2[1], box2[3]) <= Math.min(box1[1], box1[3]) ||
+                Math.max(box1[1], box1[3]) <= Math.min(box2[1], box2[3])
+            ) {
+                return false;
+            }
+            return true;
+        }
+
+        function intersectionOfSelectionAreaWith(node) {
+            const intersection = [];
+            const box = boxFromSelectionArea();
+
+            if (node.type === "prod") {
+                for (let j = 1; j < node.layout.vLines.length - 1; j++) {
+                    const x = relVLine(node, j);
+                    if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
+                        intersection.push(j - 1);
+                    }
+                }
+                if (intersection.length > 0) {
+                    intersection.push(intersection[intersection.length - 1] + 1);
+                }
+            } else if (node.type === "sum") {
+                for (let j = 1; j < node.layout.hLines.length - 1; j++) {
+                    const y = relHLine(node, j);
+                    if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
+                        intersection.push(j - 1);
+                    }
+                }
+                if (intersection.length > 0) {
+                    intersection.push(intersection[intersection.length - 1] + 1);
+                }
+            } else if (node.type === "exp") {
+                const x = relVLine(node, 1);
+                const y = relHLine(node, 1);
+                if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
+                    return [0, 1];
+                }
+                if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
+                    return [0, 1];
+                }
+            } else if (node.type === "inv") {
+                const borderThickness = node.layout.inverseBorderThickness || SETTINGS.operatorThickness || 14;
+                const borderHalf = borderThickness / 2;
+                const left = node.left() + borderHalf;
+                const top = node.top() + borderHalf;
+                const right = node.right() - borderHalf;
+                const bottom = node.bottom() - borderHalf;
+                const borderHit =
+                    boxesIntersect(box, [left, top, right, top]) ||
+                    boxesIntersect(box, [right, top, right, bottom]) ||
+                    boxesIntersect(box, [left, bottom, right, bottom]) ||
+                    boxesIntersect(box, [left, top, left, bottom]);
+                if (borderHit) {
+                    return [0];
+                }
+            } else if (node.type === "value") {
+                if (boxesIntersect(box, [node.left(), node.top(), node.right(), node.bottom()])) {
+                    return [0];
+                }
+            }
+
+            return intersection;
+        }
+
+        function chooseSelectedOp() {
+            selection.node = null;
+            selection.firstPart = -1;
+            selection.lastPart = -1;
+
+            let found = false;
+            traversePreOrder(expressionRoot, node => {
+                if (found) {
+                    return;
+                }
+                const intersection = intersectionOfSelectionAreaWith(node);
+                if (intersection.length > 0) {
+                    selection.node = node;
+                    selection.firstPart = intersection[0];
+                    selection.lastPart = intersection[intersection.length - 1];
+                    found = true;
+                }
+            });
+        }
+
+        function updateSelectionFromEvent(e) {
+            if (uiState.mode !== "edit") {
+                return;
+            }
+            if (selection.status === "inProg") {
+                const rect = workspaceSvg.getBoundingClientRect();
+                selectionArea[2] = e.clientX - rect.left;
+                selectionArea[3] = e.clientY - rect.top;
+                chooseSelectedOp();
+                hideFloatingMenu();
+                refreshStatus();
+                drawExpression();
+            }
+        }
+
+        function getSelectionBox() {
+            if (!selection.node) {
+                return null;
+            }
+
+            const margin = getSelectionMargin();
+            let left, right, top, bottom;
+            if (selection.node.type === "prod") {
+                left = selection.node.args[selection.firstPart].left() - margin;
+                right = selection.node.args[selection.lastPart].right() + margin;
+                top = selection.node.top() - margin;
+                bottom = selection.node.bottom() + margin;
+            } else if (selection.node.type === "sum") {
+                left = selection.node.left() - margin;
+                right = selection.node.right() + margin;
+                top = selection.node.args[selection.firstPart].top() - margin;
+                bottom = selection.node.args[selection.lastPart].bottom() + margin;
+            } else {
+                left = selection.node.left() - margin;
+                right = selection.node.right() + margin;
+                top = selection.node.top() - margin;
+                bottom = selection.node.bottom() + margin;
+            }
+
+            return {
+                left,
+                right,
+                top,
+                bottom,
+                centerX: (left + right) / 2,
+                centerY: (top + bottom) / 2
+            };
+        }
+
+        function pointIsInCurrentSelection(x, y) {
+            const box = getSelectionBox();
+            if (!box) {
+                return false;
+            }
+            return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+        }
+        function positionFloatingMenu() {
+            if (!selection.node) {
+                hideFloatingMenu();
+                return;
+            }
+
+            const box = getSelectionBox();
+            if (!box) {
+                hideFloatingMenu();
+                return;
+            }
+
+            // Put the menu directly below the selected region, with the left
+            // edge of the menu aligned to the left edge of the selection.
+            uiState.floatingMenuX = box.left;
+            uiState.floatingMenuY = box.bottom + 8;
+        }
+
+        function showFloatingMenu() {
+            if (uiState.mode !== "edit") {
+                hideFloatingMenu();
+                return;
+            }
+            if (!uiState.showFloatingMenu || !selection.node || uiState.stage === "postview") {
+                hideFloatingMenu();
+                return;
+            }
+
+            positionFloatingMenu();
+            floatingToolMenu.style.left = `${uiState.floatingMenuX}px`;
+            floatingToolMenu.style.top = `${uiState.floatingMenuY}px`;
+            floatingToolMenu.classList.remove("hidden");
+
+            // Default keyboard focus to first menu item so Enter works immediately.
+            const firstButton = floatingToolMenu.querySelector("button");
+            if (firstButton) {
+                firstButton.focus();
+            }
+        }
+
+        function hideFloatingMenu() {
+            floatingToolMenu.classList.add("hidden");
+            floatingToolMenu.innerHTML = "";
+        }
+
+        function getSelectedSliceLength() {
+            if (!selection.node) {
+                return 0;
+            }
+            if (selection.node.type === "sum" || selection.node.type === "prod") {
+                return selection.lastPart - selection.firstPart + 1;
+            }
+            return 1;
+        }
+
+        function cloneSelectedRangeNode() {
+            if (!selection.node) {
+                return null;
+            }
+            if (selection.node.type === "sum") {
+                const terms = selection.node.args
+                    .slice(selection.firstPart, selection.lastPart + 1)
+                    .map(cloneNode);
+                return makeSumFromTerms(terms);
+            }
+            if (selection.node.type === "prod") {
+                const factors = selection.node.args
+                    .slice(selection.firstPart, selection.lastPart + 1)
+                    .map(cloneNode);
+                return makeProductFromFactors(factors);
+            }
+            return cloneNode(selection.node);
+        }
+
+        function getSelectedWrapperData() {
+            if (!selection.node) {
+                return null;
+            }
+
+            if (selection.node.type === "sum") {
+                return {
+                    wrapper: makeSumFromTerms(selection.node.args.slice(selection.firstPart, selection.lastPart + 1).map(cloneNode)),
+                    isSlice: true,
+                    type: "sum"
+                };
+            }
+
+            if (selection.node.type === "prod") {
+                return {
+                    wrapper: makeProductFromFactors(selection.node.args.slice(selection.firstPart, selection.lastPart + 1).map(cloneNode)),
+                    isSlice: true,
+                    type: "prod"
+                };
+            }
+
+            return {
+                wrapper: cloneNode(selection.node),
+                isSlice: false,
+                type: selection.node.type
+            };
+        }
+
+        function replaceSelectedNode(replacementNode) {
+            if (!selection.node) {
+                return false;
+            }
+
+            if (selection.node.id === expressionRoot.id) {
+                expressionRoot = replacementNode;
+                syncCurrentExpressionRoot();
+                return true;
+            }
+
+            return replaceNodeById(expressionRoot, selection.node.id, replacementNode);
+        }
+
+        function replaceSelectedRange(replacementNode) {
+            if (!selection.node) {
+                return false;
+            }
+
+            if (selection.node.type === "sum") {
+                const before = selection.node.args.slice(0, selection.firstPart);
+                const after = selection.node.args.slice(selection.lastPart + 1);
+                selection.node.args = [...before, replacementNode, ...after];
+                return true;
+            }
+
+            if (selection.node.type === "prod") {
+                const before = selection.node.args.slice(0, selection.firstPart);
+                const after = selection.node.args.slice(selection.lastPart + 1);
+                selection.node.args = [...before, replacementNode, ...after];
+                return true;
+            }
+
+            return replaceSelectedNode(replacementNode);
+        }
+
+        function replaceNodeById(currentNode, targetId, replacementNode) {
+            for (let i = 0; i < currentNode.args.length; i++) {
+                if (currentNode.args[i].id === targetId) {
+                    currentNode.args[i] = replacementNode;
+                    return true;
+                }
+                if (replaceNodeById(currentNode.args[i], targetId, replacementNode)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function makeProductFromFactors(factors) {
+            if (factors.length === 0) {
+                return new ExprNode("value", [], "1");
+            }
+            if (factors.length === 1) {
+                return factors[0];
+            }
+            return new ExprNode("prod", factors, null);
+        }
+
+        function makeSumFromTerms(terms) {
+            if (terms.length === 0) {
+                return new ExprNode("value", [], "0");
+            }
+            if (terms.length === 1) {
+                return terms[0];
+            }
+            return new ExprNode("sum", terms, null);
+        }
+
+        function getTermFactors(node) {
+            if (node.type === "prod") {
+                return node.args;
+            }
+            return [node];
+        }
+
+        function getSelectedTerms() {
+            if (!selection.node || selection.node.type !== "sum") {
+                return [];
+            }
+            return selection.node.args.slice(selection.firstPart, selection.lastPart + 1);
+        }
+
+        function getCommonLeftFactorCount(selectedTerms) {
+            if (selectedTerms.length < 2) {
+                return 0;
+            }
+            const factorLists = selectedTerms.map(getTermFactors);
+            const minLen = Math.min(...factorLists.map(list => list.length));
+            let count = 0;
+            for (let i = 0; i < minLen; i++) {
+                const candidate = factorLists[0][i];
+                if (factorLists.every(list => sameExpression(list[i], candidate))) {
+                    count += 1;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function getCommonRightFactorCount(selectedTerms) {
+            if (selectedTerms.length < 2) {
+                return 0;
+            }
+            const factorLists = selectedTerms.map(getTermFactors);
+            const minLen = Math.min(...factorLists.map(list => list.length));
+            let count = 0;
+            for (let i = 1; i <= minLen; i++) {
+                const candidate = factorLists[0][factorLists[0].length - i];
+                if (factorLists.every(list => sameExpression(list[list.length - i], candidate))) {
+                    count += 1;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        function getFactoringData(direction) {
+            if (!selection.node || selection.node.type !== "sum") {
+                return null;
+            }
+            if (getSelectedSliceLength() < 2) {
+                return null;
+            }
+            const selectedTerms = getSelectedTerms();
+            const commonCount = direction === "left"
+                ? getCommonLeftFactorCount(selectedTerms)
+                : getCommonRightFactorCount(selectedTerms);
+
+            return { selectedTerms, commonCount };
+        }
+
+        function getDistributionData(direction) {
+            if (!selection.node || selection.node.type !== "prod" || getSelectedSliceLength() < 2) {
+                return null;
+            }
+
+            if (direction === "left") {
+                const sumNode = selection.node.args[selection.lastPart];
+                if (!sumNode || sumNode.type !== "sum") {
+                    return null;
+                }
+                return { sumNode };
+            }
+
+            const sumNode = selection.node.args[selection.firstPart];
+            if (!sumNode || sumNode.type !== "sum") {
+                return null;
+            }
+            return { sumNode };
+        }
+
+        function canCommute() {
+            return canCommuteRotate();
+        }
+
+        function canCommuteRotate() {
+            return !!selection.node &&
+                (selection.node.type === "sum" || selection.node.type === "prod") &&
+                getSelectedSliceLength() >= 2;
+        }
+
+        function canDistribute() {
+            return !!(getDistributionData("left") || getDistributionData("right"));
+        }
+
+        function canFactor() {
+            const left = getFactoringData("left");
+            const right = getFactoringData("right");
+            return !!((left && left.commonCount > 0) || (right && right.commonCount > 0));
+        }
+
+        function canInsertIdentity() {
+            return !!selection.node;
+        }
+
+        function canReplaceOneWithInverseProduct() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && node.value === "1";
+        }
+
+        function canInsertZeroProduct() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && node.value === "0";
+        }
+
+        function canInsertExponentZero() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && node.value === "1";
+        }
+
+        function canInsertPowerOfOne() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && node.value === "1";
+        }
+
+        function getProductInverseCancellationData() {
+            const node = cloneSelectedRangeNode();
+            if (!node || node.type !== "prod" || !node.args || node.args.length < 2) {
+                return null;
+            }
+
+            for (let inverseIndex = 0; inverseIndex < node.args.length; inverseIndex++) {
+                const possibleInverse = node.args[inverseIndex];
+                if (!isInvNode(possibleInverse)) {
+                    continue;
+                }
+
+                // A may itself be a product. Since products are normalized by
+                // flattening nested products, A · A^-1 can appear as
+                // a · b · c · (a · b · c)^-1. Match the inverse against any
+                // collection of sibling factors, not just a single sibling.
+                const requiredFactors = getProductFactorsForMatching(possibleInverse.args[0]);
+                const expressionIndices = findMatchingNodeIndices(requiredFactors, node.args, new Set(), inverseIndex);
+                if (expressionIndices) {
+                    const expressionNode = makeProductFromFactors(
+                        expressionIndices.map(index => cloneNode(node.args[index]))
+                    );
+                    return {
+                        productNode: node,
+                        expressionNode,
+                        inverseNode: possibleInverse,
+                        inverseIndex,
+                        expressionIndices
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        function canCancelProductWithInverse() {
+            return !!getProductInverseCancellationData();
+        }
+
+        function getInverseDistributionData() {
+            const node = cloneSelectedRangeNode();
+            if (!isInvNode(node)) {
+                return null;
+            }
+            const productNode = node.args[0];
+            if (!productNode || productNode.type !== "prod" || productNode.args.length < 2) {
+                return null;
+            }
+            return { inverseNode: node, productNode };
+        }
+
+        function canDistributeInverseOverProduct() {
+            return !!getInverseDistributionData();
+        }
+
+        function getInverseFactoringData() {
+            const node = cloneSelectedRangeNode();
+            if (!node || node.type !== "prod" || node.args.length < 2) {
+                return null;
+            }
+            const inverseNodes = node.args.filter(child => isInvNode(child));
+            if (inverseNodes.length !== node.args.length) {
+                return null;
+            }
+            return { productNode: node, inverseNodes };
+        }
+
+        function canFactorProductOfInverses() {
+            return !!getInverseFactoringData();
+        }
+
+
+        function valueNode(value) {
+            return new ExprNode("value", [], String(value));
+        }
+
+        function isValueNode(node, value) {
+            return !!node && node.type === "value" && node.value === String(value);
+        }
+
+        function isInvNode(node) {
+            return !!node && node.type === "inv" && node.args && node.args.length === 1;
+        }
+
+        function isExpNode(node) {
+            return !!node && node.type === "exp" && node.args && node.args.length === 2;
+        }
+
+        function isProdNode(node) {
+            return !!node && node.type === "prod" && node.args && node.args.length >= 1;
+        }
+
+        function isSumNode(node) {
+            return !!node && node.type === "sum" && node.args && node.args.length >= 1;
+        }
+
+        function makeInverseNode(node) {
+            return new ExprNode("inv", [cloneNode(node)], null);
+        }
+
+        function makeExponentNode(base, exponent) {
+            return new ExprNode("exp", [cloneNode(base), cloneNode(exponent)], null);
+        }
+
+        function parsePositiveIntegerValue(node) {
+            if (!isValueNode(node, node && node.value)) {
+                return null;
+            }
+            if (!/^\d+$/.test(node.value)) {
+                return null;
+            }
+            const n = Number(node.value);
+            return n > 0 ? n : null;
+        }
+
+        function isProductTwoTimesSomething(node) {
+            return isProdNode(node) && node.args.length === 2 &&
+                (isValueNode(node.args[0], "2") || isValueNode(node.args[1], "2"));
+        }
+
+        function isTwoNPlusOne(node) {
+            if (!isSumNode(node) || node.args.length !== 2) {
+                return false;
+            }
+            return (isProductTwoTimesSomething(node.args[0]) && isValueNode(node.args[1], "1")) ||
+                (isProductTwoTimesSomething(node.args[1]) && isValueNode(node.args[0], "1"));
+        }
+
+        function getPowerInverseRewriteApplicability() {
+            const out = {};
+            for (const key of POWER_INVERSE_REWRITE_TOOLS) {
+                out[key] = canApplyPowerInverseRewrite(key);
+            }
+            return out;
+        }
+
+        function canApplyPowerInverseRewrite(ruleName) {
+            return !!getPowerInverseRewriteReplacement(ruleName);
+        }
+
+        function getPowerInverseRewriteReplacement(ruleName) {
+            const node = cloneSelectedRangeNode();
+            if (!node) {
+                return null;
+            }
+
+            if (ruleName === "rewriteInvNegOneToNegOne") {
+                return isInvNode(node) && isValueNode(node.args[0], "-1") ? valueNode("-1") : null;
+            }
+
+            if (ruleName === "rewriteNegOneToInvNegOne") {
+                return isValueNode(node, "-1") ? makeInverseNode(valueNode("-1")) : null;
+            }
+
+            if (ruleName === "eliminateExponentOne") {
+                return isExpNode(node) && isValueNode(node.args[1], "1") ? cloneNode(node.args[0]) : null;
+            }
+
+            if (ruleName === "insertExponentOne") {
+                return makeExponentNode(node, valueNode("1"));
+            }
+
+            if (ruleName === "eliminateExponentZero") {
+                return isExpNode(node) && isValueNode(node.args[1], "0") ? valueNode("1") : null;
+            }
+
+            if (ruleName === "rewriteNegativeOneExponentAsInverse") {
+                return isExpNode(node) && isValueNode(node.args[1], "-1") ? makeInverseNode(node.args[0]) : null;
+            }
+
+            if (ruleName === "rewriteInverseAsNegativeOneExponent") {
+                return isInvNode(node)
+                    ? new ExprNode("exp", [cloneNode(node.args[0]), valueNode("-1")], null)
+                    : null;
+            }
+
+            if (ruleName === "eliminateInverseToNegativeOnePower") {
+                return isExpNode(node) && isInvNode(node.args[0]) && isValueNode(node.args[1], "-1")
+                    ? cloneNode(node.args[0].args[0])
+                    : null;
+            }
+
+            if (ruleName === "distributePowerOverInverse") {
+                if (!isExpNode(node) || !isInvNode(node.args[0])) {
+                    return null;
+                }
+                return makeInverseNode(new ExprNode("exp", [cloneNode(node.args[0].args[0]), cloneNode(node.args[1])], null));
+            }
+
+            if (ruleName === "factorPowerOutOfInverse") {
+                if (!isInvNode(node) || !isExpNode(node.args[0])) {
+                    return null;
+                }
+                return new ExprNode("exp", [makeInverseNode(node.args[0].args[0]), cloneNode(node.args[0].args[1])], null);
+            }
+
+            if (ruleName === "powerOfPower") {
+                if (!isExpNode(node) || !isExpNode(node.args[0])) {
+                    return null;
+                }
+                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeProductFromFactors([cloneNode(node.args[0].args[1]), cloneNode(node.args[1])])], null);
+            }
+
+            if (ruleName === "expandPowerOfPower") {
+                if (!isExpNode(node) || !isProdNode(node.args[1]) || node.args[1].args.length < 2) {
+                    return null;
+                }
+                const exponentFactors = node.args[1].args;
+                const innerExponent = cloneNode(exponentFactors[0]);
+                const outerExponent = makeProductFromFactors(exponentFactors.slice(1).map(cloneNode));
+                return new ExprNode("exp", [
+                    new ExprNode("exp", [cloneNode(node.args[0]), innerExponent], null),
+                    outerExponent
+                ], null);
+            }
+
+            if (ruleName === "combineSameBasePowers") {
+                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0]) || !isExpNode(node.args[1])) {
+                    return null;
+                }
+                if (!sameExpression(node.args[0].args[0], node.args[1].args[0])) {
+                    return null;
+                }
+                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeSumFromTerms([cloneNode(node.args[0].args[1]), cloneNode(node.args[1].args[1])])], null);
+            }
+
+            if (ruleName === "expandPowerOfSum") {
+                if (!isExpNode(node) || !isSumNode(node.args[1]) || node.args[1].args.length < 2) {
+                    return null;
+                }
+                return makeProductFromFactors(node.args[1].args.map(term => new ExprNode("exp", [cloneNode(node.args[0]), cloneNode(term)], null)));
+            }
+
+            if (ruleName === "divideSameBasePowers") {
+                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0])) {
+                    return null;
+                }
+                const firstPower = node.args[0];
+                const secondFactor = node.args[1];
+                if (isInvNode(secondFactor) && isExpNode(secondFactor.args[0])) {
+                    const secondPower = secondFactor.args[0];
+                    if (!sameExpression(firstPower.args[0], secondPower.args[0])) {
+                        return null;
+                    }
+                    return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), makeProductFromFactors([valueNode("-1"), cloneNode(secondPower.args[1])])])], null);
+                }
+                if (isExpNode(secondFactor) && sameExpression(firstPower.args[0], secondFactor.args[0]) && isProdNode(secondFactor.args[1])) {
+                    const terms = secondFactor.args[1].args;
+                    if (terms.length === 2 && isValueNode(terms[0], "-1")) {
+                        return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), cloneNode(secondFactor.args[1])])], null);
+                    }
+                }
+                return null;
+            }
+
+            if (ruleName === "distributeExponentOverProduct") {
+                if (!isExpNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length < 2) {
+                    return null;
+                }
+                return makeProductFromFactors(node.args[0].args.map(factor => new ExprNode("exp", [cloneNode(factor), cloneNode(node.args[1])], null)));
+            }
+
+            if (ruleName === "factorCommonExponent") {
+                if (!isProdNode(node) || node.args.length < 2 || !node.args.every(isExpNode)) {
+                    return null;
+                }
+                const commonExponent = node.args[0].args[1];
+                if (!node.args.every(power => sameExpression(power.args[1], commonExponent))) {
+                    return null;
+                }
+                return new ExprNode("exp", [makeProductFromFactors(node.args.map(power => cloneNode(power.args[0]))), cloneNode(commonExponent)], null);
+            }
+
+            if (ruleName === "oneToAnyPower") {
+                return isExpNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
+            }
+
+            if (ruleName === "negativeOneSquared") {
+                return isExpNode(node) && isValueNode(node.args[0], "-1") && isValueNode(node.args[1], "2") ? valueNode("1") : null;
+            }
+
+            if (ruleName === "negativeOneEvenPower") {
+                return isExpNode(node) && isValueNode(node.args[0], "-1") && isProductTwoTimesSomething(node.args[1]) ? valueNode("1") : null;
+            }
+
+            if (ruleName === "negativeOneOddPower") {
+                return isExpNode(node) && isValueNode(node.args[0], "-1") && isTwoNPlusOne(node.args[1]) ? valueNode("-1") : null;
+            }
+
+            if (ruleName === "repeatedProductToPower") {
+                if (!isProdNode(node) || node.args.length < 2) {
+                    return null;
+                }
+                const first = node.args[0];
+                if (!node.args.every(child => sameExpression(child, first))) {
+                    return null;
+                }
+                return new ExprNode("exp", [cloneNode(first), valueNode(node.args.length)], null);
+            }
+
+            if (ruleName === "powerToRepeatedProduct") {
+                if (!isExpNode(node)) {
+                    return null;
+                }
+                const count = parsePositiveIntegerValue(node.args[1]);
+                if (count === null || count < 2 || count > 20) {
+                    return null;
+                }
+                return makeProductFromFactors(Array.from({ length: count }, () => cloneNode(node.args[0])));
+            }
+
+            if (ruleName === "inverseOne") {
+                return isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
+            }
+
+            if (ruleName === "factorProductOfTwoInverses") {
+                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[0]) || !isInvNode(node.args[1])) {
+                    return null;
+                }
+                return makeInverseNode(makeProductFromFactors([cloneNode(node.args[0].args[0]), cloneNode(node.args[1].args[0])]));
+            }
+
+            if (ruleName === "distributeInverseOverTwoProduct") {
+                if (!isInvNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length !== 2) {
+                    return null;
+                }
+                return makeProductFromFactors(node.args[0].args.map(factor => makeInverseNode(factor)));
+            }
+
+            if (ruleName === "inverseFactorAsNegativeExponent") {
+                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[1])) {
+                    return null;
+                }
+                return makeProductFromFactors([cloneNode(node.args[0]), new ExprNode("exp", [cloneNode(node.args[1].args[0]), valueNode("-1")], null)]);
+            }
+
+            return null;
+        }
+
+        function applyPowerInverseRewrite(ruleName) {
+            const replacement = getPowerInverseRewriteReplacement(ruleName);
+            if (!replacement) {
+                return false;
+            }
+            replaceSelectedRange(replacement);
+            finishOperation();
+            return true;
+        }
+
+        function getIdentityEliminationData() {
+            if (!selection.node) {
+                return null;
+            }
+
+            if (selection.node.type === "sum") {
+                const targets = [];
+                for (let i = selection.firstPart; i <= selection.lastPart; i++) {
+                    const child = selection.node.args[i];
+                    if (child.type === "value" && child.value === "0") {
+                        targets.push(child);
+                    }
+                }
+                if (targets.length === 0) {
+                    return null;
+                }
+                return { kind: "sum", targets };
+            }
+
+            if (selection.node.type === "prod") {
+                const targets = [];
+                for (let i = selection.firstPart; i <= selection.lastPart; i++) {
+                    const child = selection.node.args[i];
+                    if (child.type === "value" && child.value === "1") {
+                        targets.push(child);
+                    }
+                }
+                if (targets.length === 0) {
+                    return null;
+                }
+                return { kind: "prod", targets };
+            }
+
+            return null;
+        }
+
+        function canEliminateIdentities() {
+            return !!getIdentityEliminationData();
+        }
+
+        function parseNonNegativeInteger(text) {
+            if (!/^\d+$/.test(text.trim())) {
+                return null;
+            }
+            return Number(text.trim());
+        }
+
+        function canFactorNumber() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && parseNonNegativeInteger(node.value) !== null;
+        }
+
+        function canWriteNumberAsSum() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && parseNonNegativeInteger(node.value) !== null;
+        }
+
+        function parseNumericValue(text) {
+            const trimmed = String(text).trim();
+            if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) {
+                return null;
+            }
+            return Number(trimmed);
+        }
+
+        function evaluatePureNumericProductNode(node) {
+            if (!node || node.type !== "prod" || !node.args || node.args.length === 0) {
+                return null;
+            }
+
+            const values = [];
+            for (const child of node.args) {
+                if (!child || child.type !== "value") {
+                    return null;
+                }
+                const parsed = parseNumericValue(child.value);
+                if (parsed === null || Number.isNaN(parsed)) {
+                    return null;
+                }
+                values.push(parsed);
+            }
+
+            return values.reduce((a, b) => a * b, 1);
+        }
+
+        function evaluateSumContainingProductsNode(node) {
+            if (!node || node.type !== "sum" || !node.args || node.args.length === 0) {
+                return null;
+            }
+
+            const termValues = [];
+            for (const term of node.args) {
+                if (!term) {
+                    return null;
+                }
+
+                if (term.type === "value") {
+                    const parsed = parseNumericValue(term.value);
+                    if (parsed === null || Number.isNaN(parsed)) {
+                        return null;
+                    }
+                    termValues.push(parsed);
+                    continue;
+                }
+
+                if (term.type === "prod") {
+                    const productValue = evaluatePureNumericProductNode(term);
+                    if (productValue === null || Number.isNaN(productValue)) {
+                        return null;
+                    }
+                    termValues.push(productValue);
+                    continue;
+                }
+
+                return null;
+            }
+
+            return termValues.reduce((a, b) => a + b, 0);
+        }
+
+        function evaluateSumOrProductNode(node) {
+            if (!node || (node.type !== "sum" && node.type !== "prod")) {
+                return null;
+            }
+            if (!node.args || node.args.length === 0) {
+                return null;
+            }
+
+            const values = [];
+            for (const child of node.args) {
+                if (!child || child.type !== "value") {
+                    return null;
+                }
+                const parsed = parseNumericValue(child.value);
+                if (parsed === null || Number.isNaN(parsed)) {
+                    return null;
+                }
+                values.push(parsed);
+            }
+
+            return node.type === "sum"
+                ? values.reduce((a, b) => a + b, 0)
+                : values.reduce((a, b) => a * b, 1);
+        }
+
+        function numbersAreEqualForEvaluation(a, b) {
+            return Math.abs(a - b) < 1e-9;
+        }
+
+        function formatEvaluationResultForExpression(value) {
+            if (!Number.isFinite(value)) {
+                return String(value);
+            }
+            if (Math.abs(value) < 1e-12) {
+                return "0";
+            }
+            const rounded = Math.round(value);
+            if (Math.abs(value - rounded) < 1e-9) {
+                return String(rounded);
+            }
+            return Number(value.toPrecision(12)).toString();
+        }
+
+        function canEvaluateSum() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "sum" && evaluateSumOrProductNode(node) !== null;
+        }
+
+        function canEvaluateProduct() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "prod" && evaluateSumOrProductNode(node) !== null;
+        }
+
+        function canEvaluateSumContainingProducts() {
+            const node = cloneSelectedRangeNode();
+            if (!node || node.type !== "sum" || !node.args || node.args.length === 0) {
+                return false;
+            }
+
+            const containsProductTerm = node.args.some(term => term && term.type === "prod");
+            if (!containsProductTerm) {
+                return false;
+            }
+
+            return evaluateSumContainingProductsNode(node) !== null;
+        }
+
+        function clampArithmeticLevel(value, fallback = 0) {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) {
+                return fallback;
+            }
+            return Math.max(0, Math.min(3, Math.floor(numeric)));
+        }
+
+        function getArithmeticLevelForCurrentLevel() {
+            const level = getCurrentLevel();
+            if (level && typeof level.arithmeticLevel === "number") {
+                return clampArithmeticLevel(level.arithmeticLevel, 0);
+            }
+            if (level && typeof level.evaluationLevel === "number") {
+                return clampArithmeticLevel(level.evaluationLevel, 0);
+            }
+            return 0;
+        }
+
+        function getArithmeticInputLevelForCurrentLevel() {
+            const level = getCurrentLevel();
+            if (level && typeof level.arithmeticInputLevel === "number") {
+                return clampArithmeticLevel(level.arithmeticInputLevel, getArithmeticLevelForCurrentLevel());
+            }
+            return getArithmeticLevelForCurrentLevel();
+        }
+
+        function getArithmeticOutputLevelForCurrentLevel() {
+            const level = getCurrentLevel();
+            if (level && typeof level.arithmeticOutputLevel === "number") {
+                return clampArithmeticLevel(level.arithmeticOutputLevel, getArithmeticLevelForCurrentLevel());
+            }
+            return getArithmeticLevelForCurrentLevel();
+        }
+
+        function getEvaluationLevelForCurrentLevel() {
+            return getArithmeticLevelForCurrentLevel();
+        }
+
+        const ARITHMETIC_TOOL_LEVELS = {
+            arithmeticLevel0: 0,
+            arithmeticLevel1: 1,
+            arithmeticLevel2: 2,
+            arithmeticLevel3: 3
+        };
+
+        function isArithmeticEquivalenceTool(toolName) {
+            return Object.prototype.hasOwnProperty.call(ARITHMETIC_TOOL_LEVELS, toolName);
+        }
+
+        function getArithmeticLevelFromToolName(toolName) {
+            return isArithmeticEquivalenceTool(toolName)
+                ? ARITHMETIC_TOOL_LEVELS[toolName]
+                : null;
+        }
+
+        function isArithmeticToolLevelAllowedInCurrentLevel(level) {
+            return clampArithmeticLevel(level, 0) === getArithmeticLevelForCurrentLevel();
+        }
+
+        function isArithmeticToolAllowedInCurrentLevel(toolName) {
+            const level = getArithmeticLevelFromToolName(toolName);
+            return level === null || isArithmeticToolLevelAllowedInCurrentLevel(level);
+        }
+
+        function isToolAllowedInCurrentLevel(toolName) {
+            return isArithmeticToolAllowedInCurrentLevel(toolName);
+        }
+
+        function getArithmeticAllowedLevelsForTool(toolName) {
+            const forcedLevel = getArithmeticLevelFromToolName(toolName);
+            if (forcedLevel !== null) {
+                return { inputLevel: forcedLevel, outputLevel: forcedLevel };
+            }
+            return {
+                inputLevel: getArithmeticInputLevelForCurrentLevel(),
+                outputLevel: getArithmeticOutputLevelForCurrentLevel()
+            };
+        }
+
+        function getNumericLeafValue(node) {
+            if (!node || node.type !== "value") {
+                return null;
+            }
+            const parsed = parseNumericValue(node.value);
+            return parsed === null || Number.isNaN(parsed) || !Number.isFinite(parsed)
+                ? null
+                : parsed;
+        }
+
+        function getWholeNumberLeafValue(node) {
+            if (!node || node.type !== "value") {
+                return null;
+            }
+            return parseNonNegativeInteger(node.value);
+        }
+
+        function isWholeNumberLeafNode(node) {
+            return getWholeNumberLeafValue(node) !== null;
+        }
+
+        function isEntirelyNumericalNode(node) {
+            if (!node) {
+                return false;
+            }
+            if (node.type === "value") {
+                return getNumericLeafValue(node) !== null;
+            }
+            return Array.isArray(node.args) && node.args.length > 0 && node.args.every(isEntirelyNumericalNode);
+        }
+
+        function evaluateArithmeticNode(node) {
+            if (!node) {
+                return null;
+            }
+            if (node.type === "value") {
+                return getNumericLeafValue(node);
+            }
+            if (!Array.isArray(node.args) || node.args.length === 0) {
+                return null;
+            }
+            const values = node.args.map(evaluateArithmeticNode);
+            if (values.some(value => value === null || Number.isNaN(value) || !Number.isFinite(value))) {
+                return null;
+            }
+            let result = null;
+            if (node.type === "sum") {
+                result = values.reduce((a, b) => a + b, 0);
+            } else if (node.type === "prod") {
+                result = values.reduce((a, b) => a * b, 1);
+            } else if (node.type === "exp" && values.length === 2) {
+                result = Math.pow(values[0], values[1]);
+            } else {
+                return null;
+            }
+            return Number.isFinite(result) && !Number.isNaN(result) ? result : null;
+        }
+
+        function isOneSignificantFigureWholeNumber(value) {
+            if (!Number.isInteger(value) || value < 0) {
+                return false;
+            }
+            if (value === 0) {
+                return true;
+            }
+            return /^[1-9]0*$/.test(String(value));
+        }
+
+        function isNoCarryWholeNumberAddition(values) {
+            if (!Array.isArray(values) || values.length < 2) {
+                return false;
+            }
+            if (!values.every(value => Number.isInteger(value) && value >= 0)) {
+                return false;
+            }
+            const texts = values.map(value => String(value));
+            const maxLength = Math.max(...texts.map(text => text.length));
+            for (let offset = 0; offset < maxLength; offset++) {
+                let columnSum = 0;
+                for (const text of texts) {
+                    const index = text.length - 1 - offset;
+                    columnSum += index >= 0 ? Number(text[index]) : 0;
+                }
+                if (columnSum >= 10) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function classifyArithmeticExpressionLevel(node) {
+            if (!isEntirelyNumericalNode(node)) {
+                return null;
+            }
+            const normalized = normalizeExpressionTree(cloneNode(node));
+            return classifyArithmeticExpressionLevelNormalized(normalized);
+        }
+
+        function classifyArithmeticExpressionLevelNormalized(node) {
+            if (!node) {
+                return null;
+            }
+
+            if (node.type === "value") {
+                if (parseNonNegativeInteger(node.value) !== null) {
+                    return 0;
+                }
+                if (node.value === "-1") {
+                    return 2;
+                }
+                return getNumericLeafValue(node) !== null ? 3 : null;
+            }
+
+            if (!Array.isArray(node.args) || node.args.length === 0) {
+                return null;
+            }
+
+            const childLevels = node.args.map(classifyArithmeticExpressionLevelNormalized);
+            if (childLevels.some(level => level === null)) {
+                return null;
+            }
+
+            if (node.type === "sum") {
+                const nonNegativeIntegerTerms = node.args.map(getWholeNumberLeafValue);
+                if (nonNegativeIntegerTerms.every(value => value !== null)) {
+                    return isNoCarryWholeNumberAddition(nonNegativeIntegerTerms) ? 0 : 1;
+                }
+                return childLevels.every(level => level <= 2) ? 2 : 3;
+            }
+
+            if (node.type === "prod") {
+                const nonNegativeIntegerFactors = node.args.map(getWholeNumberLeafValue);
+                if (nonNegativeIntegerFactors.every(value => value !== null)) {
+                    const isLevelZeroProduct = nonNegativeIntegerFactors.length === 2 &&
+                        nonNegativeIntegerFactors.every(isOneSignificantFigureWholeNumber);
+                    return isLevelZeroProduct ? 0 : 1;
+                }
+                return childLevels.every(level => level <= 2) ? 2 : 3;
+            }
+
+            if (node.type === "exp" && node.args.length === 2) {
+                return isWholeNumberLeafNode(node.args[0]) && isWholeNumberLeafNode(node.args[1])
+                    ? 2
+                    : 3;
+            }
+
+            return null;
+        }
+
+        function isArithmeticExpressionAtOrBelowLevel(node, allowedLevel) {
+            const level = classifyArithmeticExpressionLevel(node);
+            return level !== null && level <= clampArithmeticLevel(allowedLevel, 0);
+        }
+
+        function getArithmeticLevelDescription(level) {
+            const clamped = clampArithmeticLevel(level, 0);
+            if (clamped === 0) {
+                return "Level 0 allows no-carry addition of two or more nonnegative whole numbers, or multiplication of exactly two one-significant-figure whole numbers.";
+            }
+            if (clamped === 1) {
+                return "Level 1 allows flat nonnegative sums or flat nonnegative products, with no exponents and no nesting.";
+            }
+            if (clamped === 2) {
+                return "Level 2 allows nested sums and products, the negative unit, and simple nonnegative whole-number exponents.";
+            }
+            return "Level 3 allows any expression made entirely of numbers.";
+        }
+
+        function evaluateLevelOneNode(node) {
+            if (!node) {
+                return null;
+            }
+            if (node.type === "value") {
+                const parsed = parseNonNegativeInteger(node.value);
+                return parsed === null ? null : parsed;
+            }
+            if (node.type === "sum" || node.type === "prod") {
+                const level = classifyArithmeticExpressionLevel(node);
+                if (level === null || level > 1) {
+                    return null;
+                }
+                const result = evaluateArithmeticNode(node);
+                return result !== null && result >= 0 && Number.isInteger(result) ? result : null;
+            }
+            return null;
+        }
+
+        function evaluateNodeForCurrentLevel(node) {
+            const evaluationLevel = getEvaluationLevelForCurrentLevel();
+            if (!isArithmeticExpressionAtOrBelowLevel(node, evaluationLevel)) {
+                return null;
+            }
+            return evaluateArithmeticNode(node);
+        }
+
+        function parseIntegerInput(text) {
+            const trimmed = String(text || "").trim();
+            if (!/^-?\d+$/.test(trimmed)) {
+                return null;
+            }
+            return Number(trimmed);
+        }
+
+        function isPositiveIntegerValueNode(node) {
+            return !!node &&
+                node.type === "value" &&
+                parseNonNegativeInteger(node.value) !== null &&
+                parseNonNegativeInteger(node.value) > 0;
+        }
+
+        function isNonNegativeIntegerValueNode(node) {
+            return !!node &&
+                node.type === "value" &&
+                parseNonNegativeInteger(node.value) !== null;
+        }
+
+        function isNegativeUnitNode(node) {
+            return !!node && node.type === "value" && node.value === "-1";
+        }
+
+        function evaluateSignedIntegerNode(node) {
+            if (!node) {
+                return null;
+            }
+            if (node.type === "value") {
+                if (node.value === "-1") {
+                    return -1;
+                }
+                const parsed = parseNonNegativeInteger(node.value);
+                return parsed === null ? null : parsed;
+            }
+            if ((node.type === "sum" || node.type === "prod") && Array.isArray(node.args) && node.args.length > 0) {
+                const values = node.args.map(evaluateSignedIntegerNode);
+                if (values.some(value => value === null || !Number.isFinite(value))) {
+                    return null;
+                }
+                const result = node.type === "sum"
+                    ? values.reduce((a, b) => a + b, 0)
+                    : values.reduce((a, b) => a * b, 1);
+                return Number.isInteger(result) ? result : null;
+            }
+            return null;
+        }
+
+        function isCanonicalNegativeIntegerNode(node) {
+            if (!node || node.type !== "prod" || !Array.isArray(node.args) || node.args.length !== 2) {
+                return false;
+            }
+            const firstIsNegativeUnit = isNegativeUnitNode(node.args[0]) && isPositiveIntegerValueNode(node.args[1]);
+            const secondIsNegativeUnit = isNegativeUnitNode(node.args[1]) && isPositiveIntegerValueNode(node.args[0]);
+            return firstIsNegativeUnit || secondIsNegativeUnit;
+        }
+
+        function getSingleSignedIntegerValue(node) {
+            if (isNonNegativeIntegerValueNode(node)) {
+                return parseNonNegativeInteger(node.value);
+            }
+            if (isCanonicalNegativeIntegerNode(node)) {
+                const value = evaluateSignedIntegerNode(node);
+                return value === null ? null : value;
+            }
+            return null;
+        }
+
+        function makeSignedIntegerNode(value) {
+            if (value >= 0) {
+                return valueNode(String(value));
+            }
+            return makeProductFromFactors([valueNode("-1"), valueNode(String(Math.abs(value)))]);
+        }
+
+        function nodeContainsNegativeUnit(node) {
+            if (!node) {
+                return false;
+            }
+            if (isNegativeUnitNode(node)) {
+                return true;
+            }
+            return Array.isArray(node.args) && node.args.some(nodeContainsNegativeUnit);
+        }
+
+        function nodeContainsCanonicalNegativeProduct(node) {
+            if (!node) {
+                return false;
+            }
+            if (isCanonicalNegativeIntegerNode(node)) {
+                return true;
+            }
+            return Array.isArray(node.args) && node.args.some(nodeContainsCanonicalNegativeProduct);
+        }
+
+        function isPositiveSumNode(node) {
+            return !!node &&
+                node.type === "sum" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                node.args.every(isPositiveIntegerValueNode);
+        }
+
+        function isPositiveProductNode(node) {
+            return !!node &&
+                node.type === "prod" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                node.args.every(isPositiveIntegerValueNode);
+        }
+
+        function isProductWithNegativesNode(node) {
+            return !!node &&
+                node.type === "prod" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                !isCanonicalNegativeIntegerNode(node) &&
+                nodeContainsNegativeUnit(node) &&
+                evaluateSignedIntegerNode(node) !== null;
+        }
+
+        function isSumWithNegativeProductsNode(node) {
+            return !!node &&
+                node.type === "sum" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                nodeContainsCanonicalNegativeProduct(node) &&
+                evaluateSignedIntegerNode(node) !== null;
+        }
+
+        function isSignedSumNode(node) {
+            return !!node &&
+                node.type === "sum" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                nodeContainsNegativeUnit(node) &&
+                evaluateSignedIntegerNode(node) !== null;
+        }
+
+        function isSignedProductNode(node) {
+            return !!node &&
+                node.type === "prod" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                nodeContainsNegativeUnit(node) &&
+                evaluateSignedIntegerNode(node) !== null;
+        }
+
+        function isDifferenceNode(node) {
+            return !!node &&
+                node.type === "sum" &&
+                Array.isArray(node.args) &&
+                node.args.length >= 2 &&
+                nodeContainsCanonicalNegativeProduct(node) &&
+                evaluateSignedIntegerNode(node) !== null;
+        }
+
+        function isPositiveSingleNumberSelection(node) {
+            const value = getSingleSignedIntegerValue(node);
+            return value !== null && value > 0;
+        }
+
+        function isSingleIntegerSelection(node) {
+            return getSingleSignedIntegerValue(node) !== null;
+        }
+
+        function getStructuredNumericalToolModeForSelection(toolName) {
+            const selectedNode = cloneSelectedRangeNode();
+            if (!selectedNode) {
+                return null;
+            }
+
+            if (toolName === "numEvaluatePositiveSum" || toolName === "numSumPositive") {
+                return isPositiveSumNode(selectedNode) ? "collapse" : null;
+            }
+            if (toolName === "numEvaluatePositiveProduct" || toolName === "numProductPositive") {
+                return isPositiveProductNode(selectedNode) ? "collapse" : null;
+            }
+            if (toolName === "numWritePositiveNumberAsProduct") {
+                return isPositiveSingleNumberSelection(selectedNode) ? "expand" : null;
+            }
+            if (toolName === "numWritePositiveNumberAsSum") {
+                return isPositiveSingleNumberSelection(selectedNode) ? "expand" : null;
+            }
+            if (toolName === "numEvaluateSignedSum" || toolName === "numSumWithNegativeProducts") {
+                return isSignedSumNode(selectedNode) ? "collapse" : null;
+            }
+            if (toolName === "numEvaluateSignedProduct" || toolName === "numProductWithNegatives") {
+                return isSignedProductNode(selectedNode) ? "collapse" : null;
+            }
+            if (toolName === "numExpressNumberAsDifference") {
+                return isSingleIntegerSelection(selectedNode) ? "expand" : null;
+            }
+            return null;
+        }
+
+        function canStructuredNumericalTool(toolName) {
+            return getStructuredNumericalToolModeForSelection(toolName) !== null;
+        }
+
+        function getStructuredNumericalToolInputLabel(toolName) {
+            const mode = getStructuredNumericalToolModeForSelection(toolName);
+            if (toolName === "numEvaluatePositiveSum" || toolName === "numSumPositive") {
+                return "Enter the single positive whole number equal to the selected sum.";
+            }
+            if (toolName === "numEvaluatePositiveProduct" || toolName === "numProductPositive") {
+                return "Enter the single positive whole number equal to the selected product.";
+            }
+            if (toolName === "numWritePositiveNumberAsProduct") {
+                return "Build a product of positive whole numbers equivalent to the selected number. The current expression will not change until the product is checked.";
+            }
+            if (toolName === "numWritePositiveNumberAsSum") {
+                return "Build a sum of positive whole numbers equivalent to the selected number. The current expression will not change until the sum is checked.";
+            }
+            if (toolName === "numEvaluateSignedSum" || toolName === "numSumWithNegativeProducts") {
+                return "Enter the single integer equal to the selected sum. Negative results may be typed with a minus sign.";
+            }
+            if (toolName === "numEvaluateSignedProduct" || toolName === "numProductWithNegatives") {
+                return "Enter the single integer equal to the selected product. Negative results may be typed with a minus sign.";
+            }
+            if (toolName === "numExpressNumberAsDifference") {
+                return "Build a difference equivalent to the selected number, using a sum with at least one negative product such as 8 + (-1)·3. The current expression will not change until the difference is checked.";
+            }
+            return mode === "expand" ? "Build an equivalent number expression." : "Enter the equivalent integer.";
+        }
+
+        function validateStructuredNumericalExpansion(toolName, completed, target) {
+            let ok = false;
+            let expected = "";
+            if (toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive") {
+                ok = isPositiveProductNode(completed);
+                expected = "Build a product with at least two positive whole-number factors.";
+            } else if (toolName === "numWritePositiveNumberAsSum" || toolName === "numSumPositive") {
+                ok = isPositiveSumNode(completed);
+                expected = "Build a sum with at least two positive whole-number addends.";
+            } else if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
+                ok = isDifferenceNode(completed);
+                expected = "Build a difference as a sum with at least one term written as a negative product, such as 8 + ((-1)·3).";
+            } else if (toolName === "numProductWithNegatives") {
+                ok = isSignedProductNode(completed);
+                expected = "Build a product that includes -1 and contains only integer number factors.";
+            }
+            if (!ok) {
+                return { ok: false, error: expected };
+            }
+            const computed = evaluateSignedIntegerNode(completed);
+            if (computed === null) {
+                return { ok: false, error: "Build an integer-valued number expression." };
+            }
+            if (computed !== target) {
+                return { ok: false, error: `That expression evaluates to ${computed}, not ${target}.` };
+            }
+            return { ok: true };
+        }
+
+        function applyStructuredNumericalInputTool(toolName) {
+            const selectedNode = cloneSelectedRangeNode();
+            const target = evaluateSignedIntegerNode(selectedNode);
+            if (target === null) {
+                return false;
+            }
+            const entered = parseIntegerInput(uiState.inputText);
+            if (entered === null) {
+                uiState.message = "Enter a single integer. Negative answers may be typed with a minus sign.";
+                renderToolArea();
+                refreshStatus();
+                return false;
+            }
+            if (entered !== target) {
+                uiState.message = `That is not correct. The selected expression evaluates to ${target}.`;
+                renderToolArea();
+                refreshStatus();
+                return false;
+            }
+            replaceSelectedRange(makeSignedIntegerNode(entered));
+            finishOperation();
+            return true;
+        }
+
+        function canEvaluate() {
+            return evaluateNodeForCurrentLevel(cloneSelectedRangeNode()) !== null;
+        }
+
+        function getDoubleNegativeData() {
+            if (!selection.node) {
+                return null;
+            }
+            const wrapper = cloneSelectedRangeNode();
+            if (!wrapper || wrapper.type !== "prod") {
+                return null;
+            }
+            const indices = [];
+            for (let i = 0; i < wrapper.args.length; i++) {
+                if (wrapper.args[i].type === "value" && wrapper.args[i].value === "-1") {
+                    indices.push(i);
+                }
+            }
+            if (indices.length < 2) {
+                return null;
+            }
+            return { wrapper, indices };
+        }
+
+        function canDoubleNegative() {
+            const node = cloneSelectedRangeNode();
+            return !!getDoubleNegativeData() || (!!node && node.type === "value" && node.value === "1");
+        }
+
+        function getZeroProductData() {
+            if (!selection.node) {
+                return null;
+            }
+            const wrapper = cloneSelectedRangeNode();
+            if (!wrapper || wrapper.type !== "prod") {
+                return null;
+            }
+            const zeroNode = wrapper.args.find(arg => arg.type === "value" && arg.value === "0");
+            if (!zeroNode) {
+                return null;
+            }
+            return { wrapper, zeroNode };
+        }
+
+        function canZeroProduct() {
+            return !!getZeroProductData();
+        }
+
+        function isNegativeOf(node) {
+            if (!node || node.type !== "prod") {
+                return null;
+            }
+
+            // Products are normalized by flattening nested products. That means
+            // the negative of a product such as (-1) · (2 · x) becomes
+            // (-1) · 2 · x. Treat any single top-level -1 factor as the
+            // marker for "negative of the product of the remaining factors."
+            const negativeFactorIndex = node.args.findIndex(arg =>
+                arg.type === "value" && arg.value === "-1"
+            );
+            if (negativeFactorIndex === -1) {
+                return null;
+            }
+
+            const remainingFactors = node.args
+                .filter((_, index) => index !== negativeFactorIndex)
+                .map(cloneNode);
+            return normalizeCloneForMatching(makeProductFromFactors(remainingFactors));
+        }
+
+        function getCancelOppositesData() {
+            if (!selection.node) {
+                return null;
+            }
+            const wrapper = cloneSelectedRangeNode();
+            if (!wrapper || wrapper.type !== "sum") {
+                return null;
+            }
+
+            const used = new Set();
+            const pairs = [];
+            for (let negIndex = 0; negIndex < wrapper.args.length; negIndex++) {
+                if (used.has(negIndex)) {
+                    continue;
+                }
+
+                const positiveExpression = isNegativeOf(wrapper.args[negIndex]);
+                if (!positiveExpression) {
+                    continue;
+                }
+
+                // A may itself be a sum. Since sums are normalized by flattening
+                // nested sums, A + (-1) · A can appear as
+                // a + b + c + (-1) · (a + b + c). Match the negative term
+                // against as many sibling terms as A needs, rather than requiring
+                // A to be a single sibling term.
+                const requiredPositiveTerms = getSumTermsForMatching(positiveExpression);
+                const posIndices = findMatchingNodeIndices(requiredPositiveTerms, wrapper.args, used, negIndex);
+                if (!posIndices) {
+                    continue;
+                }
+
+                used.add(negIndex);
+                posIndices.forEach(index => used.add(index));
+                pairs.push({
+                    posIndex: posIndices[0],
+                    posIndices,
+                    negIndex
+                });
+            }
+
+            if (pairs.length === 0) {
+                return null;
+            }
+            return { wrapper, pairs };
+        }
+
+        function canCancelOpposites() {
+            const node = cloneSelectedRangeNode();
+            return !!getCancelOppositesData() || (!!node && node.type === "value" && node.value === "0");
+        }
+
+        function beginPostview(postviewData) {
+            if (uiState.postviewTimerId !== null) {
+                clearTimeout(uiState.postviewTimerId);
+            }
+
+            uiState.stage = "postview";
+            uiState.postviewData = postviewData;
+
+            expressionRoot = normalizeExpressionTree(expressionRoot);
+            syncCurrentExpressionRoot();
+            layoutExpression(expressionRoot);
+            updateStepCompletion(getCurrentLevel());
+            renderLevelInfo(currentLevelIndex);
+            renderCurrentExpressionDisplay();
+            refreshStatus();
+            renderToolArea();
+            drawExpression();
+
+            uiState.postviewTimerId = setTimeout(() => {
+                uiState.postviewTimerId = null;
+                clearSelection();
+                clearInteraction();
+                layoutExpression(expressionRoot);
+                updateStepCompletion(getCurrentLevel());
+                renderLevelInfo(currentLevelIndex);
+                refreshStatus();
+                drawExpression();
+            }, SETTINGS.postviewDurationMs);
+        }
+
+        function getDistributionPostviewDataFromNode(distributedNode, direction, colors) {
+            const factorRegions = [];
+            const termRegions = [];
+
+            const termList = distributedNode.type === "sum"
+                ? distributedNode.args
+                : [distributedNode];
+
+            for (const termNode of termList) {
+                if (termNode.type === "prod") {
+                    if (direction === "left") {
+                        const distributedFactorCount = termNode.args.length - 1;
+                        const originalTermNode = termNode.args[termNode.args.length - 1];
+                        const originalTermFactorCount = getTermFactors(originalTermNode).length;
+
+                        if (distributedFactorCount > 0) {
+                            factorRegions.push({
+                                node: termNode,
+                                firstIndex: 0,
+                                lastIndex: distributedFactorCount - 1
+                            });
+                        }
+
+                        termRegions.push({
+                            node: termNode,
+                            firstIndex: distributedFactorCount,
+                            lastIndex: distributedFactorCount + originalTermFactorCount - 1
+                        });
+                    } else {
+                        const originalTermNode = termNode.args[0];
+                        const originalTermFactorCount = getTermFactors(originalTermNode).length;
+                        const distributedFactorCount = termNode.args.length - 1;
+
+                        termRegions.push({
+                            node: termNode,
+                            firstIndex: 0,
+                            lastIndex: originalTermFactorCount - 1
+                        });
+
+                        if (distributedFactorCount > 0) {
+                            factorRegions.push({
+                                node: termNode,
+                                firstIndex: originalTermFactorCount,
+                                lastIndex: originalTermFactorCount + distributedFactorCount - 1
+                            });
+                        }
+                    }
+                } else {
+                    termRegions.push({
+                        node: termNode,
+                        firstIndex: 0,
+                        lastIndex: 0
+                    });
+                }
+            }
+
+            return {
+                type: "distribution",
+                factorRegions,
+                termRegions,
+                colors
+            };
+        }
+
+        function getFactoringPostviewDataFromNode(factoredNode, direction, commonCount, termCount, colors) {
+            const commonFactorRegions = [];
+            const remainderNodes = [];
+
+            if (factoredNode.type === "prod") {
+                if (direction === "left") {
+                    const commonLastIndex = Math.min(commonCount - 1, factoredNode.args.length - 1);
+                    if (commonLastIndex >= 0) {
+                        commonFactorRegions.push({
+                            node: factoredNode,
+                            firstIndex: 0,
+                            lastIndex: commonLastIndex
+                        });
+                    }
+
+                    const innerNode = factoredNode.args[Math.min(commonCount, factoredNode.args.length - 1)];
+                    if (innerNode) {
+                        if (innerNode.type === "sum") {
+                            remainderNodes.push(...innerNode.args);
+                        } else {
+                            remainderNodes.push(innerNode);
+                        }
+                    }
+                } else {
+                    const sumIndex = Math.max(0, factoredNode.args.length - commonCount - 1);
+                    const innerNode = factoredNode.args[sumIndex];
+                    if (innerNode) {
+                        if (innerNode.type === "sum") {
+                            remainderNodes.push(...innerNode.args);
+                        } else {
+                            remainderNodes.push(innerNode);
+                        }
+                    }
+
+                    const commonFirstIndex = sumIndex + 1;
+                    const commonLastIndex = factoredNode.args.length - 1;
+                    if (commonFirstIndex <= commonLastIndex) {
+                        commonFactorRegions.push({
+                            node: factoredNode,
+                            firstIndex: commonFirstIndex,
+                            lastIndex: commonLastIndex
+                        });
+                    }
+                }
+            } else {
+                remainderNodes.push(factoredNode);
+            }
+
+            while (remainderNodes.length > termCount) {
+                remainderNodes.pop();
+            }
+
+            return {
+                type: "factoring",
+                commonFactorRegions,
+                remainderNodes,
+                colors
+            };
+        }
+
+        function getApplicableTools() {
+            const leftFactorData = getFactoringData("left");
+            const rightFactorData = getFactoringData("right");
+            const powerInverseApplicability = getPowerInverseRewriteApplicability();
+
+            return {
+                commute: canCommuteRotate(),
+                commuteFirstToLast: canCommuteRotate(),
+                commuteLastToFirst: canCommuteRotate(),
+                commuteTerms: !!selection.node && selection.node.type === "sum" && canCommuteRotate(),
+                commuteFactors: !!selection.node && selection.node.type === "prod" && canCommuteRotate(),
+                distributeLeftToRight: !!getDistributionData("left"),
+                distributeRightToLeft: !!getDistributionData("right"),
+                factorLeft: !!leftFactorData && leftFactorData.commonCount > 0,
+                factorRight: !!rightFactorData && rightFactorData.commonCount > 0,
+                replaceOneWithInverseProduct: canReplaceOneWithInverseProduct(),
+                insertZeroProduct: canInsertZeroProduct(),
+                insertZeroProductLeft: canInsertZeroProduct(),
+                insertZeroProductRight: canInsertZeroProduct(),
+                insertExponentZero: canInsertExponentZero(),
+                insertPowerOfOne: canInsertPowerOfOne(),
+                cancelProductWithInverse: canCancelProductWithInverse(),
+                eliminateDoubleInverse: canEliminateDoubleInverse(),
+                insertDoubleInverse: canInsertDoubleInverse(),
+                distributeInverseOverProduct: canDistributeInverseOverProduct(),
+                factorProductOfInverses: canFactorProductOfInverses(),
+                ...powerInverseApplicability,
+                insertIdentity: canInsertIdentity(),
+                insertIdentityAddZeroTop: canInsertIdentity(),
+                insertIdentityAddZeroBottom: canInsertIdentity(),
+                insertIdentityMultiplyByOneLeft: canInsertIdentity(),
+                insertIdentityMultiplyByOneRight: canInsertIdentity(),
+                eliminateIdentities: canEliminateIdentities(),
+                factorNumber: canFactorNumber(),
+                writeNumberAsSum: canWriteNumberAsSum(),
+                evaluate: canEvaluate(),
+                numericalEquivalence: canNumericalEquivalence(),
+                arithmeticLevel0: isArithmeticToolLevelAllowedInCurrentLevel(0) && canArithmeticEquivalence(0),
+                arithmeticLevel1: isArithmeticToolLevelAllowedInCurrentLevel(1) && canArithmeticEquivalence(1),
+                arithmeticLevel2: isArithmeticToolLevelAllowedInCurrentLevel(2) && canArithmeticEquivalence(2),
+                arithmeticLevel3: isArithmeticToolLevelAllowedInCurrentLevel(3) && canArithmeticEquivalence(3),
+                numEvaluatePositiveSum: canStructuredNumericalTool("numEvaluatePositiveSum"),
+                numEvaluatePositiveProduct: canStructuredNumericalTool("numEvaluatePositiveProduct"),
+                numWritePositiveNumberAsProduct: canStructuredNumericalTool("numWritePositiveNumberAsProduct"),
+                numWritePositiveNumberAsSum: canStructuredNumericalTool("numWritePositiveNumberAsSum"),
+                numEvaluateSignedSum: canStructuredNumericalTool("numEvaluateSignedSum"),
+                numEvaluateSignedProduct: canStructuredNumericalTool("numEvaluateSignedProduct"),
+                numExpressNumberAsDifference: canStructuredNumericalTool("numExpressNumberAsDifference"),
+                numSumPositive: canStructuredNumericalTool("numSumPositive"),
+                numProductPositive: canStructuredNumericalTool("numProductPositive"),
+                numProductWithNegatives: canStructuredNumericalTool("numProductWithNegatives"),
+                numSumWithNegativeProducts: canStructuredNumericalTool("numSumWithNegativeProducts"),
+                cancelOpposites: canCancelOpposites(),
+                doubleNegative: canDoubleNegative(),
+                zeroProduct: canZeroProduct(),
+                reduceToZero: canZeroProduct() || canCancelOpposites(),
+                reduceToOne: canCancelProductWithInverse() || !!powerInverseApplicability.eliminateExponentZero || !!powerInverseApplicability.oneToAnyPower
+            };
+        }
+
+        function applyLeftDistribution() {
+            const data = getDistributionData("left");
+            if (!data) {
+                return false;
+            }
+
+            const colors = uiState.previewColors || getDistinctRandomColors(1 + data.sumNode.args.length);
+            const leftFactors = selection.node.args
+                .slice(selection.firstPart, selection.lastPart)
+                .map(cloneNode);
+            const sumNode = selection.node.args[selection.lastPart];
+            const distributedTerms = sumNode.args.map(term => {
+                const newFactors = leftFactors.map(cloneNode);
+                newFactors.push(cloneNode(term));
+                return makeProductFromFactors(newFactors);
+            });
+            const distributedNode = makeSumFromTerms(distributedTerms);
+
+            const before = selection.node.args.slice(0, selection.firstPart);
+            const after = selection.node.args.slice(selection.lastPart + 1);
+            selection.node.args = [...before, distributedNode, ...after];
+
+            beginPostview(getDistributionPostviewDataFromNode(distributedNode, "left", colors));
+            return true;
+        }
+
+        function applyRightDistribution() {
+            const data = getDistributionData("right");
+            if (!data) {
+                return false;
+            }
+
+            const colors = uiState.previewColors || getDistinctRandomColors(1 + data.sumNode.args.length);
+            const sumNode = selection.node.args[selection.firstPart];
+            const rightFactors = selection.node.args
+                .slice(selection.firstPart + 1, selection.lastPart + 1)
+                .map(cloneNode);
+
+            const distributedTerms = sumNode.args.map(term => {
+                const newFactors = [cloneNode(term), ...rightFactors.map(cloneNode)];
+                return makeProductFromFactors(newFactors);
+            });
+            const distributedNode = makeSumFromTerms(distributedTerms);
+
+            const before = selection.node.args.slice(0, selection.firstPart);
+            const after = selection.node.args.slice(selection.lastPart + 1);
+            selection.node.args = [...before, distributedNode, ...after];
+
+            beginPostview(getDistributionPostviewDataFromNode(distributedNode, "right", colors));
+            return true;
+        }
+
+        function applyLeftFactoring() {
+            const data = getFactoringData("left");
+            if (!data || data.commonCount <= 0) {
+                return false;
+            }
+
+            const termCount = selection.lastPart - selection.firstPart + 1;
+            const colors = uiState.previewColors || getDistinctRandomColors(1 + termCount);
+            const commonFactors = getTermFactors(data.selectedTerms[0])
+                .slice(0, data.commonCount)
+                .map(cloneNode);
+
+            const remainders = data.selectedTerms.map(term => {
+                const factors = getTermFactors(term);
+                const remaining = factors.slice(data.commonCount).map(cloneNode);
+                return makeProductFromFactors(remaining);
+            });
+
+            const innerSum = makeSumFromTerms(remainders);
+            const factoredNode = makeProductFromFactors([...commonFactors, innerSum]);
+
+            const before = selection.node.args.slice(0, selection.firstPart);
+            const after = selection.node.args.slice(selection.lastPart + 1);
+            selection.node.args = [...before, factoredNode, ...after];
+
+            beginPostview(getFactoringPostviewDataFromNode(factoredNode, "left", data.commonCount, termCount, colors));
+            return true;
+        }
+
+        function applyRightFactoring() {
+            const data = getFactoringData("right");
+            if (!data || data.commonCount <= 0) {
+                return false;
+            }
+
+            const termCount = selection.lastPart - selection.firstPart + 1;
+            const colors = uiState.previewColors || getDistinctRandomColors(1 + termCount);
+            const baseFactors = getTermFactors(data.selectedTerms[0]);
+            const commonFactors = baseFactors.slice(baseFactors.length - data.commonCount).map(cloneNode);
+
+            const remainders = data.selectedTerms.map(term => {
+                const factors = getTermFactors(term);
+                const remaining = factors.slice(0, factors.length - data.commonCount).map(cloneNode);
+                return makeProductFromFactors(remaining);
+            });
+
+            const innerSum = makeSumFromTerms(remainders);
+            const factoredNode = makeProductFromFactors([innerSum, ...commonFactors]);
+
+            const before = selection.node.args.slice(0, selection.firstPart);
+            const after = selection.node.args.slice(selection.lastPart + 1);
+            selection.node.args = [...before, factoredNode, ...after];
 
             beginPostview(getFactoringPostviewDataFromNode(factoredNode, "right", data.commonCount, termCount, colors));
             return true;
