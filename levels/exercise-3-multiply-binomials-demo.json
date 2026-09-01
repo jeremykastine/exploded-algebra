@@ -1,0 +1,424 @@
+{
+  "id": "exercise3-demo-2026-09-01t05-52-53z",
+  "title": "Demo: Exercise 3: Multiply Binomials and Combine Like Terms (9/1/2026, 1:52:53 AM)",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "variables": [
+    "x"
+  ],
+  "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+  "steps": [
+    {
+      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "katex": "(x+3)(2x+5)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "katex": "x(2x+5)+3(2x+5)",
+      "label": "Distribute one binomial"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "katex": "2x^2+5x+6x+15",
+      "label": "Distribute and simplify the products"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "katex": "2x^2+(5+6)x+15",
+      "label": "Group the like terms"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "katex": "2x^2+11x+15",
+      "label": "Combine like terms"
+    }
+  ],
+  "kind": "demoOnly",
+  "sourceLevelId": "exercise3",
+  "sourceLevelTitle": "Exercise 3: Multiply Binomials and Combine Like Terms",
+  "createdAt": "2026-09-01T05:51:39.128Z",
+  "completedAt": "2026-09-01T05:52:53.076Z",
+  "sourceLevel": {
+    "id": "exercise3",
+    "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
+    "evaluationLevel": 2,
+    "arithmeticLevel": 2,
+    "variables": [
+      "x"
+    ],
+    "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+    "steps": [
+      {
+        "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+        "katex": "(x+3)(2x+5)",
+        "label": "Start"
+      },
+      {
+        "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+        "katex": "x(2x+5)+3(2x+5)",
+        "label": "Distribute one binomial"
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+        "katex": "2x^2+5x+6x+15",
+        "label": "Distribute and simplify the products"
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+        "katex": "2x^2+(5+6)x+15",
+        "label": "Group the like terms"
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+        "katex": "2x^2+11x+15",
+        "label": "Combine like terms"
+      }
+    ],
+    "kind": "interactive"
+  },
+  "demo": {
+    "steps": [
+      {
+        "type": "select",
+        "expression": "(((x)+(3))*(((2)*(x))+(5)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeRightToLeft"
+      },
+      {
+        "type": "select",
+        "expression": "((x)*(((2)*(x))+(5)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((3)*(((2)*(x))+(5)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((x)*(2))"
+      },
+      {
+        "type": "tool",
+        "tool": "commute"
+      },
+      {
+        "type": "select",
+        "expression": "((3)*(2))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "6"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((x)*(5))"
+      },
+      {
+        "type": "tool",
+        "tool": "commute"
+      },
+      {
+        "type": "select",
+        "expression": "((3)*(5))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "5"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((x)*(x))"
+      },
+      {
+        "type": "tool",
+        "tool": "repeatedProductToPower"
+      },
+      {
+        "type": "select",
+        "expression": "(((5)*(x))+((6)*(x)))"
+      },
+      {
+        "type": "tool",
+        "tool": "factorRight"
+      },
+      {
+        "type": "select",
+        "expression": "((5)+(6))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "distributeRightToLeft",
+      "beforeExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "afterExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "index": 1
+    },
+    {
+      "type": "select",
+      "expression": "((x)*(((2)*(x))+(5)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "index": 2
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "afterExpression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "index": 3
+    },
+    {
+      "type": "select",
+      "expression": "((3)*(((2)*(x))+(5)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(((2)*(x))+(5))))",
+      "index": 4
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(((2)*(x))+(5))))",
+      "afterExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(((2)*(x))+(5))))",
+      "index": 5
+    },
+    {
+      "type": "select",
+      "expression": "((x)*(2))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "index": 6
+    },
+    {
+      "type": "tool",
+      "tool": "commute",
+      "beforeExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "afterExpression": "(((x)*(2)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "index": 7
+    },
+    {
+      "type": "select",
+      "expression": "((3)*(2))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "index": 8
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "index": 9
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "6",
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "index": 10
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((3)*(2)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((x)*(5))+((6)*(x))+((3)*(5)))",
+      "index": 11
+    },
+    {
+      "type": "select",
+      "expression": "((x)*(5))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((6)*(x))+((3)*(5)))",
+      "index": 12
+    },
+    {
+      "type": "tool",
+      "tool": "commute",
+      "beforeExpression": "(((2)*(x)*(x))+((x)*(5))+((6)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((x)*(5))+((6)*(x))+((3)*(5)))",
+      "index": 13
+    },
+    {
+      "type": "select",
+      "expression": "((3)*(5))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "index": 14
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "index": 15
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "index": 16
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "5",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "index": 17
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+((3)*(5)))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
+      "index": 18
+    },
+    {
+      "type": "select",
+      "expression": "((x)*(x))",
+      "selectedType": "prod",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
+      "index": 19
+    },
+    {
+      "type": "tool",
+      "tool": "repeatedProductToPower",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
+      "index": 20
+    },
+    {
+      "type": "select",
+      "expression": "(((5)*(x))+((6)*(x)))",
+      "selectedType": "sum",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "index": 21
+    },
+    {
+      "type": "tool",
+      "tool": "factorRight",
+      "beforeExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "afterExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "index": 22
+    },
+    {
+      "type": "select",
+      "expression": "((5)+(6))",
+      "selectedType": "sum",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "index": 23
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "index": 24
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "index": 25
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "index": 26
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "index": 27
+    }
+  ]
+}

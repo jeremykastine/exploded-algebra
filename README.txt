@@ -11,7 +11,9 @@ The built-in exercises are ordinary JSON files in the levels folder:
 - levels/level-1-distribute-and-combine.json
 - levels/level-1-distribute-and-combine-demo.json
 - levels/exercise-2-add-fractions.json
+- levels/exercise-3-multiply-binomials-demo.json
 - levels/exercise-3-multiply-binomials.json
+- levels/exercise-4-multiply-rational-expressions-demo.json
 - levels/exercise-4-multiply-rational-expressions.json
 
 Exercises.html links to these files. To make those links work under file://,
