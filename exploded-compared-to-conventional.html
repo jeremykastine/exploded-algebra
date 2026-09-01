@@ -26,7 +26,6 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .exploded-line.move-from{margin-bottom:12px;}
 .exploded-line svg{display:block;overflow:visible;}
 .comparison-player{box-sizing:border-box;padding:24px;display:flex;flex-direction:column;gap:12px;}
-.player-heading{text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:bold;}
 .animation-stage{min-height:0;padding:16px 0;display:flex;align-items:center;justify-content:center;overflow:auto;}
 .animation-slide{display:none;}
 .animation-slide.is-current{display:grid;}
@@ -37,11 +36,13 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-ready .animation-phase.move-from{margin-bottom:0;}
 .player-prompt,.player-explanation{box-sizing:border-box;width:min(100%,980px);margin:0 auto;padding:10px 18px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1.4;color:#111;}
 .player-prompt{padding-bottom:4px;}
-.player-explanation{padding-top:12px;border-top:2px solid #bbb;}
-.explanation-status{font-weight:bold;}
+.player-explanation{padding-top:4px;}
 .parallel-slide,.intro-slide{width:min(100%,1120px);}
-.goal-slide{width:min(100%,900px);}
-.goal-message{padding:28px 20px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:1.45;color:#111;}
+.story-slide{width:min(100%,900px);}
+.story-message{padding:28px 20px;font-family:Arial,Helvetica,sans-serif;font-size:24px;line-height:1.5;color:#111;}
+.story-message p{margin:0 0 1em;}
+.story-message p:last-child{margin-bottom:0;}
+.story-message a{color:#075fa8;}
 .parallel-comparison,.intro-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;width:100%;}
 .notation-panel{min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;}
 .notation-label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#444;}
@@ -66,7 +67,7 @@ body.player-ready>#exploded-examples{display:none;}
     .player-prompt,.player-explanation{font-size:18px;}
     .notation-expression-frame{min-height:130px;font-size:24px;}
     .intro-conventional,.intro-exploded{font-size:24px;}
-    .goal-message{padding:20px 8px;font-size:22px;}
+    .story-message{padding:20px 8px;font-size:21px;}
 }
 </style>
 </head>
@@ -428,124 +429,124 @@ body.player-ready>#exploded-examples{display:none;}
     ];
 
     const conventionalPrompts = [
-        "This step attempts to use the commutative property of addition to swap 2 and x.",
-        "This step attempts to use the commutative property of multiplication to swap 2 and x.",
-        "This step attempts to use the commutative property of addition to swap 2 and x.",
-        "This step attempts to use the commutative property of addition to exchange the groups x+y and 5+x.",
-        "This step attempts to use the commutative property of multiplication to exchange the groups x·y and 5·x.",
-        "This step attempts to use the commutative property of addition to swap the complete products x·y and 5·x.",
-        "This step attempts to use the commutative property of multiplication to exchange x+y and 5+x around the multiplication dot.",
-        "This step attempts to distribute 2 across the addends x and 3 while leaving the outside addend 4 unchanged.",
-        "This step attempts to distribute 2 across x+3 while leaving the outside factor 4 in place.",
-        "This step attempts to distribute 2 across the addends 3 and 4·x.",
-        "This step attempts to distribute 2 across the three addends 3, 4, and x."
+        "The commutative property of addition allows us to swap the order of two terms being added in an expression. Formally, A + B = B + A. In this example, A=2 and B=x, so the property swaps 2 and x.",
+        "The commutative property of multiplication allows us to swap the order of two factors being multiplied in an expression. Formally, A · B = B · A. In this example, A=2 and B=x, so the property swaps 2 and x.",
+        "This step attempts to use the commutative property of addition, A + B = B + A, with A=2 and B=x, to swap 2 and x.",
+        "Terms can be larger than single numbers or variables. This is an example of the commutative property of addition, A + B = B + A, with A=x+y and B=5+x, so the two larger terms are swapped.",
+        "The same idea applies within a string of multiplications: larger factors can be swapped. This is an example of the commutative property of multiplication, A · B = B · A, with A=x·y and B=5·x.",
+        "This step uses the commutative property of addition, A + B = B + A, with A=x·y and B=5·x, to swap x·y with 5·x.",
+        "This step attempts to use the commutative property of multiplication, A · B = B · A, with A=x+y and B=5+x, to swap x+y and 5+x around the multiplication dot.",
+        "The distributive property allows a factor multiplying a sum to be applied separately to each term in that sum. Formally, A · (B + C) = A · B + A · C. In this example, A=2, B=x, and C=3.",
+        "This step attempts to distribute the multiplication by 2 across x+3, using A=2, B=x, and C=3 in A · (B + C) = A · B + A · C.",
+        "The terms inside the parentheses can, of course, be more complex than a single number or variable. This is an example of the distributive property with A=2, B=3, and C=4·x, so the multiplication by 2 is distributed to 3 and to 4·x.",
+        "This step attempts to use the distributive property with A=2, B=3, and C=4+x, distributing the multiplication by 2 to 3 and to 4+x."
     ];
 
     const conventionalExplanations = [
         {
-            valid: true,
-            text: "The commutative property of addition swaps the addends 2 and x. The addend 3 stays in place, so the value does not change."
+            valid: null,
+            text: ""
         },
         {
-            valid: true,
-            text: "The commutative property of multiplication swaps the factors 2 and x. The factor 3 stays in place, so the value does not change."
+            valid: null,
+            text: ""
         },
         {
-            valid: false,
-            text: "It looks reasonable because 2 and x appear next to the same plus sign. However, they are not both addends: order of operations makes x part of x·3, so the step changes the expression."
+            valid: null,
+            text: "The problem is that the order of operations in conventional algebraic notation gives the multiplication by 3 priority. The portion of an expression to which a rule is applied is its domain of transformation, and the outlined box is not a valid sub-expression of the full expression: it cuts x away from the product x·3. Even though this attempted swap looks just as reasonable as the valid swaps we just saw, conventional notation gives us no immediate visual warning. We have to interpret its implied grouping before we can see why the step is invalid."
         },
         {
-            valid: true,
-            text: "The two groups of addends, x+y and 5+x, exchange places. Since every item belongs to the same sum, this reordering is valid."
+            valid: null,
+            text: ""
         },
         {
-            valid: true,
-            text: "The two groups of factors, x·y and 5·x, exchange places. Since every item belongs to the same product, this reordering is valid."
+            valid: null,
+            text: ""
         },
         {
-            valid: true,
-            text: "The commutative property of addition swaps two complete addends: x·y and 5·x. Each product remains intact."
+            valid: null,
+            text: ""
         },
         {
-            valid: false,
-            text: "It looks reasonable because x+y and 5+x appear on opposite sides of the multiplication dot. However, the dot multiplies only y and 5; the two x's are separate addends."
+            valid: null,
+            text: "The problem is not the domain of transformation itself—the outlined domain is a valid sub-expression. The problem is internal to the attempted transformation: within that domain, x+y and 5+x are not valid sub-expressions acting as the two factors. Although the step looks just as reasonable as the preceding valid swaps, conventional notation gives no obvious visual clue that these selections cut across the expression's actual structure. We have to interpret the order of operations to discover that the multiplication dot joins only y and 5."
         },
         {
-            valid: true,
-            text: "The distributive property multiplies both addends inside x+3 by 2. The outside addend 4 is not part of that distribution."
+            valid: null,
+            text: ""
         },
         {
-            valid: false,
-            text: "It looks reasonable because distributing 2 across x+3 is valid. However, the resulting sum must remain grouped as (2·x+2·3)·4; without those parentheses, 4 multiplies only 2·3."
+            valid: null,
+            text: "The problem is that before the distribution, the multiplication by 4 applies to the entire domain of transformation, 2·(x+3). After the parentheses are removed, the order of operations makes 4 apply only to 2·3, not to the entire resulting sum. The step looks very similar to—and just as reasonable as—the valid distribution we just saw. Conventional notation does not visually announce the change in grouping; we have to reason through its implicit order of operations to recognize it."
         },
         {
-            valid: true,
-            text: "The 2 is distributed to both addends: 3 and the complete product 4·x. The factors 4 and x remain together."
+            valid: null,
+            text: ""
         },
         {
-            valid: false,
-            text: "It looks reasonable because 2 has been multiplied by the first two visible addends. However, distribution must reach every addend, and the proposed result leaves x undistributed."
+            valid: null,
+            text: "The problem is that without parentheses around 4+x in the result, the multiplication by 2 ceases to apply to x. The attempted step looks very similar to—and just as reasonable as—the preceding example; only one operation has changed. Yet the implicit order of operations changes the structure, leaving x outside the multiplication by 2."
         }
     ];
 
     const comparisonPrompts = [
-        "Recall that the step below is valid: it swaps the addends 2 and x.",
-        "Recall that the step below is valid: it swaps the factors 2 and x.",
-        "Recall that the step below is invalid: it attempts to swap 2 and x even though x belongs to the product x·3.",
-        "Recall that the step below is valid: it exchanges two groups within the same sum.",
-        "Recall that the step below is valid: it exchanges two groups within the same product.",
-        "Recall that the step below is valid: it swaps two complete products within a sum.",
-        "Recall that the step below is invalid: it treats x+y and 5+x as the factors on opposite sides of the multiplication dot.",
-        "Recall that the step below is valid: it distributes 2 across x+3 while leaving the outside addend 4 unchanged.",
-        "Recall that the step below is invalid: it loses the grouping needed before multiplication by 4.",
-        "Recall that the step below is valid: it distributes 2 to both 3 and the complete product 4·x.",
-        "Recall that the step below is invalid: it leaves x undistributed."
+        "Now let’s take another look at the transformations from earlier, comparing conventional notation with exploded notation. This is an example of the commutative property of addition, A + B = B + A, with A=2 and B=x.",
+        "This is an example of the commutative property of multiplication, A · B = B · A, with A=2 and B=x.",
+        "Recall that the step below is invalid. It attempts to use A + B = B + A with A=2 and B=x, but 2 and x are not complete terms in the same sum.",
+        "This is another example of the commutative property of addition, A + B = B + A, now with A=x+y and B=5+x.",
+        "This is another example of the commutative property of multiplication, A · B = B · A, now with A=x·y and B=5·x.",
+        "This is an example of the commutative property of addition, A + B = B + A, with A=x·y and B=5·x.",
+        "Recall that the step below is invalid. It attempts to use A · B = B · A with A=x+y and B=5+x, even though those are not the two factors in the expression.",
+        "We now return to the distributive property, A · (B + C) = A · B + A · C. Here A=2, B=x, and C=3.",
+        "Recall that the step below is invalid. It attempts to distribute with A=2, B=x, and C=3 while a factor of 4 multiplies the entire domain of transformation.",
+        "This is an example of the distributive property with A=2, B=3, and C=4·x.",
+        "Recall that the step below is invalid. It attempts to distribute with A=2, B=3, and C=4+x, but it fails to preserve 4+x as one complete term in the result."
     ];
 
     const comparisonExplanations = [
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because 2 and x are complete rows within the same vertical sum."
+            text: "In both notations, swapping 2 and x looks and feels reasonable. In exploded notation, each is visibly a complete term in the same sum."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because 2 and x are complete factors on the same horizontal multiplication row."
+            text: "In both notations, swapping 2 and x looks and feels reasonable. In exploded notation, they are visibly complete factors on the same horizontal multiplication row."
         },
         {
             valid: null,
-            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation shows x attached to 3 on a multiplication row, while 2 occupies a separate addition row."
+            text: "In conventional notation, this step does not look unreasonable until we carefully consider the order of operations. In exploded notation, the same swap looks downright ridiculous: the box showing the domain of transformation cuts directly through an addition bar and slices the visible structure into pieces. The notation makes it clear that 2 and x do not form a natural pair to swap."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because the shaded blocks contain complete addends from the same vertical sum."
+            text: "In both notations, swapping the two larger terms looks and feels natural. Exploded notation makes their boundaries explicit: each shaded selection contains complete terms from the same vertical sum."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because the shaded blocks contain complete factors from the same horizontal product."
+            text: "In both notations, swapping the two larger factors looks and feels natural. Exploded notation makes their boundaries explicit: both selections are complete parts of the same horizontal product."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because each product is one complete row of the larger sum."
+            text: "In both notations, this use of the commutative property looks and feels natural. In exploded notation, we are visibly swapping the entire product above the addition bar with the entire product below it."
         },
         {
             valid: null,
-            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation reveals that only y and 5 are factors; each x lies on a separate addition row."
+            text: "In conventional notation, this step looks just as reasonable as the previous swaps unless we carefully consider the order of operations. In exploded notation, the shaded selections do not look like valid sub-expressions at all: each selection cuts across an addition bar and through the expression's spatial structure instead of enclosing a complete factor. The attempted swap therefore looks visibly unnatural."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because each row of the nested sum receives its own factor 2, while 4 remains outside as a separate row."
+            text: "The distributive property has a particularly natural flow in exploded notation. The x and 3 remain in place as the two terms of the nested sum, while the multiplication by 2 splits so that a 2 appears in front of each one. The outside term 4 remains exactly where it belongs."
         },
         {
             valid: null,
-            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. After the move, exploded notation places 4 only on the 2·3 row, exposing that it no longer multiplies 2·x."
+            text: "This step looks very similar to—and just as reasonable as—the previous example in conventional notation, even though the order of operations makes it invalid. In exploded notation, trying to shove the 4 into only the lower part with 3 looks downright ridiculous: 4 does not belong only with 3, and the domain box cuts through an addition bar in a visibly unnatural way."
         },
         {
             valid: null,
-            text: "This transformation looks very reasonable in exploded notation because both rows of the nested sum receive a factor 2, while the product 4·x remains intact."
+            text: "Again, distribution has a very natural visual flow in exploded notation. It is not jarring that 3 and 4·x have different lengths or different internal structures; we simply attach a factor of 2 to the front of each complete term."
         },
         {
             valid: null,
-            text: "This invalid step looks very reasonable in conventional notation but very unreasonable in exploded notation. Exploded notation leaves x alone without a factor 2, making the incomplete distribution immediately visible."
+            text: "In conventional notation, this attempt still looks visually reasonable. In exploded notation, it looks distinctly unnatural: shading 4 and x together crosses through the middle of an addition bar instead of enclosing one complete term. The correct transformation would look much more natural—attach a factor of 2 to each of the three terms, 3, 4, and x."
         }
     ];
 
@@ -600,25 +601,25 @@ body.player-ready>#exploded-examples{display:none;}
             title: "Addition",
             conventional: "2+x+3",
             exploded: sum(value(2), value("x"), value(3)),
-            explanation: "In exploded notation, addition extends vertically. Each row is one addend, and the shared column shows that the addends belong to the same sum."
+            prompt: "Exploded algebra places the terms of a sum vertically. Each row is one term, and the shared addition bar shows that all of the terms belong to the same sum."
         },
         {
             title: "Multiplication",
             conventional: "2·x·3",
             exploded: product(value(2), value("x"), value(3)),
-            explanation: "In exploded notation, multiplication extends horizontally. The entries on one row are factors in the same product."
+            prompt: "Exploded algebra places the factors of a product horizontally. The factors share one row, so the multiplication joining them is represented explicitly in space."
         },
         {
             title: "Mixed operations",
             conventional: "2+x·3",
             exploded: sum(value(2), product(value("x"), value(3))),
-            explanation: "Vertical placement separates the two addends, while horizontal placement keeps x and 3 together as factors. The order of operations is built into the layout."
+            prompt: "The defining feature of exploded algebra is that the nested structure of an expression is represented explicitly and spatially, without relying on an implicit order of operations or on parentheses. Here x·3 appears horizontally as one complete product, which is then one complete term being added vertically to 2. Conventional notation implies that nesting through the order of operations; exploded notation shows it."
         },
         {
             title: "Grouping",
             conventional: "2·(x+3)",
             exploded: product(value(2), sum(value("x"), value(3))),
-            explanation: "The vertical sum x+3 is nested as one factor beside 2. Spatial nesting takes the role played by parentheses in conventional notation."
+            prompt: "Here conventional notation requires parentheses to show that x+3 is one complete thing being multiplied by 2. Exploded notation represents the same nested structure naturally and spatially: the entire vertical sum x+3 sits beside 2 as a single factor."
         }
     ];
 
@@ -695,13 +696,27 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
-    function buildGoalSlide() {
+    function buildStorySlide(paragraphs, link) {
         const slide = document.createElement("section");
-        slide.className = "goal-slide";
+        slide.className = "story-slide";
 
         const message = document.createElement("div");
-        message.className = "goal-message";
-        message.textContent = "The goal of exploded algebra is to make correct algebraic steps look reasonable and incorrect algebraic steps look unreasonable. By making the structure of an expression visible, the notation helps valid transformations look natural and invalid transformations look visibly out of place.";
+        message.className = "story-message";
+        paragraphs.forEach(paragraphText => {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = paragraphText;
+            message.appendChild(paragraph);
+        });
+        if (link) {
+            const paragraph = document.createElement("p");
+            const anchor = document.createElement("a");
+            anchor.href = link.href;
+            anchor.textContent = link.text;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            paragraph.appendChild(anchor);
+            message.appendChild(paragraph);
+        }
         slide.appendChild(message);
         return slide;
     }
@@ -711,39 +726,50 @@ body.player-ready>#exploded-examples{display:none;}
     const slides = [
         ...conventionalSlides.map((element, index) => ({
             element,
-            heading: `Conventional notation — Example ${index + 1} of ${examples.length}`,
             ariaLabel: `Conventional notation, example ${index + 1} of ${examples.length}`,
             prompt: conventionalPrompts[index],
             explanation: conventionalExplanations[index]
         })),
         {
-            element: buildGoalSlide(),
-            heading: "The goal of exploded algebra",
-            ariaLabel: "The goal of exploded algebra",
+            element: buildStorySlide(
+                [
+                    "Why call it “exploded” algebra? In engineering and technical drawing, an exploded-view diagram separates the parts of a machine in space so that their relationships—and the way they fit together—are easier to see.",
+                    "Exploded algebra uses the same basic idea. It separates the parts of an expression spatially so that the expression's structure is easier to see."
+                ],
+                {
+                    href: "https://en.wikipedia.org/wiki/Exploded-view_drawing",
+                    text: "Learn more about exploded-view drawings on Wikipedia."
+                }
+            ),
+            ariaLabel: "Why the notation is called exploded algebra",
             prompt: "",
             explanation: { valid: null, text: "" }
         },
         ...introExamples.map((intro, index) => ({
             element: buildIntroSlide(intro, index),
-            heading: `Introducing exploded notation — ${intro.title}`,
             ariaLabel: `Introducing exploded notation: ${intro.title}`,
-            prompt: "",
-            explanation: { valid: null, text: intro.explanation }
+            prompt: intro.prompt,
+            explanation: { valid: null, text: "" }
         })),
         ...conventionalSlides.map((conventional, index) => ({
             element: buildParallelSlide(conventional, explodedSlides[index]),
-            heading: `Conventional and exploded notation — Example ${index + 1} of ${examples.length}`,
             ariaLabel: `Conventional and exploded notation, example ${index + 1} of ${examples.length}`,
             prompt: comparisonPrompts[index],
             explanation: comparisonExplanations[index]
-        }))
+        })),
+        {
+            element: buildStorySlide([
+                "Conventional notation relies on an implicit order of operations to tell us how an expression is grouped. Because much of that structure is invisible, invalid transformations can look just as reasonable as valid ones until we stop and carefully interpret the notation.",
+                "Exploded algebra makes the order of operations and the nested structure of an expression explicit and spatial. Its addition bars, multiplication rows, and visible nesting show which pieces genuinely belong together. The goal is simple: make valid algebraic steps look and feel natural, while making invalid steps look and feel unreasonable."
+            ]),
+            ariaLabel: "Summary of the purpose of exploded algebra",
+            prompt: "",
+            explanation: { valid: null, text: "" }
+        }
     ];
 
     const player = document.createElement("main");
     player.className = "comparison-player";
-
-    const heading = document.createElement("div");
-    heading.className = "player-heading";
 
     const prompt = document.createElement("div");
     prompt.className = "player-prompt";
@@ -773,7 +799,7 @@ body.player-ready>#exploded-examples{display:none;}
     nextButton.setAttribute("aria-label", "Show next animation");
 
     controls.append(previousButton, position, nextButton);
-    player.append(heading, controls, prompt, stage, explanation);
+    player.append(controls, prompt, stage, explanation);
     document.body.insertBefore(player, document.body.firstChild);
 
     function prepareAnimationGroups(element) {
@@ -887,12 +913,6 @@ body.player-ready>#exploded-examples{display:none;}
         explanation.replaceChildren();
         explanation.hidden = !details.text;
         if (!details.text) return;
-        if (details.valid !== null) {
-            const status = document.createElement("span");
-            status.className = "explanation-status";
-            status.textContent = details.valid ? "Valid move. " : "Invalid move. ";
-            explanation.appendChild(status);
-        }
         explanation.appendChild(document.createTextNode(details.text));
     }
 
@@ -905,7 +925,6 @@ body.player-ready>#exploded-examples{display:none;}
         });
 
         const current = slides[currentIndex];
-        heading.textContent = current.heading;
         position.textContent = `${currentIndex + 1} of ${slides.length}`;
         stage.setAttribute("aria-label", current.ariaLabel);
         prompt.textContent = current.prompt;
