@@ -1,0 +1,38 @@
+{
+  "id": "exercise3",
+  "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "variables": [
+    "x"
+  ],
+  "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+  "steps": [
+    {
+      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "katex": "(x+3)(2x+5)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "katex": "x(2x+5)+3(2x+5)",
+      "label": "Distribute one binomial"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "katex": "2x^2+5x+6x+15",
+      "label": "Distribute and simplify the products"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "katex": "2x^2+(5+6)x+15",
+      "label": "Group the like terms"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "katex": "2x^2+11x+15",
+      "label": "Combine like terms"
+    }
+  ],
+  "kind": "interactive"
+}

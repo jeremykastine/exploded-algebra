@@ -1,0 +1,38 @@
+{
+  "id": "exercise4",
+  "title": "Exercise 4: Multiply Two Rational Expressions",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "variables": [
+    "x"
+  ],
+  "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+  "steps": [
+    {
+      "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+      "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
+      "katex": "\\frac{3x(x+4)}{6(x+4)}",
+      "label": "Multiply the numerators and denominators"
+    },
+    {
+      "expression": "(((3)*(x))/(6))",
+      "katex": "\\frac{3x}{6}",
+      "label": "Cancel the common factor"
+    },
+    {
+      "expression": "(((3)*(x))/((3)*(2)))",
+      "katex": "\\frac{3x}{3\\cdot2}",
+      "label": "Factor the denominator"
+    },
+    {
+      "expression": "((x)/(2))",
+      "katex": "\\frac{x}{2}",
+      "label": "Simplify"
+    }
+  ],
+  "kind": "interactive"
+}

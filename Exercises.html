@@ -55,6 +55,9 @@
     <div class="exercise-links" aria-label="Exercises">
       <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine-demo.json">Exercise 1: Distribute and Combine (Guided)</a>
       <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine.json">Exercise 1: Distribute and Combine (Unguided)</a>
+      <a href="exploded-algebra.html?level=levels%2Fexercise-2-add-fractions.json&amp;source=builtin" data-exercise-file="levels/exercise-2-add-fractions.json">Exercise 2: Add Fractions with Unlike Denominators (Unguided)</a>
+      <a href="exploded-algebra.html?level=levels%2Fexercise-3-multiply-binomials.json&amp;source=builtin" data-exercise-file="levels/exercise-3-multiply-binomials.json">Exercise 3: Multiply Binomials and Combine Like Terms (Unguided)</a>
+      <a href="exploded-algebra.html?level=levels%2Fexercise-4-multiply-rational-expressions.json&amp;source=builtin" data-exercise-file="levels/exercise-4-multiply-rational-expressions.json">Exercise 4: Multiply Two Rational Expressions (Unguided)</a>
     </div>
 
     <div class="upload-row">
@@ -527,6 +530,129 @@
 
     </script>
 
+    <script type="application/json" id="builtInLevelDataExercise2">
+{
+  "id": "exercise2",
+  "title": "Exercise 2: Add Fractions with Unlike Denominators",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "startExpression": "(((2)/(3))+((5)/(6)))",
+  "steps": [
+    {
+      "expression": "(((2)/(3))+((5)/(6)))",
+      "katex": "\\frac{2}{3}+\\frac{5}{6}",
+      "label": "Start"
+    },
+    {
+      "expression": "(((4)/(6))+((5)/(6)))",
+      "katex": "\\frac{4}{6}+\\frac{5}{6}",
+      "label": "Use a common denominator"
+    },
+    {
+      "expression": "(((4)+(5))/(6))",
+      "katex": "\\frac{4+5}{6}",
+      "label": "Combine the numerators"
+    },
+    {
+      "expression": "((9)/(6))",
+      "katex": "\\frac{9}{6}",
+      "label": "Add"
+    },
+    {
+      "expression": "((3)/(2))",
+      "katex": "\\frac{3}{2}",
+      "label": "Simplify"
+    }
+  ],
+  "kind": "interactive"
+}
+
+    </script>
+
+    <script type="application/json" id="builtInLevelDataExercise3">
+{
+  "id": "exercise3",
+  "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "variables": [
+    "x"
+  ],
+  "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+  "steps": [
+    {
+      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "katex": "(x+3)(2x+5)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "katex": "x(2x+5)+3(2x+5)",
+      "label": "Distribute one binomial"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "katex": "2x^2+5x+6x+15",
+      "label": "Distribute and simplify the products"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "katex": "2x^2+(5+6)x+15",
+      "label": "Group the like terms"
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "katex": "2x^2+11x+15",
+      "label": "Combine like terms"
+    }
+  ],
+  "kind": "interactive"
+}
+
+    </script>
+
+    <script type="application/json" id="builtInLevelDataExercise4">
+{
+  "id": "exercise4",
+  "title": "Exercise 4: Multiply Two Rational Expressions",
+  "evaluationLevel": 2,
+  "arithmeticLevel": 2,
+  "variables": [
+    "x"
+  ],
+  "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+  "steps": [
+    {
+      "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+      "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
+      "katex": "\\frac{3x(x+4)}{6(x+4)}",
+      "label": "Multiply the numerators and denominators"
+    },
+    {
+      "expression": "(((3)*(x))/(6))",
+      "katex": "\\frac{3x}{6}",
+      "label": "Cancel the common factor"
+    },
+    {
+      "expression": "(((3)*(x))/((3)*(2)))",
+      "katex": "\\frac{3x}{3\\cdot2}",
+      "label": "Factor the denominator"
+    },
+    {
+      "expression": "((x)/(2))",
+      "katex": "\\frac{x}{2}",
+      "label": "Simplify"
+    }
+  ],
+  "kind": "interactive"
+}
+
+    </script>
+
   </main>
 
   <script>
@@ -539,7 +665,10 @@
 
       const builtInLevelDataIds = {
         'levels/level-1-distribute-and-combine.json': 'builtInLevelDataInteractive',
-        'levels/level-1-distribute-and-combine-demo.json': 'builtInLevelDataDemo'
+        'levels/level-1-distribute-and-combine-demo.json': 'builtInLevelDataDemo',
+        'levels/exercise-2-add-fractions.json': 'builtInLevelDataExercise2',
+        'levels/exercise-3-multiply-binomials.json': 'builtInLevelDataExercise3',
+        'levels/exercise-4-multiply-rational-expressions.json': 'builtInLevelDataExercise4'
       };
 
       function clearLevelTransfer() {

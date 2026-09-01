@@ -6,20 +6,23 @@ server such as GitHub Pages.
 
 BUILT-IN EXERCISES
 
-The two built-in exercise versions are ordinary JSON files in the levels folder:
+The built-in exercises are ordinary JSON files in the levels folder:
 
 - levels/level-1-distribute-and-combine.json
 - levels/level-1-distribute-and-combine-demo.json
+- levels/exercise-2-add-fractions.json
+- levels/exercise-3-multiply-binomials.json
+- levels/exercise-4-multiply-rational-expressions.json
 
-The home-page dropdown opens either one. To make that same dropdown work under
-file://, where browsers block JavaScript fetch() of neighboring JSON files,
-index.html carries a mirrored copy of those two JSON payloads for transfer into
-the app. The standalone JSON files remain in the levels folder for hosting,
-distribution, and editing. No exploded-algebra-levels.js file is used.
+Exercises.html links to these files. To make those links work under file://,
+where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
+carries a mirrored copy of each JSON payload for transfer into the app. The
+standalone JSON files remain in the levels folder for hosting, distribution, and
+editing. No exploded-algebra-levels.js file is used.
 
 CUSTOM LEVELS
 
-Choose any compatible JSON file from the home page. The selected JSON is carried
+Choose any compatible JSON file from Exercises.html. The selected JSON is carried
 into exploded-algebra.html in the same tab using sessionStorage, with window.name
 as a file:// fallback. Refreshing that app tab keeps the selected level. Separate
 tabs keep separate level state.
