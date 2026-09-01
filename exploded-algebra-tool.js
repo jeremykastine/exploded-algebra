@@ -620,11 +620,6 @@ Promise.resolve().then(() => {
         }
 
         function getIntentCategoryCandidateTools(categoryId) {
-            const selectedNode = cloneSelectedRangeNode();
-            const selectedIsZero = !!selectedNode && selectedNode.type === "value" && selectedNode.value === "0";
-            const selectedIsOne = !!selectedNode && selectedNode.type === "value" && selectedNode.value === "1";
-            const selectedIsNegativeOne = !!selectedNode && selectedNode.type === "value" && selectedNode.value === "-1";
-
             if (categoryId === "commute") {
                 return ["commute"];
             }
@@ -664,20 +659,10 @@ Promise.resolve().then(() => {
             }
             if (categoryId === "insert") {
                 return [
-                    "insertIdentityAddZeroTop",
                     "insertIdentityAddZeroBottom",
-                    "insertIdentityMultiplyByOneLeft",
                     "insertIdentityMultiplyByOneRight",
-                    ...(selectedIsZero ? ["cancelOpposites", "insertZeroProductLeft", "insertZeroProductRight"] : []),
-                    ...(selectedIsOne ? [
-                        "replaceOneWithInverseProduct",
-                        "doubleNegative",
-                        "insertExponentZero",
-                        "insertPowerOfOne"
-                    ] : []),
                     "insertDoubleInverse",
-                    "insertExponentOne",
-                    ...(selectedIsNegativeOne ? ["rewriteNegOneToInvNegOne"] : [])
+                    "insertExponentOne"
                 ];
             }
             if (categoryId === "translateNotation") {
@@ -852,6 +837,19 @@ Promise.resolve().then(() => {
             const tools = getApplicableIntentCategoryTools(categoryId);
             let html = `<button class="panel-menu-back-button" data-action="backToIntentCategories">← Back to categories</button>`;
             html += `<div class="panel-menu-title">${escapeHtml(category ? category.label : "Choose a rule")}</div>`;
+            if (categoryId === "insert") {
+                html += `<div class="compact-insert-grid">`;
+                tools.forEach(toolName => {
+                    const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
+                    if (entry) {
+                        html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml((TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim())}">
+                            ${renderMiniOopsSvg(entry.toMini)}
+                        </button>`;
+                    }
+                });
+                html += `</div>`;
+                return html;
+            }
             html += `<div class="small-note">More than one rule applies. Choose the one you intend.</div>`;
             html += `<div class="tool-form-grid applicable-tool-list intent-category-choices">`;
             tools.forEach(toolName => {
@@ -2690,7 +2688,7 @@ Promise.resolve().then(() => {
         function expressionMatchesParenthesizedText(parenthesizedText) {
             try {
                 const targetNode = parseParenthesizedExpressionStrict(parenthesizedText);
-                return sameExpression(currentExpressionRoot || expressionRoot, targetNode);
+                return sameExpressionForMatching(currentExpressionRoot || expressionRoot, targetNode);
             } catch (err) {
                 return false;
             }
@@ -6106,12 +6104,12 @@ ctx.font = SETTINGS.textFont;
 
         function canInsertDoubleInverse() {
             const selectedNode = cloneSelectedRangeNode();
-            return !!selectedNode && !isAlwaysZeroExpression(selectedNode);
+            return !!selectedNode;
         }
 
         function applyInsertDoubleInverse() {
             const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || isAlwaysZeroExpression(selectedNode)) {
+            if (!selectedNode) {
                 return false;
             }
             replaceSelectedRange(makeInverseNode(makeInverseNode(selectedNode)));
@@ -8113,6 +8111,18 @@ function renderToolArea() {
             }, SETTINGS.previewDurationMs);
         }
 
+        function toolUsesTransformationAnimation(toolName) {
+            return toolName === "commute" ||
+                toolName === "commuteFirstToLast" ||
+                toolName === "commuteLastToFirst" ||
+                toolName === "commuteTerms" ||
+                toolName === "commuteFactors" ||
+                toolName === "distributeLeftToRight" ||
+                toolName === "distributeRightToLeft" ||
+                toolName === "factorLeft" ||
+                toolName === "factorRight";
+        }
+
         function getAutoExecuteFunctionForTool(toolName) {
             if (toolName === "commuteFirstToLast") {
                 return applyCommuteFirstToLastWithPostview;
@@ -8292,6 +8302,22 @@ function renderToolArea() {
                     : null;
             }
 
+            if (toolName === "distributeInverseOverProduct") {
+                applyDistributeInverseOverProduct();
+                return;
+            }
+
+            if (toolName === "factorProductOfInverses") {
+                applyFactorProductOfInverses();
+                return;
+            }
+
+            const immediateAutoExecuteFn = getAutoExecuteFunctionForTool(toolName);
+            if (immediateAutoExecuteFn && !toolUsesTransformationAnimation(toolName)) {
+                immediateAutoExecuteFn();
+                return;
+            }
+
             refreshStatus();
             drawExpression();
 
@@ -8320,16 +8346,6 @@ function renderToolArea() {
 
             if (toolName === "factorRight") {
                 beginAutoPreviewThenExecute(applyRightFactoring);
-                return;
-            }
-
-            if (toolName === "distributeInverseOverProduct") {
-                applyDistributeInverseOverProduct();
-                return;
-            }
-
-            if (toolName === "factorProductOfInverses") {
-                applyFactorProductOfInverses();
                 return;
             }
 
@@ -8384,11 +8400,8 @@ function renderToolArea() {
 
             if (action === "previewEliminateIdentities") {
                 uiState.activeTool = "eliminateIdentities";
-                uiState.stage = "preview";
                 uiState.message = "";
-                refreshStatus();
-                drawExpression();
-                beginAutoPreviewThenExecute(applyIdentityElimination);
+                applyIdentityElimination();
                 return;
             }
 
