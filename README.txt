@@ -4,9 +4,9 @@ Open index.html first. The launcher is designed to work both when index.html is
 opened directly from disk (file://) and when the folder is hosted by a web
 server such as GitHub Pages.
 
-BUILT-IN LEVELS
+BUILT-IN EXERCISES
 
-The two built-in levels are ordinary JSON files in the levels folder:
+The two built-in exercise versions are ordinary JSON files in the levels folder:
 
 - levels/level-1-distribute-and-combine.json
 - levels/level-1-distribute-and-combine-demo.json
@@ -27,7 +27,7 @@ tabs keep separate level state.
 For an interactive level, Download Move History saves the current run as a JSON
 file that can later be chosen from the home page.
 
-The comparison page is exploded-compared-to-conventional.html.
+The introduction page is Introduction.html.
 
 Built-in level URLs now include the selected JSON file in the level query parameter, for example:
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&source=builtin
@@ -35,4 +35,3 @@ Built-in level URLs now include the selected JSON file in the level query parame
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
-

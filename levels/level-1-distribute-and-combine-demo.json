@@ -1,9 +1,9 @@
 {
   "kind": "demoOnly",
   "id": "level1-demo-2026-08-15t15-52-59z",
-  "title": "Demo: Level 1: Distribute and Combine (8/15/2026, 11:52:59 AM)",
+  "title": "Exercise 1: Distribute and Combine (Guided)",
   "sourceLevelId": "level1",
-  "sourceLevelTitle": "Level 1: Distribute and Combine",
+  "sourceLevelTitle": "Exercise 1: Distribute and Combine",
   "createdAt": "2026-08-15T15:49:10.503Z",
   "completedAt": "2026-08-15T15:52:59.608Z",
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -30,7 +30,7 @@
   ],
   "sourceLevel": {
     "id": "level1",
-    "title": "Level 1: Distribute and Combine",
+    "title": "Exercise 1: Distribute and Combine",
     "evaluationLevel": 0,
     "arithmeticLevel": 2,
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",

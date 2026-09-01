@@ -26,8 +26,6 @@
       line-height: 1.15;
     }
 
-    h2 { margin: 32px 0 16px; }
-
     p { margin: 0 0 14px; }
 
     a {
@@ -36,54 +34,44 @@
       text-underline-offset: 3px;
     }
 
-    .launcher { padding: 22px; border: 1px solid #bbb; border-radius: 10px; }
-    .launcher h2 { margin-top: 0; }
-    .launcher-row { display: grid; gap: 8px; margin-bottom: 20px; }
-    .launcher-row:last-child { margin-bottom: 0; }
+    .exercise-links { display: grid; gap: 10px; margin: 20px 0 32px; }
+    .upload-row { display: grid; gap: 8px; margin-top: 28px; }
     label { font-weight: bold; }
-    select, button, input { font: inherit; }
-    select, button { padding: 9px 12px; }
-    button { cursor: pointer; }
+    input { font: inherit; }
     #customLevelFileStatus { min-height: 1.5em; color: #555; }
 
     @media (max-width: 520px) {
       main { padding: 30px 16px; }
-      .launcher { padding: 16px; }
     }
   </style>
 </head>
 <body>
   <main>
     <h1>Welcome to Exploded Algebra</h1>
-    <p>Choose a built-in level or upload a level file to begin.</p>
-    <p><a href="exploded-compared-to-conventional.html">See exploded algebra compared with conventional notation</a>.</p>
+    <p>Start with a quick <a href="Introduction.html">introduction</a>.</p>
+    <p>Then try a demo or two.</p>
+    <p>Choose an exercise from the links below. In the guided version, simply select or click the things outlined in yellow.</p>
 
-    <section id="level-launcher" class="launcher">
-      <h2>Launch Exploded Algebra</h2>
-      <div class="launcher-row">
-        <label for="builtInLevelSelect">Built-in level:</label>
-        <select id="builtInLevelSelect">
-          <option value="levels/level-1-distribute-and-combine.json">Level 1: Distribute and Combine</option>
-          <option value="levels/level-1-distribute-and-combine-demo.json">Demo: Level 1: Distribute and Combine</option>
-        </select>
-        <button id="openBuiltInLevelButton" type="button">Open level</button>
-      </div>
-      <div class="launcher-row">
-        <label for="customLevelFileInput">Upload a level file:</label>
-        <input id="customLevelFileInput" type="file" accept=".json,application/json">
-        <span id="customLevelFileStatus" aria-live="polite"></span>
-      </div>
-    </section>
+    <div class="exercise-links" aria-label="Exercises">
+      <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine-demo.json">Exercise 1: Distribute and Combine (Guided)</a>
+      <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine.json">Exercise 1: Distribute and Combine (Unguided)</a>
+    </div>
+
+    <div class="upload-row">
+      <label for="customLevelFileInput">Upload an exercise file:</label>
+      <input id="customLevelFileInput" type="file" accept=".json,application/json">
+      <span id="customLevelFileStatus" aria-live="polite"></span>
+    </div>
 
     <!--
-      The built-in JSON is mirrored here only so the launcher can work when index.html
+      The built-in JSON is mirrored here only so the exercise links can work when index.html
       is opened directly with file://. The standalone files in levels/ remain the
-      distributable JSON level files used by the hosted site and by users.
+      distributable JSON exercise files used by the hosted site and by users.
     -->
     <script type="application/json" id="builtInLevelDataInteractive">
 {
   "id": "level1",
-  "title": "Level 1: Distribute and Combine",
+  "title": "Exercise 1: Distribute and Combine",
   "evaluationLevel": 0,
   "arithmeticLevel": 2,
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -112,9 +100,9 @@
 {
   "kind": "demoOnly",
   "id": "level1-demo-2026-08-15t15-52-59z",
-  "title": "Demo: Level 1: Distribute and Combine (8/15/2026, 11:52:59 AM)",
+  "title": "Exercise 1: Distribute and Combine (Guided)",
   "sourceLevelId": "level1",
-  "sourceLevelTitle": "Level 1: Distribute and Combine",
+  "sourceLevelTitle": "Exercise 1: Distribute and Combine",
   "createdAt": "2026-08-15T15:49:10.503Z",
   "completedAt": "2026-08-15T15:52:59.608Z",
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -141,7 +129,7 @@
   ],
   "sourceLevel": {
     "id": "level1",
-    "title": "Level 1: Distribute and Combine",
+    "title": "Exercise 1: Distribute and Combine",
     "evaluationLevel": 0,
     "arithmeticLevel": 2,
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -545,8 +533,7 @@
     document.addEventListener('DOMContentLoaded', function () {
       const customLevelStorageKey = 'explodedAlgebra.currentCustomLevel';
       const customLevelWindowNamePrefix = '__EXPLODED_ALGEBRA_LEVEL__:';
-      const builtInLevelSelect = document.getElementById('builtInLevelSelect');
-      const openBuiltInLevelButton = document.getElementById('openBuiltInLevelButton');
+      const builtInExerciseLinks = document.querySelectorAll('[data-exercise-file]');
       const customLevelFileInput = document.getElementById('customLevelFileInput');
       const customLevelFileStatus = document.getElementById('customLevelFileStatus');
 
@@ -583,7 +570,7 @@
 
         window.name = customLevelWindowNamePrefix + payloadText;
         if (!sessionSaved && !window.name.startsWith(customLevelWindowNamePrefix)) {
-          throw new Error('This browser could not carry the selected level into the app page.');
+          throw new Error('This browser could not carry the selected exercise into the app page.');
         }
       }
 
@@ -591,7 +578,7 @@
         const scriptId = builtInLevelDataIds[levelFile];
         const dataNode = scriptId ? document.getElementById(scriptId) : null;
         if (!dataNode) {
-          throw new Error('The selected built-in level is not bundled with this page.');
+          throw new Error('The selected built-in exercise is not bundled with this page.');
         }
         return dataNode.textContent.trim();
       }
@@ -605,19 +592,20 @@
         window.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(levelFile) + '&source=builtin';
       }
 
-      if (openBuiltInLevelButton && builtInLevelSelect) {
-        openBuiltInLevelButton.addEventListener('click', function () {
+      builtInExerciseLinks.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
           try {
-            openBuiltInLevel(builtInLevelSelect.value);
+            openBuiltInLevel(link.dataset.exerciseFile);
           } catch (error) {
             if (customLevelFileStatus) {
               customLevelFileStatus.textContent = error && error.message
                 ? error.message
-                : 'The built-in level could not be opened.';
+                : 'The built-in exercise could not be opened.';
             }
           }
         });
-      }
+      });
 
       if (customLevelFileInput) {
         customLevelFileInput.addEventListener('change', async function (event) {
