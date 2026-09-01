@@ -51,9 +51,9 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .notation-expression-frame .number{display:none;}
 .intro-conventional,.intro-exploded{display:flex;align-items:center;justify-content:center;font-size:32px;}
 .player-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;}
-.player-controls button{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;}
-.player-controls button:hover{background:#f3f3f3;}
-.player-controls button:focus-visible{outline:3px solid #78aeda;outline-offset:2px;}
+.player-controls button,.player-controls .home-link{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;text-decoration:none;}
+.player-controls button:hover,.player-controls .home-link:hover{background:#f3f3f3;}
+.player-controls button:focus-visible,.player-controls .home-link:focus-visible{outline:3px solid #78aeda;outline-offset:2px;}
 .player-position{min-width:8.5em;text-align:center;}
 body.player-ready>.section-title,
 body.player-ready>.example,
@@ -601,19 +601,19 @@ body.player-ready>#exploded-examples{display:none;}
             title: "Addition",
             conventional: "2+x+3",
             exploded: sum(value(2), value("x"), value(3)),
-            prompt: "Exploded algebra places the terms of a sum vertically. Each row is one term, and the shared addition bar shows that all of the terms belong to the same sum."
+            prompt: "Exploded Algebra places the terms of a sum vertically. Each row is one term, and the shared addition bar shows that all of the terms belong to the same sum."
         },
         {
             title: "Multiplication",
             conventional: "2·x·3",
             exploded: product(value(2), value("x"), value(3)),
-            prompt: "Exploded algebra places the factors of a product horizontally. The factors share one row, so the multiplication joining them is represented explicitly in space."
+            prompt: "Exploded Algebra places the factors of a product horizontally. The factors share one row, so the multiplication joining them is represented explicitly in space."
         },
         {
             title: "Mixed operations",
             conventional: "2+x·3",
             exploded: sum(value(2), product(value("x"), value(3))),
-            prompt: "The defining feature of exploded algebra is that the nested structure of an expression is represented explicitly and spatially, without relying on an implicit order of operations or on parentheses. Here x·3 appears horizontally as one complete product, which is then one complete term being added vertically to 2. Conventional notation implies that nesting through the order of operations; exploded notation shows it."
+            prompt: "The defining feature of Exploded Algebra is that the nested structure of an expression is represented explicitly and spatially, without relying on an implicit order of operations or on parentheses. Horizontal bars attached to addition signs show which terms are grouped into a sum, while vertical bars attached to multiplication signs show which factors are grouped into a product. Here those bars make x·3 visibly one complete product, which is then one complete term being added to 2. Conventional notation implies that nesting through the order of operations; exploded notation shows it."
         },
         {
             title: "Grouping",
@@ -696,27 +696,30 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
-    function buildStorySlide(paragraphs, link) {
+    function buildStorySlide(paragraphs) {
         const slide = document.createElement("section");
         slide.className = "story-slide";
 
         const message = document.createElement("div");
         message.className = "story-message";
-        paragraphs.forEach(paragraphText => {
+        paragraphs.forEach(paragraphContent => {
             const paragraph = document.createElement("p");
-            paragraph.textContent = paragraphText;
+            if (typeof paragraphContent === "string") {
+                paragraph.textContent = paragraphContent;
+            } else {
+                paragraph.appendChild(document.createTextNode(paragraphContent.before || ""));
+                const anchor = document.createElement("a");
+                anchor.href = paragraphContent.href;
+                anchor.textContent = paragraphContent.linkText;
+                if (paragraphContent.external) {
+                    anchor.target = "_blank";
+                    anchor.rel = "noopener noreferrer";
+                }
+                paragraph.appendChild(anchor);
+                paragraph.appendChild(document.createTextNode(paragraphContent.after || ""));
+            }
             message.appendChild(paragraph);
         });
-        if (link) {
-            const paragraph = document.createElement("p");
-            const anchor = document.createElement("a");
-            anchor.href = link.href;
-            anchor.textContent = link.text;
-            anchor.target = "_blank";
-            anchor.rel = "noopener noreferrer";
-            paragraph.appendChild(anchor);
-            message.appendChild(paragraph);
-        }
         slide.appendChild(message);
         return slide;
     }
@@ -733,15 +736,18 @@ body.player-ready>#exploded-examples{display:none;}
         {
             element: buildStorySlide(
                 [
-                    "Why call it “exploded” algebra? In engineering and technical drawing, an exploded-view diagram separates the parts of a machine in space so that their relationships—and the way they fit together—are easier to see.",
-                    "Exploded algebra uses the same basic idea. It separates the parts of an expression spatially so that the expression's structure is easier to see."
-                ],
-                {
-                    href: "https://en.wikipedia.org/wiki/Exploded-view_drawing",
-                    text: "Learn more about exploded-view drawings on Wikipedia."
-                }
+                    "What if algebra used a notation that clearly represented the structure of an expression visually, without relying on the order of operations, and did so in a clean, easy-to-parse way?",
+                    {
+                        before: "In engineering and technical drawing, an ",
+                        href: "https://en.wikipedia.org/wiki/Exploded-view_drawing",
+                        linkText: "exploded-view diagram",
+                        after: " separates the parts of a machine in space so that their relationships—and the way they fit together—are easier to see.",
+                        external: true
+                    },
+                    "Exploded Algebra uses the same basic idea. It separates the parts of an expression spatially so that the expression's structure is easier to see."
+                ]
             ),
-            ariaLabel: "Why the notation is called exploded algebra",
+            ariaLabel: "Introducing Exploded Algebra",
             prompt: "",
             explanation: { valid: null, text: "" }
         },
@@ -760,9 +766,15 @@ body.player-ready>#exploded-examples{display:none;}
         {
             element: buildStorySlide([
                 "Conventional notation relies on an implicit order of operations to tell us how an expression is grouped. Because much of that structure is invisible, invalid transformations can look just as reasonable as valid ones until we stop and carefully interpret the notation.",
-                "Exploded algebra makes the order of operations and the nested structure of an expression explicit and spatial. Its addition bars, multiplication rows, and visible nesting show which pieces genuinely belong together. The goal is simple: make valid algebraic steps look and feel natural, while making invalid steps look and feel unreasonable."
+                "Exploded Algebra makes the order of operations and the nested structure of an expression explicit and spatial. Its addition bars, multiplication rows, and visible nesting show which pieces genuinely belong together. The goal is simple: make valid algebraic steps look and feel natural, while making invalid steps look and feel unreasonable.",
+                {
+                    before: "Now ",
+                    href: "index.html",
+                    linkText: "return to the home page",
+                    after: " and try some demonstrations of how the system works."
+                }
             ]),
-            ariaLabel: "Summary of the purpose of exploded algebra",
+            ariaLabel: "Summary of the purpose of Exploded Algebra",
             prompt: "",
             explanation: { valid: null, text: "" }
         }
@@ -785,6 +797,11 @@ body.player-ready>#exploded-examples{display:none;}
     controls.className = "player-controls";
     controls.setAttribute("aria-label", "Example navigation");
 
+    const homeLink = document.createElement("a");
+    homeLink.className = "home-link";
+    homeLink.href = "index.html";
+    homeLink.textContent = "Return to home";
+
     const previousButton = document.createElement("button");
     previousButton.type = "button";
     previousButton.textContent = "Previous";
@@ -798,7 +815,7 @@ body.player-ready>#exploded-examples{display:none;}
     nextButton.textContent = "Next";
     nextButton.setAttribute("aria-label", "Show next animation");
 
-    controls.append(previousButton, position, nextButton);
+    controls.append(homeLink, previousButton, position, nextButton);
     player.append(controls, prompt, stage, explanation);
     document.body.insertBefore(player, document.body.firstChild);
 
