@@ -27,7 +27,7 @@ tabs keep separate level state.
 For an interactive level, Download Move History saves the current run as a JSON
 file that can later be chosen from the home page.
 
-The introduction page is Introduction.html.
+The home page links to Introduction.html and Exercises.html.
 
 Built-in level URLs now include the selected JSON file in the level query parameter, for example:
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&source=builtin

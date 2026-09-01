@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exploded Algebra Exercises</title>
+  <style>
+    body {
+      margin: 0;
+      background: white;
+      color: #1f1f1f;
+      font-family: Verdana, Arial, Helvetica, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 48px 22px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 7vw, 3rem);
+      line-height: 1.15;
+    }
+
+    p { margin: 0 0 14px; }
+
+    a {
+      color: #111;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    .exercise-links { display: grid; gap: 10px; margin: 20px 0 32px; }
+    .upload-row { display: grid; gap: 8px; margin-top: 28px; }
+    .device-note { margin-top: 22px; color: #555; }
+    label { font-weight: bold; }
+    input { font: inherit; }
+    #customLevelFileStatus { min-height: 1.5em; color: #555; }
+
+    @media (max-width: 520px) {
+      main { padding: 30px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Try Exploded Algebra</h1>
+    <p>Choose an exercise from the links below. In the guided versions, simply select or click the things outlined in yellow. In the unguided versions, you're on your own.</p>
+    <p class="device-note">For now, touch-screen and mobile devices are not recommended.</p>
+
+    <div class="exercise-links" aria-label="Exercises">
+      <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine-demo.json">Exercise 1: Distribute and Combine (Guided)</a>
+      <a href="exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&amp;source=builtin" data-exercise-file="levels/level-1-distribute-and-combine.json">Exercise 1: Distribute and Combine (Unguided)</a>
+    </div>
+
+    <div class="upload-row">
+      <label for="customLevelFileInput">Upload an exercise file:</label>
+      <input id="customLevelFileInput" type="file" accept=".json,application/json">
+      <span id="customLevelFileStatus" aria-live="polite"></span>
+    </div>
+
+    <!--
+      The built-in JSON is mirrored here only so the exercise links can work when Exercises.html
+      is opened directly with file://. The standalone files in levels/ remain the
+      distributable JSON exercise files used by the hosted site and by users.
+    -->
+    <script type="application/json" id="builtInLevelDataInteractive">
+{
+  "id": "level1",
+  "title": "Exercise 1: Distribute and Combine",
+  "evaluationLevel": 0,
+  "arithmeticLevel": 2,
+  "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+  "steps": [
+    {
+      "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "katex": "3(x+7)+2(2x+3)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "katex": "3x+21+4x+6",
+      "label": "Distribute"
+    },
+    {
+      "expression": "(((7)*(x))+(27))",
+      "katex": "7x+27",
+      "label": "Combine like terms and constants"
+    }
+  ],
+  "kind": "interactive"
+}
+
+    </script>
+    <script type="application/json" id="builtInLevelDataDemo">
+{
+  "kind": "demoOnly",
+  "id": "level1-demo-2026-08-15t15-52-59z",
+  "title": "Exercise 1: Distribute and Combine (Guided)",
+  "sourceLevelId": "level1",
+  "sourceLevelTitle": "Exercise 1: Distribute and Combine",
+  "createdAt": "2026-08-15T15:49:10.503Z",
+  "completedAt": "2026-08-15T15:52:59.608Z",
+  "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+  "evaluationLevel": 0,
+  "variables": [
+    "x"
+  ],
+  "steps": [
+    {
+      "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "katex": "3(x+7)+2(2x+3)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "katex": "3x+21+4x+6",
+      "label": "Distribute"
+    },
+    {
+      "expression": "(((7)*(x))+(27))",
+      "katex": "7x+27",
+      "label": "Combine like terms and constants"
+    }
+  ],
+  "sourceLevel": {
+    "id": "level1",
+    "title": "Exercise 1: Distribute and Combine",
+    "evaluationLevel": 0,
+    "arithmeticLevel": 2,
+    "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+    "steps": [
+      {
+        "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+        "katex": "3(x+7)+2(2x+3)",
+        "label": "Start"
+      },
+      {
+        "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+        "katex": "3x+21+4x+6",
+        "label": "Distribute"
+      },
+      {
+        "expression": "(((7)*(x))+(27))",
+        "katex": "7x+27",
+        "label": "Combine like terms and constants"
+      }
+    ],
+    "kind": "interactive",
+    "variables": [
+      "x"
+    ]
+  },
+  "demo": {
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((3)*((x)+(7)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(((2)*(x))+(3)))"
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((3)*(7))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(2))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "4"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(3))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "6"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((21)+((4)*(x)))"
+      },
+      {
+        "type": "tool",
+        "tool": "commute"
+      },
+      {
+        "type": "select",
+        "expression": "(((3)*(x))+((4)*(x)))"
+      },
+      {
+        "type": "tool",
+        "tool": "factorRight"
+      },
+      {
+        "type": "select",
+        "expression": "((3)+(4))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      },
+      {
+        "type": "select",
+        "expression": "((21)+(6))"
+      },
+      {
+        "type": "tool",
+        "tool": "arithmeticLevel2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7"
+      },
+      {
+        "type": "builder",
+        "action": "submit"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((3)*((x)+(7)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "afterExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "index": 1
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(((2)*(x))+(3)))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "index": 2
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(((2)*(x))+(3))))",
+      "index": 3
+    },
+    {
+      "type": "select",
+      "expression": "((3)*(7))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 4
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 5
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 6
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "index": 7
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+((3)*(7))+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 8
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(2))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 9
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 10
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "4",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "index": 11
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+(21)+((2)*(2)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 12
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(3))",
+      "selectedType": "prod",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 13
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 14
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "6",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "index": 15
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+((2)*(3)))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 16
+    },
+    {
+      "type": "select",
+      "expression": "((21)+((4)*(x)))",
+      "selectedType": "sum",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 17
+    },
+    {
+      "type": "tool",
+      "tool": "commute",
+      "beforeExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "afterExpression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "index": 18
+    },
+    {
+      "type": "select",
+      "expression": "(((3)*(x))+((4)*(x)))",
+      "selectedType": "sum",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "index": 19
+    },
+    {
+      "type": "tool",
+      "tool": "factorRight",
+      "beforeExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "afterExpression": "(((3)*(x))+((4)*(x))+(21)+(6))",
+      "index": 20
+    },
+    {
+      "type": "select",
+      "expression": "((3)+(4))",
+      "selectedType": "sum",
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 21
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 22
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "index": 23
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "((((3)+(4))*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 24
+    },
+    {
+      "type": "select",
+      "expression": "((21)+(6))",
+      "selectedType": "sum",
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "index": 25
+    },
+    {
+      "type": "tool",
+      "tool": "arithmeticLevel2",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 26
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 27
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(21)+(6))",
+      "index": 28
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "beforeExpression": "(((7)*(x))+(21)+(6))",
+      "afterExpression": "(((7)*(x))+(27))",
+      "index": 29
+    }
+  ]
+}
+
+    </script>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const customLevelStorageKey = 'explodedAlgebra.currentCustomLevel';
+      const customLevelWindowNamePrefix = '__EXPLODED_ALGEBRA_LEVEL__:';
+      const builtInExerciseLinks = document.querySelectorAll('[data-exercise-file]');
+      const customLevelFileInput = document.getElementById('customLevelFileInput');
+      const customLevelFileStatus = document.getElementById('customLevelFileStatus');
+
+      const builtInLevelDataIds = {
+        'levels/level-1-distribute-and-combine.json': 'builtInLevelDataInteractive',
+        'levels/level-1-distribute-and-combine-demo.json': 'builtInLevelDataDemo'
+      };
+
+      function clearLevelTransfer() {
+        try {
+          window.sessionStorage.removeItem(customLevelStorageKey);
+        } catch (error) {
+          // file:// pages can have browser-specific storage behavior.
+        }
+        if (typeof window.name === 'string' && window.name.startsWith(customLevelWindowNamePrefix)) {
+          window.name = '';
+        }
+      }
+
+      function saveLevelTransfer(fileName, levelText) {
+        const payloadText = JSON.stringify({
+          version: 1,
+          fileName: fileName,
+          text: levelText
+        });
+
+        let sessionSaved = false;
+        try {
+          window.sessionStorage.setItem(customLevelStorageKey, payloadText);
+          sessionSaved = true;
+        } catch (error) {
+          // window.name is the local-file fallback below.
+        }
+
+        window.name = customLevelWindowNamePrefix + payloadText;
+        if (!sessionSaved && !window.name.startsWith(customLevelWindowNamePrefix)) {
+          throw new Error('This browser could not carry the selected exercise into the app page.');
+        }
+      }
+
+      function getBuiltInLevelText(levelFile) {
+        const scriptId = builtInLevelDataIds[levelFile];
+        const dataNode = scriptId ? document.getElementById(scriptId) : null;
+        if (!dataNode) {
+          throw new Error('The selected built-in exercise is not bundled with this page.');
+        }
+        return dataNode.textContent.trim();
+      }
+
+      function openBuiltInLevel(levelFile) {
+        if (!levelFile) {
+          return;
+        }
+        clearLevelTransfer();
+        saveLevelTransfer(levelFile, getBuiltInLevelText(levelFile));
+        window.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(levelFile) + '&source=builtin';
+      }
+
+      builtInExerciseLinks.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          try {
+            openBuiltInLevel(link.dataset.exerciseFile);
+          } catch (error) {
+            if (customLevelFileStatus) {
+              customLevelFileStatus.textContent = error && error.message
+                ? error.message
+                : 'The built-in exercise could not be opened.';
+            }
+          }
+        });
+      });
+
+      if (customLevelFileInput) {
+        customLevelFileInput.addEventListener('change', async function (event) {
+          const file = event.target.files && event.target.files[0];
+          if (!file) {
+            return;
+          }
+
+          if (customLevelFileStatus) {
+            customLevelFileStatus.textContent = 'Loading ' + file.name + '…';
+          }
+
+          try {
+            clearLevelTransfer();
+            saveLevelTransfer(file.name, await file.text());
+            window.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(file.name) + '&source=custom';
+          } catch (error) {
+            if (customLevelFileStatus) {
+              customLevelFileStatus.textContent = error && error.message
+                ? error.message
+                : 'The selected file could not be opened.';
+            }
+            customLevelFileInput.value = '';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
