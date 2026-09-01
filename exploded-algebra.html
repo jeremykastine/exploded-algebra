@@ -310,6 +310,32 @@
             background: transparent;
         }
 
+        .exercise-guidance {
+            margin: 18px 2px 8px;
+            color: #333333;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .exercise-guidance h3 {
+            margin: 0 0 8px;
+            font-size: 15px;
+            line-height: 1.25;
+        }
+
+        .exercise-guidance p {
+            margin: 0 0 8px;
+        }
+
+        .exercise-guidance ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .exercise-guidance li {
+            margin: 0 0 6px;
+        }
+
         .completion-export-button {
             width: 100%;
             margin: 2px 0 8px 0;
@@ -784,10 +810,19 @@
             min-height: 82px;
             padding: 7px 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 3px;
             color: #303030;
             text-align: center;
+        }
+
+        .intent-category-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.15;
         }
 
         .intent-category-icon {

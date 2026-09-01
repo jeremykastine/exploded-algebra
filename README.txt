@@ -22,6 +22,11 @@ carries a mirrored copy of each JSON payload for transfer into the app. The
 standalone JSON files remain in the levels folder for hosting, distribution, and
 editing. No exploded-algebra-levels.js file is used.
 
+Each exercise may include a `description` string and an `instructions` array of
+strings. When present, the app displays them in an Exercise Description and
+Instructions section beneath the exercise's move cards. These fields are optional
+so older uploaded exercise files remain compatible.
+
 CUSTOM LEVELS
 
 Choose any compatible JSON file from Exercises.html. The selected JSON is carried

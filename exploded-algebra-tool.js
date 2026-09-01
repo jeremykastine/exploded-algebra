@@ -354,8 +354,8 @@ Promise.resolve().then(() => {
             { id: "insert", label: "Insert" },
             { id: "delete", label: "Delete" },
             { id: "separate", label: "Separate" },
-            { id: "consolidate", label: "Consolidate" },
-            { id: "translateNotation", label: "Translate Notation" }
+            { id: "consolidate", label: "Combine" },
+            { id: "translateNotation", label: "Change Form" }
         ];
 
         function getToolCategoryKey(category) {
@@ -764,7 +764,10 @@ Promise.resolve().then(() => {
         function buildIntentCategoryButtonHtml(categoryId) {
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
             const label = category ? category.label : categoryId;
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${getIntentCategoryIconHtml(categoryId)}</button>`;
+            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+                ${getIntentCategoryIconHtml(categoryId)}
+                <span class="intent-category-label">${escapeHtml(label)}</span>
+            </button>`;
         }
 
         function buildIntentCategoryMenuHtml() {
@@ -2038,6 +2041,18 @@ Promise.resolve().then(() => {
             if (!Array.isArray(level.steps) || level.steps.length === 0) {
                 throw new Error(`${sourceName} must contain at least one step.`);
             }
+            if (level.description !== undefined && (typeof level.description !== "string" || !level.description.trim())) {
+                throw new Error(`${sourceName} has an invalid description.`);
+            }
+            if (level.instructions !== undefined) {
+                const validInstructions = (typeof level.instructions === "string" && level.instructions.trim())
+                    || (Array.isArray(level.instructions)
+                        && level.instructions.length > 0
+                        && level.instructions.every(instruction => typeof instruction === "string" && instruction.trim()));
+                if (!validInstructions) {
+                    throw new Error(`${sourceName} has invalid instructions.`);
+                }
+            }
 
             textToExpression(level.startExpression);
             level.steps.forEach((step, index) => {
@@ -2764,8 +2779,21 @@ Promise.resolve().then(() => {
                 </div>
             `).join("");
 
+            const description = typeof level.description === "string" ? level.description.trim() : "";
+            const instructions = Array.isArray(level.instructions)
+                ? level.instructions.map(instruction => String(instruction).trim()).filter(Boolean)
+                : (typeof level.instructions === "string" && level.instructions.trim() ? [level.instructions.trim()] : []);
+            const guidanceHtml = description || instructions.length ? `
+                <section class="exercise-guidance" aria-labelledby="exerciseGuidanceTitle">
+                    <h3 id="exerciseGuidanceTitle">Exercise Description and Instructions</h3>
+                    ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+                    ${instructions.length ? `<ul>${instructions.map(instruction => `<li>${escapeHtml(instruction)}</li>`).join("")}</ul>` : ""}
+                </section>
+            ` : "";
+
             levelContent.innerHTML = `
                 ${stepsHtml}
+                ${guidanceHtml}
             `;
             renderMoveHistoryControls(level);
 

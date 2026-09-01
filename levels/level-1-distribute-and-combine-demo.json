@@ -2,12 +2,19 @@
   "kind": "demoOnly",
   "id": "level1-demo-2026-08-15t15-52-59z",
   "title": "Exercise 1: Distribute and Combine (Guided)",
+  "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
+  "instructions": [
+    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+    "Distribute each outside factor before combining the two x-terms and the numerical constants.",
+    "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
+  ],
   "sourceLevelId": "level1",
   "sourceLevelTitle": "Exercise 1: Distribute and Combine",
   "createdAt": "2026-08-15T15:49:10.503Z",
   "completedAt": "2026-08-15T15:52:59.608Z",
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
   "evaluationLevel": 0,
+  "arithmeticLevel": 2,
   "variables": [
     "x"
   ],
@@ -31,6 +38,11 @@
   "sourceLevel": {
     "id": "level1",
     "title": "Exercise 1: Distribute and Combine",
+    "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
+    "instructions": [
+      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+      "Distribute each outside factor before combining the two x-terms and the numerical constants."
+    ],
     "evaluationLevel": 0,
     "arithmeticLevel": 2,
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",

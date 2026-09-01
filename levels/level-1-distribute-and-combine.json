@@ -1,6 +1,11 @@
 {
   "id": "level1",
   "title": "Exercise 1: Distribute and Combine",
+  "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
+  "instructions": [
+    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+    "Distribute each outside factor before combining the two x-terms and the numerical constants."
+  ],
   "evaluationLevel": 0,
   "arithmeticLevel": 2,
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",

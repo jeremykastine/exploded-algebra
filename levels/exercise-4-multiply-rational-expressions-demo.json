@@ -1,6 +1,14 @@
 {
   "id": "exercise4-demo-2026-09-01t05-55-07z",
   "title": "Demo: Exercise 4: Multiply Two Rational Expressions (9/1/2026, 1:55:07 AM)",
+  "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
+  "instructions": [
+    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+    "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
+    "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
+    "Assume every denominator is nonzero; here x is not equal to -4.",
+    "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
+  ],
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "variables": [
@@ -42,6 +50,13 @@
   "sourceLevel": {
     "id": "exercise4",
     "title": "Exercise 4: Multiply Two Rational Expressions",
+    "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
+    "instructions": [
+      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+      "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
+      "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
+      "Assume every denominator is nonzero; here x is not equal to -4."
+    ],
     "evaluationLevel": 2,
     "arithmeticLevel": 2,
     "variables": [
