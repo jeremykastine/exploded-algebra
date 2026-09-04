@@ -310,11 +310,20 @@
             background: transparent;
         }
 
-        .exercise-guidance {
-            margin: 18px 2px 8px;
+        .step-card.current-step {
+            border-color: #777777;
+        }
+
+        .exercise-guidance,
+        .step-guidance {
+            margin: 10px 2px 12px;
             color: #333333;
             font-size: 14px;
             line-height: 1.45;
+        }
+
+        .exercise-guidance.exercise-conclusion {
+            margin-top: 18px;
         }
 
         .exercise-guidance h3 {
@@ -334,6 +343,15 @@
 
         .exercise-guidance li {
             margin: 0 0 6px;
+        }
+
+        .step-guidance p {
+            margin: 0 0 8px;
+        }
+
+        .step-guidance-after {
+            margin-top: -2px;
+            margin-bottom: 14px;
         }
 
         .completion-export-button {

@@ -553,10 +553,12 @@
 {
   "id": "exercise2",
   "title": "Exercise 2: Add Fractions with Unlike Denominators",
+  "introduction": "Add the fractions by rewriting them with a common denominator. The original expression will remain visible while each new goal is revealed one at a time.",
+  "conclusion": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
   "description": "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
   "instructions": [
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
-    "To rewrite 2/3 with denominator 6, insert multiplication by 1, rewrite that 1 as 2 multiplied by inverse(2), and then use arithmetic and inverse-product tools to form 4/6.",
+    "To rewrite 2/3 with denominator 6, use multiplication by 1 and the inverse-product tools to create an equivalent fraction. Work out the needed factor and numerator yourself.",
     "A displayed unit fraction such as 1/7 means inverse(7) itself, not a separate factor 1 multiplied by inverse(7). More generally, a/b is represented as a multiplied by inverse(b)."
   ],
   "evaluationLevel": 2,
@@ -571,6 +573,10 @@
     {
       "expression": "(((4)/(6))+((5)/(6)))",
       "katex": "\\frac{4}{6}+\\frac{5}{6}",
+      "beforeKatex": "\\frac{?}{6}+\\frac{5}{6}",
+      "afterKatex": "\\frac{4}{6}+\\frac{5}{6}",
+      "introduction": "The first fraction needs a denominator of 6. Determine which numerator will make the new fraction equivalent to 2/3.",
+      "conclusion": "Only the form of the first fraction should change; its value must stay the same.",
       "label": "Use a common denominator"
     },
     {
