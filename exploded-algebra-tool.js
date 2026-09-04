@@ -658,15 +658,19 @@ Promise.resolve().then(() => {
                 ];
             }
             if (categoryId === "insert") {
-                const multiplyTool = canReplaceOneWithInverseProduct()
-                    ? "replaceOneWithInverseProduct"
-                    : "insertIdentityMultiplyByOneRight";
-                return [
+                const tools = [
                     "insertIdentityAddZeroBottom",
-                    multiplyTool,
+                    "insertIdentityMultiplyByOneRight",
                     "insertDoubleInverse",
                     "insertExponentOne"
                 ];
+                if (canReplaceOneWithInverseProduct()) {
+                    tools.push("replaceOneWithInverseProduct");
+                }
+                if (canReplaceZeroWithOppositeSum()) {
+                    tools.push("cancelOpposites");
+                }
+                return tools;
             }
             if (categoryId === "translateNotation") {
                 return [
@@ -853,15 +857,22 @@ Promise.resolve().then(() => {
                 const compactInsertLabels = {
                     insertIdentityAddZeroBottom: "Add",
                     insertIdentityMultiplyByOneRight: "Multiply",
-                    replaceOneWithInverseProduct: "Multiply",
+                    replaceOneWithInverseProduct: "Inverse Product",
+                    cancelOpposites: "Additive Inverses",
                     insertDoubleInverse: "Inverse",
                     insertExponentOne: "Exponent"
+                };
+                const compactInsertAriaLabels = {
+                    replaceOneWithInverseProduct: "Insert inverse product",
+                    cancelOpposites: "Insert additive inverses"
                 };
                 html += `<div class="compact-insert-grid">`;
                 tools.forEach(toolName => {
                     const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
                     if (entry) {
-                        html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml((TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim())}">
+                        const ariaLabel = compactInsertAriaLabels[entry.tool]
+                            || (TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+                        html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml(ariaLabel)}">
                             <span class="compact-insert-symbol">${renderMiniOopsSvg(entry.toMini)}</span>
                             <span class="compact-insert-caption">${compactInsertLabels[entry.tool] || "Insert"}</span>
                         </button>`;
@@ -4604,6 +4615,11 @@ ctx.font = SETTINGS.textFont;
         function canReplaceOneWithInverseProduct() {
             const node = cloneSelectedRangeNode();
             return !!node && node.type === "value" && node.value === "1";
+        }
+
+        function canReplaceZeroWithOppositeSum() {
+            const node = cloneSelectedRangeNode();
+            return !!node && node.type === "value" && node.value === "0";
         }
 
         function canInsertZeroProduct() {
