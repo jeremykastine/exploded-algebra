@@ -41,9 +41,10 @@ a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the exact
 
 The Numerical Rewrite button is the final button in the main tool list. The
 current exercise's arithmetic-level specification appears directly beneath it.
-Under Insert, the Multiply choice is contextual: for an ordinary selected
-expression it inserts multiplication by 1; for a selected literal 1 it opens the
-builder that replaces 1 with A times inverse(A).
+Insert always offers Add Zero, Multiply by One, Double Inverse, and Exponent of
+One. Selecting a literal 1 adds a fifth Inverse Product choice that replaces 1
+with A times inverse(A). Selecting a literal 0 instead adds a fifth Additive
+Inverses choice that replaces 0 with A plus negative one times A.
 
 CUSTOM LEVELS
 
