@@ -78,14 +78,17 @@
   "id": "level1",
   "title": "Exercise 1: Distribute and Combine",
   "instruction": "Simplify and combine like terms.",
-  "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-  "instructions": [
+  "initialKatex": "3(x+7)+2(2x+3)",
+  "exerciseInfo": [
+    "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants."
   ],
+  "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
   "evaluationLevel": 0,
   "arithmeticLevel": 2,
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+  "kind": "interactive",
   "steps": [
     {
       "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -95,16 +98,18 @@
     {
       "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
       "katex": "3x+21+4x+6",
-      "label": "Distribute"
+      "label": "Distribute",
+      "guidance": "Distribute."
     },
     {
       "expression": "(((7)*(x))+(27))",
       "katex": "7x+27",
-      "label": "Combine like terms and constants"
+      "label": "Combine like terms and constants",
+      "guidance": "Combine like terms and constants."
     }
-  ],
-  "kind": "interactive"
+  ]
 }
+
 
     </script>
     <script type="application/json" id="builtInLevelDataDemo">
@@ -113,12 +118,14 @@
   "id": "level1-demo-2026-08-15t15-52-59z",
   "title": "Exercise 1: Distribute and Combine (Guided)",
   "instruction": "Simplify and combine like terms.",
-  "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-  "instructions": [
+  "initialKatex": "3(x+7)+2(2x+3)",
+  "exerciseInfo": [
+    "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
+  "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
   "sourceLevelId": "level1",
   "sourceLevelTitle": "Exercise 1: Distribute and Combine",
   "createdAt": "2026-08-15T15:49:10.503Z",
@@ -129,57 +136,6 @@
   "variables": [
     "x"
   ],
-  "steps": [
-    {
-      "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
-      "katex": "3(x+7)+2(2x+3)",
-      "label": "Start"
-    },
-    {
-      "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
-      "katex": "3x+21+4x+6",
-      "label": "Distribute"
-    },
-    {
-      "expression": "(((7)*(x))+(27))",
-      "katex": "7x+27",
-      "label": "Combine like terms and constants"
-    }
-  ],
-  "sourceLevel": {
-    "id": "level1",
-    "title": "Exercise 1: Distribute and Combine",
-    "instruction": "Simplify and combine like terms.",
-    "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-    "instructions": [
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
-      "Distribute each outside factor before combining the two x-terms and the numerical constants."
-    ],
-    "evaluationLevel": 0,
-    "arithmeticLevel": 2,
-    "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
-    "steps": [
-      {
-        "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
-        "katex": "3(x+7)+2(2x+3)",
-        "label": "Start"
-      },
-      {
-        "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
-        "katex": "3x+21+4x+6",
-        "label": "Distribute"
-      },
-      {
-        "expression": "(((7)*(x))+(27))",
-        "katex": "7x+27",
-        "label": "Combine like terms and constants"
-      }
-    ],
-    "kind": "interactive",
-    "variables": [
-      "x"
-    ]
-  },
   "demo": {
     "steps": [
       {
@@ -547,8 +503,66 @@
       "afterExpression": "(((7)*(x))+(27))",
       "index": 29
     }
-  ]
+  ],
+  "steps": [
+    {
+      "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+      "katex": "3(x+7)+2(2x+3)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+      "katex": "3x+21+4x+6",
+      "label": "Distribute",
+      "guidance": "Distribute."
+    },
+    {
+      "expression": "(((7)*(x))+(27))",
+      "katex": "7x+27",
+      "label": "Combine like terms and constants",
+      "guidance": "Combine like terms and constants."
+    }
+  ],
+  "sourceLevel": {
+    "id": "level1",
+    "title": "Exercise 1: Distribute and Combine",
+    "instruction": "Simplify and combine like terms.",
+    "initialKatex": "3(x+7)+2(2x+3)",
+    "exerciseInfo": [
+      "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
+      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+      "Distribute each outside factor before combining the two x-terms and the numerical constants."
+    ],
+    "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
+    "evaluationLevel": 0,
+    "arithmeticLevel": 2,
+    "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+    "kind": "interactive",
+    "variables": [
+      "x"
+    ],
+    "steps": [
+      {
+        "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+        "katex": "3(x+7)+2(2x+3)",
+        "label": "Start"
+      },
+      {
+        "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
+        "katex": "3x+21+4x+6",
+        "label": "Distribute",
+        "guidance": "Distribute."
+      },
+      {
+        "expression": "(((7)*(x))+(27))",
+        "katex": "7x+27",
+        "label": "Combine like terms and constants",
+        "guidance": "Combine like terms and constants."
+      }
+    ]
+  }
 }
+
 
     </script>
 
@@ -557,16 +571,18 @@
   "id": "exercise2",
   "title": "Exercise 2: Add Fractions with Unlike Denominators",
   "instruction": "Add the fractions.",
-  "conclusion": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
-  "description": "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
-  "instructions": [
+  "initialKatex": "\\frac{2}{3}+\\frac{5}{6}",
+  "exerciseInfo": [
+    "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "To rewrite 2/3 with denominator 6, use multiplication by 1 and the inverse-product tools to create an equivalent fraction. Work out the needed factor and numerator yourself.",
     "A displayed unit fraction such as 1/7 means inverse(7) itself, not a separate factor 1 multiplied by inverse(7). More generally, a/b is represented as a multiplied by inverse(b)."
   ],
+  "completionMessage": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "startExpression": "(((2)/(3))+((5)/(6)))",
+  "kind": "interactive",
   "steps": [
     {
       "expression": "(((2)/(3))+((5)/(6)))",
@@ -578,28 +594,33 @@
       "katex": "\\frac{4}{6}+\\frac{5}{6}",
       "beforeKatex": "\\frac{?}{6}+\\frac{5}{6}",
       "afterKatex": "\\frac{4}{6}+\\frac{5}{6}",
-      "introduction": "The first fraction needs a denominator of 6. Determine which numerator will make the new fraction equivalent to 2/3.",
-      "conclusion": "Only the form of the first fraction should change; its value must stay the same.",
-      "label": "Use a common denominator"
+      "label": "Use a common denominator",
+      "guidance": [
+        "The first fraction needs a denominator of 6. Determine which numerator will make the new fraction equivalent to 2/3.",
+        "Only the form of the first fraction should change; its value must stay the same."
+      ]
     },
     {
       "expression": "(((4)+(5))/(6))",
       "katex": "\\frac{4+5}{6}",
-      "label": "Combine the numerators"
+      "label": "Combine the numerators",
+      "guidance": "Combine the numerators."
     },
     {
       "expression": "((9)/(6))",
       "katex": "\\frac{9}{6}",
-      "label": "Add"
+      "label": "Add",
+      "guidance": "Add."
     },
     {
       "expression": "((3)/(2))",
       "katex": "\\frac{3}{2}",
-      "label": "Simplify"
+      "label": "Simplify",
+      "guidance": "Simplify."
     }
-  ],
-  "kind": "interactive"
+  ]
 }
+
 
     </script>
 
@@ -608,17 +629,20 @@
   "id": "exercise3",
   "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
   "instruction": "Multiply and combine like terms.",
-  "description": "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-  "instructions": [
+  "initialKatex": "(x+3)(2x+5)",
+  "exerciseInfo": [
+    "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
   ],
+  "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "variables": [
     "x"
   ],
   "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+  "kind": "interactive",
   "steps": [
     {
       "expression": "(((x)+(3))*(((2)*(x))+(5)))",
@@ -628,26 +652,30 @@
     {
       "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
       "katex": "x(2x+5)+3(2x+5)",
-      "label": "Distribute one binomial"
+      "label": "Distribute one binomial",
+      "guidance": "Distribute one binomial."
     },
     {
       "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
       "katex": "2x^2+5x+6x+15",
-      "label": "Distribute and simplify the products"
+      "label": "Distribute and simplify the products",
+      "guidance": "Distribute and simplify the products."
     },
     {
       "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
       "katex": "2x^2+(5+6)x+15",
-      "label": "Group the like terms"
+      "label": "Group the like terms",
+      "guidance": "Group the like terms."
     },
     {
       "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
       "katex": "2x^2+11x+15",
-      "label": "Combine like terms"
+      "label": "Combine like terms",
+      "guidance": "Combine like terms."
     }
-  ],
-  "kind": "interactive"
+  ]
 }
+
 
     </script>
 
@@ -656,19 +684,22 @@
   "id": "exercise4",
   "title": "Exercise 4: Multiply Two Rational Expressions",
   "instruction": "Multiply and simplify.",
-  "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-  "instructions": [
+  "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+  "exerciseInfo": [
+    "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
     "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
     "Assume every denominator is nonzero; here x is not equal to -4."
   ],
+  "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "variables": [
     "x"
   ],
   "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+  "kind": "interactive",
   "steps": [
     {
       "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
@@ -678,26 +709,30 @@
     {
       "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
       "katex": "\\frac{3x(x+4)}{6(x+4)}",
-      "label": "Multiply the numerators and denominators"
+      "label": "Multiply the numerators and denominators",
+      "guidance": "Multiply the numerators and denominators."
     },
     {
       "expression": "(((3)*(x))/(6))",
       "katex": "\\frac{3x}{6}",
-      "label": "Cancel the common factor"
+      "label": "Cancel the common factor",
+      "guidance": "Cancel the common factor."
     },
     {
       "expression": "(((3)*(x))/((3)*(2)))",
       "katex": "\\frac{3x}{3\\cdot2}",
-      "label": "Factor the denominator"
+      "label": "Factor the denominator",
+      "guidance": "Factor the denominator."
     },
     {
       "expression": "((x)/(2))",
       "katex": "\\frac{x}{2}",
-      "label": "Simplify"
+      "label": "Simplify",
+      "guidance": "Simplify."
     }
-  ],
-  "kind": "interactive"
+  ]
 }
+
 
     </script>
 
@@ -706,94 +741,25 @@
   "id": "exercise3-demo-2026-09-01t05-52-53z",
   "title": "Demo: Exercise 3: Multiply Binomials and Combine Like Terms (9/1/2026, 1:52:53 AM)",
   "instruction": "Multiply and combine like terms.",
-  "description": "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-  "instructions": [
+  "initialKatex": "(x+3)(2x+5)",
+  "exerciseInfo": [
+    "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
+  "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "variables": [
     "x"
   ],
   "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
-  "steps": [
-    {
-      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
-      "katex": "(x+3)(2x+5)",
-      "label": "Start"
-    },
-    {
-      "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
-      "katex": "x(2x+5)+3(2x+5)",
-      "label": "Distribute one binomial"
-    },
-    {
-      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
-      "katex": "2x^2+5x+6x+15",
-      "label": "Distribute and simplify the products"
-    },
-    {
-      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-      "katex": "2x^2+(5+6)x+15",
-      "label": "Group the like terms"
-    },
-    {
-      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
-      "katex": "2x^2+11x+15",
-      "label": "Combine like terms"
-    }
-  ],
   "kind": "demoOnly",
   "sourceLevelId": "exercise3",
   "sourceLevelTitle": "Exercise 3: Multiply Binomials and Combine Like Terms",
   "createdAt": "2026-09-01T05:51:39.128Z",
   "completedAt": "2026-09-01T05:52:53.076Z",
-  "sourceLevel": {
-    "id": "exercise3",
-    "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
-    "instruction": "Multiply and combine like terms.",
-    "description": "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "instructions": [
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
-      "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
-    ],
-    "evaluationLevel": 2,
-    "arithmeticLevel": 2,
-    "variables": [
-      "x"
-    ],
-    "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
-    "steps": [
-      {
-        "expression": "(((x)+(3))*(((2)*(x))+(5)))",
-        "katex": "(x+3)(2x+5)",
-        "label": "Start"
-      },
-      {
-        "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
-        "katex": "x(2x+5)+3(2x+5)",
-        "label": "Distribute one binomial"
-      },
-      {
-        "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
-        "katex": "2x^2+5x+6x+15",
-        "label": "Distribute and simplify the products"
-      },
-      {
-        "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-        "katex": "2x^2+(5+6)x+15",
-        "label": "Group the like terms"
-      },
-      {
-        "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
-        "katex": "2x^2+11x+15",
-        "label": "Combine like terms"
-      }
-    ],
-    "kind": "interactive"
-  },
   "demo": {
     "steps": [
       {
@@ -1137,8 +1103,90 @@
       "afterExpression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
       "index": 27
     }
-  ]
+  ],
+  "steps": [
+    {
+      "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+      "katex": "(x+3)(2x+5)",
+      "label": "Start"
+    },
+    {
+      "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+      "katex": "x(2x+5)+3(2x+5)",
+      "label": "Distribute one binomial",
+      "guidance": "Distribute one binomial."
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "katex": "2x^2+5x+6x+15",
+      "label": "Distribute and simplify the products",
+      "guidance": "Distribute and simplify the products."
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "katex": "2x^2+(5+6)x+15",
+      "label": "Group the like terms",
+      "guidance": "Group the like terms."
+    },
+    {
+      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "katex": "2x^2+11x+15",
+      "label": "Combine like terms",
+      "guidance": "Combine like terms."
+    }
+  ],
+  "sourceLevel": {
+    "id": "exercise3",
+    "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
+    "instruction": "Multiply and combine like terms.",
+    "initialKatex": "(x+3)(2x+5)",
+    "exerciseInfo": [
+      "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
+      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+      "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
+    ],
+    "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
+    "evaluationLevel": 2,
+    "arithmeticLevel": 2,
+    "variables": [
+      "x"
+    ],
+    "startExpression": "(((x)+(3))*(((2)*(x))+(5)))",
+    "kind": "interactive",
+    "steps": [
+      {
+        "expression": "(((x)+(3))*(((2)*(x))+(5)))",
+        "katex": "(x+3)(2x+5)",
+        "label": "Start"
+      },
+      {
+        "expression": "(((x)*(((2)*(x))+(5)))+((3)*(((2)*(x))+(5))))",
+        "katex": "x(2x+5)+3(2x+5)",
+        "label": "Distribute one binomial",
+        "guidance": "Distribute one binomial."
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+        "katex": "2x^2+5x+6x+15",
+        "label": "Distribute and simplify the products",
+        "guidance": "Distribute and simplify the products."
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+        "katex": "2x^2+(5+6)x+15",
+        "label": "Group the like terms",
+        "guidance": "Group the like terms."
+      },
+      {
+        "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+        "katex": "2x^2+11x+15",
+        "label": "Combine like terms",
+        "guidance": "Combine like terms."
+      }
+    ]
+  }
 }
+
 
     </script>
 
@@ -1147,98 +1195,27 @@
   "id": "exercise4-demo-2026-09-01t05-55-07z",
   "title": "Demo: Exercise 4: Multiply Two Rational Expressions (9/1/2026, 1:55:07 AM)",
   "instruction": "Multiply and simplify.",
-  "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-  "instructions": [
+  "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+  "exerciseInfo": [
+    "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
     "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
     "Assume every denominator is nonzero; here x is not equal to -4.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
+  "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
   "evaluationLevel": 2,
   "arithmeticLevel": 2,
   "variables": [
     "x"
   ],
   "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
-  "steps": [
-    {
-      "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
-      "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
-      "label": "Start"
-    },
-    {
-      "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
-      "katex": "\\frac{3x(x+4)}{6(x+4)}",
-      "label": "Multiply the numerators and denominators"
-    },
-    {
-      "expression": "(((3)*(x))/(6))",
-      "katex": "\\frac{3x}{6}",
-      "label": "Cancel the common factor"
-    },
-    {
-      "expression": "(((3)*(x))/((3)*(2)))",
-      "katex": "\\frac{3x}{3\\cdot2}",
-      "label": "Factor the denominator"
-    },
-    {
-      "expression": "((x)/(2))",
-      "katex": "\\frac{x}{2}",
-      "label": "Simplify"
-    }
-  ],
   "kind": "demoOnly",
   "sourceLevelId": "exercise4",
   "sourceLevelTitle": "Exercise 4: Multiply Two Rational Expressions",
   "createdAt": "2026-09-01T05:53:26.647Z",
   "completedAt": "2026-09-01T05:55:07.319Z",
-  "sourceLevel": {
-    "id": "exercise4",
-    "title": "Exercise 4: Multiply Two Rational Expressions",
-    "instruction": "Multiply and simplify.",
-    "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-    "instructions": [
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
-      "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
-      "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
-      "Assume every denominator is nonzero; here x is not equal to -4."
-    ],
-    "evaluationLevel": 2,
-    "arithmeticLevel": 2,
-    "variables": [
-      "x"
-    ],
-    "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
-    "steps": [
-      {
-        "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
-        "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
-        "label": "Start"
-      },
-      {
-        "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
-        "katex": "\\frac{3x(x+4)}{6(x+4)}",
-        "label": "Multiply the numerators and denominators"
-      },
-      {
-        "expression": "(((3)*(x))/(6))",
-        "katex": "\\frac{3x}{6}",
-        "label": "Cancel the common factor"
-      },
-      {
-        "expression": "(((3)*(x))/((3)*(2)))",
-        "katex": "\\frac{3x}{3\\cdot2}",
-        "label": "Factor the denominator"
-      },
-      {
-        "expression": "((x)/(2))",
-        "katex": "\\frac{x}{2}",
-        "label": "Simplify"
-      }
-    ],
-    "kind": "interactive"
-  },
   "demo": {
     "steps": [
       {
@@ -1538,8 +1515,92 @@
       "afterExpression": "(((1)/(2))*(x))",
       "index": 23
     }
-  ]
+  ],
+  "steps": [
+    {
+      "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+      "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+      "label": "Start"
+    },
+    {
+      "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
+      "katex": "\\frac{3x(x+4)}{6(x+4)}",
+      "label": "Multiply the numerators and denominators",
+      "guidance": "Multiply the numerators and denominators."
+    },
+    {
+      "expression": "(((3)*(x))/(6))",
+      "katex": "\\frac{3x}{6}",
+      "label": "Cancel the common factor",
+      "guidance": "Cancel the common factor."
+    },
+    {
+      "expression": "(((3)*(x))/((3)*(2)))",
+      "katex": "\\frac{3x}{3\\cdot2}",
+      "label": "Factor the denominator",
+      "guidance": "Factor the denominator."
+    },
+    {
+      "expression": "((x)/(2))",
+      "katex": "\\frac{x}{2}",
+      "label": "Simplify",
+      "guidance": "Simplify."
+    }
+  ],
+  "sourceLevel": {
+    "id": "exercise4",
+    "title": "Exercise 4: Multiply Two Rational Expressions",
+    "instruction": "Multiply and simplify.",
+    "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+    "exerciseInfo": [
+      "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
+      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
+      "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
+      "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
+      "Assume every denominator is nonzero; here x is not equal to -4."
+    ],
+    "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
+    "evaluationLevel": 2,
+    "arithmeticLevel": 2,
+    "variables": [
+      "x"
+    ],
+    "startExpression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+    "kind": "interactive",
+    "steps": [
+      {
+        "expression": "((((3)*(x))/((x)+(4)))*(((x)+(4))/(6)))",
+        "katex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
+        "label": "Start"
+      },
+      {
+        "expression": "(((3)*(x)*((x)+(4)))/((6)*((x)+(4))))",
+        "katex": "\\frac{3x(x+4)}{6(x+4)}",
+        "label": "Multiply the numerators and denominators",
+        "guidance": "Multiply the numerators and denominators."
+      },
+      {
+        "expression": "(((3)*(x))/(6))",
+        "katex": "\\frac{3x}{6}",
+        "label": "Cancel the common factor",
+        "guidance": "Cancel the common factor."
+      },
+      {
+        "expression": "(((3)*(x))/((3)*(2)))",
+        "katex": "\\frac{3x}{3\\cdot2}",
+        "label": "Factor the denominator",
+        "guidance": "Factor the denominator."
+      },
+      {
+        "expression": "((x)/(2))",
+        "katex": "\\frac{x}{2}",
+        "label": "Simplify",
+        "guidance": "Simplify."
+      }
+    ]
+  }
 }
+
 
     </script>
 

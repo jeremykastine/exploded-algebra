@@ -22,29 +22,44 @@ carries a mirrored copy of each JSON payload for transfer into the app. The
 standalone JSON files remain in the levels folder for hosting, distribution, and
 editing. No exploded-algebra-levels.js file is used.
 
-Each exercise may include a short `instruction` and a `conclusion`. Either field
-may be one string or an array of strings. The instruction stays above the original
-expression, and the conclusion stays below the move cards. The older
-`introduction` field remains compatible as a fallback for `instruction`.
-`description` and `instructions` remain valid level metadata but are not displayed
-with the move cards.
+The conventional-notation panel uses three textbook-style sections separated by
+horizontal rules. `instruction` is the brief textbook direction. `initialKatex`
+is the conventional form of the starting expression. The running solution shows
+completed steps plus the one current step. `exerciseInfo` supplies the exercise-wide
+information shown while work is in progress, and `completionMessage` replaces it
+when the final step is complete. Text fields may be one string or an array of
+strings unless described otherwise.
 
-Move cards are revealed progressively. The original expression, all accomplished
-steps, and only the next unaccomplished step are visible. A step may include its
-own `introduction` and `conclusion` (one string or an array of strings); these are
-shown above and below that card only while it is the current goal. A step may also
-include `beforeKatex` and `afterKatex` display versions. The before version is
-shown while the goal is current; the after version replaces it when the step is
-complete. If either is omitted, the ordinary `katex` version is used. This permits
-a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the exact
-`expression` used to recognize the completed step. All of these fields are optional.
+The original expression remains the first item in `steps` for matching and move
+history compatibility, but it is displayed only in the problem-statement section.
+Subsequent steps are revealed progressively. A step may include one `guidance`
+block, which appears below that step only while it is current. A step may also
+include `beforeKatex` and `afterKatex` conventional-display versions. The before
+version is shown while the goal is current; the after version replaces it when the
+step is complete. If either is omitted, the ordinary `katex` version is used. This
+permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
+exact exploded `expression` used to recognize the completed step.
+
+Older files remain compatible: `introduction` falls back to `instruction`;
+`description` plus `instructions` fall back to `exerciseInfo`; `conclusion` falls
+back to `completionMessage`; and a step's old `introduction` plus `conclusion` are
+combined into its single below-step guidance area.
 
 The Numerical Rewrite button is the final button in the main tool list. The
 current exercise's arithmetic-level specification appears directly beneath it.
-Insert always offers Add Zero, Multiply by One, Double Inverse, and Exponent of
-One. Selecting a literal 1 adds a fifth Inverse Product choice that replaces 1
-with A times inverse(A). Selecting a literal 0 instead adds a fifth Additive
-Inverses choice that replaces 0 with A plus negative one times A.
+Introduce Element(s) always offers Add Zero, Multiply by One, Double Inverse, and
+Exponent of One. Selecting a literal 1 adds a fifth Product of Inverses choice
+that replaces 1 with A times inverse(A). Selecting a literal 0 instead adds a
+fifth Additive Inverses choice that replaces 0 with A plus negative one times A.
+The main Remove Element(s) category retains the existing eraser icon.
+
+Change Form is not enabled by a level flag. It appears only when the structural
+scan of `startExpression` and the exploded expression fields in `steps` finds an
+actual `exp` node. Conventional-only exponents in `initialKatex`, `katex`,
+`beforeKatex`, or `afterKatex` do not affect the result. Optional exploded
+pre/post variants (`beforeExpression`, `afterExpression`,
+`beforeExplodedExpression`, `afterExplodedExpression`, or the expression inside
+`preCompletion` / `postCompletion`) are included in the scan when present.
 
 CUSTOM LEVELS
 

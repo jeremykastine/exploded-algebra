@@ -15,10 +15,10 @@ Promise.resolve().then(() => {
 
 
         const TOOL_INFO = {
-            replaceOneWithInverseProduct: `<span class="rule-name">Insert Inverse Product</span><span class="rule-notation">1 = A · inverse(A)</span>`,
+            replaceOneWithInverseProduct: `<span class="rule-name">Introduce Product of Inverses</span><span class="rule-notation">1 = A · inverse(A)</span>`,
             cancelProductWithInverse: `<span class="rule-name">Cancel Inverse Product</span><span class="rule-notation">A · inverse(A) = 1</span>`,
             eliminateDoubleInverse: `<span class="rule-name">Remove Double Inverse</span><span class="rule-notation">inverse(inverse(A)) = A</span>`,
-            insertDoubleInverse: `<span class="rule-name">Insert Double Inverse</span><span class="rule-notation">A = inverse(inverse(A))</span>`,
+            insertDoubleInverse: `<span class="rule-name">Introduce Double Inverse</span><span class="rule-notation">A = inverse(inverse(A))</span>`,
             distributeInverseOverProduct: `<span class="rule-name">Inverse of a Product</span><span class="rule-notation">inverse(A · B) = inverse(A) · inverse(B)</span>`,
             factorProductOfInverses: `<span class="rule-name">Product of Inverses</span><span class="rule-notation">inverse(A) · inverse(B) = inverse(A · B)</span>`,
             rewriteInvNegOneToNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">inverse(-1) = -1</span>`,
@@ -37,9 +37,9 @@ Promise.resolve().then(() => {
             distributeExponentOverProduct: `<span class="rule-name">Power of a Product</span><span class="rule-notation">(A · B)<sup>n</sup> = A<sup>n</sup> · B<sup>n</sup></span>`,
             factorCommonExponent: `<span class="rule-name">Factor Common Power</span><span class="rule-notation">A<sup>n</sup> · B<sup>n</sup> = (A · B)<sup>n</sup></span>`,
             oneToAnyPower: `<span class="rule-name">Power of One</span><span class="rule-notation">1<sup>n</sup> = 1</span>`,
-            insertExponentOne: `<span class="rule-name">Insert First Power</span><span class="rule-notation">A = A<sup>1</sup></span>`,
-            insertExponentZero: `<span class="rule-name">Insert Zero Power</span><span class="rule-notation">1 = A<sup>0</sup></span>`,
-            insertPowerOfOne: `<span class="rule-name">Insert Power of One</span><span class="rule-notation">1 = 1<sup>n</sup></span>`,
+            insertExponentOne: `<span class="rule-name">Introduce First Power</span><span class="rule-notation">A = A<sup>1</sup></span>`,
+            insertExponentZero: `<span class="rule-name">Introduce Zero Power</span><span class="rule-notation">1 = A<sup>0</sup></span>`,
+            insertPowerOfOne: `<span class="rule-name">Introduce Power of One</span><span class="rule-notation">1 = 1<sup>n</sup></span>`,
             expandPowerOfPower: `<span class="rule-name">Split Power of a Power</span><span class="rule-notation">A<sup>m·n</sup> = (A<sup>m</sup>)<sup>n</sup></span>`,
             negativeOneSquared: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2</sup> = 1</span>`,
             negativeOneEvenPower: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2n</sup> = 1</span>`,
@@ -53,7 +53,7 @@ Promise.resolve().then(() => {
             cancelOpposites: `<span class="rule-name">Cancel Additive Inverses</span><span class="rule-notation">A + (-A) = 0</span>`,
             doubleNegative: `<span class="rule-name">Double Negative</span><span class="rule-notation">(-1) · (-1) = 1</span>`,
             zeroProduct: `<span class="rule-name">Zero Product</span><span class="rule-notation">0 · A = 0</span>`,
-            insertZeroProduct: `<span class="rule-name">Insert Zero Product</span><span class="rule-notation">0 = 0 · A</span>`,
+            insertZeroProduct: `<span class="rule-name">Introduce Zero Product</span><span class="rule-notation">0 = 0 · A</span>`,
             eliminateIdentities: `<span class="rule-name">Remove Identity</span><span class="rule-notation">A + 0 = A; A · 1 = A</span>`,
             evaluateSum: `<span class="rule-name">Evaluate Sum</span><span class="rule-notation">a + b = c</span>`,
             evaluateProduct: `<span class="rule-name">Evaluate Product</span><span class="rule-notation">a · b = c</span>`,
@@ -86,13 +86,13 @@ Promise.resolve().then(() => {
             commuteLastToFirst: `<span class="rule-name">Commute last to beginning</span>`,
             commuteTerms: `<span class="rule-name">Commute Terms</span><span class="rule-notation">A + B = B + A</span>`,
             commuteFactors: `<span class="rule-name">Commute Product</span><span class="rule-notation">A · B = B · A</span>`,
-            insertIdentity: `<span class="rule-name">Insert Identity</span><span class="rule-notation">A = A + 0; A = A · 1</span>`,
-            insertIdentityAddZeroTop: `<span class="rule-name">Insert Additive Identity Above</span>`,
-            insertIdentityAddZeroBottom: `<span class="rule-name">Insert Additive Identity Below</span>`,
-            insertIdentityMultiplyByOneLeft: `<span class="rule-name">Insert Multiplicative Identity Left</span>`,
-            insertIdentityMultiplyByOneRight: `<span class="rule-name">Insert Multiplicative Identity Right</span>`,
-            insertZeroProductLeft: `<span class="rule-name">Insert Zero Product Left</span>`,
-            insertZeroProductRight: `<span class="rule-name">Insert Zero Product Right</span>`,
+            insertIdentity: `<span class="rule-name">Introduce Identity</span><span class="rule-notation">A = A + 0; A = A · 1</span>`,
+            insertIdentityAddZeroTop: `<span class="rule-name">Introduce Additive Identity Above</span>`,
+            insertIdentityAddZeroBottom: `<span class="rule-name">Introduce Additive Identity Below</span>`,
+            insertIdentityMultiplyByOneLeft: `<span class="rule-name">Introduce Multiplicative Identity Left</span>`,
+            insertIdentityMultiplyByOneRight: `<span class="rule-name">Introduce Multiplicative Identity Right</span>`,
+            insertZeroProductLeft: `<span class="rule-name">Introduce Zero Product Left</span>`,
+            insertZeroProductRight: `<span class="rule-name">Introduce Zero Product Right</span>`,
             reduceToZero: `<span class="rule-name">Reduce to Zero</span>`,
             reduceToOne: `<span class="rule-name">Reduce to One</span>`
         };
@@ -350,8 +350,8 @@ Promise.resolve().then(() => {
         // decided by the existing rule checks below.
         const INTENT_RULE_CATEGORIES = [
             { id: "commute", label: "Commute" },
-            { id: "insert", label: "Insert" },
-            { id: "delete", label: "Delete" },
+            { id: "insert", label: "Introduce Element(s)" },
+            { id: "delete", label: "Remove Element(s)" },
             { id: "separate", label: "Separate" },
             { id: "consolidate", label: "Combine" },
             { id: "translateNotation", label: "Change Form" },
@@ -782,6 +782,9 @@ Promise.resolve().then(() => {
 
         function buildIntentCategoryMenuHtml() {
             const arithmeticLevel = getArithmeticLevelForCurrentLevel();
+            const changeFormButtonHtml = levelUsesExplodedExponentNode(getCurrentLevel())
+                ? `<div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>`
+                : "";
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-row single">${buildIntentCategoryButtonHtml("commute")}</div>
@@ -793,7 +796,7 @@ Promise.resolve().then(() => {
                         ${buildIntentCategoryButtonHtml("separate")}
                         ${buildIntentCategoryButtonHtml("consolidate")}
                     </div>
-                    <div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>
+                    ${changeFormButtonHtml}
                     <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
                     <div class="arithmetic-level-note">${escapeHtml(getArithmeticLevelDescription(arithmeticLevel))}</div>
                 </div>`;
@@ -863,8 +866,8 @@ Promise.resolve().then(() => {
                     insertExponentOne: "Exponent"
                 };
                 const compactInsertAriaLabels = {
-                    replaceOneWithInverseProduct: "Insert inverse product",
-                    cancelOpposites: "Insert additive inverses"
+                    replaceOneWithInverseProduct: "Introduce product of inverses",
+                    cancelOpposites: "Introduce additive inverses"
                 };
                 html += `<div class="compact-insert-grid">`;
                 tools.forEach(toolName => {
@@ -874,7 +877,7 @@ Promise.resolve().then(() => {
                             || (TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
                         html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml(ariaLabel)}">
                             <span class="compact-insert-symbol">${renderMiniOopsSvg(entry.toMini)}</span>
-                            <span class="compact-insert-caption">${compactInsertLabels[entry.tool] || "Insert"}</span>
+                            <span class="compact-insert-caption">${compactInsertLabels[entry.tool] || "Introduce"}</span>
                         </button>`;
                     }
                 });
@@ -2045,6 +2048,98 @@ Promise.resolve().then(() => {
             level.demo.steps = upgradedSteps;
         }
 
+        function normalizeTextBlocks(value) {
+            if (Array.isArray(value)) {
+                return value.map(item => String(item).trim()).filter(Boolean);
+            }
+            return typeof value === "string" && value.trim() ? [value.trim()] : [];
+        }
+
+        function isValidTextBlocks(value) {
+            return (typeof value === "string" && !!value.trim()) || (
+                Array.isArray(value) &&
+                value.length > 0 &&
+                value.every(item => typeof item === "string" && !!item.trim())
+            );
+        }
+
+        function expressionTreeContainsExponent(node) {
+            return !!node && (
+                node.type === "exp" ||
+                (Array.isArray(node.args) && node.args.some(expressionTreeContainsExponent))
+            );
+        }
+
+        const EXPLODED_STEP_EXPRESSION_FIELDS = [
+            "expression",
+            "explodedExpression",
+            "beforeExpression",
+            "afterExpression",
+            "beforeExplodedExpression",
+            "afterExplodedExpression"
+        ];
+        const EXPLODED_STEP_VARIANT_FIELDS = ["preCompletion", "postCompletion"];
+        const explodedExponentAvailabilityCache = new WeakMap();
+
+        function getExplodedExpressionTextsForStep(step) {
+            if (!step || typeof step !== "object") {
+                return [];
+            }
+            const texts = EXPLODED_STEP_EXPRESSION_FIELDS
+                .map(fieldName => step[fieldName])
+                .filter(value => typeof value === "string" && !!value.trim());
+            EXPLODED_STEP_VARIANT_FIELDS.forEach(variantFieldName => {
+                const variant = step[variantFieldName];
+                if (!variant || typeof variant !== "object") {
+                    return;
+                }
+                ["expression", "explodedExpression"].forEach(fieldName => {
+                    const value = variant[fieldName];
+                    if (typeof value === "string" && value.trim()) {
+                        texts.push(value);
+                    }
+                });
+            });
+            return [...new Set(texts)];
+        }
+
+        function levelUsesExplodedExponentNode(level) {
+            if (!level || typeof level !== "object") {
+                return false;
+            }
+            if (explodedExponentAvailabilityCache.has(level)) {
+                return explodedExponentAvailabilityCache.get(level);
+            }
+
+            const explodedExpressionTexts = [];
+            if (typeof level.startExpression === "string" && level.startExpression.trim()) {
+                explodedExpressionTexts.push(level.startExpression);
+            }
+            (level.steps || []).forEach(step => {
+                explodedExpressionTexts.push(...getExplodedExpressionTextsForStep(step));
+            });
+
+            const containsExponent = [...new Set(explodedExpressionTexts)].some(expressionText => {
+                try {
+                    return expressionTreeContainsExponent(textToExpression(expressionText));
+                } catch (error) {
+                    return false;
+                }
+            });
+            explodedExponentAvailabilityCache.set(level, containsExponent);
+            return containsExponent;
+        }
+
+        function expressionTextsMatch(firstText, secondText) {
+            try {
+                const first = normalizeExpressionTree(textToExpression(firstText));
+                const second = normalizeExpressionTree(textToExpression(secondText));
+                return sameExpressionForMatching(first, second);
+            } catch (error) {
+                return false;
+            }
+        }
+
         function validateChosenLevel(level, fileName) {
             const sourceName = fileName || "The selected file";
             if (!level || typeof level !== "object" || Array.isArray(level)) {
@@ -2066,26 +2161,27 @@ Promise.resolve().then(() => {
                 throw new Error(`${sourceName} has an invalid description.`);
             }
             if (level.instructions !== undefined) {
-                const validInstructions = (typeof level.instructions === "string" && level.instructions.trim())
-                    || (Array.isArray(level.instructions)
-                        && level.instructions.length > 0
-                        && level.instructions.every(instruction => typeof instruction === "string" && instruction.trim()));
-                if (!validInstructions) {
+                if (!isValidTextBlocks(level.instructions)) {
                     throw new Error(`${sourceName} has invalid instructions.`);
                 }
             }
-            ["instruction", "introduction", "conclusion"].forEach(fieldName => {
+            [
+                "instruction",
+                "introduction",
+                "conclusion",
+                "exerciseInfo",
+                "completionMessage"
+            ].forEach(fieldName => {
                 if (level[fieldName] === undefined) {
                     return;
                 }
-                const validText = (typeof level[fieldName] === "string" && level[fieldName].trim())
-                    || (Array.isArray(level[fieldName])
-                        && level[fieldName].length > 0
-                        && level[fieldName].every(item => typeof item === "string" && item.trim()));
-                if (!validText) {
+                if (!isValidTextBlocks(level[fieldName])) {
                     throw new Error(`${sourceName} has an invalid ${fieldName}.`);
                 }
             });
+            if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
+                throw new Error(`${sourceName} has an invalid initialKatex.`);
+            }
 
             textToExpression(level.startExpression);
             level.steps.forEach((step, index) => {
@@ -2093,22 +2189,21 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has an invalid expression in step ${index + 1}.`);
                 }
                 textToExpression(step.expression);
-                ["introduction", "conclusion"].forEach(fieldName => {
+                ["guidance", "introduction", "conclusion"].forEach(fieldName => {
                     if (step[fieldName] === undefined) {
                         return;
                     }
-                    const validText = (typeof step[fieldName] === "string" && step[fieldName].trim())
-                        || (Array.isArray(step[fieldName])
-                            && step[fieldName].length > 0
-                            && step[fieldName].every(item => typeof item === "string" && item.trim()));
-                    if (!validText) {
+                    if (!isValidTextBlocks(step[fieldName])) {
                         throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
                     }
                 });
-                ["beforeKatex", "afterKatex"].forEach(fieldName => {
+                ["katex", "beforeKatex", "afterKatex"].forEach(fieldName => {
                     if (step[fieldName] !== undefined && (typeof step[fieldName] !== "string" || !step[fieldName].trim())) {
                         throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
                     }
+                });
+                getExplodedExpressionTextsForStep(step).forEach(expressionText => {
+                    textToExpression(expressionText);
                 });
             });
 
@@ -2824,13 +2919,6 @@ Promise.resolve().then(() => {
             }
 
             const completion = getStepCompletionStates(level);
-
-            const normalizeTextBlocks = value => {
-                if (Array.isArray(value)) {
-                    return value.map(item => String(item).trim()).filter(Boolean);
-                }
-                return typeof value === "string" && value.trim() ? [value.trim()] : [];
-            };
             const renderParagraphs = value => normalizeTextBlocks(value)
                 .map(text => `<p>${escapeHtml(text)}</p>`)
                 .join("");
@@ -2838,49 +2926,87 @@ Promise.resolve().then(() => {
             const exerciseInstruction = normalizeTextBlocks(level.instruction).length
                 ? normalizeTextBlocks(level.instruction)
                 : normalizeTextBlocks(level.introduction);
-            const instructionHtml = exerciseInstruction.length ? `
-                <section class="exercise-guidance exercise-instruction" aria-label="Instruction">
-                    ${exerciseInstruction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}
-                </section>
-            ` : "";
+            const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
+            const firstStepIsInitialExpression = !!firstStep && expressionTextsMatch(
+                level.startExpression,
+                firstStep.expression
+            );
+            const initialKatex = level.initialKatex || (
+                firstStep
+                    ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
+                    : level.startExpression
+            );
 
             const currentStepIndex = completion.findIndex(isComplete => !isComplete);
+            const isExerciseComplete = currentStepIndex < 0;
+            const firstSolutionStepIndex = firstStepIsInitialExpression ? 1 : 0;
             const lastVisibleStepIndex = currentStepIndex >= 0
                 ? currentStepIndex
                 : Math.max(0, (level.steps || []).length - 1);
-            const stepsHtml = (level.steps || []).slice(0, lastVisibleStepIndex + 1).map((step, index) => {
+            const stepsHtml = (level.steps || [])
+                .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
+                .map((step, relativeIndex) => {
+                const index = firstSolutionStepIndex + relativeIndex;
                 const isComplete = !!completion[index];
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
                 const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
-                const stepIntroduction = normalizeTextBlocks(step.introduction);
-                const stepConclusion = normalizeTextBlocks(step.conclusion);
-                const stepIntroductionHtml = isCurrent && index > 0 && stepIntroduction.length
-                    ? `<div class="step-guidance step-guidance-before">${stepIntroduction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
-                    : "";
-                const stepConclusionHtml = isCurrent && index > 0 && stepConclusion.length
-                    ? `<div class="step-guidance step-guidance-after">${stepConclusion.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
+                const explicitGuidance = normalizeTextBlocks(step.guidance);
+                const legacyGuidance = [
+                    ...normalizeTextBlocks(step.introduction),
+                    ...normalizeTextBlocks(step.conclusion)
+                ];
+                const labelGuidance = typeof step.label === "string" && step.label.trim() && step.label.trim().toLowerCase() !== "start"
+                    ? [step.label.trim()]
+                    : [];
+                const stepGuidance = explicitGuidance.length
+                    ? explicitGuidance
+                    : legacyGuidance.length
+                        ? legacyGuidance
+                        : labelGuidance;
+                const stepGuidanceHtml = isCurrent && stepGuidance.length
+                    ? `<div class="step-guidance" aria-label="Current-step guidance">${stepGuidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
                     : "";
                 return `
-                    ${stepIntroductionHtml}
-                    <div class="step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                    <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                         <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
                     </div>
-                    ${stepConclusionHtml}
+                    ${stepGuidanceHtml}
                 `;
             }).join("");
 
-            const conclusionHtml = normalizeTextBlocks(level.conclusion).length ? `
-                <section class="exercise-guidance exercise-conclusion" aria-labelledby="exerciseConclusionTitle">
-                    <h3 id="exerciseConclusionTitle">Conclusion</h3>
-                    ${renderParagraphs(level.conclusion)}
-                </section>
-            ` : "";
+            const exerciseInfo = normalizeTextBlocks(level.exerciseInfo).length
+                ? normalizeTextBlocks(level.exerciseInfo)
+                : [
+                    ...normalizeTextBlocks(level.description),
+                    ...normalizeTextBlocks(level.instructions)
+                ];
+            const completionMessage = normalizeTextBlocks(level.completionMessage).length
+                ? normalizeTextBlocks(level.completionMessage)
+                : normalizeTextBlocks(level.conclusion);
+            const footerTitle = isExerciseComplete ? "Conclusion" : "Exercise information";
+            const footerBlocks = isExerciseComplete
+                ? (completionMessage.length ? completionMessage : ["Exercise complete."])
+                : exerciseInfo;
 
             levelContent.innerHTML = `
-                ${instructionHtml}
-                ${stepsHtml}
-                ${conclusionHtml}
+                <div class="textbook-solution">
+                    <section class="solution-section problem-statement" aria-label="Problem statement">
+                        ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
+                        <div class="problem-expression" aria-label="Initial conventional expression">
+                            <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
+                        </div>
+                    </section>
+                    <hr class="solution-separator">
+                    <section class="solution-section running-solution" aria-label="Running solution">
+                        ${stepsHtml}
+                    </section>
+                    <hr class="solution-separator">
+                    <section class="solution-section exercise-footer exercise-guidance ${isExerciseComplete ? "exercise-conclusion" : "exercise-information"}" aria-label="${escapeHtml(footerTitle)}">
+                        <h3>${escapeHtml(footerTitle)}</h3>
+                        ${renderParagraphs(footerBlocks)}
+                    </section>
+                </div>
             `;
             renderMoveHistoryControls(level);
 
@@ -7815,12 +7941,12 @@ ctx.font = SETTINGS.textFont;
             ) {
                 return "";
             } else if (uiState.activeTool === "insertIdentity" && uiState.stage === "choosePosition") {
-                html += `<div class="small-note">Choose what identity to insert.</div>`;
+                html += `<div class="small-note">Choose what identity to introduce.</div>`;
                 html += `<div class="tool-grid">
-                    <button data-action="insertIdentityOption" data-value="addZero:top">An additive identity may be inserted above the selected expression.</button>
-                    <button data-action="insertIdentityOption" data-value="addZero:bottom">An additive identity may be inserted below the selected expression.</button>
-                    <button data-action="insertIdentityOption" data-value="multiplyByOne:left">A multiplicative identity may be inserted on the left.</button>
-                    <button data-action="insertIdentityOption" data-value="multiplyByOne:right">A multiplicative identity may be inserted on the right.</button>
+                    <button data-action="insertIdentityOption" data-value="addZero:top">An additive identity may be introduced above the selected expression.</button>
+                    <button data-action="insertIdentityOption" data-value="addZero:bottom">An additive identity may be introduced below the selected expression.</button>
+                    <button data-action="insertIdentityOption" data-value="multiplyByOne:left">A multiplicative identity may be introduced on the left.</button>
+                    <button data-action="insertIdentityOption" data-value="multiplyByOne:right">A multiplicative identity may be introduced on the right.</button>
                     ${canEliminateIdentities() && !isIntentCategoryToolNotationMode() ? '<button data-action="previewEliminateIdentities">An additive, multiplicative, or first-power identity may be removed.</button>' : ''}
                 </div>`;
             } else if (
@@ -8685,7 +8811,7 @@ function renderToolArea() {
             }
 
             if (uiState.activeTool === "insertIdentity") {
-                setStatus("Choose the exact identity insertion: add 0 above/below, multiply by 1 left/right, or insert a double inverse around the selection.");
+                setStatus("Choose the exact identity to introduce: add 0 above/below, multiply by 1 left/right, or introduce a double inverse around the selection.");
                 return;
             }
 

@@ -2,14 +2,17 @@
   "id": "level1",
   "title": "Exercise 1: Distribute and Combine",
   "instruction": "Simplify and combine like terms.",
-  "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-  "instructions": [
+  "initialKatex": "3(x+7)+2(2x+3)",
+  "exerciseInfo": [
+    "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants."
   ],
+  "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
   "evaluationLevel": 0,
   "arithmeticLevel": 2,
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
+  "kind": "interactive",
   "steps": [
     {
       "expression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -19,13 +22,14 @@
     {
       "expression": "(((3)*(x))+(21)+((4)*(x))+(6))",
       "katex": "3x+21+4x+6",
-      "label": "Distribute"
+      "label": "Distribute",
+      "guidance": "Distribute."
     },
     {
       "expression": "(((7)*(x))+(27))",
       "katex": "7x+27",
-      "label": "Combine like terms and constants"
+      "label": "Combine like terms and constants",
+      "guidance": "Combine like terms and constants."
     }
-  ],
-  "kind": "interactive"
+  ]
 }
