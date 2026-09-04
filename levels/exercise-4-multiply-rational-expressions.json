@@ -1,6 +1,7 @@
 {
   "id": "exercise4",
   "title": "Exercise 4: Multiply Two Rational Expressions",
+  "instruction": "Multiply and simplify.",
   "description": "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
   "instructions": [
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",

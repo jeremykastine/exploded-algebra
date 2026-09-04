@@ -349,13 +349,13 @@ Promise.resolve().then(() => {
         // than the individual algebraic rule. Exact applicability is still
         // decided by the existing rule checks below.
         const INTENT_RULE_CATEGORIES = [
-            { id: "numericalRewrite", label: "Numerical Rewrite" },
             { id: "commute", label: "Commute" },
             { id: "insert", label: "Insert" },
             { id: "delete", label: "Delete" },
             { id: "separate", label: "Separate" },
             { id: "consolidate", label: "Combine" },
-            { id: "translateNotation", label: "Change Form" }
+            { id: "translateNotation", label: "Change Form" },
+            { id: "numericalRewrite", label: "Numerical Rewrite" }
         ];
 
         function getToolCategoryKey(category) {
@@ -658,9 +658,12 @@ Promise.resolve().then(() => {
                 ];
             }
             if (categoryId === "insert") {
+                const multiplyTool = canReplaceOneWithInverseProduct()
+                    ? "replaceOneWithInverseProduct"
+                    : "insertIdentityMultiplyByOneRight";
                 return [
                     "insertIdentityAddZeroBottom",
-                    "insertIdentityMultiplyByOneRight",
+                    multiplyTool,
                     "insertDoubleInverse",
                     "insertExponentOne"
                 ];
@@ -698,6 +701,9 @@ Promise.resolve().then(() => {
                 isStructuredNumericalTool(toolName)
             ) {
                 return "numericalRewrite";
+            }
+            if (toolName === "replaceOneWithInverseProduct") {
+                return "insert";
             }
             const ids = INTENT_RULE_CATEGORIES.map(category => category.id);
             return ids.find(categoryId => getIntentCategoryCandidateTools(categoryId).includes(toolName)) || null;
@@ -771,9 +777,9 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
+            const arithmeticLevel = getArithmeticLevelForCurrentLevel();
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
-                    <div class="intent-category-row single">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
                     <div class="intent-category-row single">${buildIntentCategoryButtonHtml("commute")}</div>
                     <div class="intent-category-row">
                         ${buildIntentCategoryButtonHtml("insert")}
@@ -784,6 +790,8 @@ Promise.resolve().then(() => {
                         ${buildIntentCategoryButtonHtml("consolidate")}
                     </div>
                     <div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>
+                    <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
+                    <div class="arithmetic-level-note">${escapeHtml(getArithmeticLevelDescription(arithmeticLevel))}</div>
                 </div>`;
         }
 
@@ -822,6 +830,7 @@ Promise.resolve().then(() => {
                 insertIdentityAddZeroBottom: { fromMini: A(), toMini: miniSum(A(), zero()) },
                 insertIdentityMultiplyByOneLeft: { fromMini: A(), toMini: miniProd(one(), A()) },
                 insertIdentityMultiplyByOneRight: { fromMini: A(), toMini: miniProd(A(), one()) },
+                replaceOneWithInverseProduct: { fromMini: one(), toMini: miniProd(A(), miniInv(A())) },
                 eliminateIdentities: { fromMini: miniSum(A(), zero()), toMini: A() },
                 insertZeroProductLeft: { fromMini: zero(), toMini: miniProd(zero(), A()) },
                 insertZeroProductRight: { fromMini: zero(), toMini: miniProd(A(), zero()) },
@@ -844,6 +853,7 @@ Promise.resolve().then(() => {
                 const compactInsertLabels = {
                     insertIdentityAddZeroBottom: "Add",
                     insertIdentityMultiplyByOneRight: "Multiply",
+                    replaceOneWithInverseProduct: "Multiply",
                     insertDoubleInverse: "Inverse",
                     insertExponentOne: "Exponent"
                 };
@@ -2053,7 +2063,7 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has invalid instructions.`);
                 }
             }
-            ["introduction", "conclusion"].forEach(fieldName => {
+            ["instruction", "introduction", "conclusion"].forEach(fieldName => {
                 if (level[fieldName] === undefined) {
                     return;
                 }
@@ -2814,15 +2824,12 @@ Promise.resolve().then(() => {
                 .map(text => `<p>${escapeHtml(text)}</p>`)
                 .join("");
 
-            const exerciseIntroduction = normalizeTextBlocks(level.introduction);
-            const legacyDescription = typeof level.description === "string" ? level.description.trim() : "";
-            const legacyInstructions = normalizeTextBlocks(level.instructions);
-            const introductionHtml = exerciseIntroduction.length || legacyDescription || legacyInstructions.length ? `
-                <section class="exercise-guidance exercise-introduction" aria-labelledby="exerciseIntroductionTitle">
-                    <h3 id="exerciseIntroductionTitle">Introduction</h3>
-                    ${exerciseIntroduction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}
-                    ${legacyDescription ? `<p>${escapeHtml(legacyDescription)}</p>` : ""}
-                    ${legacyInstructions.length ? `<ul>${legacyInstructions.map(instruction => `<li>${escapeHtml(instruction)}</li>`).join("")}</ul>` : ""}
+            const exerciseInstruction = normalizeTextBlocks(level.instruction).length
+                ? normalizeTextBlocks(level.instruction)
+                : normalizeTextBlocks(level.introduction);
+            const instructionHtml = exerciseInstruction.length ? `
+                <section class="exercise-guidance exercise-instruction" aria-label="Instruction">
+                    ${exerciseInstruction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}
                 </section>
             ` : "";
 
@@ -2860,7 +2867,7 @@ Promise.resolve().then(() => {
             ` : "";
 
             levelContent.innerHTML = `
-                ${introductionHtml}
+                ${instructionHtml}
                 ${stepsHtml}
                 ${conclusionHtml}
             `;

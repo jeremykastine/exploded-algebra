@@ -1,7 +1,7 @@
 {
   "id": "exercise2",
   "title": "Exercise 2: Add Fractions with Unlike Denominators",
-  "introduction": "Add the fractions by rewriting them with a common denominator. The original expression will remain visible while each new goal is revealed one at a time.",
+  "instruction": "Add the fractions.",
   "conclusion": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
   "description": "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
   "instructions": [
