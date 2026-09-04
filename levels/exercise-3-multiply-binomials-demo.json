@@ -1,6 +1,7 @@
 {
   "id": "exercise3-demo-2026-09-01t05-52-53z",
   "title": "Demo: Exercise 3: Multiply Binomials and Combine Like Terms (9/1/2026, 1:52:53 AM)",
+  "instruction": "Multiply and combine like terms.",
   "description": "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
   "instructions": [
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
@@ -48,6 +49,7 @@
   "sourceLevel": {
     "id": "exercise3",
     "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
+    "instruction": "Multiply and combine like terms.",
     "description": "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
     "instructions": [
       "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",

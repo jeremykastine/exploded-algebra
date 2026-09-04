@@ -2,6 +2,7 @@
   "kind": "demoOnly",
   "id": "level1-demo-2026-08-15t15-52-59z",
   "title": "Exercise 1: Distribute and Combine (Guided)",
+  "instruction": "Simplify and combine like terms.",
   "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
   "instructions": [
     "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
@@ -38,6 +39,7 @@
   "sourceLevel": {
     "id": "level1",
     "title": "Exercise 1: Distribute and Combine",
+    "instruction": "Simplify and combine like terms.",
     "description": "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
     "instructions": [
       "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
