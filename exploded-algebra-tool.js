@@ -2053,6 +2053,18 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has invalid instructions.`);
                 }
             }
+            ["introduction", "conclusion"].forEach(fieldName => {
+                if (level[fieldName] === undefined) {
+                    return;
+                }
+                const validText = (typeof level[fieldName] === "string" && level[fieldName].trim())
+                    || (Array.isArray(level[fieldName])
+                        && level[fieldName].length > 0
+                        && level[fieldName].every(item => typeof item === "string" && item.trim()));
+                if (!validText) {
+                    throw new Error(`${sourceName} has an invalid ${fieldName}.`);
+                }
+            });
 
             textToExpression(level.startExpression);
             level.steps.forEach((step, index) => {
@@ -2060,6 +2072,23 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has an invalid expression in step ${index + 1}.`);
                 }
                 textToExpression(step.expression);
+                ["introduction", "conclusion"].forEach(fieldName => {
+                    if (step[fieldName] === undefined) {
+                        return;
+                    }
+                    const validText = (typeof step[fieldName] === "string" && step[fieldName].trim())
+                        || (Array.isArray(step[fieldName])
+                            && step[fieldName].length > 0
+                            && step[fieldName].every(item => typeof item === "string" && item.trim()));
+                    if (!validText) {
+                        throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
+                    }
+                });
+                ["beforeKatex", "afterKatex"].forEach(fieldName => {
+                    if (step[fieldName] !== undefined && (typeof step[fieldName] !== "string" || !step[fieldName].trim())) {
+                        throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
+                    }
+                });
             });
 
             const levelCopy = clonePlainData(level);
@@ -2723,10 +2752,12 @@ Promise.resolve().then(() => {
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
-            for (let i = 0; i < level.steps.length; i++) {
-                if (!completedSteps[i] && expressionMatchesParenthesizedText(level.steps[i].expression)) {
-                    completedSteps[i] = true;
-                }
+            const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
+            if (
+                nextStepIndex >= 0
+                && expressionMatchesParenthesizedText(level.steps[nextStepIndex].expression)
+            ) {
+                completedSteps[nextStepIndex] = true;
             }
             maybePrepareCompletedLevelExport(level);
         }
@@ -2773,27 +2804,65 @@ Promise.resolve().then(() => {
 
             const completion = getStepCompletionStates(level);
 
-            const stepsHtml = (level.steps || []).map((step, index) => `
-                <div class="step-card ${completion[index] ? "completed-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
-                    <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(step.katex || "")}"></span></div>
-                </div>
-            `).join("");
+            const normalizeTextBlocks = value => {
+                if (Array.isArray(value)) {
+                    return value.map(item => String(item).trim()).filter(Boolean);
+                }
+                return typeof value === "string" && value.trim() ? [value.trim()] : [];
+            };
+            const renderParagraphs = value => normalizeTextBlocks(value)
+                .map(text => `<p>${escapeHtml(text)}</p>`)
+                .join("");
 
-            const description = typeof level.description === "string" ? level.description.trim() : "";
-            const instructions = Array.isArray(level.instructions)
-                ? level.instructions.map(instruction => String(instruction).trim()).filter(Boolean)
-                : (typeof level.instructions === "string" && level.instructions.trim() ? [level.instructions.trim()] : []);
-            const guidanceHtml = description || instructions.length ? `
-                <section class="exercise-guidance" aria-labelledby="exerciseGuidanceTitle">
-                    <h3 id="exerciseGuidanceTitle">Exercise Description and Instructions</h3>
-                    ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-                    ${instructions.length ? `<ul>${instructions.map(instruction => `<li>${escapeHtml(instruction)}</li>`).join("")}</ul>` : ""}
+            const exerciseIntroduction = normalizeTextBlocks(level.introduction);
+            const legacyDescription = typeof level.description === "string" ? level.description.trim() : "";
+            const legacyInstructions = normalizeTextBlocks(level.instructions);
+            const introductionHtml = exerciseIntroduction.length || legacyDescription || legacyInstructions.length ? `
+                <section class="exercise-guidance exercise-introduction" aria-labelledby="exerciseIntroductionTitle">
+                    <h3 id="exerciseIntroductionTitle">Introduction</h3>
+                    ${exerciseIntroduction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}
+                    ${legacyDescription ? `<p>${escapeHtml(legacyDescription)}</p>` : ""}
+                    ${legacyInstructions.length ? `<ul>${legacyInstructions.map(instruction => `<li>${escapeHtml(instruction)}</li>`).join("")}</ul>` : ""}
+                </section>
+            ` : "";
+
+            const currentStepIndex = completion.findIndex(isComplete => !isComplete);
+            const lastVisibleStepIndex = currentStepIndex >= 0
+                ? currentStepIndex
+                : Math.max(0, (level.steps || []).length - 1);
+            const stepsHtml = (level.steps || []).slice(0, lastVisibleStepIndex + 1).map((step, index) => {
+                const isComplete = !!completion[index];
+                const isCurrent = index === currentStepIndex;
+                const completedKatex = step.afterKatex || step.katex || "";
+                const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
+                const stepIntroduction = normalizeTextBlocks(step.introduction);
+                const stepConclusion = normalizeTextBlocks(step.conclusion);
+                const stepIntroductionHtml = isCurrent && index > 0 && stepIntroduction.length
+                    ? `<div class="step-guidance step-guidance-before">${stepIntroduction.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
+                    : "";
+                const stepConclusionHtml = isCurrent && index > 0 && stepConclusion.length
+                    ? `<div class="step-guidance step-guidance-after">${stepConclusion.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
+                    : "";
+                return `
+                    ${stepIntroductionHtml}
+                    <div class="step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                        <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
+                    </div>
+                    ${stepConclusionHtml}
+                `;
+            }).join("");
+
+            const conclusionHtml = normalizeTextBlocks(level.conclusion).length ? `
+                <section class="exercise-guidance exercise-conclusion" aria-labelledby="exerciseConclusionTitle">
+                    <h3 id="exerciseConclusionTitle">Conclusion</h3>
+                    ${renderParagraphs(level.conclusion)}
                 </section>
             ` : "";
 
             levelContent.innerHTML = `
+                ${introductionHtml}
                 ${stepsHtml}
-                ${guidanceHtml}
+                ${conclusionHtml}
             `;
             renderMoveHistoryControls(level);
 
