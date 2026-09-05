@@ -81,12 +81,17 @@
   "initialKatex": "3(x+7)+2(2x+3)",
   "exerciseInfo": [
     "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants."
   ],
   "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
   "evaluationLevel": 0,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "no-carry",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": false
+  },
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
   "kind": "interactive",
   "steps": [
@@ -121,7 +126,6 @@
   "initialKatex": "3(x+7)+2(2x+3)",
   "exerciseInfo": [
     "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
@@ -132,7 +136,13 @@
   "completedAt": "2026-08-15T15:52:59.608Z",
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
   "evaluationLevel": 0,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "no-carry",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": false
+  },
   "variables": [
     "x"
   ],
@@ -530,12 +540,17 @@
     "initialKatex": "3(x+7)+2(2x+3)",
     "exerciseInfo": [
       "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
       "Distribute each outside factor before combining the two x-terms and the numerical constants."
     ],
     "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
     "evaluationLevel": 0,
-    "arithmeticLevel": 2,
+    "numericalRewrite": {
+      "addition": "no-carry",
+      "multiplication": "one-significant-figure",
+      "allowNegativeOne": false,
+      "allowExponents": false,
+      "allowInverses": false
+    },
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
     "kind": "interactive",
     "variables": [
@@ -574,13 +589,18 @@
   "initialKatex": "\\frac{2}{3}+\\frac{5}{6}",
   "exerciseInfo": [
     "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "To rewrite 2/3 with denominator 6, use multiplication by 1 and the inverse-product tools to create an equivalent fraction. Work out the needed factor and numerator yourself.",
     "A displayed unit fraction such as 1/7 means inverse(7) itself, not a separate factor 1 multiplied by inverse(7). More generally, a/b is represented as a multiplied by inverse(b)."
   ],
   "completionMessage": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "no-carry",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": true
+  },
   "startExpression": "(((2)/(3))+((5)/(6)))",
   "kind": "interactive",
   "steps": [
@@ -632,12 +652,17 @@
   "initialKatex": "(x+3)(2x+5)",
   "exerciseInfo": [
     "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
   ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "flat",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": true,
+    "allowInverses": false
+  },
   "variables": [
     "x"
   ],
@@ -687,14 +712,19 @@
   "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
   "exerciseInfo": [
     "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
     "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
     "Assume every denominator is nonzero; here x is not equal to -4."
   ],
   "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "none",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": true
+  },
   "variables": [
     "x"
   ],
@@ -744,13 +774,18 @@
   "initialKatex": "(x+3)(2x+5)",
   "exerciseInfo": [
     "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "flat",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": true,
+    "allowInverses": false
+  },
   "variables": [
     "x"
   ],
@@ -1142,12 +1177,17 @@
     "initialKatex": "(x+3)(2x+5)",
     "exerciseInfo": [
       "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
       "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
     ],
     "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
     "evaluationLevel": 2,
-    "arithmeticLevel": 2,
+    "numericalRewrite": {
+      "addition": "flat",
+      "multiplication": "one-significant-figure",
+      "allowNegativeOne": false,
+      "allowExponents": true,
+      "allowInverses": false
+    },
     "variables": [
       "x"
     ],
@@ -1198,7 +1238,6 @@
   "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
   "exerciseInfo": [
     "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
     "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
     "Assume every denominator is nonzero; here x is not equal to -4.",
@@ -1206,7 +1245,13 @@
   ],
   "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "none",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": true
+  },
   "variables": [
     "x"
   ],
@@ -1554,14 +1599,19 @@
     "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
     "exerciseInfo": [
       "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
       "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
       "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
       "Assume every denominator is nonzero; here x is not equal to -4."
     ],
     "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
     "evaluationLevel": 2,
-    "arithmeticLevel": 2,
+    "numericalRewrite": {
+      "addition": "none",
+      "multiplication": "one-significant-figure",
+      "allowNegativeOne": false,
+      "allowExponents": false,
+      "allowInverses": true
+    },
     "variables": [
       "x"
     ],

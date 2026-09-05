@@ -60,6 +60,7 @@ Promise.resolve().then(() => {
             evaluateSumContainingProducts: `<span class="rule-name">Evaluate Product-Sum</span><span class="rule-notation">ab + cd = e</span>`,
             evaluate: `<span class="rule-name">Evaluate</span>`,
             numericalEquivalence: `<span class="rule-name">Numerical equivalence</span>`,
+            numericalRewrite: `<span class="rule-name">Numerical Rewrite</span>`,
             arithmeticLevel0: `<span class="rule-name">Arithmetic level zero</span>`,
             arithmeticLevel1: `<span class="rule-name">Arithmetic level one</span>`,
             arithmeticLevel2: `<span class="rule-name">Arithmetic level two</span>`,
@@ -123,6 +124,7 @@ Promise.resolve().then(() => {
             "eliminateIdentities",
             "evaluate",
             "numericalEquivalence",
+            "numericalRewrite",
             "arithmeticLevel0",
             "arithmeticLevel1",
             "arithmeticLevel2",
@@ -191,6 +193,7 @@ Promise.resolve().then(() => {
                 ],
             value: [
                 "numericalEquivalence",
+                "numericalRewrite",
                 "numSumPositive",
                 "numProductPositive",
                 "numProductWithNegatives",
@@ -205,6 +208,7 @@ Promise.resolve().then(() => {
                 "commuteFirstToLast",
                 "commuteLastToFirst",
                 "numericalEquivalence",
+                "numericalRewrite",
                 "numSumPositive",
                 "numSumWithNegativeProducts",
                 "commuteTerms",
@@ -218,6 +222,7 @@ Promise.resolve().then(() => {
                 "commuteFirstToLast",
                 "commuteLastToFirst",
                 "numericalEquivalence",
+                "numericalRewrite",
                 "numProductPositive",
                 "numProductWithNegatives",
                 "commuteFactors",
@@ -234,6 +239,7 @@ Promise.resolve().then(() => {
                 "evaluate"
             ],
             inv: [
+                "numericalRewrite",
                 "eliminateDoubleInverse",
                 "insertDoubleInverse",
                 "distributeInverseOverProduct",
@@ -243,6 +249,7 @@ Promise.resolve().then(() => {
             exp: [
                 "evaluate",
                 "numericalEquivalence",
+                "numericalRewrite",
                 "eliminateExponentOne",
                 "eliminateExponentZero",
                 "insertExponentOne",
@@ -368,11 +375,15 @@ Promise.resolve().then(() => {
         };
 
         function getIntentCategoryDescription(categoryId) {
-            if (categoryId === "numericalRewrite") {
-                const arithmeticLevel = getArithmeticLevelForCurrentLevel();
-                return `Rewrite a numerical expression in an equivalent form. ${getArithmeticLevelDescription(arithmeticLevel)}`;
-            }
             return INTENT_CATEGORY_DESCRIPTIONS[categoryId] || "";
+        }
+
+        function getIntentCategoryDescriptionHtml(categoryId) {
+            if (categoryId === "numericalRewrite") {
+                const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
+                return `<p>Rewrite a numerical expression in an equivalent form.</p><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+            }
+            return `<p>${escapeHtml(getIntentCategoryDescription(categoryId))}</p>`;
         }
 
         function getToolCategoryKey(category) {
@@ -505,10 +516,7 @@ Promise.resolve().then(() => {
 
         const TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE = {
             plain: [
-                { full: { tool: "arithmeticLevel0", html: "Arithmetic level zero" } },
-                { full: { tool: "arithmeticLevel1", html: "Arithmetic level one" } },
-                { full: { tool: "arithmeticLevel2", html: "Arithmetic level two" } },
-                { full: { tool: "arithmeticLevel3", html: "Arithmetic level three" } },
+                { full: { tool: "numericalRewrite", html: "Numerical Rewrite" } },
                 {
                     commutePair: true,
                     left: { tool: "commuteFirstToLast", html: "Commute first to end" },
@@ -698,7 +706,7 @@ Promise.resolve().then(() => {
                 ];
             }
             if (categoryId === "numericalRewrite") {
-                return [`arithmeticLevel${getArithmeticLevelForCurrentLevel()}`];
+                return ["numericalRewrite"];
             }
             return [];
         }
@@ -718,7 +726,7 @@ Promise.resolve().then(() => {
                 toolName === "evaluate" ||
                 toolName === "factorNumber" ||
                 toolName === "writeNumberAsSum" ||
-                isArithmeticEquivalenceTool(toolName) ||
+                isNumericalRewriteTool(toolName) ||
                 isStructuredNumericalTool(toolName)
             ) {
                 return "numericalRewrite";
@@ -791,8 +799,7 @@ Promise.resolve().then(() => {
         function buildIntentCategoryButtonHtml(categoryId) {
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
             const label = category ? category.label : categoryId;
-            const description = getIntentCategoryDescription(categoryId);
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" data-action-description="${escapeHtml(description)}" aria-label="${escapeHtml(label)}" aria-describedby="intentCategoryDescription" title="${escapeHtml(description)}">
+            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" aria-describedby="intentCategoryDescription">
                 ${getIntentCategoryIconHtml(categoryId)}
                 <span class="intent-category-label">${escapeHtml(label)}</span>
             </button>`;
@@ -815,7 +822,7 @@ Promise.resolve().then(() => {
                     </div>
                     ${changeFormButtonHtml}
                     <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
-                    <div id="intentCategoryDescription" class="intent-category-description" data-default-description="Hover over an action to see what it does.">Hover over an action to see what it does.</div>
+                    <div id="intentCategoryDescription" class="intent-category-description" aria-live="polite"><p>Hover over an action to see what it does.</p></div>
                 </div>`;
         }
 
@@ -928,8 +935,8 @@ Promise.resolve().then(() => {
             }
 
             // Keep most rules visible even when not exactly applicable.
-            // Arithmetic-level buttons are the exception: a level should show
-            // only the arithmetic level specified by the current game level.
+            // Legacy arithmetic-level buttons remain filtered for old files;
+            // current files expose only the profile-based Numerical Rewrite.
             if (isArithmeticEquivalenceTool(side.tool)) {
                 return !!TOOL_INFO[side.tool] && isArithmeticToolAllowedInCurrentLevel(side.tool);
             }
@@ -1899,6 +1906,7 @@ Promise.resolve().then(() => {
                 completedAt,
                 startExpression: sourceLevel.startExpression || "",
                 evaluationLevel: sourceLevel.evaluationLevel,
+                numericalRewrite: clonePlainData(sourceLevel.numericalRewrite),
                 variables: clonePlainData(sourceLevel.variables || []),
                 steps: clonePlainData(sourceLevel.steps || []),
                 sourceLevel,
@@ -2198,6 +2206,9 @@ Promise.resolve().then(() => {
             });
             if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
                 throw new Error(`${sourceName} has an invalid initialKatex.`);
+            }
+            if (level.numericalRewrite !== undefined) {
+                validateNumericalRewriteProfileDefinition(level.numericalRewrite, sourceName);
             }
 
             textToExpression(level.startExpression);
@@ -2668,10 +2679,11 @@ Promise.resolve().then(() => {
         }
 
         function getDemoTargetToolCandidates(toolName) {
-            if (toolName === "numericalEquivalence" || isArithmeticEquivalenceTool(toolName)) {
+            if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
                 return uniqueToolKeys([
                     toolName,
                     "numericalEquivalence",
+                    "numericalRewrite",
                     `arithmeticLevel${getArithmeticLevelForCurrentLevel()}`
                 ]);
             }
@@ -5370,6 +5382,10 @@ ctx.font = SETTINGS.textFont;
             return Object.prototype.hasOwnProperty.call(ARITHMETIC_TOOL_LEVELS, toolName);
         }
 
+        function isNumericalRewriteTool(toolName) {
+            return toolName === "numericalRewrite" || isArithmeticEquivalenceTool(toolName);
+        }
+
         function getArithmeticLevelFromToolName(toolName) {
             return isArithmeticEquivalenceTool(toolName)
                 ? ARITHMETIC_TOOL_LEVELS[toolName]
@@ -5381,6 +5397,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function isArithmeticToolAllowedInCurrentLevel(toolName) {
+            if (isArithmeticEquivalenceTool(toolName) && getCurrentLevel() && getCurrentLevel().numericalRewrite) {
+                return true;
+            }
             const level = getArithmeticLevelFromToolName(toolName);
             return level === null || isArithmeticToolLevelAllowedInCurrentLevel(level);
         }
@@ -5566,6 +5585,364 @@ ctx.font = SETTINGS.textFont;
                 return "Level 2 allows nested sums and products, the negative unit, and simple nonnegative whole-number exponents.";
             }
             return "Level 3 allows any expression made entirely of numbers.";
+        }
+
+        const NUMERICAL_REWRITE_ADDITION_MODES = ["none", "no-carry", "flat", "expression-terms"];
+        const NUMERICAL_REWRITE_MULTIPLICATION_MODES = ["none", "one-significant-figure", "unrestricted"];
+
+        function numericalRewriteProfileFromLegacyLevel(level) {
+            const legacyLevel = clampArithmeticLevel(level, 0);
+            if (legacyLevel === 0) {
+                return {
+                    addition: "no-carry",
+                    multiplication: "one-significant-figure",
+                    allowNegativeOne: false,
+                    allowExponents: false,
+                    allowInverses: false
+                };
+            }
+            if (legacyLevel === 1) {
+                return {
+                    addition: "flat",
+                    multiplication: "unrestricted",
+                    allowNegativeOne: false,
+                    allowExponents: false,
+                    allowInverses: false
+                };
+            }
+            return {
+                addition: "expression-terms",
+                multiplication: "unrestricted",
+                allowNegativeOne: true,
+                allowExponents: true,
+                allowInverses: legacyLevel >= 3
+            };
+        }
+
+        function getNumericalRewriteProfile(level = getCurrentLevel()) {
+            if (level && level.numericalRewrite && typeof level.numericalRewrite === "object") {
+                return {
+                    addition: level.numericalRewrite.addition,
+                    multiplication: level.numericalRewrite.multiplication,
+                    allowNegativeOne: level.numericalRewrite.allowNegativeOne === true,
+                    allowExponents: level.numericalRewrite.allowExponents === true,
+                    allowInverses: level.numericalRewrite.allowInverses === true
+                };
+            }
+            return numericalRewriteProfileFromLegacyLevel(getArithmeticLevelForCurrentLevel());
+        }
+
+        function validateNumericalRewriteProfileDefinition(profile, sourceName) {
+            if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
+                throw new Error(`${sourceName} has an invalid numericalRewrite profile.`);
+            }
+            if (!NUMERICAL_REWRITE_ADDITION_MODES.includes(profile.addition)) {
+                throw new Error(`${sourceName} has an invalid numericalRewrite.addition setting.`);
+            }
+            if (!NUMERICAL_REWRITE_MULTIPLICATION_MODES.includes(profile.multiplication)) {
+                throw new Error(`${sourceName} has an invalid numericalRewrite.multiplication setting.`);
+            }
+            ["allowNegativeOne", "allowExponents", "allowInverses"].forEach(fieldName => {
+                if (typeof profile[fieldName] !== "boolean") {
+                    throw new Error(`${sourceName} has an invalid numericalRewrite.${fieldName} setting.`);
+                }
+            });
+        }
+
+        function getNumericalRewriteProfileSummaryItems(profile) {
+            const additionDescriptions = {
+                none: "Addition: not allowed",
+                "no-carry": "Addition: flat whole-number sums without carrying",
+                flat: "Addition: any flat whole-number sum",
+                "expression-terms": "Addition: sums of permitted numerical expressions"
+            };
+            const multiplicationDescriptions = {
+                none: "Multiplication: not allowed",
+                "one-significant-figure": "Multiplication: factors with one significant figure",
+                unrestricted: "Multiplication: unrestricted"
+            };
+            const items = [
+                additionDescriptions[profile.addition],
+                multiplicationDescriptions[profile.multiplication],
+                `Negative one: ${profile.allowNegativeOne ? "allowed" : "not allowed"}`
+            ];
+            if (profile.allowExponents) {
+                items.push("Exponents: allowed");
+            }
+            items.push(`Inverses: ${profile.allowInverses ? "allowed" : "not allowed"}`);
+            return items;
+        }
+
+        function greatestCommonDivisorBigInt(a, b) {
+            let x = a < 0n ? -a : a;
+            let y = b < 0n ? -b : b;
+            while (y !== 0n) {
+                const remainder = x % y;
+                x = y;
+                y = remainder;
+            }
+            return x;
+        }
+
+        function makeExactRational(numerator, denominator = 1n) {
+            if (denominator === 0n) {
+                return null;
+            }
+            let nextNumerator = numerator;
+            let nextDenominator = denominator;
+            if (nextDenominator < 0n) {
+                nextNumerator = -nextNumerator;
+                nextDenominator = -nextDenominator;
+            }
+            const divisor = greatestCommonDivisorBigInt(nextNumerator, nextDenominator) || 1n;
+            return {
+                numerator: nextNumerator / divisor,
+                denominator: nextDenominator / divisor
+            };
+        }
+
+        function addExactRationals(first, second) {
+            return makeExactRational(
+                first.numerator * second.denominator + second.numerator * first.denominator,
+                first.denominator * second.denominator
+            );
+        }
+
+        function multiplyExactRationals(first, second) {
+            return makeExactRational(
+                first.numerator * second.numerator,
+                first.denominator * second.denominator
+            );
+        }
+
+        function raiseExactRationalToInteger(base, exponent) {
+            if (exponent === 0n) {
+                return base.numerator === 0n ? null : makeExactRational(1n);
+            }
+            if (exponent < 0n && base.numerator === 0n) {
+                return null;
+            }
+            const absoluteExponent = exponent < 0n ? -exponent : exponent;
+            if (absoluteExponent > 10000n) {
+                return null;
+            }
+            let result = makeExactRational(1n);
+            let factor = base;
+            let remaining = absoluteExponent;
+            while (remaining > 0n) {
+                if (remaining % 2n === 1n) {
+                    result = multiplyExactRationals(result, factor);
+                }
+                remaining /= 2n;
+                if (remaining > 0n) {
+                    factor = multiplyExactRationals(factor, factor);
+                }
+            }
+            return exponent < 0n
+                ? makeExactRational(result.denominator, result.numerator)
+                : result;
+        }
+
+        function getWholeNumberBigIntFromNode(node) {
+            if (!node || node.type !== "value" || !/^\d+$/.test(String(node.value))) {
+                return null;
+            }
+            return BigInt(node.value);
+        }
+
+        function evaluateNumericalRewriteNodeExactly(node) {
+            if (!node) {
+                return null;
+            }
+            if (node.type === "value") {
+                const text = String(node.value);
+                if (text === "-1") {
+                    return makeExactRational(-1n);
+                }
+                return /^\d+$/.test(text) ? makeExactRational(BigInt(text)) : null;
+            }
+            if (!Array.isArray(node.args) || node.args.length === 0) {
+                return null;
+            }
+            if (node.type === "sum") {
+                let result = makeExactRational(0n);
+                for (const child of node.args) {
+                    const value = evaluateNumericalRewriteNodeExactly(child);
+                    if (!value) {
+                        return null;
+                    }
+                    result = addExactRationals(result, value);
+                }
+                return result;
+            }
+            if (node.type === "prod") {
+                let result = makeExactRational(1n);
+                for (const child of node.args) {
+                    const value = evaluateNumericalRewriteNodeExactly(child);
+                    if (!value) {
+                        return null;
+                    }
+                    result = multiplyExactRationals(result, value);
+                }
+                return result;
+            }
+            if (node.type === "inv" && node.args.length === 1) {
+                const value = evaluateNumericalRewriteNodeExactly(node.args[0]);
+                return value && value.numerator !== 0n
+                    ? makeExactRational(value.denominator, value.numerator)
+                    : null;
+            }
+            if (node.type === "exp" && node.args.length === 2) {
+                const base = evaluateNumericalRewriteNodeExactly(node.args[0]);
+                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
+                if (!base || !exponent || exponent.denominator !== 1n) {
+                    return null;
+                }
+                return raiseExactRationalToInteger(base, exponent.numerator);
+            }
+            return null;
+        }
+
+        function isOneSignificantFigureBigInt(value) {
+            return value >= 0n && (value === 0n || /^[1-9]0*$/.test(value.toString()));
+        }
+
+        function isNoCarryWholeNumberNodeAddition(nodes) {
+            if (!Array.isArray(nodes) || nodes.length < 2) {
+                return false;
+            }
+            const texts = nodes.map(node => {
+                const value = getWholeNumberBigIntFromNode(node);
+                return value === null ? null : value.toString();
+            });
+            if (texts.some(text => text === null)) {
+                return false;
+            }
+            const maxLength = Math.max(...texts.map(text => text.length));
+            for (let offset = 0; offset < maxLength; offset++) {
+                let columnSum = 0;
+                for (const text of texts) {
+                    const index = text.length - 1 - offset;
+                    columnSum += index >= 0 ? Number(text[index]) : 0;
+                }
+                if (columnSum >= 10) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function validateNumericalRewriteStructure(node, profile, roleLabel) {
+            if (node.type === "value") {
+                const text = String(node.value);
+                if (/^\d+$/.test(text)) {
+                    return { ok: true };
+                }
+                if (text === "-1") {
+                    return profile.allowNegativeOne
+                        ? { ok: true }
+                        : { ok: false, error: `The ${roleLabel} expression uses negative one, which is not allowed here.` };
+                }
+                return { ok: false, error: `The ${roleLabel} expression may contain only nonnegative whole numbers and, when allowed, the negative unit.` };
+            }
+
+            if (!Array.isArray(node.args) || node.args.length === 0) {
+                return { ok: false, error: `The ${roleLabel} expression has an incomplete operation.` };
+            }
+
+            if (node.type === "sum") {
+                if (profile.addition === "none") {
+                    return { ok: false, error: `Addition is not allowed in the ${roleLabel} expression.` };
+                }
+                if (profile.addition === "no-carry" || profile.addition === "flat") {
+                    const allWholeNumberLeaves = node.args.every(child => getWholeNumberBigIntFromNode(child) !== null);
+                    if (!allWholeNumberLeaves) {
+                        return { ok: false, error: `The ${roleLabel} expression allows only a flat sum of nonnegative whole numbers.` };
+                    }
+                    if (profile.addition === "no-carry" && !isNoCarryWholeNumberNodeAddition(node.args)) {
+                        return { ok: false, error: `The ${roleLabel} sum requires carrying, which is not allowed here.` };
+                    }
+                    return { ok: true };
+                }
+            }
+
+            if (node.type === "prod" && profile.multiplication === "none") {
+                return { ok: false, error: `Multiplication is not allowed in the ${roleLabel} expression.` };
+            }
+            if (node.type === "exp" && !profile.allowExponents) {
+                return { ok: false, error: `Exponents are not allowed in the ${roleLabel} expression.` };
+            }
+            if (node.type === "inv" && !profile.allowInverses) {
+                return { ok: false, error: `Inverses are not allowed in the ${roleLabel} expression.` };
+            }
+            if (!["sum", "prod", "exp", "inv"].includes(node.type)) {
+                return { ok: false, error: `The ${roleLabel} expression contains an unsupported numerical operation.` };
+            }
+
+            for (const child of node.args) {
+                const childCheck = validateNumericalRewriteStructure(child, profile, roleLabel);
+                if (!childCheck.ok) {
+                    return childCheck;
+                }
+            }
+
+            if (node.type === "prod" && profile.multiplication === "one-significant-figure") {
+                for (const factor of node.args) {
+                    const factorValue = evaluateNumericalRewriteNodeExactly(factor);
+                    const isAllowedNegativeUnit = profile.allowNegativeOne && factorValue &&
+                        factorValue.denominator === 1n && factorValue.numerator === -1n;
+                    if (!factorValue || factorValue.denominator !== 1n ||
+                        (!isAllowedNegativeUnit && !isOneSignificantFigureBigInt(factorValue.numerator))) {
+                        return { ok: false, error: `Every factor in the ${roleLabel} expression must have one significant figure.` };
+                    }
+                }
+            }
+
+            if (node.type === "exp") {
+                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
+                if (!exponent || exponent.denominator !== 1n) {
+                    return { ok: false, error: `The exponent in the ${roleLabel} expression must be an integer value.` };
+                }
+                if (exponent.numerator < 0n && !profile.allowInverses) {
+                    return { ok: false, error: `A negative exponent also requires inverses to be allowed.` };
+                }
+            }
+
+            if (node.type === "inv") {
+                const innerValue = evaluateNumericalRewriteNodeExactly(node.args[0]);
+                if (!innerValue || innerValue.numerator === 0n) {
+                    return { ok: false, error: `The ${roleLabel} expression contains an inverse of zero.` };
+                }
+            }
+            return { ok: true };
+        }
+
+        function validateNumericalRewriteExpression(node, profile, roleLabel) {
+            if (!node) {
+                return { ok: false, error: `There is no ${roleLabel} expression to check.` };
+            }
+            const normalized = normalizeExpressionTree(cloneNode(node));
+            const structureCheck = validateNumericalRewriteStructure(normalized, profile, roleLabel);
+            if (!structureCheck.ok) {
+                return structureCheck;
+            }
+            const value = evaluateNumericalRewriteNodeExactly(normalized);
+            if (!value) {
+                return { ok: false, error: `The ${roleLabel} expression could not be evaluated exactly.` };
+            }
+            return { ok: true, value };
+        }
+
+        function exactRationalsAreEqual(first, second) {
+            return !!first && !!second &&
+                first.numerator === second.numerator &&
+                first.denominator === second.denominator;
+        }
+
+        function formatExactRational(value) {
+            return value.denominator === 1n
+                ? value.numerator.toString()
+                : `${value.numerator}/${value.denominator}`;
         }
 
         function evaluateLevelOneNode(node) {
@@ -6188,10 +6565,11 @@ ctx.font = SETTINGS.textFont;
                 writeNumberAsSum: canWriteNumberAsSum(),
                 evaluate: canEvaluate(),
                 numericalEquivalence: canNumericalEquivalence(),
-                arithmeticLevel0: isArithmeticToolLevelAllowedInCurrentLevel(0) && canArithmeticEquivalence(0),
-                arithmeticLevel1: isArithmeticToolLevelAllowedInCurrentLevel(1) && canArithmeticEquivalence(1),
-                arithmeticLevel2: isArithmeticToolLevelAllowedInCurrentLevel(2) && canArithmeticEquivalence(2),
-                arithmeticLevel3: isArithmeticToolLevelAllowedInCurrentLevel(3) && canArithmeticEquivalence(3),
+                numericalRewrite: canNumericalRewrite(),
+                arithmeticLevel0: canNumericalRewrite(),
+                arithmeticLevel1: canNumericalRewrite(),
+                arithmeticLevel2: canNumericalRewrite(),
+                arithmeticLevel3: canNumericalRewrite(),
                 numEvaluatePositiveSum: canStructuredNumericalTool("numEvaluatePositiveSum"),
                 numEvaluatePositiveProduct: canStructuredNumericalTool("numEvaluatePositiveProduct"),
                 numWritePositiveNumberAsProduct: canStructuredNumericalTool("numWritePositiveNumberAsProduct"),
@@ -6471,6 +6849,7 @@ ctx.font = SETTINGS.textFont;
                 "insertPowerOfOne",
                 "cancelOpposites",
                 "numericalEquivalence",
+                "numericalRewrite",
                 "arithmeticLevel0",
                 "arithmeticLevel1",
                 "arithmeticLevel2",
@@ -6495,6 +6874,7 @@ ctx.font = SETTINGS.textFont;
         function isNumericalBuilderTool(toolName) {
             return [
                 "numericalEquivalence",
+                "numericalRewrite",
                 "arithmeticLevel0",
                 "arithmeticLevel1",
                 "arithmeticLevel2",
@@ -6521,8 +6901,8 @@ ctx.font = SETTINGS.textFont;
         }
 
         function builderAllowsNegativeOne(toolName) {
-            if (isArithmeticEquivalenceTool(toolName)) {
-                return getArithmeticLevelFromToolName(toolName) >= 2;
+            if (isNumericalRewriteTool(toolName)) {
+                return getNumericalRewriteProfile().allowNegativeOne;
             }
             return !isNumericalBuilderTool(toolName) ||
                 toolName === "numEvaluateSignedProduct" ||
@@ -6536,9 +6916,22 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "evaluate") {
                 return [];
             }
-            if (isArithmeticEquivalenceTool(toolName)) {
-                const level = getArithmeticLevelFromToolName(toolName);
-                return level >= 2 ? ["sum", "prod", "exp"] : ["sum", "prod"];
+            if (isNumericalRewriteTool(toolName)) {
+                const profile = getNumericalRewriteProfile();
+                const operations = [];
+                if (profile.addition !== "none") {
+                    operations.push("sum");
+                }
+                if (profile.multiplication !== "none") {
+                    operations.push("prod");
+                }
+                if (profile.allowExponents) {
+                    operations.push("exp");
+                }
+                if (profile.allowInverses) {
+                    operations.push("inv");
+                }
+                return operations;
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive" || toolName === "numProductWithNegatives") {
                 return ["prod"];
@@ -6678,7 +7071,7 @@ ctx.font = SETTINGS.textFont;
                 return root;
             }
             if (builder.tool === "numericalEquivalence" ||
-                isArithmeticEquivalenceTool(builder.tool) ||
+                isNumericalRewriteTool(builder.tool) ||
                 builder.tool === "factorNumber" ||
                 builder.tool === "writeNumberAsSum" ||
                 builder.tool === "evaluate" ||
@@ -6828,6 +7221,15 @@ ctx.font = SETTINGS.textFont;
             const firstArgument = currentIsPlaceholder ? makePlaceholderNode() : cloneNode(node);
             const secondArgument = makePlaceholderNode();
 
+            if (type === "inv") {
+                const replacement = new ExprNode("inv", [firstArgument], null);
+                pushExpressionBuilderUndoState();
+                builder.root = setNodeAtPath(builder.root, builder.currentPath, replacement);
+                builder.currentPath = builder.currentPath.concat(0);
+                refreshExpressionBuilderPreview();
+                return true;
+            }
+
             // When the user inserts a sum into a sum, or a product into a product,
             // flatten immediately. This works both for an empty question-mark box
             // and for a filled value/expression that the user now wants to turn
@@ -6963,18 +7365,18 @@ ctx.font = SETTINGS.textFont;
                 replacement = makeExponentNode(valueNode("1"), completed);
             } else if (builder.tool === "cancelOpposites") {
                 replacement = makeSumFromTerms([cloneNode(completed), makeProductFromFactors([valueNode("-1"), cloneNode(completed)])]);
-            } else if (isArithmeticEquivalenceTool(builder.tool)) {
-                const allowed = getArithmeticAllowedLevelsForTool(builder.tool);
-                const originalCheck = validateArithmeticExpressionForLevel(builder.originalSelectedNode, allowed.inputLevel, "selected");
+            } else if (isNumericalRewriteTool(builder.tool)) {
+                const profile = getNumericalRewriteProfile();
+                const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "selected");
                 if (!originalCheck.ok) {
                     return builderValidationFailed(originalCheck.error);
                 }
-                const replacementCheck = validateArithmeticExpressionForLevel(completed, allowed.outputLevel, "replacement");
+                const replacementCheck = validateNumericalRewriteExpression(completed, profile, "replacement");
                 if (!replacementCheck.ok) {
                     return builderValidationFailed(replacementCheck.error);
                 }
-                if (!numbersAreEqualForEvaluation(replacementCheck.value, originalCheck.value)) {
-                    return builderValidationFailed(`That expression evaluates to ${formatEvaluationResultForExpression(replacementCheck.value)}, not ${formatEvaluationResultForExpression(originalCheck.value)}.`);
+                if (!exactRationalsAreEqual(replacementCheck.value, originalCheck.value)) {
+                    return builderValidationFailed(`That expression evaluates to ${formatExactRational(replacementCheck.value)}, not ${formatExactRational(originalCheck.value)}.`);
                 }
                 replacement = completed;
             } else if (builder.tool === "numericalEquivalence") {
@@ -7263,6 +7665,15 @@ ctx.font = SETTINGS.textFont;
         function canArithmeticEquivalence(allowedLevel) {
             const selectedNode = cloneSelectedRangeNode();
             return validateArithmeticExpressionForLevel(selectedNode, allowedLevel, "selected").ok;
+        }
+
+        function canNumericalRewrite() {
+            const selectedNode = cloneSelectedRangeNode();
+            return validateNumericalRewriteExpression(
+                selectedNode,
+                getNumericalRewriteProfile(),
+                "selected"
+            ).ok;
         }
 
         function applyFactorNumber() {
@@ -7759,9 +8170,8 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "numericalEquivalence") {
                 return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, a product of whole numbers, or one binary exponent.";
             }
-            if (isArithmeticEquivalenceTool(toolName)) {
-                const allowed = getArithmeticAllowedLevelsForTool(toolName);
-                return `Build an equivalent arithmetic expression in the left panel. The selected expression must be at or below arithmetic level ${allowed.inputLevel}, and the proposed entry must be at or below arithmetic level ${allowed.outputLevel}. ${getArithmeticLevelDescription(allowed.outputLevel)} The right-side expression stays unchanged until Submit checks both level and value.`;
+            if (isNumericalRewriteTool(toolName)) {
+                return "Build an equivalent numerical expression using only the operations allowed by this exercise. Submit checks both the selected expression and the proposed replacement against the exercise profile, then compares their values exactly. The right-side expression stays unchanged until the check passes.";
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct") {
                 return "Build a product in the left panel. The right-side expression stays unchanged until Submit checks the product.";
@@ -7790,8 +8200,8 @@ ctx.font = SETTINGS.textFont;
                 ? `<div class="builder-variable-row">${variables.map(v => `<button data-builder-action="value" data-value="${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}</div>`
                 : "";
             const operationTypes = getBuilderOperationTypes(toolName);
-            const operationShortcuts = { sum: "+", prod: "*", exp: "^" };
-            const operationSymbols = { exp: "^", prod: "·", sum: "+" };
+            const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
+            const operationSymbols = { exp: "^", prod: "·", sum: "+", inv: "1/A" };
             const buildOperationButton = type => {
                 const enabled = operationTypes.includes(type);
                 const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
@@ -7804,6 +8214,9 @@ ctx.font = SETTINGS.textFont;
             const moveNextButton = toolName === "evaluate"
                 ? `<button class="builder-next-button" disabled>→</button>`
                 : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">→</button>`;
+            const inverseButton = operationTypes.includes("inv")
+                ? `<div class="builder-unary-row"><button class="builder-operator-button" data-builder-action="operation" data-value="inv" title="Introduce an inverse (keyboard shortcut: /)">${operationSymbols.inv}</button></div>`
+                : "";
             return `<div class="expression-builder-panel">
                 ${getBuilderProposalHtml()}
                 <div class="builder-controls">
@@ -7817,6 +8230,7 @@ ctx.font = SETTINGS.textFont;
                         <button class="builder-zero-button" data-builder-action="digit" data-value="0">0</button>
                         ${negativeOneButton}
                     </div>
+                    ${inverseButton}
                     ${variableButtons}
                     <div class="builder-navigation-row">
                         <button class="builder-undo-button" data-builder-action="undoBackspace" title="Backspace / Undo: Backspace or Delete">←</button>
@@ -8101,7 +8515,9 @@ ctx.font = SETTINGS.textFont;
 
         function markToolButtonNotApplicable(button) {
             button.classList.add("tool-not-applicable");
-            button.setAttribute("title", "This rule does not apply to the selected expression.");
+            if (!button.matches("[data-rule-category]")) {
+                button.setAttribute("title", "This rule does not apply to the selected expression.");
+            }
         }
 
         function performBuilderAction(action, value = "") {
@@ -8169,6 +8585,9 @@ ctx.font = SETTINGS.textFont;
             } else if (event.key === "^") {
                 action = "operation";
                 value = "exp";
+            } else if (event.key === "/") {
+                action = "operation";
+                value = "inv";
             } else if (event.key === "-") {
                 action = "negativeOne";
             } else if (event.key === "Enter") {
@@ -8203,13 +8622,13 @@ ctx.font = SETTINGS.textFont;
             const intentDescription = container.querySelector(".intent-category-description");
             const resetIntentDescription = () => {
                 if (intentDescription) {
-                    intentDescription.textContent = intentDescription.dataset.defaultDescription || "";
+                    intentDescription.innerHTML = "<p>Hover over an action to see what it does.</p>";
                 }
             };
             container.querySelectorAll("button[data-rule-category]").forEach(btn => {
                 const showIntentDescription = () => {
                     if (intentDescription) {
-                        intentDescription.textContent = btn.dataset.actionDescription || "";
+                        intentDescription.innerHTML = getIntentCategoryDescriptionHtml(btn.dataset.ruleCategory);
                     }
                 };
                 btn.addEventListener("mouseenter", showIntentDescription);

@@ -47,10 +47,37 @@ combined into its single above-step guidance area.
 
 The Numerical Rewrite button is the final button in the main tool list. The
 description area beneath the action buttons changes when an action is hovered or
-focused. Each action has a brief explanation; Numerical Rewrite shows the
-current exercise's allowed arithmetic level as part of its explanation. Download
-Move History appears only with the textbook steps panel, not in the action or
-expression-builder panels.
+focused. Each action has a brief explanation only in that area; the action
+buttons do not create browser tooltips beside the pointer. Numerical Rewrite
+shows its exercise-specific permissions as a bulleted list. Download Move History
+appears only with the textbook steps panel, not in the action or expression-builder
+panels.
+
+Each exercise specifies Numerical Rewrite permissions with this structure:
+
+  "numericalRewrite": {
+    "addition": "none" | "no-carry" | "flat" | "expression-terms",
+    "multiplication": "none" | "one-significant-figure" | "unrestricted",
+    "allowNegativeOne": true | false,
+    "allowExponents": true | false,
+    "allowInverses": true | false
+  }
+
+`no-carry` permits only flat sums of nonnegative whole-number literals whose
+columns do not require carrying. `flat` permits flat whole-number sums with or
+without carrying. `expression-terms` permits sums whose terms are any otherwise
+allowed numerical expressions. One-significant-figure multiplication checks the
+exact value of each factor; unrestricted multiplication permits any factors that
+otherwise satisfy the profile. Negative numbers other than the atomic negative
+unit are not accepted. A negative exponent requires negative one, exponents, and
+inverses all to be allowed. Inverse zero and zero to the zero power are rejected.
+Both the selected expression and its proposed replacement must satisfy the same
+profile, and equivalence is checked with exact integer/fraction arithmetic.
+
+Older custom files that contain `arithmeticLevel` instead of `numericalRewrite`
+are mapped to a compatible profile when loaded. New move-history downloads retain
+the explicit `numericalRewrite` profile.
+
 Introduce Element(s) always offers Add Zero, Multiply by One, Double Inverse, and
 Exponent of One. Selecting a literal 1 adds a fifth Product of Inverses choice
 that replaces 1 with A times inverse(A). Selecting a literal 0 instead adds a

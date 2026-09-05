@@ -864,6 +864,19 @@
             line-height: 1.35;
         }
 
+        .intent-category-description p {
+            margin: 0;
+        }
+
+        .intent-category-description ul {
+            margin: 6px 0 0;
+            padding-left: 20px;
+        }
+
+        .intent-category-description li {
+            margin: 0 0 3px;
+        }
+
         .panel-tool-menu .intent-category-button {
             min-height: 82px;
             padding: 7px 10px;
@@ -1155,7 +1168,8 @@
         }
 
         .builder-action-row,
-        .builder-navigation-row {
+        .builder-navigation-row,
+        .builder-unary-row {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 8px;
@@ -1164,6 +1178,10 @@
 
         .builder-action-row button {
             grid-column: span 2;
+        }
+
+        .builder-unary-row button {
+            grid-column: 1 / -1;
         }
 
         .expression-builder-panel .builder-action-row {

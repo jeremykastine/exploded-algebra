@@ -5,12 +5,17 @@
   "initialKatex": "3(x+7)+2(2x+3)",
   "exerciseInfo": [
     "Practice distributing multiplication across sums and then combining like terms and constants to simplify a linear expression.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Distribute each outside factor before combining the two x-terms and the numerical constants."
   ],
   "completionMessage": "The expression is fully simplified: the like terms and constants have been combined.",
   "evaluationLevel": 0,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "no-carry",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": false,
+    "allowInverses": false
+  },
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
   "kind": "interactive",
   "steps": [

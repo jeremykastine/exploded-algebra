@@ -5,13 +5,18 @@
   "initialKatex": "(x+3)(2x+5)",
   "exerciseInfo": [
     "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
     "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
-  "arithmeticLevel": 2,
+  "numericalRewrite": {
+    "addition": "flat",
+    "multiplication": "one-significant-figure",
+    "allowNegativeOne": false,
+    "allowExponents": true,
+    "allowInverses": false
+  },
   "variables": [
     "x"
   ],
@@ -403,12 +408,17 @@
     "initialKatex": "(x+3)(2x+5)",
     "exerciseInfo": [
       "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-      "Arithmetic Level 2 is allowed. This permits nested sums and products, the negative unit, and simple nonnegative whole-number exponents.",
       "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
     ],
     "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
     "evaluationLevel": 2,
-    "arithmeticLevel": 2,
+    "numericalRewrite": {
+      "addition": "flat",
+      "multiplication": "one-significant-figure",
+      "allowNegativeOne": false,
+      "allowExponents": true,
+      "allowInverses": false
+    },
     "variables": [
       "x"
     ],
