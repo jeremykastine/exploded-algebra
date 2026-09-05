@@ -1128,7 +1128,7 @@
 
         .builder-keypad {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 8px;
             margin: 8px 0;
         }
@@ -1147,10 +1147,6 @@
             font-weight: bold;
         }
 
-        .builder-zero-button {
-            grid-column: 1 / span 3;
-        }
-
         .builder-undo-button {
             grid-column: span 2;
             font-size: 15px;
@@ -1166,8 +1162,7 @@
         }
 
         .builder-action-row,
-        .builder-navigation-row,
-        .builder-unary-row {
+        .builder-navigation-row {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 8px;
@@ -1176,10 +1171,6 @@
 
         .builder-action-row button {
             grid-column: span 2;
-        }
-
-        .builder-unary-row button {
-            grid-column: 1 / -1;
         }
 
         .expression-builder-panel .builder-action-row {
@@ -1248,8 +1239,7 @@
             .builder-keypad,
             .builder-variable-row,
             .builder-navigation-row,
-            .builder-action-row,
-            .builder-unary-row {
+            .builder-action-row {
                 gap: 10px;
             }
 

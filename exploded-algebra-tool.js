@@ -8353,23 +8353,18 @@ ctx.font = SETTINGS.textFont;
             const moveNextButton = toolName === "evaluate"
                 ? `<button class="builder-next-button" disabled>Move on</button>`
                 : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">Move on</button>`;
-            const inverseButton = operationTypes.includes("inv")
-                ? `<div class="builder-unary-row"><button class="builder-operator-button" data-builder-action="operation" data-value="inv" title="Introduce an inverse (keyboard shortcut: /)">${operationSymbols.inv}</button></div>`
-                : "";
             return `<div class="expression-builder-panel">
                 ${getBuilderProposalHtml()}
                 <div class="builder-controls">
                     <div class="builder-keypad" aria-label="Expression builder keypad">
-                        ${["7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("exp")}
-                        ${["4","5","6"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("prod")}
-                        ${["1","2","3"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("sum")}
-                        <button class="builder-zero-button" data-builder-action="digit" data-value="0">0</button>
+                        ${["0","1","2","3","4"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
+                        ${["5","6","7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
                         ${negativeOneButton}
+                        ${buildOperationButton("sum")}
+                        ${buildOperationButton("prod")}
+                        ${buildOperationButton("exp")}
+                        ${buildOperationButton("inv")}
                     </div>
-                    ${inverseButton}
                     ${variableButtons}
                     <div class="builder-navigation-row">
                         <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
