@@ -1309,6 +1309,7 @@ Promise.resolve().then(() => {
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
+        const appContainer = document.querySelector(".app-container");
         const svgContainer = document.getElementById("svgContainer");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
@@ -1355,31 +1356,137 @@ Promise.resolve().then(() => {
         let completionExportCompletedAtDate = null;
 
         let internalClipboardText = "";
-        let isDraggingDivider = false;
+        const portraitLayoutQuery = window.matchMedia("(orientation: portrait)");
+        const panelSplit = {
+            landscape: 33.333,
+            portrait: 50
+        };
+        let activeDividerPointerId = null;
 
-        divider.addEventListener("mousedown", () => {
-            isDraggingDivider = true;
-            document.body.style.cursor = "col-resize";
-        });
+        function isPortraitPanelLayout() {
+            return portraitLayoutQuery.matches;
+        }
 
-        document.addEventListener("mousemove", e => {
-            if (!isDraggingDivider) {
+        function getCurrentPanelSplitLimits() {
+            return isPortraitPanelLayout()
+                ? { min: 20, max: 80 }
+                : { min: 10, max: 50 };
+        }
+
+        function updateDividerAccessibility() {
+            const portrait = isPortraitPanelLayout();
+            const limits = getCurrentPanelSplitLimits();
+            const value = portrait ? panelSplit.portrait : panelSplit.landscape;
+            divider.setAttribute("aria-orientation", portrait ? "horizontal" : "vertical");
+            divider.setAttribute("aria-valuemin", String(limits.min));
+            divider.setAttribute("aria-valuemax", String(limits.max));
+            divider.setAttribute("aria-valuenow", String(Math.round(value)));
+        }
+
+        function setPanelSplit(percent) {
+            const portrait = isPortraitPanelLayout();
+            const limits = getCurrentPanelSplitLimits();
+            const boundedPercent = Math.max(limits.min, Math.min(limits.max, percent));
+            const propertyName = portrait ? "--portrait-panel-split" : "--landscape-panel-split";
+            panelSplit[portrait ? "portrait" : "landscape"] = boundedPercent;
+            appContainer.style.setProperty(propertyName, `${boundedPercent}%`);
+            updateDividerAccessibility();
+            if (expressionRoot) {
+                drawExpression();
+            }
+        }
+
+        function setPanelSplitFromPointer(event) {
+            const bounds = appContainer.getBoundingClientRect();
+            const portrait = isPortraitPanelLayout();
+            const position = portrait
+                ? event.clientY - bounds.top
+                : event.clientX - bounds.left;
+            const total = portrait ? bounds.height : bounds.width;
+            if (total > 0) {
+                setPanelSplit((position / total) * 100);
+            }
+        }
+
+        function finishDividerDrag(event) {
+            if (activeDividerPointerId === null) {
                 return;
             }
+            const pointerId = activeDividerPointerId;
+            activeDividerPointerId = null;
+            document.body.style.cursor = "";
+            if (divider.hasPointerCapture && divider.hasPointerCapture(pointerId)) {
+                try {
+                    divider.releasePointerCapture(pointerId);
+                } catch (error) {
+                    // The browser may already have released capture.
+                }
+            }
+            if (event && event.cancelable) {
+                event.preventDefault();
+            }
+        }
 
-            let percent = (e.clientX / window.innerWidth) * 100;
-            percent = Math.max(10, Math.min(50, percent));
-            leftPanel.style.width = percent + "%";
-            drawExpression();
-        });
-
-        document.addEventListener("mouseup", () => {
-            if (!isDraggingDivider) {
+        divider.addEventListener("pointerdown", event => {
+            if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) {
                 return;
             }
-            isDraggingDivider = false;
-            document.body.style.cursor = "default";
+            event.preventDefault();
+            activeDividerPointerId = event.pointerId;
+            document.body.style.cursor = isPortraitPanelLayout() ? "row-resize" : "col-resize";
+            if (divider.setPointerCapture) {
+                try {
+                    divider.setPointerCapture(event.pointerId);
+                } catch (error) {
+                    // Continue without capture on older implementations.
+                }
+            }
+            setPanelSplitFromPointer(event);
         });
+
+        divider.addEventListener("pointermove", event => {
+            if (event.pointerId !== activeDividerPointerId) {
+                return;
+            }
+            event.preventDefault();
+            setPanelSplitFromPointer(event);
+        });
+
+        divider.addEventListener("pointerup", finishDividerDrag);
+        divider.addEventListener("pointercancel", finishDividerDrag);
+        divider.addEventListener("lostpointercapture", finishDividerDrag);
+
+        divider.addEventListener("keydown", event => {
+            const portrait = isPortraitPanelLayout();
+            const activeKey = portrait
+                ? (event.key === "ArrowUp" || event.key === "ArrowDown")
+                : (event.key === "ArrowLeft" || event.key === "ArrowRight");
+            if (!activeKey && event.key !== "Home") {
+                return;
+            }
+            event.preventDefault();
+            if (event.key === "Home") {
+                setPanelSplit(portrait ? 50 : 33.333);
+                return;
+            }
+            const direction = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
+            const current = portrait ? panelSplit.portrait : panelSplit.landscape;
+            setPanelSplit(current + direction * 2);
+        });
+
+        const handlePanelOrientationChange = () => {
+            finishDividerDrag();
+            updateDividerAccessibility();
+            if (expressionRoot) {
+                drawExpression();
+            }
+        };
+        if (portraitLayoutQuery.addEventListener) {
+            portraitLayoutQuery.addEventListener("change", handlePanelOrientationChange);
+        } else if (portraitLayoutQuery.addListener) {
+            portraitLayoutQuery.addListener(handlePanelOrientationChange);
+        }
+        updateDividerAccessibility();
 
 
 
@@ -9510,7 +9617,7 @@ function renderToolArea() {
             }
             activeWorkspacePointerId = e.pointerId;
             selectionHitPadding = e.pointerType === "touch" || e.pointerType === "pen"
-                ? Math.max(10, Math.min(18, Math.max(e.width || 0, e.height || 0) / 2))
+                ? Math.max(18, Math.min(26, Math.max(e.width || 0, e.height || 0) / 2))
                 : 0;
             if (workspaceSvg.setPointerCapture) {
                 try {
