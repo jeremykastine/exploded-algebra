@@ -358,6 +358,23 @@ Promise.resolve().then(() => {
             { id: "numericalRewrite", label: "Numerical Rewrite" }
         ];
 
+        const INTENT_CATEGORY_DESCRIPTIONS = {
+            commute: "Change the order of selected terms or factors without changing the expression's value.",
+            insert: "Introduce identity elements or equivalent structure, such as adding zero, multiplying by one, or introducing inverses.",
+            delete: "Remove identity elements or other selected structure that simplifies away.",
+            separate: "Rewrite a selected part as separate equivalent terms or factors, such as by distributing.",
+            consolidate: "Combine selected terms or factors into one equivalent structure, such as by factoring.",
+            translateNotation: "Rewrite the selection in an equivalent form, such as changing between inverse and exponent notation."
+        };
+
+        function getIntentCategoryDescription(categoryId) {
+            if (categoryId === "numericalRewrite") {
+                const arithmeticLevel = getArithmeticLevelForCurrentLevel();
+                return `Rewrite a numerical expression in an equivalent form. ${getArithmeticLevelDescription(arithmeticLevel)}`;
+            }
+            return INTENT_CATEGORY_DESCRIPTIONS[categoryId] || "";
+        }
+
         function getToolCategoryKey(category) {
             return category.family || category.id;
         }
@@ -774,14 +791,14 @@ Promise.resolve().then(() => {
         function buildIntentCategoryButtonHtml(categoryId) {
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
             const label = category ? category.label : categoryId;
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+            const description = getIntentCategoryDescription(categoryId);
+            return `<button class="intent-category-button" data-rule-category="${categoryId}" data-action-description="${escapeHtml(description)}" aria-label="${escapeHtml(label)}" aria-describedby="intentCategoryDescription" title="${escapeHtml(description)}">
                 ${getIntentCategoryIconHtml(categoryId)}
                 <span class="intent-category-label">${escapeHtml(label)}</span>
             </button>`;
         }
 
         function buildIntentCategoryMenuHtml() {
-            const arithmeticLevel = getArithmeticLevelForCurrentLevel();
             const changeFormButtonHtml = levelUsesExplodedExponentNode(getCurrentLevel())
                 ? `<div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>`
                 : "";
@@ -798,7 +815,7 @@ Promise.resolve().then(() => {
                     </div>
                     ${changeFormButtonHtml}
                     <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
-                    <div class="arithmetic-level-note">${escapeHtml(getArithmeticLevelDescription(arithmeticLevel))}</div>
+                    <div id="intentCategoryDescription" class="intent-category-description" data-default-description="Hover over an action to see what it does.">Hover over an action to see what it does.</div>
                 </div>`;
         }
 
@@ -8183,7 +8200,30 @@ ctx.font = SETTINGS.textFont;
         }
 
         function attachToolListeners(container) {
+            const intentDescription = container.querySelector(".intent-category-description");
+            const resetIntentDescription = () => {
+                if (intentDescription) {
+                    intentDescription.textContent = intentDescription.dataset.defaultDescription || "";
+                }
+            };
             container.querySelectorAll("button[data-rule-category]").forEach(btn => {
+                const showIntentDescription = () => {
+                    if (intentDescription) {
+                        intentDescription.textContent = btn.dataset.actionDescription || "";
+                    }
+                };
+                btn.addEventListener("mouseenter", showIntentDescription);
+                btn.addEventListener("mouseleave", () => {
+                    if (document.activeElement !== btn) {
+                        resetIntentDescription();
+                    }
+                });
+                btn.addEventListener("focus", showIntentDescription);
+                btn.addEventListener("blur", () => {
+                    if (!btn.matches(":hover")) {
+                        resetIntentDescription();
+                    }
+                });
                 btn.addEventListener("click", () => {
                     const categoryId = btn.dataset.ruleCategory;
                     let applicableTools = getApplicableIntentCategoryTools(categoryId);
@@ -8354,6 +8394,7 @@ function renderToolArea() {
                 return;
             }
 
+            renderMoveHistoryControls(null);
             levelContent.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
             attachToolListeners(levelContent);
             applyDemoButtonHighlights(levelContent);

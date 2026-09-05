@@ -46,7 +46,11 @@ back to `completionMessage`; and a step's old `introduction` plus `conclusion` a
 combined into its single above-step guidance area.
 
 The Numerical Rewrite button is the final button in the main tool list. The
-current exercise's arithmetic-level specification appears directly beneath it.
+description area beneath the action buttons changes when an action is hovered or
+focused. Each action has a brief explanation; Numerical Rewrite shows the
+current exercise's allowed arithmetic level as part of its explanation. Download
+Move History appears only with the textbook steps panel, not in the action or
+expression-builder panels.
 Introduce Element(s) always offers Add Zero, Multiply by One, Double Inverse, and
 Exponent of One. Selecting a literal 1 adds a fifth Product of Inverses choice
 that replaces 1 with A times inverse(A). Selecting a literal 0 instead adds a

@@ -51,7 +51,8 @@
         .left-panel .math-block {
             margin: 8px 0;
             padding: 0;
-            overflow-x: auto;
+            height: auto;
+            overflow: visible;
             background: transparent;
             border: none;
         }
@@ -855,8 +856,9 @@
             grid-template-columns: minmax(0, 1fr);
         }
 
-        .arithmetic-level-note {
+        .intent-category-description {
             margin: -3px 4px 2px;
+            min-height: 3.3em;
             color: #555;
             font-size: 12px;
             line-height: 1.35;
