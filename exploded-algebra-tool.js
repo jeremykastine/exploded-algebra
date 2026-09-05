@@ -2967,11 +2967,15 @@ Promise.resolve().then(() => {
                 const stepGuidanceHtml = isCurrent && stepGuidance.length
                     ? `<div class="step-guidance" aria-label="Current-step guidance">${stepGuidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
                     : "";
+                const completedCheckHtml = isComplete
+                    ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
+                    : "";
                 return `
+                    ${stepGuidanceHtml}
                     <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                         <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
+                        ${completedCheckHtml}
                     </div>
-                    ${stepGuidanceHtml}
                 `;
             }).join("");
 

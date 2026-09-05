@@ -33,7 +33,7 @@ strings unless described otherwise.
 The original expression remains the first item in `steps` for matching and move
 history compatibility, but it is displayed only in the problem-statement section.
 Subsequent steps are revealed progressively. A step may include one `guidance`
-block, which appears below that step only while it is current. A step may also
+block, which appears above that step only while it is current. A step may also
 include `beforeKatex` and `afterKatex` conventional-display versions. The before
 version is shown while the goal is current; the after version replaces it when the
 step is complete. If either is omitted, the ordinary `katex` version is used. This
@@ -43,7 +43,7 @@ exact exploded `expression` used to recognize the completed step.
 Older files remain compatible: `introduction` falls back to `instruction`;
 `description` plus `instructions` fall back to `exerciseInfo`; `conclusion` falls
 back to `completionMessage`; and a step's old `introduction` plus `conclusion` are
-combined into its single below-step guidance area.
+combined into its single above-step guidance area.
 
 The Numerical Rewrite button is the final button in the main tool list. The
 current exercise's arithmetic-level specification appears directly beneath it.
