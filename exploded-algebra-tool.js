@@ -8357,22 +8357,19 @@ ctx.font = SETTINGS.textFont;
                 ${getBuilderProposalHtml()}
                 <div class="builder-controls">
                     <div class="builder-keypad" aria-label="Expression builder keypad">
-                        ${["0","1","2","3","4"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${["5","6","7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
-                        ${buildOperationButton("exp")}
                         ${buildOperationButton("inv")}
+                        ${buildOperationButton("exp")}
+                        ${["0","1","2","3","4"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
+                        ${["5","6","7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
                     </div>
                     ${variableButtons}
-                    <div class="builder-navigation-row">
+                    <div class="builder-command-row">
                         <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
                         ${moveNextButton}
-                    </div>
-                    <div class="builder-action-row">
                         <button data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
-                        <button data-builder-action="cancel">Cancel</button>
                     </div>
                 </div>
             </div>`;

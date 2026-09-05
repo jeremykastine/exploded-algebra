@@ -1135,8 +1135,7 @@
 
         .builder-keypad button,
         .builder-variable-row button,
-        .builder-navigation-row button,
-        .builder-action-row button {
+        .builder-command-row button {
             text-align: center;
             font-size: 15px;
             padding: 10px 8px;
@@ -1148,32 +1147,25 @@
         }
 
         .builder-undo-button {
-            grid-column: span 2;
             font-size: 15px;
             font-weight: bold;
             line-height: 1.2;
         }
 
         .builder-next-button {
-            grid-column: span 2;
             font-size: 15px;
             font-weight: bold;
             line-height: 1.2;
         }
 
-        .builder-action-row,
-        .builder-navigation-row {
+        .builder-command-row {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
             margin: 8px 0;
         }
 
-        .builder-action-row button {
-            grid-column: span 2;
-        }
-
-        .expression-builder-panel .builder-action-row {
+        .expression-builder-panel .builder-command-row {
             margin-bottom: 0;
         }
 
@@ -1238,8 +1230,7 @@
             .panel-category-row,
             .builder-keypad,
             .builder-variable-row,
-            .builder-navigation-row,
-            .builder-action-row {
+            .builder-command-row {
                 gap: 10px;
             }
 
@@ -1359,7 +1350,7 @@
             }
 
             .panel-tool-menu > .tool-row:last-child,
-            .expression-builder-panel .builder-action-row {
+            .expression-builder-panel .builder-command-row {
                 position: sticky;
                 bottom: 0;
                 z-index: 8;
@@ -1405,7 +1396,7 @@
         </div>
     </div>
     <script src="exploded-algebra-renderer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20260905-builder-grid"></script>
+    <script src="exploded-algebra-tool.js?v=20260905-builder-grid-2"></script>
 
 </body>
 </html>
