@@ -1,9563 +1,3463 @@
-Promise.resolve().then(() => {
-        // Change this to true if you want the faded gray parenthesis/operator/value
-        // characters to become visible again in the top expression SVG.
-        const SHOW_FADED_EXPRESSION_SYMBOLS = false;
-        const FADED_EXPRESSION_SYMBOL_COLOR = "#d0d0d0";
-
-        // Disabled for now: step-card preview comparison.
-        // Leave this code in place so the preview comparison can be restored later
-        // by changing this value to false.
-        const STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW = true;
-
-        function getSelectionMargin() {
-            return ((SETTINGS && SETTINGS.bufferSize) || (SETTINGS && SETTINGS.debugComponentBuffer) || SETTINGS.padding || 16) / 2;
-        }
-
-
-        const TOOL_INFO = {
-            replaceOneWithInverseProduct: `<span class="rule-name">Introduce Product of Inverses</span><span class="rule-notation">1 = A Â· inverse(A)</span>`,
-            cancelProductWithInverse: `<span class="rule-name">Cancel Inverse Product</span><span class="rule-notation">A Â· inverse(A) = 1</span>`,
-            eliminateDoubleInverse: `<span class="rule-name">Remove Double Inverse</span><span class="rule-notation">inverse(inverse(A)) = A</span>`,
-            insertDoubleInverse: `<span class="rule-name">Introduce Double Inverse</span><span class="rule-notation">A = inverse(inverse(A))</span>`,
-            distributeInverseOverProduct: `<span class="rule-name">Inverse of a Product</span><span class="rule-notation">inverse(A Â· B) = inverse(A) Â· inverse(B)</span>`,
-            factorProductOfInverses: `<span class="rule-name">Product of Inverses</span><span class="rule-notation">inverse(A) Â· inverse(B) = inverse(A Â· B)</span>`,
-            rewriteInvNegOneToNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">inverse(-1) = -1</span>`,
-            rewriteNegOneToInvNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">-1 = inverse(-1)</span>`,
-            eliminateExponentOne: `<span class="rule-name">Remove First Power</span><span class="rule-notation">A<sup>1</sup> = A</span>`,
-            eliminateExponentZero: `<span class="rule-name">Remove Zero Power</span><span class="rule-notation">A<sup>0</sup> = 1</span>`,
-            rewriteNegativeOneExponentAsInverse: `<span class="rule-name">Negative Power to Inverse Operator</span><span class="rule-notation">A<sup>-1</sup> = inverse(A)</span>`,
-            rewriteInverseAsNegativeOneExponent: `<span class="rule-name">Inverse Operator to Negative Power</span><span class="rule-notation">inverse(A) = A<sup>-1</sup></span>`,
-            eliminateInverseToNegativeOnePower: `<span class="rule-name">Cancel Double Inverse Power</span><span class="rule-notation">(A<sup>-1</sup>)<sup>-1</sup> = A</span>`,
-            distributePowerOverInverse: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>-1</sup>)<sup>n</sup> = (A<sup>n</sup>)<sup>-1</sup></span>`,
-            factorPowerOutOfInverse: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>n</sup>)<sup>-1</sup> = (A<sup>-1</sup>)<sup>n</sup></span>`,
-            powerOfPower: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>m</sup>)<sup>n</sup> = A<sup>mÂ·n</sup></span>`,
-            combineSameBasePowers: `<span class="rule-name">Combine Same-Base Powers</span><span class="rule-notation">A<sup>m</sup> Â· A<sup>n</sup> = A<sup>m+n</sup></span>`,
-            expandPowerOfSum: `<span class="rule-name">Split Power over Sum</span><span class="rule-notation">A<sup>m+n</sup> = A<sup>m</sup> Â· A<sup>n</sup></span>`,
-            divideSameBasePowers: `<span class="rule-name">Subtract Same-Base Powers</span><span class="rule-notation">A<sup>m</sup> Â· (A<sup>n</sup>)<sup>-1</sup> = A<sup>m-n</sup></span>`,
-            distributeExponentOverProduct: `<span class="rule-name">Power of a Product</span><span class="rule-notation">(A Â· B)<sup>n</sup> = A<sup>n</sup> Â· B<sup>n</sup></span>`,
-            factorCommonExponent: `<span class="rule-name">Factor Common Power</span><span class="rule-notation">A<sup>n</sup> Â· B<sup>n</sup> = (A Â· B)<sup>n</sup></span>`,
-            oneToAnyPower: `<span class="rule-name">Power of One</span><span class="rule-notation">1<sup>n</sup> = 1</span>`,
-            insertExponentOne: `<span class="rule-name">Introduce First Power</span><span class="rule-notation">A = A<sup>1</sup></span>`,
-            insertExponentZero: `<span class="rule-name">Introduce Zero Power</span><span class="rule-notation">1 = A<sup>0</sup></span>`,
-            insertPowerOfOne: `<span class="rule-name">Introduce Power of One</span><span class="rule-notation">1 = 1<sup>n</sup></span>`,
-            expandPowerOfPower: `<span class="rule-name">Split Power of a Power</span><span class="rule-notation">A<sup>mÂ·n</sup> = (A<sup>m</sup>)<sup>n</sup></span>`,
-            negativeOneSquared: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2</sup> = 1</span>`,
-            negativeOneEvenPower: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2n</sup> = 1</span>`,
-            negativeOneOddPower: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2n+1</sup> = -1</span>`,
-            repeatedProductToPower: `<span class="rule-name">Combine Repeated Factors</span><span class="rule-notation">A Â· A Â· â€¦ Â· A = A<sup>n</sup></span>`,
-            powerToRepeatedProduct: `<span class="rule-name">Expand Power</span><span class="rule-notation">A<sup>n</sup> = A Â· A Â· â€¦ Â· A</span>`,
-            inverseOne: `<span class="rule-name">Power of One</span><span class="rule-notation">1<sup>-1</sup> = 1</span>`,
-            factorProductOfTwoInverses: `<span class="rule-name">Factor Common Power</span><span class="rule-notation">A<sup>-1</sup> Â· B<sup>-1</sup> = (A Â· B)<sup>-1</sup></span>`,
-            distributeInverseOverTwoProduct: `<span class="rule-name">Power of a Product</span><span class="rule-notation">(A Â· B)<sup>-1</sup> = A<sup>-1</sup> Â· B<sup>-1</sup></span>`,
-            inverseFactorAsNegativeExponent: `<span class="rule-name">Negative Power Notation</span><span class="rule-notation">A Â· B<sup>-1</sup> = A Â· B<sup>-1</sup></span>`,
-            cancelOpposites: `<span class="rule-name">Cancel Additive Inverses</span><span class="rule-notation">A + (-A) = 0</span>`,
-            doubleNegative: `<span class="rule-name">Double Negative</span><span class="rule-notation">(-1) Â· (-1) = 1</span>`,
-            zeroProduct: `<span class="rule-name">Zero Product</span><span class="rule-notation">0 Â· A = 0</span>`,
-            insertZeroProduct: `<span class="rule-name">Introduce Zero Product</span><span class="rule-notation">0 = 0 Â· A</span>`,
-            eliminateIdentities: `<span class="rule-name">Remove Identity</span><span class="rule-notation">A + 0 = A; A Â· 1 = A</span>`,
-            evaluateSum: `<span class="rule-name">Evaluate Sum</span><span class="rule-notation">a + b = c</span>`,
-            evaluateProduct: `<span class="rule-name">Evaluate Product</span><span class="rule-notation">a Â· b = c</span>`,
-            evaluateSumContainingProducts: `<span class="rule-name">Evaluate Product-Sum</span><span class="rule-notation">ab + cd = e</span>`,
-            evaluate: `<span class="rule-name">Evaluate</span>`,
-            numericalEquivalence: `<span class="rule-name">Numerical equivalence</span>`,
-            numericalRewrite: `<span class="rule-name">Numerical Rewrite</span>`,
-            arithmeticLevel0: `<span class="rule-name">Arithmetic level zero</span>`,
-            arithmeticLevel1: `<span class="rule-name">Arithmetic level one</span>`,
-            arithmeticLevel2: `<span class="rule-name">Arithmetic level two</span>`,
-            arithmeticLevel3: `<span class="rule-name">Arithmetic level three</span>`,
-            numEvaluatePositiveSum: `<span class="rule-name">Evaluate sum of positive numbers</span>`,
-            numEvaluatePositiveProduct: `<span class="rule-name">Evaluate product of positive numbers</span>`,
-            numWritePositiveNumberAsProduct: `<span class="rule-name">Write positive number as product</span>`,
-            numWritePositiveNumberAsSum: `<span class="rule-name">Write positive number as sum</span>`,
-            numEvaluateSignedSum: `<span class="rule-name">Evaluate sum in parentheses including negatives</span>`,
-            numEvaluateSignedProduct: `<span class="rule-name">Evaluate product in parentheses including negatives</span>`,
-            numExpressNumberAsDifference: `<span class="rule-name">Express number as difference</span>`,
-            numSumPositive: `<span class="rule-name">Positive Sum â‡” Number</span><span class="rule-notation"># + # â‡” #</span>`,
-            numProductPositive: `<span class="rule-name">Positive Product â‡” Number</span><span class="rule-notation"># Â· # â‡” #</span>`,
-            numProductWithNegatives: `<span class="rule-name">Product with Negatives â‡” Number</span><span class="rule-notation"># Â· ((-1) Â· #) â‡” #</span>`,
-            numSumWithNegativeProducts: `<span class="rule-name">Sum with Negative Products â‡” Number</span><span class="rule-notation"># + ((-1) Â· #) â‡” #</span>`,
-            factorNumber: `<span class="rule-name">Factor Number</span><span class="rule-notation">n = a Â· b</span>`,
-            writeNumberAsSum: `<span class="rule-name">Split Number as Sum</span><span class="rule-notation">n = a + b</span>`,
-            distributeLeftToRight: `<span class="rule-name">Distribute Left to Right</span><span class="rule-notation">A(B + C) = AB + AC</span>`,
-            distributeRightToLeft: `<span class="rule-name">Distribute Right to Left</span><span class="rule-notation">(A + B)C = AC + BC</span>`,
-            factorLeft: `<span class="rule-name">Factor From Left</span><span class="rule-notation">AB + AC = A(B + C)</span>`,
-            factorRight: `<span class="rule-name">Factor From Right</span><span class="rule-notation">BA + CA = (B + C)A</span>`,
-            commute: `<span class="rule-name">Commute</span>`,
-            commuteFirstToLast: `<span class="rule-name">Commute first to end</span>`,
-            commuteLastToFirst: `<span class="rule-name">Commute last to beginning</span>`,
-            commuteTerms: `<span class="rule-name">Commute Terms</span><span class="rule-notation">A + B = B + A</span>`,
-            commuteFactors: `<span class="rule-name">Commute Product</span><span class="rule-notation">A Â· B = B Â· A</span>`,
-            insertIdentity: `<span class="rule-name">Introduce Identity</span><span class="rule-notation">A = A + 0; A = A Â· 1</span>`,
-            insertIdentityAddZeroTop: `<span class="rule-name">Introduce Additive Identity Above</span>`,
-            insertIdentityAddZeroBottom: `<span class="rule-name">Introduce Additive Identity Below</span>`,
-            insertIdentityMultiplyByOneLeft: `<span class="rule-name">Introduce Multiplicative Identity Left</span>`,
-            insertIdentityMultiplyByOneRight: `<span class="rule-name">Introduce Multiplicative Identity Right</span>`,
-            insertZeroProductLeft: `<span class="rule-name">Introduce Zero Product Left</span>`,
-            insertZeroProductRight: `<span class="rule-name">Introduce Zero Product Right</span>`,
-            reduceToZero: `<span class="rule-name">Reduce to Zero</span>`,
-            reduceToOne: `<span class="rule-name">Reduce to One</span>`
-        };
-
-        const AVAILABLE_BY_DEFAULT_TOOLS = [
-            "cancelOpposites",
-            "cancelProductWithInverse",
-            "eliminateDoubleInverse",
-            "insertDoubleInverse",
-            "distributeInverseOverProduct",
-            "factorProductOfInverses",
-            "rewriteInvNegOneToNegOne",
-            "rewriteNegOneToInvNegOne",
-            "rewriteNegativeOneExponentAsInverse",
-            "rewriteInverseAsNegativeOneExponent",
-            "combineSameBasePowers",
-            "commute",
-            "commuteFirstToLast",
-            "commuteLastToFirst",
-            "commuteFactors",
-            "commuteTerms",
-            "distributeExponentOverProduct",
-            "distributeLeftToRight",
-            "distributeRightToLeft",
-            "doubleNegative",
-            "eliminateExponentOne",
-            "eliminateExponentZero",
-            "eliminateIdentities",
-            "evaluate",
-            "numericalEquivalence",
-            "numericalRewrite",
-            "arithmeticLevel0",
-            "arithmeticLevel1",
-            "arithmeticLevel2",
-            "arithmeticLevel3",
-            "numSumPositive",
-            "numProductPositive",
-            "numProductWithNegatives",
-            "numSumWithNegativeProducts",
-            "expandPowerOfSum",
-            "factorCommonExponent",
-            "factorLeft",
-            "factorNumber",
-            "factorRight",
-            "insertIdentity",
-            "insertIdentityAddZeroTop",
-            "insertIdentityAddZeroBottom",
-            "insertIdentityMultiplyByOneLeft",
-            "insertIdentityMultiplyByOneRight",
-            "insertZeroProduct",
-            "oneToAnyPower",
-            "insertExponentOne",
-            "insertExponentZero",
-            "insertPowerOfOne",
-            "expandPowerOfPower",
-            "powerOfPower",
-            "powerToRepeatedProduct",
-            "replaceOneWithInverseProduct",
-            "repeatedProductToPower",
-            "writeNumberAsSum",
-            "zeroProduct"
-        ];
-
-        const UNAVAILABLE_BY_DEFAULT_TOOLS = [
-        ];
-
-
-        const POWER_INVERSE_REWRITE_TOOLS = [
-            "rewriteInvNegOneToNegOne",
-            "rewriteNegOneToInvNegOne",
-            "rewriteNegativeOneExponentAsInverse",
-            "rewriteInverseAsNegativeOneExponent",
-            "eliminateExponentOne",
-            "eliminateExponentZero",
-            "insertExponentOne",
-            "powerOfPower",
-            "expandPowerOfPower",
-            "combineSameBasePowers",
-            "expandPowerOfSum",
-            "distributeExponentOverProduct",
-            "factorCommonExponent",
-            "oneToAnyPower",
-            "repeatedProductToPower",
-            "powerToRepeatedProduct"
-        ];
-
-        function isPowerInverseRewriteTool(toolName) {
-            return POWER_INVERSE_REWRITE_TOOLS.includes(toolName);
-        }
-
-        // Type-level menu filtering: these lists are intentionally broader than
-        // exact applicability. If a user chooses a rule from the right type but
-        // it does not apply to the specific expression, the button is marked red.
-        const TOOL_KEYS_BY_SELECTED_TYPE = {
-            any: [
-                "insertIdentity",
-                ],
-            value: [
-                "numericalEquivalence",
-                "numericalRewrite",
-                "numSumPositive",
-                "numProductPositive",
-                "numProductWithNegatives",
-                "numSumWithNegativeProducts",
-                "replaceOneWithInverseProduct",
-                "rewriteNegOneToInvNegOne",
-                "factorNumber",
-                "writeNumberAsSum",
-                "insertZeroProduct"
-            ],
-            sum: [
-                "commuteFirstToLast",
-                "commuteLastToFirst",
-                "numericalEquivalence",
-                "numericalRewrite",
-                "numSumPositive",
-                "numSumWithNegativeProducts",
-                "commuteTerms",
-                "factorLeft",
-                "factorRight",
-                "cancelOpposites",
-                "eliminateIdentities",
-                "evaluate"
-            ],
-            prod: [
-                "commuteFirstToLast",
-                "commuteLastToFirst",
-                "numericalEquivalence",
-                "numericalRewrite",
-                "numProductPositive",
-                "numProductWithNegatives",
-                "commuteFactors",
-                "distributeLeftToRight",
-                "distributeRightToLeft",
-                "cancelProductWithInverse",
-                "factorProductOfInverses",
-                "combineSameBasePowers",
-                "factorCommonExponent",
-                "repeatedProductToPower",
-                "doubleNegative",
-                "zeroProduct",
-                "eliminateIdentities",
-                "evaluate"
-            ],
-            inv: [
-                "numericalRewrite",
-                "eliminateDoubleInverse",
-                "insertDoubleInverse",
-                "distributeInverseOverProduct",
-                "rewriteInvNegOneToNegOne",
-                "rewriteInverseAsNegativeOneExponent"
-            ],
-            exp: [
-                "evaluate",
-                "numericalEquivalence",
-                "numericalRewrite",
-                "eliminateExponentOne",
-                "eliminateExponentZero",
-                "insertExponentOne",
-                "insertExponentZero",
-                "insertPowerOfOne",
-                "powerOfPower",
-                "expandPowerOfPower",
-                "expandPowerOfSum",
-                "distributeExponentOverProduct",
-                "oneToAnyPower",
-                "powerToRepeatedProduct",
-                "rewriteNegativeOneExponentAsInverse"
-            ]
-        };
-
-        const TOOL_EXPONENT_MODES = {
-            plain: "plain",
-            numeric: "numeric",
-            exponent: "exponent",
-            inverse: "inverse"
-        };
-
-        const QUICK_TOOL_ROWS_BY_EXPONENT_MODE = {
-            plain: [
-                ["evaluate"],
-                ["commuteTerms", "commuteFactors"],
-                ["distributeLeftToRight", "distributeRightToLeft"],
-                ["factorLeft", "factorRight"]
-            ],
-            exponent: [
-                ["evaluate"],
-                ["combineSameBasePowers", "expandPowerOfSum"],
-                ["distributeExponentOverProduct", "factorCommonExponent"],
-                ["powerOfPower"]
-            ],
-            inverse: []
-        };
-
-        const QUICK_TOOL_KEYS = uniqueToolKeys(
-            Object.values(QUICK_TOOL_ROWS_BY_EXPONENT_MODE).flatMap(rows => rows.flat())
-        );
-
-        // Frequently used rearranging tools live above these categories as quick tools.
-        // The radio buttons choose whether the quick tools and drill-down categories
-        // should show non-exponent tools or exponent tools.
-        const TOOL_MENU_CATEGORIES = [
-            {
-                id: "collapsePlain",
-                family: "compression",
-                mode: "plain",
-                label: "Compression tools",
-                keys: [
-                    "cancelOpposites",
-                    "doubleNegative",
-                    "eliminateIdentities",
-                    "zeroProduct"
-                ]
-            },
-            {
-                id: "collapseExponent",
-                family: "compression",
-                mode: "exponent",
-                label: "Compression tools",
-                keys: [
-                    "cancelProductWithInverse",
-                    "repeatedProductToPower",
-                    "eliminateExponentOne",
-                    "eliminateExponentZero",
-                    "oneToAnyPower"
-                ]
-            },
-            {
-                id: "explodePlain",
-                family: "expansion",
-                mode: "plain",
-                label: "Expansion tools",
-                keys: [
-                    "factorNumber",
-                    "insertIdentity",
-                    "insertZeroProduct",
-                    "writeNumberAsSum"
-                ]
-            },
-            {
-                id: "explodeExponent",
-                family: "expansion",
-                mode: "exponent",
-                label: "Expansion tools",
-                keys: [
-                    "powerToRepeatedProduct",
-                    "replaceOneWithInverseProduct"
-                ]
-            },
-            {
-                id: "other",
-                family: "other",
-                mode: "both",
-                label: "Other",
-                keys: []
-            }
-        ];
-
-        // The fixed rule-category menu presents the user's intention rather
-        // than the individual algebraic rule. Exact applicability is still
-        // decided by the existing rule checks below.
-        const INTENT_RULE_CATEGORIES = [
-            { id: "commute", label: "Commute" },
-            { id: "insert", label: "Introduce Element(s)" },
-            { id: "delete", label: "Remove Element(s)" },
-            { id: "separate", label: "Separate" },
-            { id: "consolidate", label: "Combine" },
-            { id: "translateNotation", label: "Change Form" },
-            { id: "numericalRewrite", label: "Numerical Rewrite" }
-        ];
-
-        const INTENT_CATEGORY_DESCRIPTIONS = {
-            commute: "Change the order of selected terms or factors without changing the expression's value.",
-            insert: "Introduce identity elements or equivalent structure, such as adding zero, multiplying by one, or introducing inverses.",
-            delete: "Remove identity elements or other selected structure that simplifies away.",
-            separate: "Rewrite a selected part as separate equivalent terms or factors, such as by distributing.",
-            consolidate: "Combine selected terms or factors into one equivalent structure, such as by factoring.",
-            translateNotation: "Rewrite the selection in an equivalent form, such as changing between inverse and exponent notation."
-        };
-
-        function getIntentCategoryDescription(categoryId) {
-            return INTENT_CATEGORY_DESCRIPTIONS[categoryId] || "";
-        }
-
-        function getIntentCategoryDescriptionHtml(categoryId) {
-            if (categoryId === "numericalRewrite") {
-                const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
-                return `<p>Rewrite a numerical expression in an equivalent form.</p><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-            }
-            return `<p>${escapeHtml(getIntentCategoryDescription(categoryId))}</p>`;
-        }
-
-        function getToolCategoryKey(category) {
-            return category.family || category.id;
-        }
-
-        function getToolCategoryById(categoryId) {
-            const mode = getCurrentToolExponentMode();
-            const matchingCurrentMode = TOOL_MENU_CATEGORIES.find(category =>
-                getToolCategoryKey(category) === categoryId &&
-                (category.mode === mode || category.mode === "both")
-            );
-            if (matchingCurrentMode) {
-                return matchingCurrentMode;
-            }
-
-            return TOOL_MENU_CATEGORIES.find(category => category.id === categoryId) || null;
-        }
-
-        function getCurrentToolExponentMode() {
-            if (uiState.toolExponentMode === TOOL_EXPONENT_MODES.exponent) {
-                return TOOL_EXPONENT_MODES.exponent;
-            }
-            if (uiState.toolExponentMode === TOOL_EXPONENT_MODES.inverse) {
-                return TOOL_EXPONENT_MODES.inverse;
-            }
-            return TOOL_EXPONENT_MODES.plain;
-        }
-
-        function getDefaultToolExponentModeForSelection() {
-            if (!selection || !selection.node) {
-                return TOOL_EXPONENT_MODES.plain;
-            }
-
-            const selectedExpression = cloneSelectedRangeNode();
-            const containsInverse = node => !!node && (
-                node.type === "inv" ||
-                (Array.isArray(node.args) && node.args.some(containsInverse))
-            );
-            if (containsInverse(selectedExpression)) {
-                return TOOL_EXPONENT_MODES.inverse;
-            }
-            return selectedExpression && selectedExpression.type === "exp"
-                ? TOOL_EXPONENT_MODES.exponent
-                : TOOL_EXPONENT_MODES.plain;
-        }
-
-        function getToolCategoriesForCurrentExponentMode() {
-            const mode = getCurrentToolExponentMode();
-            return TOOL_MENU_CATEGORIES.filter(category => category.mode === mode || category.mode === "both");
-        }
-
-        function getQuickToolRowsForCurrentExponentMode() {
-            return QUICK_TOOL_ROWS_BY_EXPONENT_MODE[getCurrentToolExponentMode()] || QUICK_TOOL_ROWS_BY_EXPONENT_MODE.plain;
-        }
-
-        function getSelectionTypeCandidateSet() {
-            const selected = getSelectedExpressionForToolMenu();
-            if (!selected) {
-                return new Set();
-            }
-            const selectedType = selected.type;
-            return new Set([
-                ...(TOOL_KEYS_BY_SELECTED_TYPE[selectedType] || []),
-                ...(TOOL_KEYS_BY_SELECTED_TYPE.any || [])
-            ]);
-        }
-
-        function getSelectedExpressionForToolMenu() {
-            return cloneSelectedRangeNode();
-        }
-
-        function uniqueToolKeys(keys) {
-            const seen = new Set();
-            const out = [];
-            for (const key of keys) {
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    out.push(key);
-                }
-            }
-            return out;
-        }
-
-        function getCandidateToolKeysForSelectionType(categoryId = null) {
-            // Show every rule in the chosen category even when it is not exactly
-            // applicable to the current selection. Non-applicable rule buttons
-            // are marked red only after the user clicks them.
-            if (!selection.node) {
-                return [];
-            }
-
-            if (categoryId) {
-                const category = getToolCategoryById(categoryId);
-                return category ? category.keys.slice() : [];
-            }
-
-            return uniqueToolKeys([
-                ...getQuickToolRowsForCurrentExponentMode().flat(),
-                ...getToolCategoriesForCurrentExponentMode().flatMap(category => category.keys)
-            ]);
-        }
-
-        function filterVisibleToolKeys(keys, allowedKeys) {
-            return uniqueToolKeys(keys).filter(key =>
-                TOOL_INFO[key] &&
-                isToolAllowedInCurrentLevel(key) &&
-                allowedKeys.has(key)
-            );
-        }
-
-        function buildToolButtonHtml(key) {
-            return `<button data-tool="${key}">${TOOL_INFO[key]}</button>`;
-        }
-
-        function getSelectedCommutePartCountForMenu() {
-            if (!selection.node || (selection.node.type !== "sum" && selection.node.type !== "prod")) {
-                return 0;
-            }
-            return getSelectedSliceLength();
-        }
-
-        function shouldShowSingleCommuteButtonForSelection() {
-            return getSelectedCommutePartCountForMenu() === 2;
-        }
-
-        function shouldShowDirectionalCommuteButtonsForSelection() {
-            return getSelectedCommutePartCountForMenu() >= 3;
-        }
-
-        const TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE = {
-            plain: [
-                { full: { tool: "numericalRewrite", html: "Numerical Rewrite" } },
-                {
-                    commutePair: true,
-                    left: { tool: "commuteFirstToLast", html: "Commute first to end" },
-                    right: { tool: "commuteLastToFirst", html: "Commute last to beginning" }
-                },
-                {
-                    distributionPair: true,
-                    leftFactored: {
-                        tool: "factorLeft",
-                        mini: miniProd(miniValue("A"), miniSum(miniValue("B"), miniValue("C")))
-                    },
-                    topDistributed: {
-                        tool: "distributeLeftToRight",
-                        mini: miniSum(
-                            miniProd(miniValue("A"), miniValue("B")),
-                            miniProd(miniValue("A"), miniValue("C"))
-                        )
-                    },
-                    bottomDistributed: {
-                        tool: "distributeRightToLeft",
-                        mini: miniSum(
-                            miniProd(miniValue("B"), miniValue("A")),
-                            miniProd(miniValue("C"), miniValue("A"))
-                        )
-                    },
-                    rightFactored: {
-                        tool: "factorRight",
-                        mini: miniProd(miniSum(miniValue("B"), miniValue("C")), miniValue("A"))
-                    }
-                },
-                {
-                    triplet: true,
-                    left: { tool: "insertIdentityAddZeroBottom", mini: miniSum(miniValue("A"), miniValue("0")) },
-                    center: { tool: "eliminateIdentities", mini: miniValue("A") },
-                    right: { tool: "insertIdentityMultiplyByOneRight", mini: miniProd(miniValue("A"), miniValue("1")) }
-                },
-                {
-                    triplet: true,
-                    left: { tool: "insertZeroProductRight", mini: miniProd(miniValue("A"), miniValue("0")) },
-                    center: { tool: "reduceToZero", mini: miniValue("0") },
-                    right: { tool: "cancelOpposites", mini: miniSum(miniValue("A"), miniProd(miniValue("-1"), miniValue("A"))) }
-                },
-                {
-                    left: { tool: "doubleNegative", mini: miniProd(miniValue("-1"), miniValue("-1")) },
-                    arrow: "â‡”",
-                    right: { tool: "reduceToOne", mini: miniValue("1") }
-                },
-            ],
-            numeric: [
-                { full: { tool: "numEvaluatePositiveSum", html: "Evaluate sum of positive numbers" } },
-                { full: { tool: "numEvaluatePositiveProduct", html: "Evaluate product of positive numbers" } },
-                { full: { tool: "numWritePositiveNumberAsProduct", html: "Write positive number as product" } },
-                { full: { tool: "numWritePositiveNumberAsSum", html: "Write positive number as sum" } },
-                { full: { tool: "numEvaluateSignedSum", html: "Evaluate sum in parentheses including negatives" } },
-                { full: { tool: "numEvaluateSignedProduct", html: "Evaluate product in parentheses including negatives" } },
-                { full: { tool: "numExpressNumberAsDifference", html: "Express number as difference" } },
-                { customNumericalEquivalences: true },
-            ],
-            exponent: [
-                {
-                    left: { tool: "combineSameBasePowers", mini: miniExp(miniValue("A"), miniSum(miniValue("m"), miniValue("n"))) },
-                    arrow: "â‡”",
-                    right: { tool: "expandPowerOfSum", mini: miniProd(miniExp(miniValue("A"), miniValue("m")), miniExp(miniValue("A"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "factorCommonExponent", mini: miniExp(miniProd(miniValue("A"), miniValue("B")), miniValue("n")) },
-                    arrow: "â‡”",
-                    right: { tool: "distributeExponentOverProduct", mini: miniProd(miniExp(miniValue("A"), miniValue("n")), miniExp(miniValue("B"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "expandPowerOfPower", mini: miniExp(miniExp(miniValue("A"), miniValue("m")), miniValue("n")) },
-                    arrow: "â‡”",
-                    right: { tool: "powerOfPower", mini: miniExp(miniValue("A"), miniProd(miniValue("m"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "repeatedProductToPower", mini: miniExp(miniValue("A"), miniValue("n")) },
-                    arrow: "â‡”",
-                    right: { tool: "powerToRepeatedProduct", mini: miniProd(miniValue("A"), miniValue("A"), miniValue("â€¦"), miniValue("A")) }
-                },
-                {
-                    triplet: true,
-                    left: { tool: "insertExponentZero", mini: miniExp(miniValue("A"), miniValue("0")) },
-                    center: { tool: "reduceToOne", mini: miniValue("1") },
-                    right: { tool: "insertPowerOfOne", mini: miniExp(miniValue("1"), miniValue("n")) }
-                },
-            ],
-            inverse: [
-                {
-                    left: { tool: "insertDoubleInverse", mini: miniInv(miniInv(miniValue("A"))) },
-                    arrow: "â‡”",
-                    right: { tool: "eliminateDoubleInverse", mini: miniValue("A") }
-                },
-                {
-                    left: { tool: "factorProductOfInverses", mini: miniInv(miniProd(miniValue("A"), miniValue("B"))) },
-                    arrow: "â‡”",
-                    right: { tool: "distributeInverseOverProduct", mini: miniProd(miniInv(miniValue("A")), miniInv(miniValue("B"))) }
-                },
-                {
-                    left: { tool: "replaceOneWithInverseProduct", mini: miniProd(miniValue("A"), miniInv(miniValue("A"))) },
-                    arrow: "â‡”",
-                    right: { tool: "cancelProductWithInverse", mini: miniValue("1") }
-                },
-                {
-                    left: { tool: "rewriteNegOneToInvNegOne", mini: miniInv(miniValue("-1")) },
-                    arrow: "â‡”",
-                    right: { tool: "rewriteInvNegOneToNegOne", mini: miniValue("-1") }
-                },
-                {
-                    left: { tool: "rewriteNegativeOneExponentAsInverse", mini: miniInv(miniValue("A")) },
-                    arrow: "â‡”",
-                    right: { tool: "rewriteInverseAsNegativeOneExponent", mini: miniExp(miniValue("A"), miniValue("-1")) }
-                }
-            ]
-        };
-
-        function getToolFormRowsForCurrentExponentMode() {
-            return TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[getCurrentToolExponentMode()] || TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE.plain;
-        }
-
-        function isApplicableOnlyToolNotationMode() {
-            return uiState.toolNotationMode === "applicable";
-        }
-
-        function isIntentCategoryToolNotationMode() {
-            return uiState.toolNotationMode === "categories";
-        }
-
-        function getIntentCategoryCandidateTools(categoryId) {
-            if (categoryId === "commute") {
-                return ["commute"];
-            }
-            if (categoryId === "separate") {
-                return [
-                    "distributeLeftToRight",
-                    "distributeRightToLeft",
-                    "distributeInverseOverProduct",
-                    "expandPowerOfSum",
-                    "distributeExponentOverProduct",
-                    "expandPowerOfPower"
-                ];
-            }
-            if (categoryId === "consolidate") {
-                return [
-                    "factorLeft",
-                    "factorRight",
-                    "factorProductOfInverses",
-                    "combineSameBasePowers",
-                    "factorCommonExponent",
-                    "powerOfPower"
-                ];
-            }
-            if (categoryId === "delete") {
-                return [
-                    "eliminateIdentities",
-                    ...(getCancelOppositesData() ? ["cancelOpposites"] : []),
-                    "cancelProductWithInverse",
-                    "eliminateDoubleInverse",
-                    ...(getDoubleNegativeData() ? ["doubleNegative"] : []),
-                    "zeroProduct",
-                    "eliminateExponentOne",
-                    "eliminateExponentZero",
-                    "oneToAnyPower",
-                    "rewriteInvNegOneToNegOne"
-                ];
-            }
-            if (categoryId === "insert") {
-                const tools = [
-                    "insertIdentityAddZeroBottom",
-                    "insertIdentityMultiplyByOneRight",
-                    "insertDoubleInverse",
-                    "insertExponentOne"
-                ];
-                if (canReplaceOneWithInverseProduct()) {
-                    tools.push("replaceOneWithInverseProduct");
-                }
-                if (canReplaceZeroWithOppositeSum()) {
-                    tools.push("cancelOpposites");
-                }
-                return tools;
-            }
-            if (categoryId === "translateNotation") {
-                return [
-                    "powerToRepeatedProduct",
-                    "repeatedProductToPower",
-                    "rewriteNegativeOneExponentAsInverse",
-                    "rewriteInverseAsNegativeOneExponent"
-                ];
-            }
-            if (categoryId === "numericalRewrite") {
-                return ["numericalRewrite"];
-            }
-            return [];
-        }
-
-        function getApplicableIntentCategoryTools(categoryId) {
-            const applicability = getApplicableTools();
-            return uniqueToolKeys(getIntentCategoryCandidateTools(categoryId)).filter(toolName =>
-                !!TOOL_INFO[toolName] &&
-                isToolAllowedInCurrentLevel(toolName) &&
-                !!applicability[toolName]
-            );
-        }
-
-        function getIntentCategoryIdForTool(toolName) {
-            if (
-                toolName === "numericalEquivalence" ||
-                toolName === "evaluate" ||
-                toolName === "factorNumber" ||
-                toolName === "writeNumberAsSum" ||
-                isNumericalRewriteTool(toolName) ||
-                isStructuredNumericalTool(toolName)
-            ) {
-                return "numericalRewrite";
-            }
-            if (toolName === "replaceOneWithInverseProduct") {
-                return "insert";
-            }
-            const ids = INTENT_RULE_CATEGORIES.map(category => category.id);
-            return ids.find(categoryId => getIntentCategoryCandidateTools(categoryId).includes(toolName)) || null;
-        }
-
-        function getIntentCategoryIconHtml(categoryId) {
-            if (categoryId === "numericalRewrite") {
-                return `<span class="intent-category-math" aria-hidden="true">
-                    <span>1 + 2</span><span class="math-arrow">â†”</span><span>3</span>
-                </span>`;
-            }
-            if (categoryId === "commute") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <g transform="translate(18 2)">
-                        <path class="icon-stroke" d="M32 7 A25 25 0 0 1 57 32"/><path class="icon-fill" d="M57 39 L51 29 L63 29 Z"/>
-                        <path class="icon-stroke" d="M57 32 A25 25 0 0 1 32 57"/><path class="icon-fill" d="M25 57 L35 51 L35 63 Z"/>
-                        <path class="icon-stroke" d="M32 57 A25 25 0 0 1 7 32"/><path class="icon-fill" d="M7 25 L13 35 L1 35 Z"/>
-                        <path class="icon-stroke" d="M7 32 A25 25 0 0 1 32 7"/><path class="icon-fill" d="M39 7 L29 13 L29 1 Z"/>
-                    </g>
-                </svg>`;
-            }
-            if (categoryId === "insert") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <g transform="rotate(-43 50 34)">
-                        <path class="icon-stroke" d="M23 24 H78 Q82 24 82 28 V40 Q82 44 78 44 H23 Z"/>
-                        <path class="icon-stroke" d="M23 24 L8 34 L23 44 Z M68 24 V44"/>
-                        <path class="icon-fill" d="M8 34 L17 30 L17 38 Z"/>
-                    </g>
-                </svg>`;
-            }
-            if (categoryId === "delete") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <g transform="rotate(-43 50 34)">
-                        <rect class="icon-stroke" x="19" y="22" width="64" height="24" rx="6"/>
-                        <path class="icon-stroke" d="M42 22 V46"/>
-                    </g>
-                </svg>`;
-            }
-            if (categoryId === "separate") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <path class="icon-stroke" d="M8 34 H33 C49 34 48 15 68 15 H84 M33 34 C49 34 48 53 68 53 H84"/>
-                    <path class="icon-fill" d="M94 15 L80 7 V23 Z M94 53 L80 45 V61 Z"/>
-                </svg>`;
-            }
-            if (categoryId === "consolidate") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <path class="icon-stroke" d="M8 15 H29 C49 15 48 34 64 34 H84 M8 53 H29 C49 53 48 34 64 34"/>
-                    <path class="icon-fill" d="M94 34 L80 26 V42 Z"/>
-                </svg>`;
-            }
-            if (categoryId === "translateNotation") {
-                return `<span class="intent-category-math translate-notation-math" aria-hidden="true">
-                    <span>(x<sup>2</sup>)<sup>âˆ’1</sup></span>
-                    <span class="math-arrow">â†”</span>
-                    <span class="math-fraction">
-                        <span class="math-numerator">1</span>
-                        <span class="math-denominator">x Â· x</span>
-                    </span>
-                </span>`;
-            }
-            return "";
-        }
-
-        function buildIntentCategoryButtonHtml(categoryId) {
-            const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
-            const label = category ? category.label : categoryId;
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" aria-describedby="intentCategoryDescription">
-                ${getIntentCategoryIconHtml(categoryId)}
-                <span class="intent-category-label">${escapeHtml(label)}</span>
-            </button>`;
-        }
-
-        function buildIntentCategoryMenuHtml() {
-            const changeFormButtonHtml = levelUsesExplodedExponentNode(getCurrentLevel())
-                ? `<div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>`
-                : "";
-            return `<div class="panel-menu-title">Choose an action</div>
-                <div class="intent-category-list">
-                    <div class="intent-category-row single">${buildIntentCategoryButtonHtml("commute")}</div>
-                    <div class="intent-category-row">
-                        ${buildIntentCategoryButtonHtml("insert")}
-                        ${buildIntentCategoryButtonHtml("delete")}
-                    </div>
-                    <div class="intent-category-row">
-                        ${buildIntentCategoryButtonHtml("separate")}
-                        ${buildIntentCategoryButtonHtml("consolidate")}
-                    </div>
-                    ${changeFormButtonHtml}
-                    <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
-                    <div id="intentCategoryDescription" class="intent-category-description" aria-live="polite"><p>Hover over an action to see what it does.</p></div>
-                </div>`;
-        }
-
-        function getIntentCategoryExplodedChoiceEntry(toolName, categoryId) {
-            const A = () => miniValue("A");
-            const zero = () => miniValue("0");
-            const one = () => miniValue("1");
-            const negativeOne = () => miniValue("-1");
-
-            // A few reversible rules share one internal tool name. Choose the
-            // direction represented by the selected rule category.
-            if (categoryId === "insert" && toolName === "cancelOpposites") {
-                return {
-                    tool: toolName,
-                    fromMini: zero(),
-                    toMini: miniSum(A(), miniProd(negativeOne(), A()))
-                };
-            }
-            if (categoryId === "delete" && toolName === "doubleNegative") {
-                return {
-                    tool: toolName,
-                    fromMini: miniProd(negativeOne(), negativeOne()),
-                    toMini: one()
-                };
-            }
-
-            const existing = collectApplicableTransformationEntries()
-                .find(entry => entry.tool === toolName);
-            if (existing) {
-                return existing;
-            }
-
-            const fallbackPairs = {
-                insertIdentity: { fromMini: A(), toMini: miniSum(A(), zero()) },
-                insertIdentityAddZeroTop: { fromMini: A(), toMini: miniSum(zero(), A()) },
-                insertIdentityAddZeroBottom: { fromMini: A(), toMini: miniSum(A(), zero()) },
-                insertIdentityMultiplyByOneLeft: { fromMini: A(), toMini: miniProd(one(), A()) },
-                insertIdentityMultiplyByOneRight: { fromMini: A(), toMini: miniProd(A(), one()) },
-                replaceOneWithInverseProduct: { fromMini: one(), toMini: miniProd(A(), miniInv(A())) },
-                eliminateIdentities: { fromMini: miniSum(A(), zero()), toMini: A() },
-                insertZeroProductLeft: { fromMini: zero(), toMini: miniProd(zero(), A()) },
-                insertZeroProductRight: { fromMini: zero(), toMini: miniProd(A(), zero()) },
-                zeroProduct: { fromMini: miniProd(A(), zero()), toMini: zero() },
-                insertExponentOne: { fromMini: A(), toMini: miniExp(A(), one()) },
-                eliminateExponentOne: { fromMini: miniExp(A(), one()), toMini: A() },
-                eliminateExponentZero: { fromMini: miniExp(A(), zero()), toMini: one() },
-                oneToAnyPower: { fromMini: miniExp(one(), A()), toMini: one() }
-            };
-            const pair = fallbackPairs[toolName];
-            return pair ? { tool: toolName, ...pair } : null;
-        }
-
-        function buildIntentCategoryChoicesHtml(categoryId) {
-            const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
-            const tools = getApplicableIntentCategoryTools(categoryId);
-            let html = `<button class="panel-menu-back-button" data-action="backToIntentCategories">â† Back to categories</button>`;
-            html += `<div class="panel-menu-title">${escapeHtml(category ? category.label : "Choose a rule")}</div>`;
-            if (categoryId === "insert") {
-                const compactInsertLabels = {
-                    insertIdentityAddZeroBottom: "Add",
-                    insertIdentityMultiplyByOneRight: "Multiply",
-                    replaceOneWithInverseProduct: "Inverse Product",
-                    cancelOpposites: "Additive Inverses",
-                    insertDoubleInverse: "Inverse",
-                    insertExponentOne: "Exponent"
-                };
-                const compactInsertAriaLabels = {
-                    replaceOneWithInverseProduct: "Introduce product of inverses",
-                    cancelOpposites: "Introduce additive inverses"
-                };
-                html += `<div class="compact-insert-grid">`;
-                tools.forEach(toolName => {
-                    const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
-                    if (entry) {
-                        const ariaLabel = compactInsertAriaLabels[entry.tool]
-                            || (TOOL_INFO[entry.tool] || entry.tool).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-                        html += `<button class="tool-form-button compact-insert-button" data-tool="${entry.tool}" aria-label="${escapeHtml(ariaLabel)}">
-                            <span class="compact-insert-symbol">${renderMiniOopsSvg(entry.toMini)}</span>
-                            <span class="compact-insert-caption">${compactInsertLabels[entry.tool] || "Introduce"}</span>
-                        </button>`;
-                    }
-                });
-                html += `</div>`;
-                return html;
-            }
-            html += `<div class="small-note">More than one rule applies. Choose the one you intend.</div>`;
-            html += `<div class="tool-form-grid applicable-tool-list intent-category-choices">`;
-            tools.forEach(toolName => {
-                const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
-                if (entry) {
-                    html += `<div class="tool-form-row single applicable-tool-row">${buildApplicableTransformationButtonHtml(entry)}</div>`;
-                }
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        function buildIntentCategoryToolListHtml() {
-            return uiState.activeToolCategory
-                ? buildIntentCategoryChoicesHtml(uiState.activeToolCategory)
-                : buildIntentCategoryMenuHtml();
-        }
-
-        function isToolFormSideAvailable(side) {
-            if (!side) {
-                return false;
-            }
-            if (!side.tool) {
-                return true;
-            }
-
-            // Keep most rules visible even when not exactly applicable.
-            // Legacy arithmetic-level buttons remain filtered for old files;
-            // current files expose only the profile-based Numerical Rewrite.
-            if (isArithmeticEquivalenceTool(side.tool)) {
-                return !!TOOL_INFO[side.tool] && isArithmeticToolAllowedInCurrentLevel(side.tool);
-            }
-            return !!TOOL_INFO[side.tool];
-        }
-
-        function isToolFormRowAvailable(row) {
-            if (row.customNumericalEquivalences) {
-                return true;
-            }
-            if (row.full) {
-                return isToolFormSideAvailable(row.full);
-            }
-            if (row.commutePair) {
-                return getSelectedCommutePartCountForMenu() >= 2;
-            }
-            if (row.distributionPair) {
-                return [row.leftFactored, row.topDistributed, row.bottomDistributed, row.rightFactored]
-                    .some(isToolFormSideAvailable);
-            }
-            if (row.triplet) {
-                return [row.left, row.center, row.right].some(isToolFormSideAvailable);
-            }
-            const leftAvailable = row.leftGroup
-                ? row.leftGroup.some(isToolFormSideAvailable)
-                : isToolFormSideAvailable(row.left);
-            const rightAvailable = row.rightGroup
-                ? row.rightGroup.some(isToolFormSideAvailable)
-                : isToolFormSideAvailable(row.right);
-            return leftAvailable || rightAvailable;
-        }
-
-        function buildCustomNumericalEquivalencesHtml() {
-            const level = getCurrentLevel();
-            const custom = level && Array.isArray(level.customNumericalEquivalences)
-                ? level.customNumericalEquivalences
-                : [];
-            let html = `<div class="tool-form-section-title">Custom numerical equivalences</div>`;
-            if (!custom.length) {
-                html += `<div class="small-note">No custom numerical equivalences have been added to this level yet.</div>`;
-                return html;
-            }
-            html += `<div class="tool-grid">`;
-            custom.forEach((item, index) => {
-                const label = item && item.label
-                    ? item.label
-                    : `Custom equivalence ${index + 1}`;
-                html += `<button data-tool="customNumericalEquivalence${index}">${escapeHtml(label)}</button>`;
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        function miniExpressionToConventionalText(node) {
-            if (!node) {
-                return "";
-            }
-
-            const isNegativeValue = item => item && item.type === "value" && /^-/.test(String(item.text ?? item.value ?? ""));
-            const render = item => {
-                if (!item) {
-                    return "";
-                }
-                if (item.type === "value") {
-                    return String(item.text ?? item.value ?? "");
-                }
-                if (item.type === "sum") {
-                    return (item.args || []).map(render).join("+");
-                }
-                if (item.type === "prod") {
-                    return (item.args || []).map(factor => {
-                        if (!factor) {
-                            return "";
-                        }
-                        if (factor.type === "sum" || isNegativeValue(factor)) {
-                            return `(${render(factor)})`;
-                        }
-                        return render(factor);
-                    }).join("Â·");
-                }
-                if (item.type === "exp") {
-                    const base = item.base || (Array.isArray(item.args) ? item.args[0] : null);
-                    const exponent = item.exponent || (Array.isArray(item.args) ? item.args[1] : null);
-                    const baseText = base && base.type === "value" && !isNegativeValue(base)
-                        ? render(base)
-                        : `(${render(base)})`;
-                    const exponentText = exponent && exponent.type === "value"
-                        ? render(exponent)
-                        : `(${render(exponent)})`;
-                    return `${baseText}^${exponentText}`;
-                }
-                if (item.type === "inv") {
-                    const arg = item.arg || (Array.isArray(item.args) ? item.args[0] : null);
-                    const argText = arg && arg.type === "value" && !isNegativeValue(arg)
-                        ? render(arg)
-                        : `(${render(arg)})`;
-                    return `${argText}^-1`;
-                }
-                return "";
-            };
-
-            return render(node);
-        }
-
-        function getToolFormNotationLabel(side) {
-            if (!side || !side.mini) {
-                return side && side.html ? side.html : "";
-            }
-            if (uiState.toolNotationMode === "conventional") {
-                return `<span class="tool-form-conventional-label">${escapeHtml(miniExpressionToConventionalText(side.mini))}</span>`;
-            }
-            return renderMiniOopsSvg(side.mini);
-        }
-
-        function stripHtmlTags(html) {
-            return String(html || "")
-                .replace(/<[^>]*>/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
-        }
-
-        function getToolFormActionName(side) {
-            if (!side || !side.tool) {
-                return "";
-            }
-            const info = TOOL_INFO[side.tool] || "";
-            const match = info.match(/<span class="rule-name">([\s\S]*?)<\/span>/i);
-            if (match) {
-                return stripHtmlTags(match[1]);
-            }
-            return stripHtmlTags(side.html);
-        }
-
-        function buildToolFormSideHtml(side) {
-            if (!side || !isToolFormSideAvailable(side)) {
-                return `<span class="tool-form-static"></span>`;
-            }
-
-            const labelContent = getToolFormNotationLabel(side);
-            const labelClass = side.mini && uiState.toolNotationMode !== "conventional"
-                ? "tool-form-label tool-form-mini-label"
-                : "tool-form-label";
-            const actionName = uiState.toolNotationMode === "conventional" && side.mini && side.tool
-                ? getToolFormActionName(side)
-                : "";
-            const labelInner = actionName
-                ? `${labelContent}<span class="tool-form-conventional-action">${escapeHtml(actionName)}</span>`
-                : labelContent;
-            const label = `<span class="${labelClass}">${labelInner}</span>`;
-            if (!side.tool) {
-                return `<span class="tool-form-static">${label}</span>`;
-            }
-
-            const title = side.title ? ` title="${escapeHtml(side.title)}"` : "";
-            return `<button class="tool-form-button" data-tool="${side.tool}"${title}>${label}</button>`;
-        }
-
-        function buildToolFormSideOrGroupHtml(side, sideGroup) {
-            if (Array.isArray(sideGroup) && sideGroup.length) {
-                const pieces = [];
-                sideGroup.forEach((groupSide, index) => {
-                    if (index > 0) {
-                        pieces.push(`<span class="tool-form-or">or</span>`);
-                    }
-                    pieces.push(buildToolFormSideHtml(groupSide));
-                });
-                return `<div class="tool-form-inline-group">${pieces.join("")}</div>`;
-            }
-            return buildToolFormSideHtml(side);
-        }
-
-        function buildToolFormCommutePairHtml(row) {
-            if (getSelectedCommutePartCountForMenu() < 2) {
-                return "";
-            }
-            return `<div class="tool-form-row single">${buildToolFormSideHtml({ tool: "commute", html: "Commute" })}</div>`;
-        }
-
-        function buildToolFormDistributionPairHtml(row) {
-            const arrow = `<div class="tool-form-arrow">â‡”</div>`;
-            const empty = `<div class="tool-form-distribution-empty" aria-hidden="true"></div>`;
-            return `<div class="tool-form-distribution-pair">
-                ${buildToolFormSideHtml(row.leftFactored)}
-                ${arrow}
-                ${buildToolFormSideHtml(row.topDistributed)}
-                ${empty}
-                ${empty}
-                ${empty}
-                ${empty}
-                ${buildToolFormSideHtml(row.bottomDistributed)}
-                ${arrow}
-                ${buildToolFormSideHtml(row.rightFactored)}
-            </div>`;
-        }
-
-        function buildToolFormPairHtml(row) {
-            return `<div class="tool-form-pair">
-                ${buildToolFormSideOrGroupHtml(row.left, row.leftGroup)}
-                <div class="tool-form-arrow">${escapeHtml(row.arrow || "â‡”")}</div>
-                ${buildToolFormSideOrGroupHtml(row.right, row.rightGroup)}
-            </div>`;
-        }
-
-        function buildToolFormTripletHtml(row) {
-            return `<div class="tool-form-triplet">
-                ${buildToolFormSideHtml(row.left)}
-                <div class="tool-form-arrow">â‡”</div>
-                ${buildToolFormSideHtml(row.center)}
-                <div class="tool-form-arrow">â‡”</div>
-                ${buildToolFormSideHtml(row.right)}
-            </div>`;
-        }
-
-        function buildToolFormRowHtml(row) {
-            if (row.customNumericalEquivalences) {
-                return buildCustomNumericalEquivalencesHtml();
-            }
-
-            if (row.full) {
-                return `<div class="tool-form-row single">${buildToolFormSideHtml(row.full)}</div>`;
-            }
-
-            if (row.commutePair) {
-                return buildToolFormCommutePairHtml(row);
-            }
-
-            if (row.distributionPair) {
-                return buildToolFormDistributionPairHtml(row);
-            }
-
-            if (row.triplet) {
-                return buildToolFormTripletHtml(row);
-            }
-
-            return buildToolFormPairHtml(row);
-        }
-
-        function getApplicableNotationCommuteMiniPair(toolName) {
-            const isProduct = !!selection.node && selection.node.type === "prod";
-            const combine = (...args) => isProduct ? miniProd(...args) : miniSum(...args);
-            if (toolName === "commute") {
-                return {
-                    from: combine(miniValue("A"), miniValue("B")),
-                    to: combine(miniValue("B"), miniValue("A"))
-                };
-            }
-            if (toolName === "commuteFirstToLast") {
-                return {
-                    from: combine(miniValue("A"), miniValue("B"), miniValue("C")),
-                    to: combine(miniValue("B"), miniValue("C"), miniValue("A"))
-                };
-            }
-            if (toolName === "commuteLastToFirst") {
-                return {
-                    from: combine(miniValue("A"), miniValue("B"), miniValue("C")),
-                    to: combine(miniValue("C"), miniValue("A"), miniValue("B"))
-                };
-            }
-            return null;
-        }
-
-        function pushApplicableTransformationEntry(out, tool, fromMini, toMini) {
-            if (!tool || !fromMini || !toMini) {
-                return;
-            }
-            if (!TOOL_INFO[tool] || !isToolAllowedInCurrentLevel(tool) || !isToolActuallyApplicable(tool)) {
-                return;
-            }
-            out.push({ tool, fromMini, toMini });
-        }
-
-        function collectApplicableTransformationEntries() {
-            const entries = [];
-            const modes = ["plain", "exponent", "inverse"];
-
-            for (const mode of modes) {
-                (TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[mode] || []).forEach(row => {
-                    if (!row) {
-                        return;
-                    }
-                    if (row.commutePair) {
-                        if (shouldShowSingleCommuteButtonForSelection()) {
-                            const pair = getApplicableNotationCommuteMiniPair("commute");
-                            if (pair) {
-                                pushApplicableTransformationEntry(entries, "commute", pair.from, pair.to);
-                            }
-                        } else if (shouldShowDirectionalCommuteButtonsForSelection()) {
-                            const firstPair = getApplicableNotationCommuteMiniPair("commuteFirstToLast");
-                            const lastPair = getApplicableNotationCommuteMiniPair("commuteLastToFirst");
-                            if (firstPair) {
-                                pushApplicableTransformationEntry(entries, "commuteFirstToLast", firstPair.from, firstPair.to);
-                            }
-                            if (lastPair) {
-                                pushApplicableTransformationEntry(entries, "commuteLastToFirst", lastPair.from, lastPair.to);
-                            }
-                        }
-                        return;
-                    }
-                    if (row.distributionPair) {
-                        pushApplicableTransformationEntry(entries, row.leftFactored && row.leftFactored.tool, row.topDistributed && row.topDistributed.mini, row.leftFactored && row.leftFactored.mini);
-                        pushApplicableTransformationEntry(entries, row.topDistributed && row.topDistributed.tool, row.leftFactored && row.leftFactored.mini, row.topDistributed && row.topDistributed.mini);
-                        pushApplicableTransformationEntry(entries, row.rightFactored && row.rightFactored.tool, row.bottomDistributed && row.bottomDistributed.mini, row.rightFactored && row.rightFactored.mini);
-                        pushApplicableTransformationEntry(entries, row.bottomDistributed && row.bottomDistributed.tool, row.rightFactored && row.rightFactored.mini, row.bottomDistributed && row.bottomDistributed.mini);
-                        return;
-                    }
-                    if (row.triplet) {
-                        pushApplicableTransformationEntry(entries, row.left && row.left.tool, row.center && row.center.mini, row.left && row.left.mini);
-                        pushApplicableTransformationEntry(entries, row.center && row.center.tool, row.left && row.left.mini, row.center && row.center.mini);
-                        pushApplicableTransformationEntry(entries, row.right && row.right.tool, row.center && row.center.mini, row.right && row.right.mini);
-                        pushApplicableTransformationEntry(entries, row.center && row.center.tool, row.right && row.right.mini, row.center && row.center.mini);
-                        return;
-                    }
-                    if (row.left && row.right) {
-                        pushApplicableTransformationEntry(entries, row.left.tool, row.right.mini, row.left.mini);
-                        pushApplicableTransformationEntry(entries, row.right.tool, row.left.mini, row.right.mini);
-                    }
-                });
-            }
-
-            return entries;
-        }
-
-        function buildApplicableTransformationButtonHtml(entry) {
-            return `<button class="tool-form-button applicable-tool-button" data-tool="${entry.tool}">
-                <span class="applicable-tool-flow">
-                    <span class="applicable-tool-side">${renderMiniOopsSvg(entry.fromMini)}</span>
-                    <span class="applicable-tool-arrow">â†’</span>
-                    <span class="applicable-tool-side">${renderMiniOopsSvg(entry.toMini)}</span>
-                </span>
-            </button>`;
-        }
-
-        function buildApplicableToolListHtml() {
-            const entries = collectApplicableTransformationEntries();
-            let html = `<div class="tool-form-grid applicable-tool-list">`;
-            if (!entries.length) {
-                html += `<div class="small-note">No applicable transformation rules are available for the current selection.</div>`;
-                html += `</div>`;
-                return html;
-            }
-            entries.forEach(entry => {
-                html += `<div class="tool-form-row single applicable-tool-row">${buildApplicableTransformationButtonHtml(entry)}</div>`;
-            });
-            html += `</div>`;
-            return html;
-        }
-
-        function isLeftPanelShowingToolMenu() {
-            return levelContent && !!levelContent.querySelector(".panel-tool-menu");
-        }
-
-        function isToolActuallyApplicable(toolName) {
-            const applicable = getApplicableTools();
-            return !!applicable[toolName];
-        }
-
-        const workspaceSvg = document.getElementById("expressionWorkspaceSvg");
-        const ctx = createSvgContext(workspaceSvg);
-        const floatingToolMenu = document.getElementById("floatingToolMenu");
-        const divider = document.getElementById("divider");
-        const leftPanel = document.getElementById("leftPanel");
-        const svgContainer = document.getElementById("svgContainer");
-        const targetExpressionSvg = document.getElementById("targetExpressionSvg");
-        const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
-        const currentExpressionSvg = document.getElementById("currentExpressionSvg");
-        const currentExpressionCtx = currentExpressionSvg ? createSvgContext(currentExpressionSvg) : null;
-        const inspectExitButton = document.getElementById("inspectExitButton");
-
-        const LEVELS = [];
-
-        function inferVariablesFromExpressionTextForLevel(text) {
-            const matches = String(text || "").match(/[a-zA-Z]/g) || [];
-            return Array.from(new Set(matches)).sort();
-        }
-
-        LEVELS.forEach(level => {
-            if (!Array.isArray(level.variables) || !level.variables.length) {
-                level.variables = inferVariablesFromExpressionTextForLevel(level.startExpression);
-            }
-        });
-
-
-
-        const levelFileInput = document.getElementById("levelFileInput");
-        const loadedLevelFileName = document.getElementById("loadedLevelFileName");
-        const levelContent = document.getElementById("levelContent");
-        const moveHistoryControls = document.getElementById("moveHistoryControls");
-        const regularModeRadio = document.getElementById("regularModeRadio");
-        const demoModeRadio = document.getElementById("demoModeRadio");
-
-        const PLAY_MODES = {
-            regular: "regular",
-            demo: "demo"
-        };
-
-        let playMode = PLAY_MODES.regular;
-        let demoStepIndex = 0;
-
-        let currentLevelIndex = 0;
-        let completedSteps = [];
-        let currentExpressionRoot = null;
-        let inspectSavedExpressionRoot = null;
-        let solutionRecorder = null;
-        let completionExportReadyForRun = false;
-        let completionExportCompletedAtDate = null;
-
-        let internalClipboardText = "";
-        let isDraggingDivider = false;
-
-        divider.addEventListener("mousedown", () => {
-            isDraggingDivider = true;
-            document.body.style.cursor = "col-resize";
-        });
-
-        document.addEventListener("mousemove", e => {
-            if (!isDraggingDivider) {
-                return;
-            }
-
-            let percent = (e.clientX / window.innerWidth) * 100;
-            percent = Math.max(10, Math.min(50, percent));
-            leftPanel.style.width = percent + "%";
-            drawExpression();
-        });
-
-        document.addEventListener("mouseup", () => {
-            if (!isDraggingDivider) {
-                return;
-            }
-            isDraggingDivider = false;
-            document.body.style.cursor = "default";
-        });
-
-
-
-        function cloneExpressionTree(node) {
-            return node ? cloneNode(node) : null;
-        }
-
-        const BUILDER_HISTORY_LIMIT = 100;
-
-        function cloneBuilderNodeForHistory(node) {
-            if (!node) {
-                return null;
-            }
-            const cloned = new ExprNode(
-                node.type,
-                node.args.map(cloneBuilderNodeForHistory),
-                node.value
-            );
-            cloned.isBuilderPlaceholder = !!node.isBuilderPlaceholder;
-            cloned.isBuilderOuter = !!node.isBuilderOuter;
-            cloned.isBuilderActive = !!node.isBuilderActive;
-            return cloned;
-        }
-
-        function getBuilderUndoSnapshot(builder) {
-            return {
-                root: cloneBuilderNodeForHistory(builder.root),
-                currentPath: builder.currentPath.slice()
-            };
-        }
-
-        function pushExpressionBuilderUndoState() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return;
-            }
-            if (!Array.isArray(builder.history)) {
-                builder.history = [];
-            }
-            builder.history.push(getBuilderUndoSnapshot(builder));
-            if (builder.history.length > BUILDER_HISTORY_LIMIT) {
-                builder.history.shift();
-            }
-        }
-
-        function undoExpressionBuilderStep() {
-            const builder = uiState.expressionBuilder;
-            if (!builder || !Array.isArray(builder.history) || !builder.history.length) {
-                uiState.message = "There is nothing to undo yet.";
-                renderToolArea();
-                return false;
-            }
-            const snapshot = builder.history.pop();
-            builder.root = snapshot.root;
-            builder.currentPath = snapshot.currentPath;
-            uiState.message = "";
-            refreshExpressionBuilderPreview();
-            return true;
-        }
-
-        function syncCurrentExpressionRoot() {
-            if (uiState.mode === "edit") {
-                currentExpressionRoot = expressionRoot;
-            }
-        }
-
-        function renderCurrentExpressionDisplay() {
-            if (uiState && uiState.mode === "inspect") {
-                const level = getCurrentLevel();
-                const targetText = level && level.steps && level.steps[uiState.inspectStepIndex]
-                    ? level.steps[uiState.inspectStepIndex].expression
-                    : "";
-                const currentText = currentExpressionRoot
-                    ? expressionToFullyParenthesizedText(currentExpressionRoot)
-                    : (expressionRoot ? expressionToFullyParenthesizedText(expressionRoot) : "");
-
-                drawParenthesizedExpressionSvg(targetText, targetExpressionSvg, targetExpressionCtx);
-                drawParenthesizedExpressionSvg(currentText, currentExpressionSvg, currentExpressionCtx);
-                return;
-            }
-
-            clearParenthesizedExpressionSvg(targetExpressionSvg, targetExpressionCtx);
-            clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
-        }
-
-        function getMatchingParenthesisPairs(text) {
-            const stack = [];
-            const pairs = [];
-
-            for (let i = 0; i < text.length; i++) {
-                const ch = text[i];
-                if (ch === "(") {
-                    stack.push(i);
-                } else if (ch === ")") {
-                    const openIndex = stack.pop();
-                    if (openIndex !== undefined) {
-                        pairs.push({ openIndex, closeIndex: i });
-                    }
-                }
-            }
-
-            return pairs;
-        }
-
-        function isCompressedPreviewCharacter(ch) {
-            return ch !== "(" && ch !== ")";
-        }
-
-        function buildCompressedExpressionLayout(ctx, text, startX, baselineY) {
-            const visibleChars = [];
-            const originalToVisible = new Map();
-            let visibleText = "";
-            let cursorX = startX;
-
-            for (let i = 0; i < text.length; i++) {
-                const ch = text[i];
-                if (!isCompressedPreviewCharacter(ch)) {
-                    continue;
-                }
-
-                const metrics = ctx.measureText(ch);
-                const width = metrics.width;
-                const ascent = Math.abs(metrics.actualBoundingBoxAscent || 10);
-                const descent = Math.abs(metrics.actualBoundingBoxDescent || 4);
-                const info = {
-                    originalIndex: i,
-                    ch,
-                    x: cursorX,
-                    width,
-                    centerX: cursorX + width / 2,
-                    centerY: baselineY - ascent + (ascent + descent) / 2
-                };
-
-                visibleChars.push(info);
-                originalToVisible.set(i, info);
-                visibleText += ch;
-                cursorX += width;
-            }
-
-            return {
-                visibleText,
-                visibleChars,
-                originalToVisible,
-                width: cursorX - startX
-            };
-        }
-
-        function findFirstVisibleCharInsidePair(visibleChars, pair) {
-            for (const info of visibleChars) {
-                if (info.originalIndex > pair.openIndex && info.originalIndex < pair.closeIndex) {
-                    return info;
-                }
-            }
-            return null;
-        }
-
-        function findLastVisibleCharInsidePair(visibleChars, pair) {
-            for (let i = visibleChars.length - 1; i >= 0; i--) {
-                const info = visibleChars[i];
-                if (info.originalIndex > pair.openIndex && info.originalIndex < pair.closeIndex) {
-                    return info;
-                }
-            }
-            return null;
-        }
-
-        function getCompressedParenthesisArcDescriptors(text, compressedLayout, arcBaselineY) {
-            const arcs = [];
-            const pairs = getMatchingParenthesisPairs(text);
-
-            for (const pair of pairs) {
-                const firstVisible = findFirstVisibleCharInsidePair(compressedLayout.visibleChars, pair);
-                const lastVisible = findLastVisibleCharInsidePair(compressedLayout.visibleChars, pair);
-                if (!firstVisible || !lastVisible) {
-                    continue;
-                }
-
-                // The literal parenthesis marks are gone, so the grouping arc spans
-                // the visible substring that used to be inside that parenthesis pair.
-                const startX = firstVisible.x;
-                const endX = lastVisible.x + lastVisible.width;
-                const radius = (endX - startX) / 2;
-                if (!(radius > 0)) {
-                    continue;
-                }
-
-                arcs.push({
-                    startX,
-                    endX,
-                    centerX: (startX + endX) / 2,
-                    centerY: arcBaselineY,
-                    radius,
-                    openIndex: pair.openIndex,
-                    closeIndex: pair.closeIndex
-                });
-            }
-
-            return arcs;
-        }
-
-        function drawCompressedParenthesisSemicircles(ctx, arcs) {
-            if (!arcs.length) {
-                return;
-            }
-
-            ctx.save();
-            ctx.strokeStyle = "#000000";
-            ctx.lineWidth = 1.2;
-
-            // Draw larger grouping arcs first so smaller local groupings remain readable on top.
-            const sortedArcs = arcs.slice().sort((a, b) => b.radius - a.radius);
-            for (const arc of sortedArcs) {
-                ctx.beginPath();
-                // Draw the lower half of the circle so the connector opens upward.
-                ctx.arc(arc.centerX, arc.centerY, arc.radius, 0, Math.PI, false);
-                ctx.stroke();
-            }
-
-            ctx.restore();
-        }
-
-        function clearParenthesizedExpressionSvg(svgElement, svgContext) {
-            if (!svgElement || !svgContext) {
-                return;
-            }
-
-            setSvgSize(svgElement, 1, 1);
-            svgContext.clearRect(0, 0, 1, 1);
-        }
-
-        function drawParenthesizedExpressionSvg(text, svgElement, svgContext) {
-            if (!svgElement || !svgContext) {
-                return;
-            }
-
-            const font = "16px Verdana, Arial, Helvetica, sans-serif";
-            const paddingX = 10;
-            const paddingY = 8;
-            const expressionBaseline = paddingY + 16;
-            const arcBaseline = expressionBaseline + 12;
-            const parentWidth = svgElement.parentElement
-                ? svgElement.parentElement.clientWidth
-                : 0;
-
-            svgContext.font = font;
-            svgContext.textAlign = "left";
-            svgContext.textBaseline = "alphabetic";
-
-            const compressedLayout = buildCompressedExpressionLayout(
-                svgContext,
-                text,
-                paddingX,
-                expressionBaseline
-            );
-            const arcs = getCompressedParenthesisArcDescriptors(text, compressedLayout, arcBaseline);
-
-            let maxArcBottom = arcBaseline + paddingY;
-            for (const arc of arcs) {
-                maxArcBottom = Math.max(maxArcBottom, arc.centerY + arc.radius + paddingY);
-            }
-
-            const cssWidth = Math.max(1, Math.ceil(Math.max(compressedLayout.width + paddingX * 2, parentWidth)));
-            const cssHeight = Math.max(1, Math.ceil(maxArcBottom + 2));
-
-            setSvgSize(svgElement, cssWidth, cssHeight);
-            svgContext.clearRect(0, 0, cssWidth, cssHeight);
-            svgContext.font = font;
-            svgContext.textAlign = "left";
-            svgContext.textBaseline = "alphabetic";
-
-            const redrawnCompressedLayout = buildCompressedExpressionLayout(
-                svgContext,
-                text,
-                paddingX,
-                expressionBaseline
-            );
-            const redrawnArcs = getCompressedParenthesisArcDescriptors(text, redrawnCompressedLayout, arcBaseline);
-
-            svgContext.fillStyle = "#000000";
-            svgContext.fillText(redrawnCompressedLayout.visibleText, paddingX, expressionBaseline);
-            drawCompressedParenthesisSemicircles(svgContext, redrawnArcs);
-        }
-
-        function enterInspectMode(stepIndex) {
-            if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
-                return;
-            }
-
-            const level = getCurrentLevel();
-            if (!level || !level.steps || !level.steps[stepIndex]) {
-                return;
-            }
-
-            currentExpressionRoot = cloneExpressionTree(currentExpressionRoot || expressionRoot);
-            expressionRoot = currentExpressionRoot;
-
-            uiState.mode = "inspect";
-            uiState.inspectStepIndex = stepIndex;
-            document.body.classList.add("inspect-mode");
-
-            clearSelection();
-            clearInteraction();
-            hideFloatingMenu();
-
-            if (inspectExitButton) {
-                inspectExitButton.classList.add("hidden");
-            }
-
-            layoutExpression(expressionRoot);
-            renderCurrentExpressionDisplay();
-            renderLevelInfo(currentLevelIndex);
-            drawExpression();
-        }
-
-        function exitInspectMode() {
-            if (uiState.mode !== "inspect") {
-                return;
-            }
-
-            expressionRoot = currentExpressionRoot || expressionRoot;
-            expressionRoot = normalizeExpressionTree(expressionRoot);
-            currentExpressionRoot = expressionRoot;
-            inspectSavedExpressionRoot = null;
-
-            uiState.mode = "edit";
-            uiState.inspectStepIndex = -1;
-            document.body.classList.remove("inspect-mode");
-
-            clearSelection();
-            clearInteraction();
-            hideFloatingMenu();
-
-            if (inspectExitButton) {
-                inspectExitButton.classList.add("hidden");
-            }
-
-            layoutExpression(expressionRoot);
-            renderCurrentExpressionDisplay();
-            renderLevelInfo(currentLevelIndex);
-            refreshStatus();
-            drawExpression();
-        }
-
-        function renderLeftPanelMath() {
-            const placeholders = leftPanel.querySelectorAll(".katex-placeholder");
-            if (!window.katex) {
-                placeholders.forEach(node => {
-                    const expr = node.getAttribute("data-expr") || "";
-                    node.textContent = expr;
-                });
-                return;
-            }
-
-            placeholders.forEach(node => {
-                const expr = node.getAttribute("data-expr") || "";
-                node.innerHTML = "";
-                katex.render(expr, node, {
-                    throwOnError: false,
-                    displayMode: false
-                });
-            });
-        }
-
-        function isDemoOnlyLevel(level) {
-            if (!level) {
-                return false;
-            }
-            return level.kind === "demoOnly" || level.type === "demoOnly" || level.mode === "demoOnly";
-        }
-
-        function isInteractiveLevel(level) {
-            return !!level && !isDemoOnlyLevel(level);
-        }
-
-        function clonePlainData(value) {
-            return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-        }
-
-        function getExpressionTextForTrace() {
-            return expressionRoot ? expressionToFullyParenthesizedText(expressionRoot) : "";
-        }
-
-        function makeLevelDefinitionForExport(level) {
-            const copy = clonePlainData(level || {});
-            if (!copy) {
-                return {};
-            }
-            delete copy.demo;
-            delete copy.sourceLevel;
-            delete copy.recordedActions;
-            delete copy.completedAt;
-            delete copy.createdAt;
-            copy.kind = "interactive";
-            return copy;
-        }
-
-        function formatCompletionIdStamp(date) {
-            return date.toISOString()
-                .replace(/\.\d{3}Z$/, "Z")
-                .replace(/[^0-9A-Za-z]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .toLowerCase();
-        }
-
-        function formatCompletionTitleStamp(date) {
-            try {
-                return date.toLocaleString();
-            } catch (err) {
-                return date.toISOString();
-            }
-        }
-
-        function resetSolutionRecorderForCurrentLevel() {
-            const level = getCurrentLevel();
-            completionExportReadyForRun = false;
-            completionExportCompletedAtDate = null;
-            if (!isInteractiveLevel(level)) {
-                solutionRecorder = null;
-                return;
-            }
-            solutionRecorder = {
-                format: "exploded-algebra-solution-trace-v3",
-                createdAt: new Date().toISOString(),
-                levelId: level.id || "",
-                levelTitle: level.title || "",
-                startExpression: level.startExpression || "",
-                actions: [],
-                demoSteps: []
-            };
-        }
-
-        function recordSolutionAction(action, demoStep) {
-            const level = getCurrentLevel();
-            if (!solutionRecorder || !isInteractiveLevel(level) || isDemoModeActive()) {
-                return;
-            }
-            const actionCopy = clonePlainData(action || {});
-            if (actionCopy) {
-                actionCopy.index = solutionRecorder.actions.length;
-                solutionRecorder.actions.push(actionCopy);
-            }
-            if (demoStep) {
-                solutionRecorder.demoSteps.push(clonePlainData(demoStep));
-            }
-        }
-
-        function recordCurrentSelectionForSolution() {
-            const selectedExpression = cloneSelectedRangeNode();
-            if (!selectedExpression || !selection.node || selection.status !== "yes") {
-                return;
-            }
-            const expression = expressionToFullyParenthesizedText(selectedExpression);
-            recordSolutionAction({
-                type: "select",
-                expression,
-                selectedType: selectedExpression.type,
-                firstPart: selection.firstPart,
-                lastPart: selection.lastPart,
-                beforeExpression: getExpressionTextForTrace()
-            }, {
-                type: "select",
-                expression
-            });
-        }
-
-        function recordToolForSolution(toolName, beforeExpression) {
-            recordSolutionAction({
-                type: "tool",
-                tool: toolName,
-                beforeExpression: beforeExpression || getExpressionTextForTrace(),
-                afterExpression: getExpressionTextForTrace()
-            }, {
-                type: "tool",
-                tool: toolName
-            });
-        }
-
-        function recordActionForSolution(action, value, beforeExpression) {
-            const step = { type: "action", action };
-            if (value !== undefined && value !== null && value !== "") {
-                step.value = String(value);
-            }
-            recordSolutionAction({
-                ...step,
-                beforeExpression: beforeExpression || getExpressionTextForTrace(),
-                afterExpression: getExpressionTextForTrace()
-            }, step);
-        }
-
-        function recordBuilderForSolution(action, value, beforeExpression) {
-            const step = { type: "builder", action };
-            if (value !== undefined && value !== null && value !== "") {
-                step.value = String(value);
-            }
-            recordSolutionAction({
-                ...step,
-                beforeExpression: beforeExpression || getExpressionTextForTrace(),
-                afterExpression: getExpressionTextForTrace()
-            }, step);
-        }
-
-        function recordCommuteChoiceForSolution(clickedIndex, beforeExpression) {
-            if (!selection.node || clickedIndex < selection.firstPart || clickedIndex > selection.lastPart) {
-                return;
-            }
-            const relativeIndex = clickedIndex - selection.firstPart;
-            const expression = expressionToFullyParenthesizedText(selection.node.args[clickedIndex]);
-            const step = {
-                type: "commuteChoice",
-                relativeIndex,
-                expression
-            };
-            recordSolutionAction({
-                ...step,
-                beforeExpression: beforeExpression || getExpressionTextForTrace(),
-                afterExpression: getExpressionTextForTrace()
-            }, step);
-        }
-
-        function makeDemoOnlyLevelFromCurrentRun(completedAtDate) {
-            const level = getCurrentLevel();
-            const completedAt = completedAtDate.toISOString();
-            const sourceLevel = makeLevelDefinitionForExport(level);
-            const idBase = String(level && level.id ? level.id : "level").replace(/[^0-9A-Za-z_-]+/g, "-");
-            const id = `${idBase}-demo-${formatCompletionIdStamp(completedAtDate)}`;
-            const title = `Demo: ${level && level.title ? level.title : "Untitled Level"} (${formatCompletionTitleStamp(completedAtDate)})`;
-            return {
-                ...clonePlainData(sourceLevel),
-                kind: "demoOnly",
-                id,
-                title,
-                sourceLevelId: sourceLevel.id || "",
-                sourceLevelTitle: sourceLevel.title || "",
-                createdAt: solutionRecorder ? solutionRecorder.createdAt : completedAt,
-                completedAt,
-                startExpression: sourceLevel.startExpression || "",
-                evaluationLevel: sourceLevel.evaluationLevel,
-                numericalRewrite: clonePlainData(sourceLevel.numericalRewrite),
-                variables: clonePlainData(sourceLevel.variables || []),
-                steps: clonePlainData(sourceLevel.steps || []),
-                sourceLevel,
-                demo: {
-                    steps: clonePlainData(solutionRecorder ? solutionRecorder.demoSteps : [])
-                },
-                recordedActions: clonePlainData(solutionRecorder ? solutionRecorder.actions : [])
-            };
-        }
-
-        function downloadMoveHistoryJson(demoOnlyLevel) {
-            const json = `${JSON.stringify(demoOnlyLevel, null, 2)}\n`;
-            const blob = new Blob([json], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const safeId = String(demoOnlyLevel && demoOnlyLevel.id ? demoOnlyLevel.id : "move-history")
-                .replace(/[^0-9A-Za-z_-]+/g, "-")
-                .replace(/^-+|-+$/g, "") || "move-history";
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${safeId}.json`;
-            link.style.display = "none";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
-        function maybePrepareCompletedLevelExport(level) {
-            if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level)) {
-                return;
-            }
-            if (!level || !Array.isArray(level.steps) || !level.steps.length) {
-                return;
-            }
-            const finalIndex = level.steps.length - 1;
-            if (!completedSteps[finalIndex]) {
-                return;
-            }
-            completionExportReadyForRun = true;
-            completionExportCompletedAtDate = new Date();
-            solutionRecorder.completedAt = completionExportCompletedAtDate.toISOString();
-            solutionRecorder.finalExpression = getExpressionTextForTrace();
-        }
-
-        function isMultiTermCommuteToolName(toolName) {
-            return toolName === "commute" || toolName === "commuteTerms" || toolName === "commuteFactors";
-        }
-
-        function matchPermutationOrder(sourceArgs, candidateArgs) {
-            if (!Array.isArray(sourceArgs) || !Array.isArray(candidateArgs) || sourceArgs.length !== candidateArgs.length) {
-                return null;
-            }
-            const used = new Set();
-            const order = [];
-            for (const candidate of candidateArgs) {
-                let matchIndex = -1;
-                for (let index = 0; index < sourceArgs.length; index++) {
-                    if (!used.has(index) && sameExpressionForMatching(sourceArgs[index], candidate)) {
-                        matchIndex = index;
-                        break;
-                    }
-                }
-                if (matchIndex < 0) {
-                    return null;
-                }
-                used.add(matchIndex);
-                order.push(matchIndex);
-            }
-            return order;
-        }
-
-        function inferLegacyCommuteOrder(selectedExpressionText, afterExpressionText) {
-            if (!selectedExpressionText || !afterExpressionText) {
-                return null;
-            }
-            try {
-                const selectedNode = normalizeExpressionTree(textToExpression(selectedExpressionText));
-                const afterRoot = normalizeExpressionTree(textToExpression(afterExpressionText));
-                if (!selectedNode || (selectedNode.type !== "sum" && selectedNode.type !== "prod") || selectedNode.args.length < 3) {
-                    return null;
-                }
-
-                const candidates = [];
-                traversePreOrder(afterRoot, node => {
-                    if (!node || node.type !== selectedNode.type || node.args.length < selectedNode.args.length) {
-                        return;
-                    }
-                    const length = selectedNode.args.length;
-                    for (let first = 0; first <= node.args.length - length; first++) {
-                        const order = matchPermutationOrder(selectedNode.args, node.args.slice(first, first + length));
-                        if (!order || order.every((sourceIndex, targetIndex) => sourceIndex === targetIndex)) {
-                            continue;
-                        }
-                        candidates.push({
-                            order,
-                            exactNode: node.args.length === length
-                        });
-                    }
-                });
-                candidates.sort((a, b) => Number(b.exactNode) - Number(a.exactNode));
-                return candidates.length ? candidates[0].order : null;
-            } catch (error) {
-                return null;
-            }
-        }
-
-        function upgradeLegacyCommuteDemoSteps(level) {
-            if (
-                !isDemoOnlyLevel(level) ||
-                !level.demo ||
-                !Array.isArray(level.demo.steps) ||
-                !Array.isArray(level.recordedActions)
-            ) {
-                return;
-            }
-
-            const originalSteps = level.demo.steps;
-            const actions = level.recordedActions;
-            const upgradedSteps = [];
-
-            originalSteps.forEach((step, index) => {
-                upgradedSteps.push(step);
-                if (
-                    !step ||
-                    step.type !== "tool" ||
-                    !isMultiTermCommuteToolName(step.tool) ||
-                    (originalSteps[index + 1] && originalSteps[index + 1].type === "commuteChoice")
-                ) {
-                    return;
-                }
-
-                const selectionAction = actions[index - 1];
-                const followingAction = actions[index + 1];
-                if (
-                    !selectionAction ||
-                    selectionAction.type !== "select" ||
-                    selectionAction.lastPart - selectionAction.firstPart + 1 < 3 ||
-                    !followingAction ||
-                    typeof followingAction.beforeExpression !== "string"
-                ) {
-                    return;
-                }
-
-                const order = inferLegacyCommuteOrder(selectionAction.expression, followingAction.beforeExpression);
-                if (!order) {
-                    return;
-                }
-
-                let selectedNode = null;
-                try {
-                    selectedNode = normalizeExpressionTree(textToExpression(selectionAction.expression));
-                } catch (error) {
-                    return;
-                }
-                order.forEach(relativeIndex => {
-                    upgradedSteps.push({
-                        type: "commuteChoice",
-                        relativeIndex,
-                        expression: expressionToFullyParenthesizedText(selectedNode.args[relativeIndex])
-                    });
-                });
-            });
-
-            level.demo.steps = upgradedSteps;
-        }
-
-        function normalizeTextBlocks(value) {
-            if (Array.isArray(value)) {
-                return value.map(item => String(item).trim()).filter(Boolean);
-            }
-            return typeof value === "string" && value.trim() ? [value.trim()] : [];
-        }
-
-        function isValidTextBlocks(value) {
-            return (typeof value === "string" && !!value.trim()) || (
-                Array.isArray(value) &&
-                value.length > 0 &&
-                value.every(item => typeof item === "string" && !!item.trim())
-            );
-        }
-
-        function expressionTreeContainsExponent(node) {
-            return !!node && (
-                node.type === "exp" ||
-                (Array.isArray(node.args) && node.args.some(expressionTreeContainsExponent))
-            );
-        }
-
-        const EXPLODED_STEP_EXPRESSION_FIELDS = [
-            "expression",
-            "explodedExpression",
-            "beforeExpression",
-            "afterExpression",
-            "beforeExplodedExpression",
-            "afterExplodedExpression"
-        ];
-        const EXPLODED_STEP_VARIANT_FIELDS = ["preCompletion", "postCompletion"];
-        const explodedExponentAvailabilityCache = new WeakMap();
-
-        function getExplodedExpressionTextsForStep(step) {
-            if (!step || typeof step !== "object") {
-                return [];
-            }
-            const texts = EXPLODED_STEP_EXPRESSION_FIELDS
-                .map(fieldName => step[fieldName])
-                .filter(value => typeof value === "string" && !!value.trim());
-            EXPLODED_STEP_VARIANT_FIELDS.forEach(variantFieldName => {
-                const variant = step[variantFieldName];
-                if (!variant || typeof variant !== "object") {
-                    return;
-                }
-                ["expression", "explodedExpression"].forEach(fieldName => {
-                    const value = variant[fieldName];
-                    if (typeof value === "string" && value.trim()) {
-                        texts.push(value);
-                    }
-                });
-            });
-            return [...new Set(texts)];
-        }
-
-        function levelUsesExplodedExponentNode(level) {
-            if (!level || typeof level !== "object") {
-                return false;
-            }
-            if (explodedExponentAvailabilityCache.has(level)) {
-                return explodedExponentAvailabilityCache.get(level);
-            }
-
-            const explodedExpressionTexts = [];
-            if (typeof level.startExpression === "string" && level.startExpression.trim()) {
-                explodedExpressionTexts.push(level.startExpression);
-            }
-            (level.steps || []).forEach(step => {
-                explodedExpressionTexts.push(...getExplodedExpressionTextsForStep(step));
-            });
-
-            const containsExponent = [...new Set(explodedExpressionTexts)].some(expressionText => {
-                try {
-                    return expressionTreeContainsExponent(textToExpression(expressionText));
-                } catch (error) {
-                    return false;
-                }
-            });
-            explodedExponentAvailabilityCache.set(level, containsExponent);
-            return containsExponent;
-        }
-
-        function expressionTextsMatch(firstText, secondText) {
-            try {
-                const first = normalizeExpressionTree(textToExpression(firstText));
-                const second = normalizeExpressionTree(textToExpression(secondText));
-                return sameExpressionForMatching(first, second);
-            } catch (error) {
-                return false;
-            }
-        }
-
-        function validateChosenLevel(level, fileName) {
-            const sourceName = fileName || "The selected file";
-            if (!level || typeof level !== "object" || Array.isArray(level)) {
-                throw new Error(`${sourceName} must contain one JSON level object.`);
-            }
-            if (typeof level.id !== "string" || !level.id.trim()) {
-                throw new Error(`${sourceName} is missing a valid id.`);
-            }
-            if (typeof level.title !== "string" || !level.title.trim()) {
-                throw new Error(`${sourceName} is missing a valid title.`);
-            }
-            if (typeof level.startExpression !== "string" || !level.startExpression.trim()) {
-                throw new Error(`${sourceName} is missing a valid startExpression.`);
-            }
-            if (!Array.isArray(level.steps) || level.steps.length === 0) {
-                throw new Error(`${sourceName} must contain at least one step.`);
-            }
-            if (level.description !== undefined && (typeof level.description !== "string" || !level.description.trim())) {
-                throw new Error(`${sourceName} has an invalid description.`);
-            }
-            if (level.instructions !== undefined) {
-                if (!isValidTextBlocks(level.instructions)) {
-                    throw new Error(`${sourceName} has invalid instructions.`);
-                }
-            }
-            [
-                "instruction",
-                "introduction",
-                "conclusion",
-                "exerciseInfo",
-                "completionMessage"
-            ].forEach(fieldName => {
-                if (level[fieldName] === undefined) {
-                    return;
-                }
-                if (!isValidTextBlocks(level[fieldName])) {
-                    throw new Error(`${sourceName} has an invalid ${fieldName}.`);
-                }
-            });
-            if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
-                throw new Error(`${sourceName} has an invalid initialKatex.`);
-            }
-            if (level.numericalRewrite !== undefined) {
-                validateNumericalRewriteProfileDefinition(level.numericalRewrite, sourceName);
-            }
-
-            textToExpression(level.startExpression);
-            level.steps.forEach((step, index) => {
-                if (!step || typeof step.expression !== "string" || !step.expression.trim()) {
-                    throw new Error(`${sourceName} has an invalid expression in step ${index + 1}.`);
-                }
-                textToExpression(step.expression);
-                ["guidance", "introduction", "conclusion"].forEach(fieldName => {
-                    if (step[fieldName] === undefined) {
-                        return;
-                    }
-                    if (!isValidTextBlocks(step[fieldName])) {
-                        throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
-                    }
-                });
-                ["katex", "beforeKatex", "afterKatex"].forEach(fieldName => {
-                    if (step[fieldName] !== undefined && (typeof step[fieldName] !== "string" || !step[fieldName].trim())) {
-                        throw new Error(`${sourceName} has an invalid ${fieldName} in step ${index + 1}.`);
-                    }
-                });
-                getExplodedExpressionTextsForStep(step).forEach(expressionText => {
-                    textToExpression(expressionText);
-                });
-            });
-
-            const levelCopy = clonePlainData(level);
-            const copy = isDemoOnlyLevel(levelCopy) && levelCopy.sourceLevel && typeof levelCopy.sourceLevel === "object"
-                ? { ...clonePlainData(levelCopy.sourceLevel), ...levelCopy }
-                : levelCopy;
-            if (!Array.isArray(copy.variables) || !copy.variables.length) {
-                copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
-            }
-            upgradeLegacyCommuteDemoSteps(copy);
-            return copy;
-        }
-
-        function setLevelFileStatus(message, isError = false) {
-            if (!loadedLevelFileName) {
-                return;
-            }
-            loadedLevelFileName.textContent = message;
-            loadedLevelFileName.classList.toggle("file-error", isError);
-        }
-
-        function showNoLevelSelectedState(message = "Choose a JSON level file to begin.") {
-            document.body.classList.add("no-level-loaded");
-            levelContent.innerHTML = `
-                <div class="level-intro">
-                    <div class="level-title">No level selected</div>
-                    <p>${escapeHtml(message)}</p>
-                </div>
-            `;
-            renderMoveHistoryControls(null);
-            clearParenthesizedExpressionSvg(targetExpressionSvg, targetExpressionCtx);
-            clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
-            workspaceSvg.replaceChildren();
-            floatingToolMenu.classList.add("hidden");
-        }
-
-        async function loadChosenLevelFile(file) {
-            if (!file) {
-                return;
-            }
-            let loadSucceeded = false;
-            try {
-                const parsed = JSON.parse(await file.text());
-                const level = validateChosenLevel(parsed, file.name);
-                LEVELS.splice(0, LEVELS.length, level);
-                currentLevelIndex = 0;
-                setLevelFileStatus(`${file.name} â€” ${level.title}`);
-                document.body.classList.remove("no-level-loaded");
-                loadLevel(0);
-                loadSucceeded = true;
-            } catch (error) {
-                console.error("The selected level file could not be loaded.", error);
-                setLevelFileStatus(error && error.message ? error.message : "The selected file could not be loaded.", true);
-                if (!getCurrentLevel()) {
-                    showNoLevelSelectedState("That file could not be loaded. Choose a valid Exploded Algebra level JSON file.");
-                }
-            } finally {
-                if (!loadSucceeded && levelFileInput) {
-                    levelFileInput.value = "";
-                }
-            }
-        }
-
-
-        const CUSTOM_LEVEL_STORAGE_KEY = "explodedAlgebra.currentCustomLevel";
-        const CUSTOM_LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
-
-        function readCustomLevelTransferPayload() {
-            let payloadText = null;
-
-            try {
-                payloadText = window.sessionStorage.getItem(CUSTOM_LEVEL_STORAGE_KEY);
-            } catch (error) {
-                // file:// pages can have browser-specific storage behavior.
-            }
-
-            if (!payloadText && typeof window.name === "string" && window.name.startsWith(CUSTOM_LEVEL_WINDOW_NAME_PREFIX)) {
-                payloadText = window.name.slice(CUSTOM_LEVEL_WINDOW_NAME_PREFIX.length);
-            }
-
-            if (!payloadText) {
-                throw new Error("The custom level data is no longer available in this tab. Return to the home page and choose the file again.");
-            }
-
-            let payload;
-            try {
-                payload = JSON.parse(payloadText);
-            } catch (error) {
-                throw new Error("The saved custom level transfer data could not be read.");
-            }
-
-            if (!payload || typeof payload.text !== "string") {
-                throw new Error("The saved custom level transfer data is incomplete.");
-            }
-
-            return payload;
-        }
-
-        function installLevelFromParsedJson(parsed, sourceName) {
-            const level = validateChosenLevel(parsed, sourceName);
-            LEVELS.splice(0, LEVELS.length, level);
-            currentLevelIndex = 0;
-            document.body.classList.remove("no-level-loaded");
-            loadLevel(0);
-            return true;
-        }
-
-        function loadBundledLevelFile(levelFile) {
-            showNoLevelSelectedState(`Loading ${levelFile}â€¦`);
-
-            const levelUrl = new URL(levelFile, window.location.href);
-            return fetch(levelUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Could not load ${levelFile} (${response.status} ${response.statusText}).`);
-                    }
-                    return response.text();
-                })
-                .then(text => {
-                    let parsed;
-                    try {
-                        parsed = JSON.parse(text);
-                    } catch (error) {
-                        throw new Error(`${levelFile} does not contain valid JSON.`);
-                    }
-                    return installLevelFromParsedJson(parsed, levelFile);
-                })
-                .catch(error => {
-                    console.error("The bundled level could not be loaded.", error);
-                    const localFileNote = window.location.protocol === "file:"
-                        ? " Browsers normally block JavaScript from fetching neighboring JSON files when a site is opened with file://. Use the custom file chooser on the home page, or serve this folder with a local web server / GitHub Pages."
-                        : "";
-                    showNoLevelSelectedState((error && error.message
-                        ? error.message
-                        : "The bundled level could not be loaded.") + localFileNote);
-                    return false;
-                });
-        }
-
-        function loadInitialLevelFromNavigation() {
-            const params = new URLSearchParams(window.location.search);
-            const requestedLevelFile = String(params.get("level") || "").trim();
-            const navigationSource = String(params.get("source") || "").toLowerCase();
-
-            if (requestedLevelFile) {
-                // Levels launched from the home page carry their JSON in this tab so
-                // file:// works, while the URL still identifies the selected file.
-                if (navigationSource === "builtin" || navigationSource === "custom") {
-                    try {
-                        const payload = readCustomLevelTransferPayload();
-                        if (payload.fileName && payload.fileName !== requestedLevelFile) {
-                            if (navigationSource === "custom") {
-                                throw new Error("The saved custom level does not match the level named in this URL. Return to the home page and choose the file again.");
-                            }
-                        } else {
-                            const parsed = JSON.parse(payload.text);
-                            return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile);
-                        }
-                    } catch (error) {
-                        if (navigationSource === "custom") {
-                            console.error("The selected custom level could not be loaded.", error);
-                            showNoLevelSelectedState(error && error.message
-                                ? error.message
-                                : "The selected custom level could not be loaded. Return to the home page and choose it again.");
-                            return false;
-                        }
-                        // A direct hosted built-in link may have no transfer payload.
-                        // In that case the normal JSON fetch below is the correct fallback.
-                    }
-                }
-
-                if (navigationSource !== "custom") {
-                    loadBundledLevelFile(requestedLevelFile);
-                    return true;
-                }
-            }
-
-            if (navigationSource === "custom" || navigationSource === "builtin") {
-                try {
-                    const payload = readCustomLevelTransferPayload();
-                    const parsed = JSON.parse(payload.text);
-                    const sourceName = payload.fileName || (navigationSource === "builtin"
-                        ? "The selected built-in level"
-                        : "The selected custom level file");
-                    return installLevelFromParsedJson(parsed, sourceName);
-                } catch (error) {
-                    console.error("The selected level could not be loaded.", error);
-                    showNoLevelSelectedState(error && error.message
-                        ? error.message
-                        : "The selected level could not be loaded. Return to the home page and choose it again.");
-                    return false;
-                }
-            }
-
-            showNoLevelSelectedState("Choose a built-in level or a custom level file from the home page to begin.");
-            return false;
-        }
-
-        function getCurrentLevel() {
-            return LEVELS[currentLevelIndex] || null;
-        }
-
-        function getAllowedToolsForLevel(level) {
-            if (!level) {
-                return AVAILABLE_BY_DEFAULT_TOOLS.slice();
-            }
-
-            const excludedDefaultTools = new Set(level.excludedDefaultTools || []);
-            const allowedUnavailableTools = level.allowedUnavailableTools || [];
-
-            return [
-                ...AVAILABLE_BY_DEFAULT_TOOLS.filter(tool => !excludedDefaultTools.has(tool)),
-                ...allowedUnavailableTools.filter(tool => UNAVAILABLE_BY_DEFAULT_TOOLS.includes(tool))
-            ];
-        }
-
-        function isToolAllowedInCurrentLevel(toolName) {
-            return getAllowedToolsForLevel(getCurrentLevel()).includes(toolName);
-        }
-
-        function getCurrentDemoSteps() {
-            const level = getCurrentLevel();
-            return level && level.demo && Array.isArray(level.demo.steps)
-                ? level.demo.steps
-                : [];
-        }
-
-        function isDemoModeActive() {
-            return isDemoOnlyLevel(getCurrentLevel()) && getCurrentDemoSteps().length > 0;
-        }
-
-        function getCurrentDemoStep() {
-            const steps = getCurrentDemoSteps();
-            return isDemoModeActive() && demoStepIndex >= 0 && demoStepIndex < steps.length
-                ? steps[demoStepIndex]
-                : null;
-        }
-
-        function getDemoCommuteChoiceAbsoluteIndex(step = getCurrentDemoStep()) {
-            if (!step || step.type !== "commuteChoice" || !selection.node) {
-                return -1;
-            }
-            const relativeIndex = Number(step.relativeIndex);
-            if (!Number.isInteger(relativeIndex)) {
-                return -1;
-            }
-            const absoluteIndex = selection.firstPart + relativeIndex;
-            return absoluteIndex >= selection.firstPart && absoluteIndex <= selection.lastPart
-                ? absoluteIndex
-                : -1;
-        }
-
-        function isDemoCommuteChoiceAllowed(clickedIndex) {
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            const step = getCurrentDemoStep();
-            if (step && step.type === "commuteChoice") {
-                return clickedIndex === getDemoCommuteChoiceAbsoluteIndex(step);
-            }
-            // Older move histories did not store permutation clicks. If their
-            // order could not be inferred during file loading, allow the user to
-            // choose the order manually instead of trapping the demo in preview.
-            return !!step && step.type !== "tool" && uiState.stage === "preview";
-        }
-
-        function refreshDemoBodyClass() {
-            document.body.classList.toggle("demo-mode-active", isDemoModeActive());
-        }
-
-        function updateModeControls() {
-            playMode = isDemoOnlyLevel(getCurrentLevel()) ? PLAY_MODES.demo : PLAY_MODES.regular;
-            refreshDemoBodyClass();
-        }
-
-        function resetDemoStateForCurrentLevel() {
-            demoStepIndex = 0;
-            updateModeControls();
-        }
-
-        function setPlayMode(mode, options = {}) {
-            const nextMode = mode === PLAY_MODES.demo ? PLAY_MODES.demo : PLAY_MODES.regular;
-            const changed = playMode !== nextMode;
-            playMode = nextMode;
-            updateModeControls();
-            if (options.reload && changed) {
-                loadLevel(currentLevelIndex);
-            } else {
-                renderToolArea();
-                drawExpression();
-            }
-        }
-
-        function updateModeQueryString(mode) {
-            if (!window.history || !window.history.replaceState) {
-                return;
-            }
-            const url = new URL(window.location.href);
-            if (mode === PLAY_MODES.demo) {
-                url.searchParams.set("mode", "demo");
-            } else {
-                url.searchParams.delete("mode");
-            }
-            window.history.replaceState(null, "", url.toString());
-        }
-
-        function playModeFromQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            return String(params.get("mode") || "").toLowerCase() === "demo"
-                ? PLAY_MODES.demo
-                : PLAY_MODES.regular;
-        }
-
-        function getDemoTargetNode(step) {
-            if (!step || !step.expression) {
-                return null;
-            }
-            if (step._targetNode) {
-                return step._targetNode;
-            }
-            try {
-                step._targetNode = normalizeExpressionTree(parseParenthesizedExpressionStrict(step.expression));
-            } catch (err) {
-                step._targetNode = null;
-            }
-            return step._targetNode;
-        }
-
-        function makeCandidateNodeForDemoRange(node, firstPart, lastPart) {
-            if (!node) {
-                return null;
-            }
-            if (node.type === "sum") {
-                return makeSumFromTerms(node.args.slice(firstPart, lastPart + 1).map(cloneNode));
-            }
-            if (node.type === "prod") {
-                return makeProductFromFactors(node.args.slice(firstPart, lastPart + 1).map(cloneNode));
-            }
-            return cloneNode(node);
-        }
-
-        function selectionRangeMatchesDemoTarget(node, firstPart, lastPart, targetNode) {
-            const candidate = makeCandidateNodeForDemoRange(node, firstPart, lastPart);
-            return !!candidate && !!targetNode && sameExpressionForMatching(candidate, targetNode);
-        }
-
-        function getDemoSelectionArea(candidate) {
-            if (!candidate || !candidate.node) {
-                return Number.POSITIVE_INFINITY;
-            }
-            const node = candidate.node;
-            let width;
-            let height;
-            if (node.type === "prod") {
-                const x1 = node.args[candidate.firstPart].left() - getSelectionMargin();
-                const x2 = node.args[candidate.lastPart].right() + getSelectionMargin();
-                width = x2 - x1;
-                height = node.bottom() - node.top();
-            } else if (node.type === "sum") {
-                const y1 = node.args[candidate.firstPart].top() - getSelectionMargin();
-                const y2 = node.args[candidate.lastPart].bottom() + getSelectionMargin();
-                width = node.right() - node.left();
-                height = y2 - y1;
-            } else {
-                width = node.right() - node.left();
-                height = node.bottom() - node.top();
-            }
-            return Math.max(1, width) * Math.max(1, height);
-        }
-
-        function findDemoSelectionTarget(step) {
-            const targetNode = getDemoTargetNode(step);
-            if (!targetNode || !expressionRoot) {
-                return null;
-            }
-
-            const candidates = [];
-            traversePreOrder(expressionRoot, node => {
-                if (sameExpressionForMatching(node, targetNode)) {
-                    candidates.push({ node, firstPart: 0, lastPart: Math.max(0, (node.args || []).length - 1) });
-                }
-
-                if (node.type === "sum" || node.type === "prod") {
-                    for (let first = 0; first < node.args.length; first++) {
-                        for (let last = first; last < node.args.length; last++) {
-                            if (selectionRangeMatchesDemoTarget(node, first, last, targetNode)) {
-                                candidates.push({ node, firstPart: first, lastPart: last });
-                            }
-                        }
-                    }
-                }
-            });
-
-            candidates.sort((a, b) => getDemoSelectionArea(a) - getDemoSelectionArea(b));
-            return candidates[0] || null;
-        }
-
-        function currentSelectionMatchesDemoStep() {
-            const step = getCurrentDemoStep();
-            if (!step || step.type !== "select" || !selection.node) {
-                return false;
-            }
-            const targetNode = getDemoTargetNode(step);
-            return selectionRangeMatchesDemoTarget(selection.node, selection.firstPart, selection.lastPart, targetNode);
-        }
-
-        function refreshDemoPromptAfterAdvance() {
-            renderToolArea();
-            refreshStatus();
-            drawExpression();
-        }
-
-        function advanceDemoStep() {
-            if (!isDemoModeActive()) {
-                return;
-            }
-            const steps = getCurrentDemoSteps();
-            demoStepIndex = Math.min(demoStepIndex + 1, steps.length);
-            refreshDemoBodyClass();
-            refreshDemoPromptAfterAdvance();
-        }
-
-        function validateDemoSelectionAfterPointerUp() {
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            const step = getCurrentDemoStep();
-            if (!step || step.type !== "select") {
-                clearSelection();
-                clearInteraction();
-                drawExpression();
-                return false;
-            }
-            if (currentSelectionMatchesDemoStep()) {
-                advanceDemoStep();
-                return true;
-            }
-            clearSelection();
-            clearInteraction();
-            refreshStatus();
-            drawExpression();
-            renderToolArea();
-            return false;
-        }
-
-        function getDemoTargetToolCandidates(toolName) {
-            if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
-                return uniqueToolKeys([
-                    toolName,
-                    "numericalEquivalence",
-                    "numericalRewrite",
-                    `arithmeticLevel${getArithmeticLevelForCurrentLevel()}`
-                ]);
-            }
-            if (toolName === "commute") {
-                return ["commute", "commuteFirstToLast"];
-            }
-            if (toolName === "commuteFirstToLast" || toolName === "commuteLastToFirst") {
-                return [toolName, "commute"];
-            }
-            return [toolName];
-        }
-
-        function isDemoToolAllowed(toolName) {
-            const step = getCurrentDemoStep();
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            if (!step || step.type !== "tool") {
-                return false;
-            }
-            return getDemoTargetToolCandidates(step.tool).includes(toolName);
-        }
-
-        function isDemoActionAllowed(action, value) {
-            const step = getCurrentDemoStep();
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            if (!step || step.type !== "action" || step.action !== action) {
-                return false;
-            }
-            if (step.value !== undefined && String(step.value) !== String(value ?? "")) {
-                return false;
-            }
-            return true;
-        }
-
-        function isDemoBuilderActionAllowed(action, value) {
-            const step = getCurrentDemoStep();
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            if (!step || step.type !== "builder" || step.action !== action) {
-                return false;
-            }
-            if (step.value !== undefined && String(step.value) !== String(value ?? "")) {
-                return false;
-            }
-            return true;
-        }
-
-        function applyDemoInputForCurrentStep() {
-            const step = getCurrentDemoStep();
-            if (!step || step.type !== "action" || step.input === undefined) {
-                return;
-            }
-            uiState.inputText = String(step.input);
-        }
-
-        function escapeCssSelectorValue(value) {
-            const text = String(value ?? "");
-            if (window.CSS && typeof window.CSS.escape === "function") {
-                return window.CSS.escape(text);
-            }
-            return text.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
-        }
-
-        function applyDemoButtonHighlights(container) {
-            if (!isDemoModeActive() || !container) {
-                return;
-            }
-            container.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
-                button.classList.remove("demo-target-button", "demo-blocked-button");
-            });
-            const step = getCurrentDemoStep();
-            if (!step) {
-                return;
-            }
-
-            let targetButton = null;
-            if (step.type === "tool") {
-                for (const targetTool of getDemoTargetToolCandidates(step.tool)) {
-                    targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
-                    if (targetButton) {
-                        break;
-                    }
-                }
-                if (!targetButton && isIntentCategoryToolNotationMode()) {
-                    const categoryId = getIntentCategoryIdForTool(step.tool);
-                    if (categoryId) {
-                        targetButton = container.querySelector(`button[data-rule-category="${escapeCssSelectorValue(categoryId)}"]`);
-                    }
-                }
-            } else if (step.type === "action") {
-                const actionSelector = `button[data-action="${escapeCssSelectorValue(step.action)}"]`;
-                const actionButtons = Array.from(container.querySelectorAll(actionSelector));
-                targetButton = step.value === undefined
-                    ? actionButtons[0]
-                    : actionButtons.find(button => String(button.dataset.value || "") === String(step.value));
-            } else if (step.type === "builder") {
-                const builderSelector = `button[data-builder-action="${escapeCssSelectorValue(step.action)}"]`;
-                const builderButtons = Array.from(container.querySelectorAll(builderSelector));
-                targetButton = step.value === undefined
-                    ? builderButtons[0]
-                    : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
-            }
-
-            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
-                if (button === targetButton) {
-                    button.classList.add("demo-target-button");
-                } else {
-                    button.classList.add("demo-blocked-button");
-                }
-            });
-        }
-
-        function getSelectionRectangleForNodeRange(node, firstPart, lastPart) {
-            if (!node) {
-                return null;
-            }
-
-            const margin = getSelectionMargin();
-            let x;
-            let y;
-            let width;
-            let height;
-
-            if (node.type === "prod") {
-                x = node.args[firstPart].left() - margin;
-                y = node.top() - margin;
-                width = node.args[lastPart].right() + margin - x;
-                height = node.bottom() + margin - y;
-            } else if (node.type === "sum") {
-                x = node.left() - margin;
-                y = node.args[firstPart].top() - margin;
-                width = node.right() + margin - x;
-                height = node.args[lastPart].bottom() + margin - y;
-            } else {
-                x = node.left() - margin;
-                y = node.top() - margin;
-                width = node.right() + margin - x;
-                height = node.bottom() + margin - y;
-            }
-
-            return {
-                x,
-                y,
-                width: Math.max(1, width),
-                height: Math.max(1, height)
-            };
-        }
-
-        function drawDashedDemoSelectionRectangle(node, firstPart, lastPart) {
-            const rect = getSelectionRectangleForNodeRange(node, firstPart, lastPart);
-            if (!rect) {
-                return;
-            }
-
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "rgb(226, 176, 0)";
-            ctx.setLineDash([3, 5]);
-            ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
-            ctx.restore();
-        }
-
-        function drawDemoSelectionPrompt() {
-            if (
-                !isDemoModeActive() ||
-                uiState.stage === "postview" ||
-                uiState.previewTimerId !== null ||
-                uiState.postviewTimerId !== null
-            ) {
-                return;
-            }
-            const step = getCurrentDemoStep();
-            if (!step) {
-                return;
-            }
-            if (step.type === "commuteChoice" && uiState.stage === "preview") {
-                const targetIndex = getDemoCommuteChoiceAbsoluteIndex(step);
-                if (targetIndex >= 0) {
-                    drawDashedDemoSelectionRectangle(selection.node, targetIndex, targetIndex);
-                }
-                return;
-            }
-            if (uiState.stage === "preview" || step.type !== "select") {
-                return;
-            }
-            const target = findDemoSelectionTarget(step);
-            if (!target) {
-                return;
-            }
-            drawDashedDemoSelectionRectangle(target.node, target.firstPart, target.lastPart);
-        }
-
-        function expressionMatchesParenthesizedText(parenthesizedText) {
-            try {
-                const targetNode = parseParenthesizedExpressionStrict(parenthesizedText);
-                return sameExpressionForMatching(currentExpressionRoot || expressionRoot, targetNode);
-            } catch (err) {
-                return false;
-            }
-        }
-
-        function updateStepCompletion(level) {
-            if (!level || !Array.isArray(level.steps)) {
-                return;
-            }
-            if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
-                completedSteps = new Array(level.steps.length).fill(false);
-            }
-            const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
-            if (
-                nextStepIndex >= 0
-                && expressionMatchesParenthesizedText(level.steps[nextStepIndex].expression)
-            ) {
-                completedSteps[nextStepIndex] = true;
-            }
-            maybePrepareCompletedLevelExport(level);
-        }
-
-        function getStepCompletionStates(level) {
-            if (!level || !Array.isArray(level.steps)) {
-                return [];
-            }
-            if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
-                completedSteps = new Array(level.steps.length).fill(false);
-            }
-            updateStepCompletion(level);
-            return completedSteps.slice();
-        }
-
-        function renderMoveHistoryControls(level) {
-            if (!moveHistoryControls) {
-                return;
-            }
-            if (!isInteractiveLevel(level)) {
-                moveHistoryControls.innerHTML = "";
-                return;
-            }
-
-            moveHistoryControls.innerHTML = '<button type="button" class="completion-export-button">Download Move History</button>';
-            const button = moveHistoryControls.querySelector(".completion-export-button");
-            button.addEventListener("click", () => {
-                if (!solutionRecorder) {
-                    return;
-                }
-                const historyDate = completionExportCompletedAtDate || new Date();
-                solutionRecorder.finalExpression = getExpressionTextForTrace();
-                downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
-            });
-        }
-
-        function renderLevelInfo(levelIndex) {
-            const level = LEVELS[levelIndex];
-            if (!level) {
-                levelContent.innerHTML = "";
-                renderMoveHistoryControls(null);
-                return;
-            }
-
-            const completion = getStepCompletionStates(level);
-            const renderParagraphs = value => normalizeTextBlocks(value)
-                .map(text => `<p>${escapeHtml(text)}</p>`)
-                .join("");
-
-            const exerciseInstruction = normalizeTextBlocks(level.instruction).length
-                ? normalizeTextBlocks(level.instruction)
-                : normalizeTextBlocks(level.introduction);
-            const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
-            const firstStepIsInitialExpression = !!firstStep && expressionTextsMatch(
-                level.startExpression,
-                firstStep.expression
-            );
-            const initialKatex = level.initialKatex || (
-                firstStep
-                    ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
-                    : level.startExpression
-            );
-
-            const currentStepIndex = completion.findIndex(isComplete => !isComplete);
-            const isExerciseComplete = currentStepIndex < 0;
-            const firstSolutionStepIndex = firstStepIsInitialExpression ? 1 : 0;
-            const lastVisibleStepIndex = currentStepIndex >= 0
-                ? currentStepIndex
-                : Math.max(0, (level.steps || []).length - 1);
-            const stepsHtml = (level.steps || [])
-                .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
-                .map((step, relativeIndex) => {
-                const index = firstSolutionStepIndex + relativeIndex;
-                const isComplete = !!completion[index];
-                const isCurrent = index === currentStepIndex;
-                const completedKatex = step.afterKatex || step.katex || "";
-                const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
-                const explicitGuidance = normalizeTextBlocks(step.guidance);
-                const legacyGuidance = [
-                    ...normalizeTextBlocks(step.introduction),
-                    ...normalizeTextBlocks(step.conclusion)
-                ];
-                const labelGuidance = typeof step.label === "string" && step.label.trim() && step.label.trim().toLowerCase() !== "start"
-                    ? [step.label.trim()]
-                    : [];
-                const stepGuidance = explicitGuidance.length
-                    ? explicitGuidance
-                    : legacyGuidance.length
-                        ? legacyGuidance
-                        : labelGuidance;
-                const stepGuidanceHtml = isCurrent && stepGuidance.length
-                    ? `<div class="step-guidance" aria-label="Current-step guidance">${stepGuidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
-                    : "";
-                const completedCheckHtml = isComplete
-                    ? `<span class="completed-step-check" aria-label="Completed" title="Completed">âœ“</span>`
-                    : "";
-                return `
-                    ${stepGuidanceHtml}
-                    <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
-                        <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
-                        ${completedCheckHtml}
-                    </div>
-                `;
-            }).join("");
-
-            const exerciseInfo = normalizeTextBlocks(level.exerciseInfo).length
-                ? normalizeTextBlocks(level.exerciseInfo)
-                : [
-                    ...normalizeTextBlocks(level.description),
-                    ...normalizeTextBlocks(level.instructions)
-                ];
-            const completionMessage = normalizeTextBlocks(level.completionMessage).length
-                ? normalizeTextBlocks(level.completionMessage)
-                : normalizeTextBlocks(level.conclusion);
-            const footerTitle = isExerciseComplete ? "Conclusion" : "Exercise information";
-            const footerBlocks = isExerciseComplete
-                ? (completionMessage.length ? completionMessage : ["Exercise complete."])
-                : exerciseInfo;
-
-            levelContent.innerHTML = `
-                <div class="textbook-solution">
-                    <section class="solution-section problem-statement" aria-label="Problem statement">
-                        ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
-                        <div class="problem-expression" aria-label="Initial conventional expression">
-                            <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
-                        </div>
-                    </section>
-                    <hr class="solution-separator">
-                    <section class="solution-section running-solution" aria-label="Running solution">
-                        ${stepsHtml}
-                    </section>
-                    <hr class="solution-separator">
-                    <section class="solution-section exercise-footer exercise-guidance ${isExerciseComplete ? "exercise-conclusion" : "exercise-information"}" aria-label="${escapeHtml(footerTitle)}">
-                        <h3>${escapeHtml(footerTitle)}</h3>
-                        ${renderParagraphs(footerBlocks)}
-                    </section>
-                </div>
-            `;
-            renderMoveHistoryControls(level);
-
-            renderLeftPanelMath();
-            levelContent.querySelectorAll(".step-card").forEach(card => {
-                card.addEventListener("click", event => {
-                    if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
-                        // Preview comparison is disabled for now. Leave the listener
-                        // here so it can be restored by changing the flag above.
-                        event.stopPropagation();
-                        return;
-                    }
-
-                    const stepIndex = Number(card.getAttribute("data-step-index"));
-
-                    if (uiState.mode === "inspect") {
-                        enterInspectMode(stepIndex);
-                        event.stopPropagation();
-                        return;
-                    }
-
-                    enterInspectMode(stepIndex);
-
-                    // Do not let the same click that entered inspect mode
-                    // immediately bubble up and exit inspect mode.
-                    event.stopPropagation();
-                });
-            });
-
-        }
-        function loadLevel(levelIndex) {
-            const level = LEVELS[levelIndex];
-            if (!level) {
-                return;
-            }
-
-            currentLevelIndex = levelIndex;
-            resetDemoStateForCurrentLevel();
-            resetSolutionRecorderForCurrentLevel();
-            completedSteps = new Array((level.steps || []).length).fill(false);
-            currentExpressionRoot = textToExpression(level.startExpression);
-            currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
-            expressionRoot = currentExpressionRoot;
-            inspectSavedExpressionRoot = null;
-            uiState.mode = "edit";
-            uiState.inspectStepIndex = -1;
-            document.body.classList.remove("inspect-mode");
-            if (inspectExitButton) {
-                inspectExitButton.classList.add("hidden");
-            }
-            clearSelection();
-            clearInteraction();
-            layoutExpression(expressionRoot);
-            updateStepCompletion(getCurrentLevel());
-            renderLevelInfo(currentLevelIndex);
-            renderCurrentExpressionDisplay();
-            refreshStatus();
-            drawExpression();
-        }
-
-        function initializeExplodedAlgebra() {
-            document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
-            loadInitialLevelFromNavigation();
-
-            document.addEventListener("click", event => {
-                if (uiState.mode !== "inspect") {
-                    return;
-                }
-
-                exitInspectMode();
-            });
-
-            document.addEventListener("keydown", event => {
-                if (handleExpressionBuilderKeydown(event)) {
-                    return;
-                }
-                if (event.key === "Escape" && uiState.mode === "inspect") {
-                    exitInspectMode();
-                }
-            });
-        }
-
-        if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", initializeExplodedAlgebra, { once: true });
-        } else {
-            // The JSON loader can finish after DOMContentLoaded. Queue startup so
-            // this file's remaining declarations are initialized first.
-            queueMicrotask(initializeExplodedAlgebra);
-        }
-
-        window.addEventListener("resize", () => {
-            if (expressionRoot) {
-                renderCurrentExpressionDisplay();
-            }
-        });
-
-
-
-        function getExpressionBounds() {
-            return {
-                left: expressionRoot.left(),
-                top: expressionRoot.top(),
-                right: expressionRoot.right(),
-                bottom: expressionRoot.bottom()
-            };
-        }
-
-        function getSelectionAreaBounds() {
-            if (selection.status !== "inProg") {
-                return null;
-            }
-
-            return {
-                left: Math.min(selectionArea[0], selectionArea[2]),
-                top: Math.min(selectionArea[1], selectionArea[3]),
-                right: Math.max(selectionArea[0], selectionArea[2]),
-                bottom: Math.max(selectionArea[1], selectionArea[3])
-            };
-        }
-
-        function getFloatingMenuBounds() {
-            if (floatingToolMenu.classList.contains("hidden")) {
-                return null;
-            }
-
-            const x = uiState.floatingMenuX;
-            const y = uiState.floatingMenuY;
-            const width = floatingToolMenu.offsetWidth || 0;
-            const height = floatingToolMenu.offsetHeight || 0;
-
-            return {
-                left: x,
-                top: y,
-                right: x + width,
-                bottom: y + height
-            };
-        }
-
-        function resizeSvgToFitContent() {
-            layoutExpression(expressionRoot);
-
-            const padding = 40;
-            const expressionBounds = getExpressionBounds();
-            const mainWidth = svgContainer.clientWidth;
-            const mainHeight = svgContainer.clientHeight;
-
-            let maxRight = expressionBounds.right;
-            let maxBottom = expressionBounds.bottom;
-
-            const selectionBounds = getSelectionAreaBounds();
-            if (selectionBounds) {
-                maxRight = Math.max(maxRight, selectionBounds.right);
-                maxBottom = Math.max(maxBottom, selectionBounds.bottom);
-            }
-
-            const menuBounds = getFloatingMenuBounds();
-            if (menuBounds) {
-                maxRight = Math.max(maxRight, menuBounds.right);
-                maxBottom = Math.max(maxBottom, menuBounds.bottom);
-            }
-
-            const neededWidth = Math.max(mainWidth, Math.ceil(maxRight + padding));
-            const neededHeight = Math.max(mainHeight, Math.ceil(maxBottom + padding));
-
-            if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
-                setSvgSize(workspaceSvg, neededWidth, neededHeight);
-
-                ctx.font = SETTINGS.textFont;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-
-                layoutExpression(expressionRoot);
-            }
-        }
-
-ctx.font = SETTINGS.textFont;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        const selectionArea = [-1, -1, -1, -1];
-        let activeWorkspacePointerId = null;
-        let selectionHitPadding = 0;
-        const selection = {
-            status: "no",
-            node: null,
-            firstPart: -1,
-            lastPart: -1
-        };
-
-        const uiState = {
-            activeTool: null,
-            stage: "idle",
-            chosenDirection: null,
-            chosenIdentity: null,
-            inputText: "",
-            expressionBuilder: null,
-            message: "",
-            commuteSelectedIndex: -1,
-            commuteOrder: [],
-            previewColors: null,
-            postviewData: null,
-            postviewTimerId: null,
-            previewTimerId: null,
-            showFloatingMenu: true,
-            activeToolCategory: null,
-            toolExponentMode: TOOL_EXPONENT_MODES.plain,
-            toolNotationMode: "categories",
-            zeroProductOrientation: "left",
-            floatingMenuX: 0,
-            floatingMenuY: 0,
-            mode: "edit",
-            inspectStepIndex: -1
-        };
-
-        function setStatus(message) {
-        }
-
-        function textToExpression(text) {
-            ExprNode.nextId = 1;
-            return parseParenthesizedExpressionStrict(text.trim());
-        }
-
-        function findMatchingCloseParen(s, openIndex) {
-            if (s[openIndex] !== "(") {
-                return -1;
-            }
-
-            let level = 0;
-            for (let i = openIndex; i < s.length; i++) {
-                if (s[i] === "(") {
-                    level += 1;
-                } else if (s[i] === ")") {
-                    level -= 1;
-                    if (level === 0) {
-                        return i;
-                    }
-                    if (level < 0) {
-                        return -1;
-                    }
-                }
-            }
-
-            return -1;
-        }
-
-        function isWrappedBySingleOuterPair(s) {
-            if (!s.startsWith("(") || !s.endsWith(")")) {
-                return false;
-            }
-            return findMatchingCloseParen(s, 0) === s.length - 1;
-        }
-
-        function splitTopLevelByOperator(s, operator) {
-            const parts = [];
-            let level = 0;
-            let start = 0;
-
-            for (let i = 0; i < s.length; i++) {
-                const ch = s[i];
-                if (ch === "(") {
-                    level += 1;
-                } else if (ch === ")") {
-                    level -= 1;
-                    if (level < 0) {
-                        throw new Error("Too many closing parentheses.");
-                    }
-                } else if (ch === operator && level === 0) {
-                    const part = s.slice(start, i).trim();
-                    if (!part) {
-                        throw new Error("Missing expression near " + operator + ".");
-                    }
-                    parts.push(part);
-                    start = i + 1;
-                }
-            }
-
-            if (level !== 0) {
-                throw new Error("Unmatched parentheses.");
-            }
-
-            if (parts.length === 0) {
-                return null;
-            }
-
-            const last = s.slice(start).trim();
-            if (!last) {
-                throw new Error("Missing expression after " + operator + ".");
-            }
-            parts.push(last);
-            return parts;
-        }
-
-        function findTopLevelOperatorIndex(s, operator) {
-            let level = 0;
-            let found = -1;
-
-            for (let i = 0; i < s.length; i++) {
-                const ch = s[i];
-                if (ch === "(") {
-                    level += 1;
-                } else if (ch === ")") {
-                    level -= 1;
-                    if (level < 0) {
-                        throw new Error("Too many closing parentheses.");
-                    }
-                } else if (ch === operator && level === 0) {
-                    if (found !== -1) {
-                        throw new Error("Use parentheses to make " + operator + " unambiguous.");
-                    }
-                    found = i;
-                }
-            }
-
-            if (level !== 0) {
-                throw new Error("Unmatched parentheses.");
-            }
-            return found;
-        }
-
-        function parseParenthesizedExpressionStrict(source) {
-            const s = String(source).trim().replace(/\s+/g, "");
-            if (!s) {
-                throw new Error("Empty expression.");
-            }
-
-            if (!isWrappedBySingleOuterPair(s)) {
-                if (/^[A-Za-z][A-Za-z0-9_]*$/.test(s) || /^-?\d+(?:\.\d+)?$/.test(s)) {
-                    return new ExprNode("value", [], s);
-                }
-                throw new Error("Every value and every operation must be enclosed in parentheses.");
-            }
-
-            const inside = s.slice(1, -1).trim();
-            if (!inside) {
-                throw new Error("Empty parentheses are not an expression.");
-            }
-
-            const sumParts = splitTopLevelByOperator(inside, "+");
-            if (sumParts && sumParts.length > 1) {
-                return new ExprNode("sum", sumParts.map(parseParenthesizedExpressionStrict), null);
-            }
-
-            const productParts = splitTopLevelByOperator(inside, "*");
-            if (productParts && productParts.length > 1) {
-                return new ExprNode("prod", productParts.map(parseParenthesizedExpressionStrict), null);
-            }
-
-            const quotientIndex = findTopLevelOperatorIndex(inside, "/");
-            if (quotientIndex !== -1) {
-                const numeratorText = inside.slice(0, quotientIndex).trim();
-                const denominatorText = inside.slice(quotientIndex + 1).trim();
-                if (!numeratorText || !denominatorText) {
-                    throw new Error("A quotient needs both a numerator and a denominator.");
-                }
-                const numerator = parseParenthesizedExpressionStrict(numeratorText);
-                const denominator = parseParenthesizedExpressionStrict(denominatorText);
-                if (numerator.type === "value" && numerator.value === "1") {
-                    return makeInverseNode(denominator);
-                }
-                return normalizeExpressionTree(new ExprNode("prod", [numerator, makeInverseNode(denominator)], null));
-            }
-
-            const exponentIndex = findTopLevelOperatorIndex(inside, "^");
-            if (exponentIndex !== -1) {
-                const baseText = inside.slice(0, exponentIndex).trim();
-                const exponentText = inside.slice(exponentIndex + 1).trim();
-                if (!baseText || !exponentText) {
-                    throw new Error("A power needs both a base and an exponent.");
-                }
-                return new ExprNode("exp", [
-                    parseParenthesizedExpressionStrict(baseText),
-                    parseParenthesizedExpressionStrict(exponentText)
-                ], null);
-            }
-
-            if (isWrappedBySingleOuterPair(inside)) {
-                return parseParenthesizedExpressionStrict(inside);
-            }
-
-            if (inside.includes(",")) {
-                throw new Error("Use +, *, /, and ^ instead of commas.");
-            }
-            if (/[()+*/^]/.test(inside)) {
-                throw new Error("Could not parse this fully parenthesized expression.");
-            }
-
-            return new ExprNode("value", [], inside);
-        }
-
-        function tryParseParenthesizedExpression(text) {
-            const s = String(text).trim();
-
-            if (!s) {
-                return { ok: false, error: "Enter an expression." };
-            }
-
-            try {
-                ExprNode.nextId = 1;
-                const node = parseParenthesizedExpressionStrict(s);
-                return { ok: true, node };
-            } catch (err) {
-                return { ok: false, error: err.message || "That is not valid fully parenthesized expression text." };
-            }
-        }
-
-        function escapeHtml(value) {
-            return String(value)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#39;");
-        }
-
-        function expressionToText(node) {
-            return expressionToFullyParenthesizedText(node);
-        }
-
-        function expressionToFullyParenthesizedText(node) {
-            if (!node) {
-                return "";
-            }
-
-            if (node.type === "value") {
-                return `(${node.value})`;
-            }
-
-            const parts = node.args.map(expressionToFullyParenthesizedText);
-
-            if (node.type === "sum") {
-                return `(${parts.join("+")})`;
-            }
-
-            if (node.type === "prod") {
-                return `(${parts.join("*")})`;
-            }
-
-            if (node.type === "exp") {
-                return `(${parts[0]}^${parts[1]})`;
-            }
-
-            if (node.type === "inv") {
-                // Preserve the existing fully-parenthesized text format by
-                // serializing the dedicated inverse operator as 1 divided by A.
-                // The parser maps that form straight back to an inv node.
-                return `((1)/${parts[0]})`;
-            }
-
-            return `(${expressionToText(node)})`;
-        }
-
-        function traversePreOrder(node, fn) {
-            fn(node);
-            for (const child of node.args) {
-                traversePreOrder(child, fn);
-            }
-        }
-
-        function cloneNode(node) {
-            return new ExprNode(
-                node.type,
-                node.args.map(cloneNode),
-                node.value
-            );
-        }
-
-        function sameExpression(a, b) {
-            if (!a || !b || a.type !== b.type) {
-                return false;
-            }
-            if (a.type === "value") {
-                return a.value === b.value;
-            }
-            if (a.args.length !== b.args.length) {
-                return false;
-            }
-            for (let i = 0; i < a.args.length; i++) {
-                if (!sameExpression(a.args[i], b.args[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function normalizeCloneForMatching(node) {
-            return node ? normalizeExpressionTree(cloneNode(node)) : null;
-        }
-
-        function sameExpressionForMatching(a, b) {
-            return sameExpression(normalizeCloneForMatching(a), normalizeCloneForMatching(b));
-        }
-
-        function getSumTermsForMatching(node) {
-            const normalized = normalizeCloneForMatching(node);
-            if (!normalized) {
-                return [];
-            }
-            return normalized.type === "sum"
-                ? normalized.args.map(cloneNode)
-                : [normalized];
-        }
-
-        function getProductFactorsForMatching(node) {
-            const normalized = normalizeCloneForMatching(node);
-            if (!normalized) {
-                return [];
-            }
-            return normalized.type === "prod"
-                ? normalized.args.map(cloneNode)
-                : [normalized];
-        }
-
-        function findMatchingNodeIndices(requiredNodes, candidateNodes, usedIndices = new Set(), excludeIndex = -1) {
-            const matchedIndices = [];
-            for (const requiredNode of requiredNodes) {
-                let foundIndex = -1;
-                for (let i = 0; i < candidateNodes.length; i++) {
-                    if (i === excludeIndex || usedIndices.has(i) || matchedIndices.includes(i)) {
-                        continue;
-                    }
-                    if (sameExpressionForMatching(candidateNodes[i], requiredNode)) {
-                        foundIndex = i;
-                        break;
-                    }
-                }
-                if (foundIndex === -1) {
-                    return null;
-                }
-                matchedIndices.push(foundIndex);
-            }
-            return matchedIndices;
-        }
-
-        function normalizeExpressionTree(node) {
-            if (!node || node.type === "value") {
-                return node;
-            }
-
-            node.args = node.args.map(normalizeExpressionTree);
-
-            if (node.type === "sum" || node.type === "prod") {
-                const flattenedArgs = [];
-                for (const child of node.args) {
-                    if (child.type === node.type) {
-                        flattenedArgs.push(...child.args);
-                    } else {
-                        flattenedArgs.push(child);
-                    }
-                }
-                node.args = flattenedArgs;
-
-                if (node.args.length === 0) {
-                    return node.type === "sum"
-                        ? new ExprNode("value", [], "0")
-                        : new ExprNode("value", [], "1");
-                }
-
-                if (node.args.length === 1) {
-                    return node.args[0];
-                }
-            }
-
-            return node;
-        }
-        function finishOperation() {
-            expressionRoot = normalizeExpressionTree(expressionRoot);
-            syncCurrentExpressionRoot();
-            clearSelection();
-            clearInteraction();
-            layoutExpression(expressionRoot);
-            renderLevelInfo(currentLevelIndex);
-            refreshStatus();
-            drawExpression();
-        }
-
-        function layoutExpression(root) {
-            layoutExpressionWithSettings(root, ctx, SETTINGS, SETTINGS.marginX, SETTINGS.marginY);
-        }
-
-        function drawExpression() {
-            renderCurrentExpressionDisplay();
-
-            if (!expressionRoot) {
-                workspaceSvg.replaceChildren();
-                return;
-            }
-
-            if (uiState.mode === "inspect") {
-                return;
-            }
-
-            resizeSvgToFitContent();
-            ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
-
-            drawNodeRecursive(expressionRoot);
-            drawExpressionBuilderHighlights();
-
-            if (uiState.stage === "postview" && uiState.postviewData) {
-                drawPostview();
-            } else if (selection.node) {
-                drawSelectionAndPreview();
-            }
-
-            drawDemoSelectionPrompt();
-
-            if (selection.status === "inProg") {
-                ctx.beginPath();
-                ctx.strokeStyle = "blue";
-                ctx.rect(
-                    selectionArea[0],
-                    selectionArea[1],
-                    selectionArea[2] - selectionArea[0],
-                    selectionArea[3] - selectionArea[1]
-                );
-                ctx.stroke();
-                ctx.strokeStyle = SETTINGS.expressionStrokeFill;
-            }
-        }
-
-        function drawSelectionAndPreview() {
-            const partitionPreviewActive =
-                (
-                    uiState.activeTool === "distributeLeftToRight" ||
-                    uiState.activeTool === "distributeRightToLeft" ||
-                    uiState.activeTool === "commute" ||
-                    uiState.activeTool === "commuteFirstToLast" ||
-                    uiState.activeTool === "commuteLastToFirst" ||
-                    uiState.activeTool === "commuteTerms" ||
-                    uiState.activeTool === "commuteFactors" ||
-                    uiState.activeTool === "factorLeft" ||
-                    uiState.activeTool === "factorRight" ||
-                    uiState.activeTool === "distributeInverseOverProduct" ||
-                    uiState.activeTool === "factorProductOfInverses"
-                ) &&
-                uiState.stage === "preview";
-
-            if (!partitionPreviewActive) {
-                drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
-            }
-
-            if (!uiState.activeTool) {
-                return;
-            }
-
-            if (
-                (uiState.activeTool === "commute" || uiState.activeTool === "commuteFirstToLast" || uiState.activeTool === "commuteLastToFirst" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
-                uiState.stage === "preview"
-            ) {
-                drawCommutePreview();
-                return;
-            }
-
-            if (uiState.activeTool === "distributeLeftToRight" && uiState.stage === "preview") {
-                drawDistributionPreview("left");
-                return;
-            }
-
-            if (uiState.activeTool === "distributeRightToLeft" && uiState.stage === "preview") {
-                drawDistributionPreview("right");
-                return;
-            }
-
-            if (uiState.activeTool === "factorLeft" && uiState.stage === "preview") {
-                drawFactoringPreview("left");
-                return;
-            }
-
-            if (uiState.activeTool === "factorRight" && uiState.stage === "preview") {
-                drawFactoringPreview("right");
-                return;
-            }
-
-            if (uiState.activeTool === "distributeInverseOverProduct" && uiState.stage === "preview") {
-                drawInverseDistributionPreview();
-                return;
-            }
-
-            if (uiState.activeTool === "factorProductOfInverses" && uiState.stage === "preview") {
-                drawInverseFactoringPreview();
-                return;
-            }
-
-            if (uiState.activeTool === "eliminateDoubleInverse" && uiState.stage === "preview") {
-                drawEliminateDoubleInversePreview();
-                return;
-            }
-
-            if (uiState.activeTool === "cancelProductWithInverse" && uiState.stage === "preview") {
-                drawCancelProductWithInversePreview();
-                return;
-            }
-
-            if (uiState.activeTool === "insertIdentity" && uiState.stage === "choosePosition" && uiState.chosenIdentity) {
-                drawIdentityInsertionPreview(uiState.chosenIdentity);
-                return;
-            }
-
-            if (uiState.activeTool === "eliminateIdentities" && uiState.stage === "preview") {
-                drawIdentityEliminationPreview();
-                return;
-            }
-
-            if (uiState.activeTool === "cancelOpposites" && uiState.stage === "preview") {
-                drawCancelOppositesPreview();
-                return;
-            }
-
-            if (uiState.activeTool === "doubleNegative" && uiState.stage === "preview") {
-                drawDoubleNegativePreview();
-                return;
-            }
-
-            if (uiState.activeTool === "zeroProduct" && uiState.stage === "preview") {
-                drawZeroProductPreview();
-                return;
-            }
-
-            if ((uiState.activeTool === "factorNumber" || uiState.activeTool === "writeNumberAsSum") && uiState.stage === "input") {
-                drawBoldHighlightForSelection(selection.node, selection.firstPart, selection.lastPart, "rgb(0, 170, 0)");
-            }
-        }
-
-        function fillOverlayRect(x, y, width, height, color) {
-            ctx.save();
-            ctx.globalAlpha = SETTINGS.overlayAlpha;
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, width, height);
-            ctx.restore();
-        }
-
-        function fillSelectionRegion(node, firstPart, lastPart, color) {
-            const margin = getSelectionMargin();
-            if (node.type === "prod") {
-                const x1 = node.args[firstPart].left() - margin;
-                const x2 = node.args[lastPart].right() + margin;
-                fillOverlayRect(x1, node.top() - margin, x2 - x1, node.bottom() - node.top() + margin * 2, color);
-            } else if (node.type === "sum") {
-                const y1 = node.args[firstPart].top() - margin;
-                const y2 = node.args[lastPart].bottom() + margin;
-                fillOverlayRect(node.left() - margin, y1, node.right() - node.left() + margin * 2, y2 - y1, color);
-            } else {
-                fillOverlayRect(node.left() - margin, node.top() - margin, node.right() - node.left() + margin * 2, node.bottom() - node.top() + margin * 2, color);
-            }
-        }
-
-        function fillProductFactorRange(node, firstIndex, lastIndex, color) {
-            const margin = getSelectionMargin();
-            const x1 = node.args[firstIndex].left() - margin;
-            const x2 = node.args[lastIndex].right() + margin;
-            fillOverlayRect(x1, node.top() - margin, x2 - x1, node.bottom() - node.top() + margin * 2, color);
-        }
-
-        function fillSingleSumTermRegion(sumNode, termIndex, color) {
-            const margin = getSelectionMargin();
-            const term = sumNode.args[termIndex];
-            const y1 = term.top() - margin;
-            const y2 = term.bottom() + margin;
-            fillOverlayRect(sumNode.left() - margin, y1, sumNode.right() - sumNode.left() + margin * 2, y2 - y1, color);
-        }
-
-        function getDistinctRandomColors(n) {
-            if (n <= 0) {
-                return [];
-            }
-
-            const startHue = Math.random() * 360;
-            const step = 360 / n;
-            const colors = [];
-
-            for (let i = 0; i < n; i++) {
-                const hue = (startHue + i * step) % 360;
-                colors.push(`hsl(${hue}, 75%, 60%)`);
-            }
-
-            return colors;
-        }
-
-        function darkenPreviewColor(color, amount = 18) {
-            const match = String(color || "").match(/^hsl\(([-\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)$/i);
-            if (!match) {
-                return color || SETTINGS.selectionBlue;
-            }
-            const hue = Number(match[1]);
-            const saturation = Number(match[2]);
-            const lightness = Math.max(15, Number(match[3]) - amount);
-            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-        }
-
-        function drawBasicSelectionHighlight(node, firstPart, lastPart) {
-            fillSelectionRegion(node, firstPart, lastPart, SETTINGS.selectionBlue);
-        }
-
-        function fillHighlightRect(node, color) {
-            fillOverlayRect(
-                node.left(),
-                node.top(),
-                node.right() - node.left(),
-                node.bottom() - node.top(),
-                color
-            );
-        }
-
-        function fillBoldHighlightRect(node, color) {
-            fillOverlayRect(
-                node.left(),
-                node.top(),
-                node.right() - node.left(),
-                node.bottom() - node.top(),
-                color
-            );
-
-            ctx.save();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = color;
-            ctx.strokeRect(
-                node.left(),
-                node.top(),
-                node.right() - node.left(),
-                node.bottom() - node.top()
-            );
-            ctx.restore();
-        }
-
-        function drawBoldHighlightForSelection(node, firstPart, lastPart, color) {
-            const margin = getSelectionMargin();
-            let x;
-            let y;
-            let width;
-            let height;
-
-            if (node.type === "prod") {
-                x = node.args[firstPart].left() - margin;
-                y = node.top() - margin;
-                width = node.args[lastPart].right() + margin - x;
-                height = node.bottom() + margin - y;
-            } else if (node.type === "sum") {
-                x = node.left() - margin;
-                y = node.args[firstPart].top() - margin;
-                width = node.right() + margin - x;
-                height = node.args[lastPart].bottom() + margin - y;
-            } else {
-                x = node.left() - margin;
-                y = node.top() - margin;
-                width = node.right() + margin - x;
-                height = node.bottom() + margin - y;
-            }
-
-            fillOverlayRect(x, y, width, height, color);
-
-            ctx.save();
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = color;
-            ctx.strokeRect(x, y, width, height);
-            ctx.restore();
-        }
-
-        function isDirectionalCommuteTool(toolName) {
-            return toolName === "commuteFirstToLast" || toolName === "commuteLastToFirst";
-        }
-
-        function getDirectionalCommuteMovingIndex(toolName, firstIndex, lastIndex) {
-            return toolName === "commuteLastToFirst" ? lastIndex : firstIndex;
-        }
-
-        function fillSingleCommutePartRegion(node, index, color) {
-            if (!node || !node.args || index < 0 || index >= node.args.length) {
-                return;
-            }
-            if (node.type === "sum") {
-                fillSingleSumTermRegion(node, index, color);
-            } else if (node.type === "prod") {
-                fillProductFactorRange(node, index, index, color);
-            }
-        }
-
-        function strokeSingleCommutePartRegion(node, index, color) {
-            if (!node || !node.args || index < 0 || index >= node.args.length) {
-                return;
-            }
-
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = color;
-
-            const margin = getSelectionMargin();
-            if (node.type === "sum") {
-                const term = node.args[index];
-                const y1 = term.top() - margin;
-                const y2 = term.bottom() + margin;
-                ctx.strokeRect(
-                    node.left() - margin,
-                    y1,
-                    node.right() - node.left() + margin * 2,
-                    y2 - y1
-                );
-            } else if (node.type === "prod") {
-                const x1 = node.args[index].left() - margin;
-                const x2 = node.args[index].right() + margin;
-                ctx.strokeRect(
-                    x1,
-                    node.top() - margin,
-                    x2 - x1,
-                    node.bottom() - node.top() + margin * 2
-                );
-            }
-
-            ctx.restore();
-        }
-
-        function drawCommutePreview() {
-            if (!selection.node || (selection.node.type !== "sum" && selection.node.type !== "prod")) {
-                return;
-            }
-
-            const partCount = selection.lastPart - selection.firstPart + 1;
-            const colors = uiState.previewColors || getDistinctRandomColors(partCount);
-
-            if (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") {
-                const chosen = new Set(Array.isArray(uiState.commuteOrder) ? uiState.commuteOrder : []);
-                for (let j = selection.firstPart; j <= selection.lastPart; j++) {
-                    const baseColor = colors[j - selection.firstPart] || SETTINGS.selectionBlue;
-                    const displayColor = chosen.has(j) ? darkenPreviewColor(baseColor) : baseColor;
-                    fillSingleCommutePartRegion(selection.node, j, displayColor);
-                    if (chosen.has(j)) {
-                        strokeSingleCommutePartRegion(selection.node, j, displayColor);
-                    }
-                }
-                return;
-            }
-
-            // Preserve directional behavior for legacy demo traces that explicitly
-            // name the old first-to-last / last-to-first tools.
-            const singleMoverDirectionalPreview = isDirectionalCommuteTool(uiState.activeTool) && partCount >= 3;
-            if (singleMoverDirectionalPreview) {
-                const movingIndex = getDirectionalCommuteMovingIndex(uiState.activeTool, selection.firstPart, selection.lastPart);
-                const color = colors[movingIndex - selection.firstPart] || colors[0] || SETTINGS.selectionBlue;
-                fillSingleCommutePartRegion(selection.node, movingIndex, color);
-                strokeSingleCommutePartRegion(selection.node, movingIndex, color);
-                return;
-            }
-
-            for (let j = selection.firstPart; j <= selection.lastPart; j++) {
-                const color = colors[j - selection.firstPart];
-                fillSingleCommutePartRegion(selection.node, j, color);
-            }
-        }
-
-        function drawDistributionPreview(direction) {
-            const data = getDistributionData(direction);
-            if (!data) {
-                return;
-            }
-
-            const sumNode = data.sumNode;
-            const partitionCount = 1 + sumNode.args.length;
-            const colors = uiState.previewColors || getDistinctRandomColors(partitionCount);
-
-            if (direction === "left") {
-                fillProductFactorRange(selection.node, selection.firstPart, selection.lastPart - 1, colors[0]);
-                for (let i = 0; i < sumNode.args.length; i++) {
-                    fillSingleSumTermRegion(sumNode, i, colors[i + 1]);
-                }
-            } else {
-                fillProductFactorRange(selection.node, selection.firstPart + 1, selection.lastPart, colors[0]);
-                for (let i = 0; i < sumNode.args.length; i++) {
-                    fillSingleSumTermRegion(sumNode, i, colors[i + 1]);
-                }
-            }
-        }
-
-        function drawFactoringPreview(direction) {
-            const data = getFactoringData(direction);
-            if (!data || data.commonCount <= 0) {
-                return;
-            }
-
-            const termCount = selection.lastPart - selection.firstPart + 1;
-            const partitionCount = 1 + termCount;
-            const colors = uiState.previewColors || getDistinctRandomColors(partitionCount);
-
-            for (let termOffset = 0; termOffset < termCount; termOffset++) {
-                const termIndex = selection.firstPart + termOffset;
-                const termNode = selection.node.args[termIndex];
-                const factorNodes = getTermFactors(termNode);
-
-                if (direction === "left") {
-                    if (data.commonCount === 1) {
-                        fillHighlightRect(factorNodes[0], colors[0]);
-                    } else {
-                        fillProductFactorRange(termNode, 0, data.commonCount - 1, colors[0]);
-                    }
-
-                    const remainderFirst = data.commonCount;
-                    const remainderLast = factorNodes.length - 1;
-                    if (remainderFirst <= remainderLast) {
-                        if (termNode.type === "prod") {
-                            fillProductFactorRange(termNode, remainderFirst, remainderLast, colors[1 + termOffset]);
-                        } else {
-                            fillHighlightRect(termNode, colors[1 + termOffset]);
-                        }
-                    }
-                } else {
-                    const firstCommon = factorNodes.length - data.commonCount;
-                    const lastCommon = factorNodes.length - 1;
-
-                    if (data.commonCount === 1) {
-                        fillHighlightRect(factorNodes[lastCommon], colors[0]);
-                    } else {
-                        fillProductFactorRange(termNode, firstCommon, lastCommon, colors[0]);
-                    }
-
-                    const remainderFirst = 0;
-                    const remainderLast = factorNodes.length - data.commonCount - 1;
-                    if (remainderFirst <= remainderLast) {
-                        if (termNode.type === "prod") {
-                            fillProductFactorRange(termNode, remainderFirst, remainderLast, colors[1 + termOffset]);
-                        } else {
-                            fillHighlightRect(termNode, colors[1 + termOffset]);
-                        }
-                    }
-                }
-            }
-        }
-
-        function drawIdentityInsertionPreview(identityKind) {
-            drawBoldHighlightForSelection(selection.node, selection.firstPart, selection.lastPart, "rgb(0, 170, 0)");
-            const box = getSelectionBox();
-            ctx.save();
-            ctx.font = "bold 22px Verdana, Arial, Helvetica, sans-serif";
-            ctx.fillStyle = "rgb(0, 170, 0)";
-            if (identityKind === "addZero") {
-                ctx.fillText("0", box.centerX, box.top - 18);
-                ctx.fillText("0", box.centerX, box.bottom + 18);
-            } else if (identityKind === "multiplyByOne") {
-                ctx.fillText("1", box.left - 18, box.centerY);
-                ctx.fillText("1", box.right + 18, box.centerY);
-            } else if (identityKind === "doubleNegative") {
-                ctx.fillText("-1", box.left - 24, box.centerY - 14);
-                ctx.fillText("-1", box.left - 24, box.centerY + 14);
-                ctx.fillText("-1", box.right + 24, box.centerY - 14);
-                ctx.fillText("-1", box.right + 24, box.centerY + 14);
-            }
-            ctx.restore();
-        }
-
-        function drawIdentityEliminationPreview() {
-            const data = getIdentityEliminationData();
-            if (!data) {
-                return;
-            }
-            for (const node of data.targets) {
-                fillBoldHighlightRect(node, "rgb(0, 170, 0)");
-            }
-        }
-
-        function drawDoubleNegativePreview() {
-            const data = getDoubleNegativeData();
-            if (!data) {
-                return;
-            }
-            for (const idx of data.indices) {
-                fillBoldHighlightRect(data.wrapper.args[idx], "rgb(0, 170, 0)");
-            }
-        }
-
-        function drawZeroProductPreview() {
-            const data = getZeroProductData();
-            if (!data) {
-                return;
-            }
-            fillBoldHighlightRect(data.zeroNode, "rgb(0, 170, 0)");
-        }
-
-        function drawCancelOppositesPreview() {
-            const data = getCancelOppositesData();
-            if (!data) {
-                return;
-            }
-            for (const pair of data.pairs) {
-                const posIndices = Array.isArray(pair.posIndices) ? pair.posIndices : [pair.posIndex];
-                for (const posIndex of posIndices) {
-                    fillBoldHighlightRect(data.wrapper.args[posIndex], "rgb(0, 170, 0)");
-                }
-                fillBoldHighlightRect(data.wrapper.args[pair.negIndex], "rgb(0, 170, 0)");
-            }
-        }
-
-        function drawInverseDistributionPreview() {
-            const data = getInverseDistributionData();
-            if (!data) {
-                return;
-            }
-            fillBoldHighlightRect(data.productNode, "rgb(0, 170, 0)");
-        }
-
-        function drawInverseFactoringPreview() {
-            const data = getInverseFactoringData();
-            if (!data) {
-                return;
-            }
-            for (const node of data.inverseNodes) {
-                fillBoldHighlightRect(node, "rgb(0, 170, 0)");
-            }
-        }
-
-        function drawEliminateDoubleInversePreview() {
-            const data = getDoubleInverseData();
-            if (!data) {
-                return;
-            }
-            fillBoldHighlightRect(data.outerInverse, "rgb(0, 170, 0)");
-        }
-
-        function drawCancelProductWithInversePreview() {
-            const data = getProductInverseCancellationData();
-            if (!data) {
-                return;
-            }
-            fillBoldHighlightRect(data.productNode, "rgb(0, 170, 0)");
-        }
-
-        function drawPostview() {
-            const data = uiState.postviewData;
-            if (!data) {
-                return;
-            }
-
-            if (data.type === "commuteRotate") {
-                if (!data.node) {
-                    return;
-                }
-
-                if (data.movedOnly) {
-                    const color = data.color || SETTINGS.selectionBlue;
-                    fillSingleCommutePartRegion(data.node, data.movedIndex, color);
-                    strokeSingleCommutePartRegion(data.node, data.movedIndex, color);
-                    return;
-                }
-
-                if (!Array.isArray(data.colors)) {
-                    return;
-                }
-
-                for (let index = data.firstIndex; index <= data.lastIndex; index++) {
-                    const color = data.colors[index - data.firstIndex];
-                    fillSingleCommutePartRegion(data.node, index, color);
-                }
-                return;
-            }
-
-            if (data.type === "commute") {
-                if (!data.node || !Array.isArray(data.colors)) {
-                    return;
-                }
-
-                if (data.node.type === "sum") {
-                    fillSingleSumTermRegion(data.node, data.firstIndex, data.colors[0]);
-                    fillSingleSumTermRegion(data.node, data.secondIndex, data.colors[1]);
-                } else if (data.node.type === "prod") {
-                    fillProductFactorRange(data.node, data.firstIndex, data.firstIndex, data.colors[0]);
-                    fillProductFactorRange(data.node, data.secondIndex, data.secondIndex, data.colors[1]);
-                }
-                return;
-            }
-
-            if (data.type === "distribution") {
-                for (const region of data.factorRegions) {
-                    if (region.firstIndex === region.lastIndex) {
-                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[0]);
-                    } else {
-                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[0]);
-                    }
-                }
-                for (let i = 0; i < data.termRegions.length; i++) {
-                    const region = data.termRegions[i];
-                    if (region.firstIndex === region.lastIndex) {
-                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[i + 1]);
-                    } else {
-                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[i + 1]);
-                    }
-                }
-                return;
-            }
-
-            if (data.type === "factoring") {
-                for (const region of data.commonFactorRegions) {
-                    if (region.firstIndex === region.lastIndex) {
-                        fillHighlightRect(region.node.args[region.firstIndex], data.colors[0]);
-                    } else {
-                        fillProductFactorRange(region.node, region.firstIndex, region.lastIndex, data.colors[0]);
-                    }
-                }
-                for (let i = 0; i < data.remainderNodes.length; i++) {
-                    fillHighlightRect(
-                        data.remainderNodes[i],
-                        data.colors[1 + i]
-                    );
-                }
-            }
-        }
-
-        function drawNodeRecursive(node) {
-            drawNodeRecursiveToContext(node, ctx, SETTINGS, isCommuteSeparatorHidden);
-        }
-
-        function isCommuteSeparatorHidden(node, separatorIndex) {
-            return false;
-        }
-
-        function drawNode(node) {
-            drawNodeToContext(node, ctx, SETTINGS, isCommuteSeparatorHidden);
-        }
-
-        function drawValueNode(node) {
-            drawValueNodeToContext(node, ctx, SETTINGS);
-        }
-
-        function drawRoundedNodeHighlight(node, color, lineWidth, padding) {
-            if (!node || !node.layout) {
-                return;
-            }
-            ctx.save();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = lineWidth;
-            ctx.setLineDash([]);
-            const x = node.left() - padding;
-            const y = node.top() - padding;
-            const w = node.layout.width + padding * 2;
-            const h = node.layout.height + padding * 2;
-            ctx.strokeRect(x, y, w, h);
-            ctx.restore();
-        }
-
-        function drawExpressionBuilderHighlightsForNode(node) {
-            if (!node) {
-                return;
-            }
-            if (node.isBuilderOuter) {
-                drawRoundedNodeHighlight(node, "rgba(80, 140, 255, 0.45)", 3, 7);
-            }
-            if (node.isBuilderActive) {
-                drawRoundedNodeHighlight(node, "rgba(10, 70, 210, 0.95)", 5, 4);
-            }
-            if (node.args) {
-                node.args.forEach(drawExpressionBuilderHighlightsForNode);
-            }
-        }
-
-        function drawExpressionBuilderHighlights() {
-            if (!uiState.expressionBuilder || uiState.stage !== "builder") {
-                return;
-            }
-            drawExpressionBuilderHighlightsForNode(expressionRoot);
-        }
-
-        function myRect(c, x1, y1, x2, y2) {
-            c.rect(x1, y1, x2 - x1, y2 - y1);
-        }
-
-        function clearSelection() {
-            selection.status = "no";
-            selection.node = null;
-            selection.firstPart = -1;
-            selection.lastPart = -1;
-        }
-
-        function clearInteraction() {
-            if (uiState.postviewTimerId !== null) {
-                clearTimeout(uiState.postviewTimerId);
-            }
-            if (uiState.previewTimerId !== null) {
-                clearTimeout(uiState.previewTimerId);
-            }
-            uiState.postviewTimerId = null;
-            uiState.previewTimerId = null;
-            uiState.postviewData = null;
-            uiState.activeTool = null;
-            uiState.activeToolCategory = null;
-            uiState.expressionBuilder = null;
-            uiState.toolExponentMode = getDefaultToolExponentModeForSelection();
-            uiState.stage = "idle";
-            uiState.chosenDirection = null;
-            uiState.chosenIdentity = null;
-            uiState.inputText = "";
-            uiState.message = "";
-            uiState.commuteSelectedIndex = -1;
-            uiState.commuteOrder = [];
-            uiState.previewColors = null;
-            renderToolArea();
-        }
-
-        function resetInteractionOnly() {
-            clearInteraction();
-            refreshStatus();
-            drawExpression();
-        }
-
-        function boxFromSelectionArea() {
-            const left = Math.min(selectionArea[0], selectionArea[2]) - selectionHitPadding;
-            const top = Math.min(selectionArea[1], selectionArea[3]) - selectionHitPadding;
-            const right = Math.max(selectionArea[0], selectionArea[2]) + selectionHitPadding;
-            const bottom = Math.max(selectionArea[1], selectionArea[3]) + selectionHitPadding;
-            return [left, top, right, bottom];
-        }
-
-        function boxesIntersect(box1, box2) {
-            if (
-                Math.max(box2[0], box2[2]) <= Math.min(box1[0], box1[2]) ||
-                Math.max(box1[0], box1[2]) <= Math.min(box2[0], box2[2]) ||
-                Math.max(box2[1], box2[3]) <= Math.min(box1[1], box1[3]) ||
-                Math.max(box1[1], box1[3]) <= Math.min(box2[1], box2[3])
-            ) {
-                return false;
-            }
-            return true;
-        }
-
-        function intersectionOfSelectionAreaWith(node) {
-            const intersection = [];
-            const box = boxFromSelectionArea();
-
-            if (node.type === "prod") {
-                for (let j = 1; j < node.layout.vLines.length - 1; j++) {
-                    const x = relVLine(node, j);
-                    if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
-                        intersection.push(j - 1);
-                    }
-                }
-                if (intersection.length > 0) {
-                    intersection.push(intersection[intersection.length - 1] + 1);
-                }
-            } else if (node.type === "sum") {
-                for (let j = 1; j < node.layout.hLines.length - 1; j++) {
-                    const y = relHLine(node, j);
-                    if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
-                        intersection.push(j - 1);
-                    }
-                }
-                if (intersection.length > 0) {
-                    intersection.push(intersection[intersection.length - 1] + 1);
-                }
-            } else if (node.type === "exp") {
-                const x = relVLine(node, 1);
-                const y = relHLine(node, 1);
-                if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
-                    return [0, 1];
-                }
-                if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
-                    return [0, 1];
-                }
-            } else if (node.type === "inv") {
-                const borderThickness = node.layout.inverseBorderThickness || SETTINGS.operatorThickness || 14;
-                const borderHalf = borderThickness / 2;
-                const left = node.left() + borderHalf;
-                const top = node.top() + borderHalf;
-                const right = node.right() - borderHalf;
-                const bottom = node.bottom() - borderHalf;
-                const borderHit =
-                    boxesIntersect(box, [left, top, right, top]) ||
-                    boxesIntersect(box, [right, top, right, bottom]) ||
-                    boxesIntersect(box, [left, bottom, right, bottom]) ||
-                    boxesIntersect(box, [left, top, left, bottom]);
-                if (borderHit) {
-                    return [0];
-                }
-            } else if (node.type === "value") {
-                if (boxesIntersect(box, [node.left(), node.top(), node.right(), node.bottom()])) {
-                    return [0];
-                }
-            }
-
-            return intersection;
-        }
-
-        function chooseSelectedOp() {
-            selection.node = null;
-            selection.firstPart = -1;
-            selection.lastPart = -1;
-
-            let found = false;
-            traversePreOrder(expressionRoot, node => {
-                if (found) {
-                    return;
-                }
-                const intersection = intersectionOfSelectionAreaWith(node);
-                if (intersection.length > 0) {
-                    selection.node = node;
-                    selection.firstPart = intersection[0];
-                    selection.lastPart = intersection[intersection.length - 1];
-                    found = true;
-                }
-            });
-        }
-
-        function updateSelectionFromEvent(e) {
-            if (uiState.mode !== "edit") {
-                return;
-            }
-            if (selection.status === "inProg") {
-                const rect = workspaceSvg.getBoundingClientRect();
-                selectionArea[2] = e.clientX - rect.left;
-                selectionArea[3] = e.clientY - rect.top;
-                chooseSelectedOp();
-                hideFloatingMenu();
-                refreshStatus();
-                drawExpression();
-            }
-        }
-
-        function getSelectionBox() {
-            if (!selection.node) {
-                return null;
-            }
-
-            const margin = getSelectionMargin();
-            let left, right, top, bottom;
-            if (selection.node.type === "prod") {
-                left = selection.node.args[selection.firstPart].left() - margin;
-                right = selection.node.args[selection.lastPart].right() + margin;
-                top = selection.node.top() - margin;
-                bottom = selection.node.bottom() + margin;
-            } else if (selection.node.type === "sum") {
-                left = selection.node.left() - margin;
-                right = selection.node.right() + margin;
-                top = selection.node.args[selection.firstPart].top() - margin;
-                bottom = selection.node.args[selection.lastPart].bottom() + margin;
-            } else {
-                left = selection.node.left() - margin;
-                right = selection.node.right() + margin;
-                top = selection.node.top() - margin;
-                bottom = selection.node.bottom() + margin;
-            }
-
-            return {
-                left,
-                right,
-                top,
-                bottom,
-                centerX: (left + right) / 2,
-                centerY: (top + bottom) / 2
-            };
-        }
-
-        function pointIsInCurrentSelection(x, y) {
-            const box = getSelectionBox();
-            if (!box) {
-                return false;
-            }
-            return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
-        }
-        function positionFloatingMenu() {
-            if (!selection.node) {
-                hideFloatingMenu();
-                return;
-            }
-
-            const box = getSelectionBox();
-            if (!box) {
-                hideFloatingMenu();
-                return;
-            }
-
-            // Put the menu directly below the selected region, with the left
-            // edge of the menu aligned to the left edge of the selection.
-            uiState.floatingMenuX = box.left;
-            uiState.floatingMenuY = box.bottom + 8;
-        }
-
-        function showFloatingMenu() {
-            if (uiState.mode !== "edit") {
-                hideFloatingMenu();
-                return;
-            }
-            if (!uiState.showFloatingMenu || !selection.node || uiState.stage === "postview") {
-                hideFloatingMenu();
-                return;
-            }
-
-            positionFloatingMenu();
-            floatingToolMenu.style.left = `${uiState.floatingMenuX}px`;
-            floatingToolMenu.style.top = `${uiState.floatingMenuY}px`;
-            floatingToolMenu.classList.remove("hidden");
-
-            // Default keyboard focus to first menu item so Enter works immediately.
-            const firstButton = floatingToolMenu.querySelector("button");
-            if (firstButton) {
-                firstButton.focus();
-            }
-        }
-
-        function hideFloatingMenu() {
-            floatingToolMenu.classList.add("hidden");
-            floatingToolMenu.innerHTML = "";
-        }
-
-        function getSelectedSliceLength() {
-            if (!selection.node) {
-                return 0;
-            }
-            if (selection.node.type === "sum" || selection.node.type === "prod") {
-                return selection.lastPart - selection.firstPart + 1;
-            }
-            return 1;
-        }
-
-        function cloneSelectedRangeNode() {
-            if (!selection.node) {
-                return null;
-            }
-            if (selection.node.type === "sum") {
-                const terms = selection.node.args
-                    .slice(selection.firstPart, selection.lastPart + 1)
-                    .map(cloneNode);
-                return makeSumFromTerms(terms);
-            }
-            if (selection.node.type === "prod") {
-                const factors = selection.node.args
-                    .slice(selection.firstPart, selection.lastPart + 1)
-                    .map(cloneNode);
-                return makeProductFromFactors(factors);
-            }
-            return cloneNode(selection.node);
-        }
-
-        function getSelectedWrapperData() {
-            if (!selection.node) {
-                return null;
-            }
-
-            if (selection.node.type === "sum") {
-                return {
-                    wrapper: makeSumFromTerms(selection.node.args.slice(selection.firstPart, selection.lastPart + 1).map(cloneNode)),
-                    isSlice: true,
-                    type: "sum"
-                };
-            }
-
-            if (selection.node.type === "prod") {
-                return {
-                    wrapper: makeProductFromFactors(selection.node.args.slice(selection.firstPart, selection.lastPart + 1).map(cloneNode)),
-                    isSlice: true,
-                    type: "prod"
-                };
-            }
-
-            return {
-                wrapper: cloneNode(selection.node),
-                isSlice: false,
-                type: selection.node.type
-            };
-        }
-
-        function replaceSelectedNode(replacementNode) {
-            if (!selection.node) {
-                return false;
-            }
-
-            if (selection.node.id === expressionRoot.id) {
-                expressionRoot = replacementNode;
-                syncCurrentExpressionRoot();
-                return true;
-            }
-
-            return replaceNodeById(expressionRoot, selection.node.id, replacementNode);
-        }
-
-        function replaceSelectedRange(replacementNode) {
-            if (!selection.node) {
-                return false;
-            }
-
-            if (selection.node.type === "sum") {
-                const before = selection.node.args.slice(0, selection.firstPart);
-                const after = selection.node.args.slice(selection.lastPart + 1);
-                selection.node.args = [...before, replacementNode, ...after];
-                return true;
-            }
-
-            if (selection.node.type === "prod") {
-                const before = selection.node.args.slice(0, selection.firstPart);
-                const after = selection.node.args.slice(selection.lastPart + 1);
-                selection.node.args = [...before, replacementNode, ...after];
-                return true;
-            }
-
-            return replaceSelectedNode(replacementNode);
-        }
-
-        function replaceNodeById(currentNode, targetId, replacementNode) {
-            for (let i = 0; i < currentNode.args.length; i++) {
-                if (currentNode.args[i].id === targetId) {
-                    currentNode.args[i] = replacementNode;
-                    return true;
-                }
-                if (replaceNodeById(currentNode.args[i], targetId, replacementNode)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function makeProductFromFactors(factors) {
-            if (factors.length === 0) {
-                return new ExprNode("value", [], "1");
-            }
-            if (factors.length === 1) {
-                return factors[0];
-            }
-            return new ExprNode("prod", factors, null);
-        }
-
-        function makeSumFromTerms(terms) {
-            if (terms.length === 0) {
-                return new ExprNode("value", [], "0");
-            }
-            if (terms.length === 1) {
-                return terms[0];
-            }
-            return new ExprNode("sum", terms, null);
-        }
-
-        function getTermFactors(node) {
-            if (node.type === "prod") {
-                return node.args;
-            }
-            return [node];
-        }
-
-        function getSelectedTerms() {
-            if (!selection.node || selection.node.type !== "sum") {
-                return [];
-            }
-            return selection.node.args.slice(selection.firstPart, selection.lastPart + 1);
-        }
-
-        function getCommonLeftFactorCount(selectedTerms) {
-            if (selectedTerms.length < 2) {
-                return 0;
-            }
-            const factorLists = selectedTerms.map(getTermFactors);
-            const minLen = Math.min(...factorLists.map(list => list.length));
-            let count = 0;
-            for (let i = 0; i < minLen; i++) {
-                const candidate = factorLists[0][i];
-                if (factorLists.every(list => sameExpression(list[i], candidate))) {
-                    count += 1;
-                } else {
-                    break;
-                }
-            }
-            return count;
-        }
-
-        function getCommonRightFactorCount(selectedTerms) {
-            if (selectedTerms.length < 2) {
-                return 0;
-            }
-            const factorLists = selectedTerms.map(getTermFactors);
-            const minLen = Math.min(...factorLists.map(list => list.length));
-            let count = 0;
-            for (let i = 1; i <= minLen; i++) {
-                const candidate = factorLists[0][factorLists[0].length - i];
-                if (factorLists.every(list => sameExpression(list[list.length - i], candidate))) {
-                    count += 1;
-                } else {
-                    break;
-                }
-            }
-            return count;
-        }
-
-        function getFactoringData(direction) {
-            if (!selection.node || selection.node.type !== "sum") {
-                return null;
-            }
-            if (getSelectedSliceLength() < 2) {
-                return null;
-            }
-            const selectedTerms = getSelectedTerms();
-            const commonCount = direction === "left"
-                ? getCommonLeftFactorCount(selectedTerms)
-                : getCommonRightFactorCount(selectedTerms);
-
-            return { selectedTerms, commonCount };
-        }
-
-        function getDistributionData(direction) {
-            if (!selection.node || selection.node.type !== "prod" || getSelectedSliceLength() < 2) {
-                return null;
-            }
-
-            if (direction === "left") {
-                const sumNode = selection.node.args[selection.lastPart];
-                if (!sumNode || sumNode.type !== "sum") {
-                    return null;
-                }
-                return { sumNode };
-            }
-
-            const sumNode = selection.node.args[selection.firstPart];
-            if (!sumNode || sumNode.type !== "sum") {
-                return null;
-            }
-            return { sumNode };
-        }
-
-        function canCommute() {
-            return canCommuteRotate();
-        }
-
-        function canCommuteRotate() {
-            return !!selection.node &&
-                (selection.node.type === "sum" || selection.node.type === "prod") &&
-                getSelectedSliceLength() >= 2;
-        }
-
-        function canDistribute() {
-            return !!(getDistributionData("left") || getDistributionData("right"));
-        }
-
-        function canFactor() {
-            const left = getFactoringData("left");
-            const right = getFactoringData("right");
-            return !!((left && left.commonCount > 0) || (right && right.commonCount > 0));
-        }
-
-        function canInsertIdentity() {
-            return !!selection.node;
-        }
-
-        function canReplaceOneWithInverseProduct() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "1";
-        }
-
-        function canReplaceZeroWithOppositeSum() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "0";
-        }
-
-        function canInsertZeroProduct() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "0";
-        }
-
-        function canInsertExponentZero() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "1";
-        }
-
-        function canInsertPowerOfOne() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "1";
-        }
-
-        function getProductInverseCancellationData() {
-            const node = cloneSelectedRangeNode();
-            if (!node || node.type !== "prod" || !node.args || node.args.length < 2) {
-                return null;
-            }
-
-            for (let inverseIndex = 0; inverseIndex < node.args.length; inverseIndex++) {
-                const possibleInverse = node.args[inverseIndex];
-                if (!isInvNode(possibleInverse)) {
-                    continue;
-                }
-
-                // A may itself be a product. Since products are normalized by
-                // flattening nested products, A Â· A^-1 can appear as
-                // a Â· b Â· c Â· (a Â· b Â· c)^-1. Match the inverse against any
-                // collection of sibling factors, not just a single sibling.
-                const requiredFactors = getProductFactorsForMatching(possibleInverse.args[0]);
-                const expressionIndices = findMatchingNodeIndices(requiredFactors, node.args, new Set(), inverseIndex);
-                if (expressionIndices) {
-                    const expressionNode = makeProductFromFactors(
-                        expressionIndices.map(index => cloneNode(node.args[index]))
-                    );
-                    return {
-                        productNode: node,
-                        expressionNode,
-                        inverseNode: possibleInverse,
-                        inverseIndex,
-                        expressionIndices
-                    };
-                }
-            }
-
-            return null;
-        }
-
-        function canCancelProductWithInverse() {
-            return !!getProductInverseCancellationData();
-        }
-
-        function getInverseDistributionData() {
-            const node = cloneSelectedRangeNode();
-            if (!isInvNode(node)) {
-                return null;
-            }
-            const productNode = node.args[0];
-            if (!productNode || productNode.type !== "prod" || productNode.args.length < 2) {
-                return null;
-            }
-            return { inverseNode: node, productNode };
-        }
-
-        function canDistributeInverseOverProduct() {
-            return !!getInverseDistributionData();
-        }
-
-        function getInverseFactoringData() {
-            const node = cloneSelectedRangeNode();
-            if (!node || node.type !== "prod" || node.args.length < 2) {
-                return null;
-            }
-            const inverseNodes = node.args.filter(child => isInvNode(child));
-            if (inverseNodes.length !== node.args.length) {
-                return null;
-            }
-            return { productNode: node, inverseNodes };
-        }
-
-        function canFactorProductOfInverses() {
-            return !!getInverseFactoringData();
-        }
-
-
-        function valueNode(value) {
-            return new ExprNode("value", [], String(value));
-        }
-
-        function isValueNode(node, value) {
-            return !!node && node.type === "value" && node.value === String(value);
-        }
-
-        function isInvNode(node) {
-            return !!node && node.type === "inv" && node.args && node.args.length === 1;
-        }
-
-        function isExpNode(node) {
-            return !!node && node.type === "exp" && node.args && node.args.length === 2;
-        }
-
-        function isProdNode(node) {
-            return !!node && node.type === "prod" && node.args && node.args.length >= 1;
-        }
-
-        function isSumNode(node) {
-            return !!node && node.type === "sum" && node.args && node.args.length >= 1;
-        }
-
-        function makeInverseNode(node) {
-            return new ExprNode("inv", [cloneNode(node)], null);
-        }
-
-        function makeExponentNode(base, exponent) {
-            return new ExprNode("exp", [cloneNode(base), cloneNode(exponent)], null);
-        }
-
-        function parsePositiveIntegerValue(node) {
-            if (!isValueNode(node, node && node.value)) {
-                return null;
-            }
-            if (!/^\d+$/.test(node.value)) {
-                return null;
-            }
-            const n = Number(node.value);
-            return n > 0 ? n : null;
-        }
-
-        function isProductTwoTimesSomething(node) {
-            return isProdNode(node) && node.args.length === 2 &&
-                (isValueNode(node.args[0], "2") || isValueNode(node.args[1], "2"));
-        }
-
-        function isTwoNPlusOne(node) {
-            if (!isSumNode(node) || node.args.length !== 2) {
-                return false;
-            }
-            return (isProductTwoTimesSomething(node.args[0]) && isValueNode(node.args[1], "1")) ||
-                (isProductTwoTimesSomething(node.args[1]) && isValueNode(node.args[0], "1"));
-        }
-
-        function getPowerInverseRewriteApplicability() {
-            const out = {};
-            for (const key of POWER_INVERSE_REWRITE_TOOLS) {
-                out[key] = canApplyPowerInverseRewrite(key);
-            }
-            return out;
-        }
-
-        function canApplyPowerInverseRewrite(ruleName) {
-            return !!getPowerInverseRewriteReplacement(ruleName);
-        }
-
-        function getPowerInverseRewriteReplacement(ruleName) {
-            const node = cloneSelectedRangeNode();
-            if (!node) {
-                return null;
-            }
-
-            if (ruleName === "rewriteInvNegOneToNegOne") {
-                return isInvNode(node) && isValueNode(node.args[0], "-1") ? valueNode("-1") : null;
-            }
-
-            if (ruleName === "rewriteNegOneToInvNegOne") {
-                return isValueNode(node, "-1") ? makeInverseNode(valueNode("-1")) : null;
-            }
-
-            if (ruleName === "eliminateExponentOne") {
-                return isExpNode(node) && isValueNode(node.args[1], "1") ? cloneNode(node.args[0]) : null;
-            }
-
-            if (ruleName === "insertExponentOne") {
-                return makeExponentNode(node, valueNode("1"));
-            }
-
-            if (ruleName === "eliminateExponentZero") {
-                return isExpNode(node) && isValueNode(node.args[1], "0") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "rewriteNegativeOneExponentAsInverse") {
-                return isExpNode(node) && isValueNode(node.args[1], "-1") ? makeInverseNode(node.args[0]) : null;
-            }
-
-            if (ruleName === "rewriteInverseAsNegativeOneExponent") {
-                return isInvNode(node)
-                    ? new ExprNode("exp", [cloneNode(node.args[0]), valueNode("-1")], null)
-                    : null;
-            }
-
-            if (ruleName === "eliminateInverseToNegativeOnePower") {
-                return isExpNode(node) && isInvNode(node.args[0]) && isValueNode(node.args[1], "-1")
-                    ? cloneNode(node.args[0].args[0])
-                    : null;
-            }
-
-            if (ruleName === "distributePowerOverInverse") {
-                if (!isExpNode(node) || !isInvNode(node.args[0])) {
-                    return null;
-                }
-                return makeInverseNode(new ExprNode("exp", [cloneNode(node.args[0].args[0]), cloneNode(node.args[1])], null));
-            }
-
-            if (ruleName === "factorPowerOutOfInverse") {
-                if (!isInvNode(node) || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [makeInverseNode(node.args[0].args[0]), cloneNode(node.args[0].args[1])], null);
-            }
-
-            if (ruleName === "powerOfPower") {
-                if (!isExpNode(node) || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeProductFromFactors([cloneNode(node.args[0].args[1]), cloneNode(node.args[1])])], null);
-            }
-
-            if (ruleName === "expandPowerOfPower") {
-                if (!isExpNode(node) || !isProdNode(node.args[1]) || node.args[1].args.length < 2) {
-                    return null;
-                }
-                const exponentFactors = node.args[1].args;
-                const innerExponent = cloneNode(exponentFactors[0]);
-                const outerExponent = makeProductFromFactors(exponentFactors.slice(1).map(cloneNode));
-                return new ExprNode("exp", [
-                    new ExprNode("exp", [cloneNode(node.args[0]), innerExponent], null),
-                    outerExponent
-                ], null);
-            }
-
-            if (ruleName === "combineSameBasePowers") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0]) || !isExpNode(node.args[1])) {
-                    return null;
-                }
-                if (!sameExpression(node.args[0].args[0], node.args[1].args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeSumFromTerms([cloneNode(node.args[0].args[1]), cloneNode(node.args[1].args[1])])], null);
-            }
-
-            if (ruleName === "expandPowerOfSum") {
-                if (!isExpNode(node) || !isSumNode(node.args[1]) || node.args[1].args.length < 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[1].args.map(term => new ExprNode("exp", [cloneNode(node.args[0]), cloneNode(term)], null)));
-            }
-
-            if (ruleName === "divideSameBasePowers") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                const firstPower = node.args[0];
-                const secondFactor = node.args[1];
-                if (isInvNode(secondFactor) && isExpNode(secondFactor.args[0])) {
-                    const secondPower = secondFactor.args[0];
-                    if (!sameExpression(firstPower.args[0], secondPower.args[0])) {
-                        return null;
-                    }
-                    return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), makeProductFromFactors([valueNode("-1"), cloneNode(secondPower.args[1])])])], null);
-                }
-                if (isExpNode(secondFactor) && sameExpression(firstPower.args[0], secondFactor.args[0]) && isProdNode(secondFactor.args[1])) {
-                    const terms = secondFactor.args[1].args;
-                    if (terms.length === 2 && isValueNode(terms[0], "-1")) {
-                        return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), cloneNode(secondFactor.args[1])])], null);
-                    }
-                }
-                return null;
-            }
-
-            if (ruleName === "distributeExponentOverProduct") {
-                if (!isExpNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length < 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[0].args.map(factor => new ExprNode("exp", [cloneNode(factor), cloneNode(node.args[1])], null)));
-            }
-
-            if (ruleName === "factorCommonExponent") {
-                if (!isProdNode(node) || node.args.length < 2 || !node.args.every(isExpNode)) {
-                    return null;
-                }
-                const commonExponent = node.args[0].args[1];
-                if (!node.args.every(power => sameExpression(power.args[1], commonExponent))) {
-                    return null;
-                }
-                return new ExprNode("exp", [makeProductFromFactors(node.args.map(power => cloneNode(power.args[0]))), cloneNode(commonExponent)], null);
-            }
-
-            if (ruleName === "oneToAnyPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneSquared") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isValueNode(node.args[1], "2") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneEvenPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isProductTwoTimesSomething(node.args[1]) ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneOddPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isTwoNPlusOne(node.args[1]) ? valueNode("-1") : null;
-            }
-
-            if (ruleName === "repeatedProductToPower") {
-                if (!isProdNode(node) || node.args.length < 2) {
-                    return null;
-                }
-                const first = node.args[0];
-                if (!node.args.every(child => sameExpression(child, first))) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(first), valueNode(node.args.length)], null);
-            }
-
-            if (ruleName === "powerToRepeatedProduct") {
-                if (!isExpNode(node)) {
-                    return null;
-                }
-                const count = parsePositiveIntegerValue(node.args[1]);
-                if (count === null || count < 2 || count > 20) {
-                    return null;
-                }
-                return makeProductFromFactors(Array.from({ length: count }, () => cloneNode(node.args[0])));
-            }
-
-            if (ruleName === "inverseOne") {
-                return isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "factorProductOfTwoInverses") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[0]) || !isInvNode(node.args[1])) {
-                    return null;
-                }
-                return makeInverseNode(makeProductFromFactors([cloneNode(node.args[0].args[0]), cloneNode(node.args[1].args[0])]));
-            }
-
-            if (ruleName === "distributeInverseOverTwoProduct") {
-                if (!isInvNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length !== 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[0].args.map(factor => makeInverseNode(factor)));
-            }
-
-            if (ruleName === "inverseFactorAsNegativeExponent") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[1])) {
-                    return null;
-                }
-                return makeProductFromFactors([cloneNode(node.args[0]), new ExprNode("exp", [cloneNode(node.args[1].args[0]), valueNode("-1")], null)]);
-            }
-
-            return null;
-        }
-
-        function applyPowerInverseRewrite(ruleName) {
-            const replacement = getPowerInverseRewriteReplacement(ruleName);
-            if (!replacement) {
-                return false;
-            }
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function getIdentityEliminationData() {
-            if (!selection.node) {
-                return null;
-            }
-
-            if (selection.node.type === "sum") {
-                const targets = [];
-                for (let i = selection.firstPart; i <= selection.lastPart; i++) {
-                    const child = selection.node.args[i];
-                    if (child.type === "value" && child.value === "0") {
-                        targets.push(child);
-                    }
-                }
-                if (targets.length === 0) {
-                    return null;
-                }
-                return { kind: "sum", targets };
-            }
-
-            if (selection.node.type === "prod") {
-                const targets = [];
-                for (let i = selection.firstPart; i <= selection.lastPart; i++) {
-                    const child = selection.node.args[i];
-                    if (child.type === "value" && child.value === "1") {
-                        targets.push(child);
-                    }
-                }
-                if (targets.length === 0) {
-                    return null;
-                }
-                return { kind: "prod", targets };
-            }
-
-            return null;
-        }
-
-        function canEliminateIdentities() {
-            return !!getIdentityEliminationData();
-        }
-
-        function parseNonNegativeInteger(text) {
-            if (!/^\d+$/.test(text.trim())) {
-                return null;
-            }
-            return Number(text.trim());
-        }
-
-        function canFactorNumber() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && parseNonNegativeInteger(node.value) !== null;
-        }
-
-        function canWriteNumberAsSum() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && parseNonNegativeInteger(node.value) !== null;
-        }
-
-        function parseNumericValue(text) {
-            const trimmed = String(text).trim();
-            if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(trimmed)) {
-                return null;
-            }
-            return Number(trimmed);
-        }
-
-        function evaluatePureNumericProductNode(node) {
-            if (!node || node.type !== "prod" || !node.args || node.args.length === 0) {
-                return null;
-            }
-
-            const values = [];
-            for (const child of node.args) {
-                if (!child || child.type !== "value") {
-                    return null;
-                }
-                const parsed = parseNumericValue(child.value);
-                if (parsed === null || Number.isNaN(parsed)) {
-                    return null;
-                }
-                values.push(parsed);
-            }
-
-            return values.reduce((a, b) => a * b, 1);
-        }
-
-        function evaluateSumContainingProductsNode(node) {
-            if (!node || node.type !== "sum" || !node.args || node.args.length === 0) {
-                return null;
-            }
-
-            const termValues = [];
-            for (const term of node.args) {
-                if (!term) {
-                    return null;
-                }
-
-                if (term.type === "value") {
-                    const parsed = parseNumericValue(term.value);
-                    if (parsed === null || Number.isNaN(parsed)) {
-                        return null;
-                    }
-                    termValues.push(parsed);
-                    continue;
-                }
-
-                if (term.type === "prod") {
-                    const productValue = evaluatePureNumericProductNode(term);
-                    if (productValue === null || Number.isNaN(productValue)) {
-                        return null;
-                    }
-                    termValues.push(productValue);
-                    continue;
-                }
-
-                return null;
-            }
-
-            return termValues.reduce((a, b) => a + b, 0);
-        }
-
-        function evaluateSumOrProductNode(node) {
-            if (!node || (node.type !== "sum" && node.type !== "prod")) {
-                return null;
-            }
-            if (!node.args || node.args.length === 0) {
-                return null;
-            }
-
-            const values = [];
-            for (const child of node.args) {
-                if (!child || child.type !== "value") {
-                    return null;
-                }
-                const parsed = parseNumericValue(child.value);
-                if (parsed === null || Number.isNaN(parsed)) {
-                    return null;
-                }
-                values.push(parsed);
-            }
-
-            return node.type === "sum"
-                ? values.reduce((a, b) => a + b, 0)
-                : values.reduce((a, b) => a * b, 1);
-        }
-
-        function numbersAreEqualForEvaluation(a, b) {
-            return Math.abs(a - b) < 1e-9;
-        }
-
-        function formatEvaluationResultForExpression(value) {
-            if (!Number.isFinite(value)) {
-                return String(value);
-            }
-            if (Math.abs(value) < 1e-12) {
-                return "0";
-            }
-            const rounded = Math.round(value);
-            if (Math.abs(value - rounded) < 1e-9) {
-                return String(rounded);
-            }
-            return Number(value.toPrecision(12)).toString();
-        }
-
-        function canEvaluateSum() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "sum" && evaluateSumOrProductNode(node) !== null;
-        }
-
-        function canEvaluateProduct() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "prod" && evaluateSumOrProductNode(node) !== null;
-        }
-
-        function canEvaluateSumContainingProducts() {
-            const node = cloneSelectedRangeNode();
-            if (!node || node.type !== "sum" || !node.args || node.args.length === 0) {
-                return false;
-            }
-
-            const containsProductTerm = node.args.some(term => term && term.type === "prod");
-            if (!containsProductTerm) {
-                return false;
-            }
-
-            return evaluateSumContainingProductsNode(node) !== null;
-        }
-
-        function clampArithmeticLevel(value, fallback = 0) {
-            const numeric = Number(value);
-            if (!Number.isFinite(numeric)) {
-                return fallback;
-            }
-            return Math.max(0, Math.min(3, Math.floor(numeric)));
-        }
-
-        function getArithmeticLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticLevel, 0);
-            }
-            if (level && typeof level.evaluationLevel === "number") {
-                return clampArithmeticLevel(level.evaluationLevel, 0);
-            }
-            return 0;
-        }
-
-        function getArithmeticInputLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticInputLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticInputLevel, getArithmeticLevelForCurrentLevel());
-            }
-            return getArithmeticLevelForCurrentLevel();
-        }
-
-        function getArithmeticOutputLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticOutputLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticOutputLevel, getArithmeticLevelForCurrentLevel());
-            }
-            return getArithmeticLevelForCurrentLevel();
-        }
-
-        function getEvaluationLevelForCurrentLevel() {
-            return getArithmeticLevelForCurrentLevel();
-        }
-
-        const ARITHMETIC_TOOL_LEVELS = {
-            arithmeticLevel0: 0,
-            arithmeticLevel1: 1,
-            arithmeticLevel2: 2,
-            arithmeticLevel3: 3
-        };
-
-        function isArithmeticEquivalenceTool(toolName) {
-            return Object.prototype.hasOwnProperty.call(ARITHMETIC_TOOL_LEVELS, toolName);
-        }
-
-        function isNumericalRewriteTool(toolName) {
-            return toolName === "numericalRewrite" || isArithmeticEquivalenceTool(toolName);
-        }
-
-        function getArithmeticLevelFromToolName(toolName) {
-            return isArithmeticEquivalenceTool(toolName)
-                ? ARITHMETIC_TOOL_LEVELS[toolName]
-                : null;
-        }
-
-        function isArithmeticToolLevelAllowedInCurrentLevel(level) {
-            return clampArithmeticLevel(level, 0) === getArithmeticLevelForCurrentLevel();
-        }
-
-        function isArithmeticToolAllowedInCurrentLevel(toolName) {
-            if (isArithmeticEquivalenceTool(toolName) && getCurrentLevel() && getCurrentLevel().numericalRewrite) {
-                return true;
-            }
-            const level = getArithmeticLevelFromToolName(toolName);
-            return level === null || isArithmeticToolLevelAllowedInCurrentLevel(level);
-        }
-
-        function isToolAllowedInCurrentLevel(toolName) {
-            return isArithmeticToolAllowedInCurrentLevel(toolName);
-        }
-
-        function getArithmeticAllowedLevelsForTool(toolName) {
-            const forcedLevel = getArithmeticLevelFromToolName(toolName);
-            if (forcedLevel !== null) {
-                return { inputLevel: forcedLevel, outputLevel: forcedLevel };
-            }
-            return {
-                inputLevel: getArithmeticInputLevelForCurrentLevel(),
-                outputLevel: getArithmeticOutputLevelForCurrentLevel()
-            };
-        }
-
-        function getNumericLeafValue(node) {
-            if (!node || node.type !== "value") {
-                return null;
-            }
-            const parsed = parseNumericValue(node.value);
-            return parsed === null || Number.isNaN(parsed) || !Number.isFinite(parsed)
-                ? null
-                : parsed;
-        }
-
-        function getWholeNumberLeafValue(node) {
-            if (!node || node.type !== "value") {
-                return null;
-            }
-            return parseNonNegativeInteger(node.value);
-        }
-
-        function isWholeNumberLeafNode(node) {
-            return getWholeNumberLeafValue(node) !== null;
-        }
-
-        function isEntirelyNumericalNode(node) {
-            if (!node) {
-                return false;
-            }
-            if (node.type === "value") {
-                return getNumericLeafValue(node) !== null;
-            }
-            return Array.isArray(node.args) && node.args.length > 0 && node.args.every(isEntirelyNumericalNode);
-        }
-
-        function evaluateArithmeticNode(node) {
-            if (!node) {
-                return null;
-            }
-            if (node.type === "value") {
-                return getNumericLeafValue(node);
-            }
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return null;
-            }
-            const values = node.args.map(evaluateArithmeticNode);
-            if (values.some(value => value === null || Number.isNaN(value) || !Number.isFinite(value))) {
-                return null;
-            }
-            let result = null;
-            if (node.type === "sum") {
-                result = values.reduce((a, b) => a + b, 0);
-            } else if (node.type === "prod") {
-                result = values.reduce((a, b) => a * b, 1);
-            } else if (node.type === "exp" && values.length === 2) {
-                result = Math.pow(values[0], values[1]);
-            } else {
-                return null;
-            }
-            return Number.isFinite(result) && !Number.isNaN(result) ? result : null;
-        }
-
-        function isOneSignificantFigureWholeNumber(value) {
-            if (!Number.isInteger(value) || value < 0) {
-                return false;
-            }
-            if (value === 0) {
-                return true;
-            }
-            return /^[1-9]0*$/.test(String(value));
-        }
-
-        function isNoCarryWholeNumberAddition(values) {
-            if (!Array.isArray(values) || values.length < 2) {
-                return false;
-            }
-            if (!values.every(value => Number.isInteger(value) && value >= 0)) {
-                return false;
-            }
-            const texts = values.map(value => String(value));
-            const maxLength = Math.max(...texts.map(text => text.length));
-            for (let offset = 0; offset < maxLength; offset++) {
-                let columnSum = 0;
-                for (const text of texts) {
-                    const index = text.length - 1 - offset;
-                    columnSum += index >= 0 ? Number(text[index]) : 0;
-                }
-                if (columnSum >= 10) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function classifyArithmeticExpressionLevel(node) {
-            if (!isEntirelyNumericalNode(node)) {
-                return null;
-            }
-            const normalized = normalizeExpressionTree(cloneNode(node));
-            return classifyArithmeticExpressionLevelNormalized(normalized);
-        }
-
-        function classifyArithmeticExpressionLevelNormalized(node) {
-            if (!node) {
-                return null;
-            }
-
-            if (node.type === "value") {
-                if (parseNonNegativeInteger(node.value) !== null) {
-                    return 0;
-                }
-                if (node.value === "-1") {
-                    return 2;
-                }
-                return getNumericLeafValue(node) !== null ? 3 : null;
-            }
-
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return null;
-            }
-
-            const childLevels = node.args.map(classifyArithmeticExpressionLevelNormalized);
-            if (childLevels.some(level => level === null)) {
-                return null;
-            }
-
-            if (node.type === "sum") {
-                const nonNegativeIntegerTerms = node.args.map(getWholeNumberLeafValue);
-                if (nonNegativeIntegerTerms.every(value => value !== null)) {
-                    return isNoCarryWholeNumberAddition(nonNegativeIntegerTerms) ? 0 : 1;
-                }
-                return childLevels.every(level => level <= 2) ? 2 : 3;
-            }
-
-            if (node.type === "prod") {
-                const nonNegativeIntegerFactors = node.args.map(getWholeNumberLeafValue);
-                if (nonNegativeIntegerFactors.every(value => value !== null)) {
-                    const isLevelZeroProduct = nonNegativeIntegerFactors.length === 2 &&
-                        nonNegativeIntegerFactors.every(isOneSignificantFigureWholeNumber);
-                    return isLevelZeroProduct ? 0 : 1;
-                }
-                return childLevels.every(level => level <= 2) ? 2 : 3;
-            }
-
-            if (node.type === "exp" && node.args.length === 2) {
-                return isWholeNumberLeafNode(node.args[0]) && isWholeNumberLeafNode(node.args[1])
-                    ? 2
-                    : 3;
-            }
-
-            return null;
-        }
-
-        function isArithmeticExpressionAtOrBelowLevel(node, allowedLevel) {
-            const level = classifyArithmeticExpressionLevel(node);
-            return level !== null && level <= clampArithmeticLevel(allowedLevel, 0);
-        }
-
-        function getArithmeticLevelDescription(level) {
-            const clamped = clampArithmeticLevel(level, 0);
-            if (clamped === 0) {
-                return "Level 0 allows no-carry addition of two or more nonnegative whole numbers, or multiplication of exactly two one-significant-figure whole numbers.";
-            }
-            if (clamped === 1) {
-                return "Level 1 allows flat nonnegative sums or flat nonnegative products, with no exponents and no nesting.";
-            }
-            if (clamped === 2) {
-                return "Level 2 allows nested sums and products, the negative unit, and simple nonnegative whole-number exponents.";
-            }
-            return "Level 3 allows any expression made entirely of numbers.";
-        }
-
-        const NUMERICAL_REWRITE_ADDITION_MODES = ["none", "no-carry", "flat", "expression-terms"];
-        const NUMERICAL_REWRITE_MULTIPLICATION_MODES = ["none", "one-significant-figure", "unrestricted"];
-
-        function numericalRewriteProfileFromLegacyLevel(level) {
-            const legacyLevel = clampArithmeticLevel(level, 0);
-            if (legacyLevel === 0) {
-                return {
-                    addition: "no-carry",
-                    multiplication: "one-significant-figure",
-                    allowNegativeOne: false,
-                    allowExponents: false,
-                    allowInverses: false
-                };
-            }
-            if (legacyLevel === 1) {
-                return {
-                    addition: "flat",
-                    multiplication: "unrestricted",
-                    allowNegativeOne: false,
-                    allowExponents: false,
-                    allowInverses: false
-                };
-            }
-            return {
-                addition: "expression-terms",
-                multiplication: "unrestricted",
-                allowNegativeOne: true,
-                allowExponents: true,
-                allowInverses: legacyLevel >= 3
-            };
-        }
-
-        function getNumericalRewriteProfile(level = getCurrentLevel()) {
-            if (level && level.numericalRewrite && typeof level.numericalRewrite === "object") {
-                return {
-                    addition: level.numericalRewrite.addition,
-                    multiplication: level.numericalRewrite.multiplication,
-                    allowNegativeOne: level.numericalRewrite.allowNegativeOne === true,
-                    allowExponents: level.numericalRewrite.allowExponents === true,
-                    allowInverses: level.numericalRewrite.allowInverses === true
-                };
-            }
-            return numericalRewriteProfileFromLegacyLevel(getArithmeticLevelForCurrentLevel());
-        }
-
-        function validateNumericalRewriteProfileDefinition(profile, sourceName) {
-            if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite profile.`);
-            }
-            if (!NUMERICAL_REWRITE_ADDITION_MODES.includes(profile.addition)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite.addition setting.`);
-            }
-            if (!NUMERICAL_REWRITE_MULTIPLICATION_MODES.includes(profile.multiplication)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite.multiplication setting.`);
-            }
-            ["allowNegativeOne", "allowExponents", "allowInverses"].forEach(fieldName => {
-                if (typeof profile[fieldName] !== "boolean") {
-                    throw new Error(`${sourceName} has an invalid numericalRewrite.${fieldName} setting.`);
-                }
-            });
-        }
-
-        function getNumericalRewriteProfileSummaryItems(profile) {
-            const additionDescriptions = {
-                none: "Addition: not allowed",
-                "no-carry": "Addition: flat whole-number sums without carrying",
-                flat: "Addition: any flat whole-number sum",
-                "expression-terms": "Addition: sums of permitted numerical expressions"
-            };
-            const multiplicationDescriptions = {
-                none: "Multiplication: not allowed",
-                "one-significant-figure": "Multiplication: factors with one significant figure",
-                unrestricted: "Multiplication: unrestricted"
-            };
-            const items = [
-                additionDescriptions[profile.addition],
-                multiplicationDescriptions[profile.multiplication],
-                `Negative one: ${profile.allowNegativeOne ? "allowed" : "not allowed"}`
-            ];
-            if (profile.allowExponents) {
-                items.push("Exponents: allowed");
-            }
-            items.push(`Inverses: ${profile.allowInverses ? "allowed" : "not allowed"}`);
-            return items;
-        }
-
-        function greatestCommonDivisorBigInt(a, b) {
-            let x = a < 0n ? -a : a;
-            let y = b < 0n ? -b : b;
-            while (y !== 0n) {
-                const remainder = x % y;
-                x = y;
-                y = remainder;
-            }
-            return x;
-        }
-
-        function makeExactRational(numerator, denominator = 1n) {
-            if (denominator === 0n) {
-                return null;
-            }
-            let nextNumerator = numerator;
-            let nextDenominator = denominator;
-            if (nextDenominator < 0n) {
-                nextNumerator = -nextNumerator;
-                nextDenominator = -nextDenominator;
-            }
-            const divisor = greatestCommonDivisorBigInt(nextNumerator, nextDenominator) || 1n;
-            return {
-                numerator: nextNumerator / divisor,
-                denominator: nextDenominator / divisor
-            };
-        }
-
-        function addExactRationals(first, second) {
-            return makeExactRational(
-                first.numerator * second.denominator + second.numerator * first.denominator,
-                first.denominator * second.denominator
-            );
-        }
-
-        function multiplyExactRationals(first, second) {
-            return makeExactRational(
-                first.numerator * second.numerator,
-                first.denominator * second.denominator
-            );
-        }
-
-        function raiseExactRationalToInteger(base, exponent) {
-            if (exponent === 0n) {
-                return base.numerator === 0n ? null : makeExactRational(1n);
-            }
-            if (exponent < 0n && base.numerator === 0n) {
-                return null;
-            }
-            const absoluteExponent = exponent < 0n ? -exponent : exponent;
-            if (absoluteExponent > 10000n) {
-                return null;
-            }
-            let result = makeExactRational(1n);
-            let factor = base;
-            let remaining = absoluteExponent;
-            while (remaining > 0n) {
-                if (remaining % 2n === 1n) {
-                    result = multiplyExactRationals(result, factor);
-                }
-                remaining /= 2n;
-                if (remaining > 0n) {
-                    factor = multiplyExactRationals(factor, factor);
-                }
-            }
-            return exponent < 0n
-                ? makeExactRational(result.denominator, result.numerator)
-                : result;
-        }
-
-        function getWholeNumberBigIntFromNode(node) {
-            if (!node || node.type !== "value" || !/^\d+$/.test(String(node.value))) {
-                return null;
-            }
-            return BigInt(node.value);
-        }
-
-        function evaluateNumericalRewriteNodeExactly(node) {
-            if (!node) {
-                return null;
-            }
-            if (node.type === "value") {
-                const text = String(node.value);
-                if (text === "-1") {
-                    return makeExactRational(-1n);
-                }
-                return /^\d+$/.test(text) ? makeExactRational(BigInt(text)) : null;
-            }
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return null;
-            }
-            if (node.type === "sum") {
-                let result = makeExactRational(0n);
-                for (const child of node.args) {
-                    const value = evaluateNumericalRewriteNodeExactly(child);
-                    if (!value) {
-                        return null;
-                    }
-                    result = addExactRationals(result, value);
-                }
-                return result;
-            }
-            if (node.type === "prod") {
-                let result = makeExactRational(1n);
-                for (const child of node.args) {
-                    const value = evaluateNumericalRewriteNodeExactly(child);
-                    if (!value) {
-                        return null;
-                    }
-                    result = multiplyExactRationals(result, value);
-                }
-                return result;
-            }
-            if (node.type === "inv" && node.args.length === 1) {
-                const value = evaluateNumericalRewriteNodeExactly(node.args[0]);
-                return value && value.numerator !== 0n
-                    ? makeExactRational(value.denominator, value.numerator)
-                    : null;
-            }
-            if (node.type === "exp" && node.args.length === 2) {
-                const base = evaluateNumericalRewriteNodeExactly(node.args[0]);
-                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
-                if (!base || !exponent || exponent.denominator !== 1n) {
-                    return null;
-                }
-                return raiseExactRationalToInteger(base, exponent.numerator);
-            }
-            return null;
-        }
-
-        function isOneSignificantFigureBigInt(value) {
-            return value >= 0n && (value === 0n || /^[1-9]0*$/.test(value.toString()));
-        }
-
-        function isNoCarryWholeNumberNodeAddition(nodes) {
-            if (!Array.isArray(nodes) || nodes.length < 2) {
-                return false;
-            }
-            const texts = nodes.map(node => {
-                const value = getWholeNumberBigIntFromNode(node);
-                return value === null ? null : value.toString();
-            });
-            if (texts.some(text => text === null)) {
-                return false;
-            }
-            const maxLength = Math.max(...texts.map(text => text.length));
-            for (let offset = 0; offset < maxLength; offset++) {
-                let columnSum = 0;
-                for (const text of texts) {
-                    const index = text.length - 1 - offset;
-                    columnSum += index >= 0 ? Number(text[index]) : 0;
-                }
-                if (columnSum >= 10) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function validateNumericalRewriteStructure(node, profile, roleLabel) {
-            if (node.type === "value") {
-                const text = String(node.value);
-                if (/^\d+$/.test(text)) {
-                    return { ok: true };
-                }
-                if (text === "-1") {
-                    return profile.allowNegativeOne
-                        ? { ok: true }
-                        : { ok: false, error: `The ${roleLabel} expression uses negative one, which is not allowed here.` };
-                }
-                return { ok: false, error: `The ${roleLabel} expression may contain only nonnegative whole numbers and, when allowed, the negative unit.` };
-            }
-
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return { ok: false, error: `The ${roleLabel} expression has an incomplete operation.` };
-            }
-
-            if (node.type === "sum") {
-                if (profile.addition === "none") {
-                    return { ok: false, error: `Addition is not allowed in the ${roleLabel} expression.` };
-                }
-                if (profile.addition === "no-carry" || profile.addition === "flat") {
-                    const allWholeNumberLeaves = node.args.every(child => getWholeNumberBigIntFromNode(child) !== null);
-                    if (!allWholeNumberLeaves) {
-                        return { ok: false, error: `The ${roleLabel} expression allows only a flat sum of nonnegative whole numbers.` };
-                    }
-                    if (profile.addition === "no-carry" && !isNoCarryWholeNumberNodeAddition(node.args)) {
-                        return { ok: false, error: `The ${roleLabel} sum requires carrying, which is not allowed here.` };
-                    }
-                    return { ok: true };
-                }
-            }
-
-            if (node.type === "prod" && profile.multiplication === "none") {
-                return { ok: false, error: `Multiplication is not allowed in the ${roleLabel} expression.` };
-            }
-            if (node.type === "exp" && !profile.allowExponents) {
-                return { ok: false, error: `Exponents are not allowed in the ${roleLabel} expression.` };
-            }
-            if (node.type === "inv" && !profile.allowInverses) {
-                return { ok: false, error: `Inverses are not allowed in the ${roleLabel} expression.` };
-            }
-            if (!["sum", "prod", "exp", "inv"].includes(node.type)) {
-                return { ok: false, error: `The ${roleLabel} expression contains an unsupported numerical operation.` };
-            }
-
-            for (const child of node.args) {
-                const childCheck = validateNumericalRewriteStructure(child, profile, roleLabel);
-                if (!childCheck.ok) {
-                    return childCheck;
-                }
-            }
-
-            if (node.type === "prod" && profile.multiplication === "one-significant-figure") {
-                for (const factor of node.args) {
-                    const factorValue = evaluateNumericalRewriteNodeExactly(factor);
-                    const isAllowedNegativeUnit = profile.allowNegativeOne && factorValue &&
-                        factorValue.denominator === 1n && factorValue.numerator === -1n;
-                    if (!factorValue || factorValue.denominator !== 1n ||
-                        (!isAllowedNegativeUnit && !isOneSignificantFigureBigInt(factorValue.numerator))) {
-                        return { ok: false, error: `Every factor in the ${roleLabel} expression must have one significant figure.` };
-                    }
-                }
-            }
-
-            if (node.type === "exp") {
-                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
-                if (!exponent || exponent.denominator !== 1n) {
-                    return { ok: false, error: `The exponent in the ${roleLabel} expression must be an integer value.` };
-                }
-                if (exponent.numerator < 0n && !profile.allowInverses) {
-                    return { ok: false, error: `A negative exponent also requires inverses to be allowed.` };
-                }
-            }
-
-            if (node.type === "inv") {
-                const innerValue = evaluateNumericalRewriteNodeExactly(node.args[0]);
-                if (!innerValue || innerValue.numerator === 0n) {
-                    return { ok: false, error: `The ${roleLabel} expression contains an inverse of zero.` };
-                }
-            }
-            return { ok: true };
-        }
-
-        function validateNumericalRewriteExpression(node, profile, roleLabel) {
-            if (!node) {
-                return { ok: false, error: `There is no ${roleLabel} expression to check.` };
-            }
-            const normalized = normalizeExpressionTree(cloneNode(node));
-            const structureCheck = validateNumericalRewriteStructure(normalized, profile, roleLabel);
-            if (!structureCheck.ok) {
-                return structureCheck;
-            }
-            const value = evaluateNumericalRewriteNodeExactly(normalized);
-            if (!value) {
-                return { ok: false, error: `The ${roleLabel} expression could not be evaluated exactly.` };
-            }
-            return { ok: true, value };
-        }
-
-        function exactRationalsAreEqual(first, second) {
-            return !!first && !!second &&
-                first.numerator === second.numerator &&
-                first.denominator === second.denominator;
-        }
-
-        function formatExactRational(value) {
-            return value.denominator === 1n
-                ? value.numerator.toString()
-                : `${value.numerator}/${value.denominator}`;
-        }
-
-        function evaluateLevelOneNode(node) {
-            if (!node) {
-                return null;
-            }
-            if (node.type === "value") {
-                const parsed = parseNonNegativeInteger(node.value);
-                return parsed === null ? null : parsed;
-            }
-            if (node.type === "sum" || node.type === "prod") {
-                const level = classifyArithmeticExpressionLevel(node);
-                if (level === null || level > 1) {
-                    return null;
-                }
-                const result = evaluateArithmeticNode(node);
-                return result !== null && result >= 0 && Number.isInteger(result) ? result : null;
-            }
-            return null;
-        }
-
-        function evaluateNodeForCurrentLevel(node) {
-            const evaluationLevel = getEvaluationLevelForCurrentLevel();
-            if (!isArithmeticExpressionAtOrBelowLevel(node, evaluationLevel)) {
-                return null;
-            }
-            return evaluateArithmeticNode(node);
-        }
-
-        function parseIntegerInput(text) {
-            const trimmed = String(text || "").trim();
-            if (!/^-?\d+$/.test(trimmed)) {
-                return null;
-            }
-            return Number(trimmed);
-        }
-
-        function isPositiveIntegerValueNode(node) {
-            return !!node &&
-                node.type === "value" &&
-                parseNonNegativeInteger(node.value) !== null &&
-                parseNonNegativeInteger(node.value) > 0;
-        }
-
-        function isNonNegativeIntegerValueNode(node) {
-            return !!node &&
-                node.type === "value" &&
-                parseNonNegativeInteger(node.value) !== null;
-        }
-
-        function isNegativeUnitNode(node) {
-            return !!node && node.type === "value" && node.value === "-1";
-        }
-
-        function evaluateSignedIntegerNode(node) {
-            if (!node) {
-                return null;
-            }
-            if (node.type === "value") {
-                if (node.value === "-1") {
-                    return -1;
-                }
-                const parsed = parseNonNegativeInteger(node.value);
-                return parsed === null ? null : parsed;
-            }
-            if ((node.type === "sum" || node.type === "prod") && Array.isArray(node.args) && node.args.length > 0) {
-                const values = node.args.map(evaluateSignedIntegerNode);
-                if (values.some(value => value === null || !Number.isFinite(value))) {
-                    return null;
-                }
-                const result = node.type === "sum"
-                    ? values.reduce((a, b) => a + b, 0)
-                    : values.reduce((a, b) => a * b, 1);
-                return Number.isInteger(result) ? result : null;
-            }
-            return null;
-        }
-
-        function isCanonicalNegativeIntegerNode(node) {
-            if (!node || node.type !== "prod" || !Array.isArray(node.args) || node.args.length !== 2) {
-                return false;
-            }
-            const firstIsNegativeUnit = isNegativeUnitNode(node.args[0]) && isPositiveIntegerValueNode(node.args[1]);
-            const secondIsNegativeUnit = isNegativeUnitNode(node.args[1]) && isPositiveIntegerValueNode(node.args[0]);
-            return firstIsNegativeUnit || secondIsNegativeUnit;
-        }
-
-        function getSingleSignedIntegerValue(node) {
-            if (isNonNegativeIntegerValueNode(node)) {
-                return parseNonNegativeInteger(node.value);
-            }
-            if (isCanonicalNegativeIntegerNode(node)) {
-                const value = evaluateSignedIntegerNode(node);
-                return value === null ? null : value;
-            }
-            return null;
-        }
-
-        function makeSignedIntegerNode(value) {
-            if (value >= 0) {
-                return valueNode(String(value));
-            }
-            return makeProductFromFactors([valueNode("-1"), valueNode(String(Math.abs(value)))]);
-        }
-
-        function nodeContainsNegativeUnit(node) {
-            if (!node) {
-                return false;
-            }
-            if (isNegativeUnitNode(node)) {
-                return true;
-            }
-            return Array.isArray(node.args) && node.args.some(nodeContainsNegativeUnit);
-        }
-
-        function nodeContainsCanonicalNegativeProduct(node) {
-            if (!node) {
-                return false;
-            }
-            if (isCanonicalNegativeIntegerNode(node)) {
-                return true;
-            }
-            return Array.isArray(node.args) && node.args.some(nodeContainsCanonicalNegativeProduct);
-        }
-
-        function isPositiveSumNode(node) {
-            return !!node &&
-                node.type === "sum" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                node.args.every(isPositiveIntegerValueNode);
-        }
-
-        function isPositiveProductNode(node) {
-            return !!node &&
-                node.type === "prod" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                node.args.every(isPositiveIntegerValueNode);
-        }
-
-        function isProductWithNegativesNode(node) {
-            return !!node &&
-                node.type === "prod" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                !isCanonicalNegativeIntegerNode(node) &&
-                nodeContainsNegativeUnit(node) &&
-                evaluateSignedIntegerNode(node) !== null;
-        }
-
-        function isSumWithNegativeProductsNode(node) {
-            return !!node &&
-                node.type === "sum" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                nodeContainsCanonicalNegativeProduct(node) &&
-                evaluateSignedIntegerNode(node) !== null;
-        }
-
-        function isSignedSumNode(node) {
-            return !!node &&
-                node.type === "sum" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                nodeContainsNegativeUnit(node) &&
-                evaluateSignedIntegerNode(node) !== null;
-        }
-
-        function isSignedProductNode(node) {
-            return !!node &&
-                node.type === "prod" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                nodeContainsNegativeUnit(node) &&
-                evaluateSignedIntegerNode(node) !== null;
-        }
-
-        function isDifferenceNode(node) {
-            return !!node &&
-                node.type === "sum" &&
-                Array.isArray(node.args) &&
-                node.args.length >= 2 &&
-                nodeContainsCanonicalNegativeProduct(node) &&
-                evaluateSignedIntegerNode(node) !== null;
-        }
-
-        function isPositiveSingleNumberSelection(node) {
-            const value = getSingleSignedIntegerValue(node);
-            return value !== null && value > 0;
-        }
-
-        function isSingleIntegerSelection(node) {
-            return getSingleSignedIntegerValue(node) !== null;
-        }
-
-        function getStructuredNumericalToolModeForSelection(toolName) {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return null;
-            }
-
-            if (toolName === "numEvaluatePositiveSum" || toolName === "numSumPositive") {
-                return isPositiveSumNode(selectedNode) ? "collapse" : null;
-            }
-            if (toolName === "numEvaluatePositiveProduct" || toolName === "numProductPositive") {
-                return isPositiveProductNode(selectedNode) ? "collapse" : null;
-            }
-            if (toolName === "numWritePositiveNumberAsProduct") {
-                return isPositiveSingleNumberSelection(selectedNode) ? "expand" : null;
-            }
-            if (toolName === "numWritePositiveNumberAsSum") {
-                return isPositiveSingleNumberSelection(selectedNode) ? "expand" : null;
-            }
-            if (toolName === "numEvaluateSignedSum" || toolName === "numSumWithNegativeProducts") {
-                return isSignedSumNode(selectedNode) ? "collapse" : null;
-            }
-            if (toolName === "numEvaluateSignedProduct" || toolName === "numProductWithNegatives") {
-                return isSignedProductNode(selectedNode) ? "collapse" : null;
-            }
-            if (toolName === "numExpressNumberAsDifference") {
-                return isSingleIntegerSelection(selectedNode) ? "expand" : null;
-            }
-            return null;
-        }
-
-        function canStructuredNumericalTool(toolName) {
-            return getStructuredNumericalToolModeForSelection(toolName) !== null;
-        }
-
-        function getStructuredNumericalToolInputLabel(toolName) {
-            const mode = getStructuredNumericalToolModeForSelection(toolName);
-            if (toolName === "numEvaluatePositiveSum" || toolName === "numSumPositive") {
-                return "Enter the single positive whole number equal to the selected sum.";
-            }
-            if (toolName === "numEvaluatePositiveProduct" || toolName === "numProductPositive") {
-                return "Enter the single positive whole number equal to the selected product.";
-            }
-            if (toolName === "numWritePositiveNumberAsProduct") {
-                return "Build a product of positive whole numbers equivalent to the selected number. The current expression will not change until the product is checked.";
-            }
-            if (toolName === "numWritePositiveNumberAsSum") {
-                return "Build a sum of positive whole numbers equivalent to the selected number. The current expression will not change until the sum is checked.";
-            }
-            if (toolName === "numEvaluateSignedSum" || toolName === "numSumWithNegativeProducts") {
-                return "Enter the single integer equal to the selected sum. Negative results may be typed with a minus sign.";
-            }
-            if (toolName === "numEvaluateSignedProduct" || toolName === "numProductWithNegatives") {
-                return "Enter the single integer equal to the selected product. Negative results may be typed with a minus sign.";
-            }
-            if (toolName === "numExpressNumberAsDifference") {
-                return "Build a difference equivalent to the selected number, using a sum with at least one negative product such as 8 + (-1)Â·3. The current expression will not change until the difference is checked.";
-            }
-            return mode === "expand" ? "Build an equivalent number expression." : "Enter the equivalent integer.";
-        }
-
-        function validateStructuredNumericalExpansion(toolName, completed, target) {
-            let ok = false;
-            let expected = "";
-            if (toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive") {
-                ok = isPositiveProductNode(completed);
-                expected = "Build a product with at least two positive whole-number factors.";
-            } else if (toolName === "numWritePositiveNumberAsSum" || toolName === "numSumPositive") {
-                ok = isPositiveSumNode(completed);
-                expected = "Build a sum with at least two positive whole-number addends.";
-            } else if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
-                ok = isDifferenceNode(completed);
-                expected = "Build a difference as a sum with at least one term written as a negative product, such as 8 + ((-1)Â·3).";
-            } else if (toolName === "numProductWithNegatives") {
-                ok = isSignedProductNode(completed);
-                expected = "Build a product that includes -1 and contains only integer number factors.";
-            }
-            if (!ok) {
-                return { ok: false, error: expected };
-            }
-            const computed = evaluateSignedIntegerNode(completed);
-            if (computed === null) {
-                return { ok: false, error: "Build an integer-valued number expression." };
-            }
-            if (computed !== target) {
-                return { ok: false, error: `That expression evaluates to ${computed}, not ${target}.` };
-            }
-            return { ok: true };
-        }
-
-        function applyStructuredNumericalInputTool(toolName) {
-            const selectedNode = cloneSelectedRangeNode();
-            const target = evaluateSignedIntegerNode(selectedNode);
-            if (target === null) {
-                return false;
-            }
-            const entered = parseIntegerInput(uiState.inputText);
-            if (entered === null) {
-                uiState.message = "Enter a single integer. Negative answers may be typed with a minus sign.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-            if (entered !== target) {
-                uiState.message = `That is not correct. The selected expression evaluates to ${target}.`;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-            replaceSelectedRange(makeSignedIntegerNode(entered));
-            finishOperation();
-            return true;
-        }
-
-        function canEvaluate() {
-            return evaluateNodeForCurrentLevel(cloneSelectedRangeNode()) !== null;
-        }
-
-        function getDoubleNegativeData() {
-            if (!selection.node) {
-                return null;
-            }
-            const wrapper = cloneSelectedRangeNode();
-            if (!wrapper || wrapper.type !== "prod") {
-                return null;
-            }
-            const indices = [];
-            for (let i = 0; i < wrapper.args.length; i++) {
-                if (wrapper.args[i].type === "value" && wrapper.args[i].value === "-1") {
-                    indices.push(i);
-                }
-            }
-            if (indices.length < 2) {
-                return null;
-            }
-            return { wrapper, indices };
-        }
-
-        function canDoubleNegative() {
-            const node = cloneSelectedRangeNode();
-            return !!getDoubleNegativeData() || (!!node && node.type === "value" && node.value === "1");
-        }
-
-        function getZeroProductData() {
-            if (!selection.node) {
-                return null;
-            }
-            const wrapper = cloneSelectedRangeNode();
-            if (!wrapper || wrapper.type !== "prod") {
-                return null;
-            }
-            const zeroNode = wrapper.args.find(arg => arg.type === "value" && arg.value === "0");
-            if (!zeroNode) {
-                return null;
-            }
-            return { wrapper, zeroNode };
-        }
-
-        function canZeroProduct() {
-            return !!getZeroProductData();
-        }
-
-        function isNegativeOf(node) {
-            if (!node || node.type !== "prod") {
-                return null;
-            }
-
-            // Products are normalized by flattening nested products. That means
-            // the negative of a product such as (-1) Â· (2 Â· x) becomes
-            // (-1) Â· 2 Â· x. Treat any single top-level -1 factor as the
-            // marker for "negative of the product of the remaining factors."
-            const negativeFactorIndex = node.args.findIndex(arg =>
-                arg.type === "value" && arg.value === "-1"
-            );
-            if (negativeFactorIndex === -1) {
-                return null;
-            }
-
-            const remainingFactors = node.args
-                .filter((_, index) => index !== negativeFactorIndex)
-                .map(cloneNode);
-            return normalizeCloneForMatching(makeProductFromFactors(remainingFactors));
-        }
-
-        function getCancelOppositesData() {
-            if (!selection.node) {
-                return null;
-            }
-            const wrapper = cloneSelectedRangeNode();
-            if (!wrapper || wrapper.type !== "sum") {
-                return null;
-            }
-
-            const used = new Set();
-            const pairs = [];
-            for (let negIndex = 0; negIndex < wrapper.args.length; negIndex++) {
-                if (used.has(negIndex)) {
-                    continue;
-                }
-
-                const positiveExpression = isNegativeOf(wrapper.args[negIndex]);
-                if (!positiveExpression) {
-                    continue;
-                }
-
-                // A may itself be a sum. Since sums are normalized by flattening
-                // nested sums, A + (-1) Â· A can appear as
-                // a + b + c + (-1) Â· (a + b + c). Match the negative term
-                // against as many sibling terms as A needs, rather than requiring
-                // A to be a single sibling term.
-                const requiredPositiveTerms = getSumTermsForMatching(positiveExpression);
-                const posIndices = findMatchingNodeIndices(requiredPositiveTerms, wrapper.args, used, negIndex);
-                if (!posIndices) {
-                    continue;
-                }
-
-                used.add(negIndex);
-                posIndices.forEach(index => used.add(index));
-                pairs.push({
-                    posIndex: posIndices[0],
-                    posIndices,
-                    negIndex
-                });
-            }
-
-            if (pairs.length === 0) {
-                return null;
-            }
-            return { wrapper, pairs };
-        }
-
-        function canCancelOpposites() {
-            const node = cloneSelectedRangeNode();
-            return !!getCancelOppositesData() || (!!node && node.type === "value" && node.value === "0");
-        }
-
-        function beginPostview(postviewData) {
-            if (uiState.postviewTimerId !== null) {
-                clearTimeout(uiState.postviewTimerId);
-            }
-
-            uiState.stage = "postview";
-            uiState.postviewData = postviewData;
-
-            expressionRoot = normalizeExpressionTree(expressionRoot);
-            syncCurrentExpressionRoot();
-            layoutExpression(expressionRoot);
-            updateStepCompletion(getCurrentLevel());
-            renderLevelInfo(currentLevelIndex);
-            renderCurrentExpressionDisplay();
-            refreshStatus();
-            renderToolArea();
-            drawExpression();
-
-            uiState.postviewTimerId = setTimeout(() => {
-                uiState.postviewTimerId = null;
-                clearSelection();
-                clearInteraction();
-                layoutExpression(expressionRoot);
-                updateStepCompletion(getCurrentLevel());
-                renderLevelInfo(currentLevelIndex);
-                refreshStatus();
-                drawExpression();
-            }, SETTINGS.postviewDurationMs);
-        }
-
-        function getDistributionPostviewDataFromNode(distributedNode, direction, colors) {
-            const factorRegions = [];
-            const termRegions = [];
-
-            const termList = distributedNode.type === "sum"
-                ? distributedNode.args
-                : [distributedNode];
-
-            for (const termNode of termList) {
-                if (termNode.type === "prod") {
-                    if (direction === "left") {
-                        const distributedFactorCount = termNode.args.length - 1;
-                        const originalTermNode = termNode.args[termNode.args.length - 1];
-                        const originalTermFactorCount = getTermFactors(originalTermNode).length;
-
-                        if (distributedFactorCount > 0) {
-                            factorRegions.push({
-                                node: termNode,
-                                firstIndex: 0,
-                                lastIndex: distributedFactorCount - 1
-                            });
-                        }
-
-                        termRegions.push({
-                            node: termNode,
-                            firstIndex: distributedFactorCount,
-                            lastIndex: distributedFactorCount + originalTermFactorCount - 1
-                        });
-                    } else {
-                        const originalTermNode = termNode.args[0];
-                        const originalTermFactorCount = getTermFactors(originalTermNode).length;
-                        const distributedFactorCount = termNode.args.length - 1;
-
-                        termRegions.push({
-                            node: termNode,
-                            firstIndex: 0,
-                            lastIndex: originalTermFactorCount - 1
-                        });
-
-                        if (distributedFactorCount > 0) {
-                            factorRegions.push({
-                                node: termNode,
-                                firstIndex: originalTermFactorCount,
-                                lastIndex: originalTermFactorCount + distributedFactorCount - 1
-                            });
-                        }
-                    }
-                } else {
-                    termRegions.push({
-                        node: termNode,
-                        firstIndex: 0,
-                        lastIndex: 0
-                    });
-                }
-            }
-
-            return {
-                type: "distribution",
-                factorRegions,
-                termRegions,
-                colors
-            };
-        }
-
-        function getFactoringPostviewDataFromNode(factoredNode, direction, commonCount, termCount, colors) {
-            const commonFactorRegions = [];
-            const remainderNodes = [];
-
-            if (factoredNode.type === "prod") {
-                if (direction === "left") {
-                    const commonLastIndex = Math.min(commonCount - 1, factoredNode.args.length - 1);
-                    if (commonLastIndex >= 0) {
-                        commonFactorRegions.push({
-                            node: factoredNode,
-                            firstIndex: 0,
-                            lastIndex: commonLastIndex
-                        });
-                    }
-
-                    const innerNode = factoredNode.args[Math.min(commonCount, factoredNode.args.length - 1)];
-                    if (innerNode) {
-                        if (innerNode.type === "sum") {
-                            remainderNodes.push(...innerNode.args);
-                        } else {
-                            remainderNodes.push(innerNode);
-                        }
-                    }
-                } else {
-                    const sumIndex = Math.max(0, factoredNode.args.length - commonCount - 1);
-                    const innerNode = factoredNode.args[sumIndex];
-                    if (innerNode) {
-                        if (innerNode.type === "sum") {
-                            remainderNodes.push(...innerNode.args);
-                        } else {
-                            remainderNodes.push(innerNode);
-                        }
-                    }
-
-                    const commonFirstIndex = sumIndex + 1;
-                    const commonLastIndex = factoredNode.args.length - 1;
-                    if (commonFirstIndex <= commonLastIndex) {
-                        commonFactorRegions.push({
-                            node: factoredNode,
-                            firstIndex: commonFirstIndex,
-                            lastIndex: commonLastIndex
-                        });
-                    }
-                }
-            } else {
-                remainderNodes.push(factoredNode);
-            }
-
-            while (remainderNodes.length > termCount) {
-                remainderNodes.pop();
-            }
-
-            return {
-                type: "factoring",
-                commonFactorRegions,
-                remainderNodes,
-                colors
-            };
-        }
-
-        function getApplicableTools() {
-            const leftFactorData = getFactoringData("left");
-            const rightFactorData = getFactoringData("right");
-            const powerInverseApplicability = getPowerInverseRewriteApplicability();
-
-            return {
-                commute: canCommuteRotate(),
-                commuteFirstToLast: canCommuteRotate(),
-                commuteLastToFirst: canCommuteRotate(),
-                commuteTerms: !!selection.node && selection.node.type === "sum" && canCommuteRotate(),
-                commuteFactors: !!selection.node && selection.node.type === "prod" && canCommuteRotate(),
-                distributeLeftToRight: !!getDistributionData("left"),
-                distributeRightToLeft: !!getDistributionData("right"),
-                factorLeft: !!leftFactorData && leftFactorData.commonCount > 0,
-                factorRight: !!rightFactorData && rightFactorData.commonCount > 0,
-                replaceOneWithInverseProduct: canReplaceOneWithInverseProduct(),
-                insertZeroProduct: canInsertZeroProduct(),
-                insertZeroProductLeft: canInsertZeroProduct(),
-                insertZeroProductRight: canInsertZeroProduct(),
-                insertExponentZero: canInsertExponentZero(),
-                insertPowerOfOne: canInsertPowerOfOne(),
-                cancelProductWithInverse: canCancelProductWithInverse(),
-                eliminateDoubleInverse: canEliminateDoubleInverse(),
-                insertDoubleInverse: canInsertDoubleInverse(),
-                distributeInverseOverProduct: canDistributeInverseOverProduct(),
-                factorProductOfInverses: canFactorProductOfInverses(),
-                ...powerInverseApplicability,
-                insertIdentity: canInsertIdentity(),
-                insertIdentityAddZeroTop: canInsertIdentity(),
-                insertIdentityAddZeroBottom: canInsertIdentity(),
-                insertIdentityMultiplyByOneLeft: canInsertIdentity(),
-                insertIdentityMultiplyByOneRight: canInsertIdentity(),
-                eliminateIdentities: canEliminateIdentities(),
-                factorNumber: canFactorNumber(),
-                writeNumberAsSum: canWriteNumberAsSum(),
-                evaluate: canEvaluate(),
-                numericalEquivalence: canNumericalEquivalence(),
-                numericalRewrite: canNumericalRewrite(),
-                arithmeticLevel0: canNumericalRewrite(),
-                arithmeticLevel1: canNumericalRewrite(),
-                arithmeticLevel2: canNumericalRewrite(),
-                arithmeticLevel3: canNumericalRewrite(),
-                numEvaluatePositiveSum: canStructuredNumericalTool("numEvaluatePositiveSum"),
-                numEvaluatePositiveProduct: canStructuredNumericalTool("numEvaluatePositiveProduct"),
-                numWritePositiveNumberAsProduct: canStructuredNumericalTool("numWritePositiveNumberAsProduct"),
-                numWritePositiveNumberAsSum: canStructuredNumericalTool("numWritePositiveNumberAsSum"),
-                numEvaluateSignedSum: canStructuredNumericalTool("numEvaluateSignedSum"),
-                numEvaluateSignedProduct: canStructuredNumericalTool("numEvaluateSignedProduct"),
-                numExpressNumberAsDifference: canStructuredNumericalTool("numExpressNumberAsDifference"),
-                numSumPositive: canStructuredNumericalTool("numSumPositive"),
-                numProductPositive: canStructuredNumericalTool("numProductPositive"),
-                numProductWithNegatives: canStructuredNumericalTool("numProductWithNegatives"),
-                numSumWithNegativeProducts: canStructuredNumericalTool("numSumWithNegativeProducts"),
-                cancelOpposites: canCancelOpposites(),
-                doubleNegative: canDoubleNegative(),
-                zeroProduct: canZeroProduct(),
-                reduceToZero: canZeroProduct() || canCancelOpposites(),
-                reduceToOne: canCancelProductWithInverse() || !!powerInverseApplicability.eliminateExponentZero || !!powerInverseApplicability.oneToAnyPower
-            };
-        }
-
-        function applyLeftDistribution() {
-            const data = getDistributionData("left");
-            if (!data) {
-                return false;
-            }
-
-            const colors = uiState.previewColors || getDistinctRandomColors(1 + data.sumNode.args.length);
-            const leftFactors = selection.node.args
-                .slice(selection.firstPart, selection.lastPart)
-                .map(cloneNode);
-            const sumNode = selection.node.args[selection.lastPart];
-            const distributedTerms = sumNode.args.map(term => {
-                const newFactors = leftFactors.map(cloneNode);
-                newFactors.push(cloneNode(term));
-                return makeProductFromFactors(newFactors);
-            });
-            const distributedNode = makeSumFromTerms(distributedTerms);
-
-            const before = selection.node.args.slice(0, selection.firstPart);
-            const after = selection.node.args.slice(selection.lastPart + 1);
-            selection.node.args = [...before, distributedNode, ...after];
-
-            beginPostview(getDistributionPostviewDataFromNode(distributedNode, "left", colors));
-            return true;
-        }
-
-        function applyRightDistribution() {
-            const data = getDistributionData("right");
-            if (!data) {
-                return false;
-            }
-
-            const colors = uiState.previewColors || getDistinctRandomColors(1 + data.sumNode.args.length);
-            const sumNode = selection.node.args[selection.firstPart];
-            const rightFactors = selection.node.args
-                .slice(selection.firstPart + 1, selection.lastPart + 1)
-                .map(cloneNode);
-
-            const distributedTerms = sumNode.args.map(term => {
-                const newFactors = [cloneNode(term), ...rightFactors.map(cloneNode)];
-                return makeProductFromFactors(newFactors);
-            });
-            const distributedNode = makeSumFromTerms(distributedTerms);
-
-            const before = selection.node.args.slice(0, selection.firstPart);
-            const after = selection.node.args.slice(selection.lastPart + 1);
-            selection.node.args = [...before, distributedNode, ...after];
-
-            beginPostview(getDistributionPostviewDataFromNode(distributedNode, "right", colors));
-            return true;
-        }
-
-        function applyLeftFactoring() {
-            const data = getFactoringData("left");
-            if (!data || data.commonCount <= 0) {
-                return false;
-            }
-
-            const termCount = selection.lastPart - selection.firstPart + 1;
-            const colors = uiState.previewColors || getDistinctRandomColors(1 + termCount);
-            const commonFactors = getTermFactors(data.selectedTerms[0])
-                .slice(0, data.commonCount)
-                .map(cloneNode);
-
-            const remainders = data.selectedTerms.map(term => {
-                const factors = getTermFactors(term);
-                const remaining = factors.slice(data.commonCount).map(cloneNode);
-                return makeProductFromFactors(remaining);
-            });
-
-            const innerSum = makeSumFromTerms(remainders);
-            const factoredNode = makeProductFromFactors([...commonFactors, innerSum]);
-
-            const before = selection.node.args.slice(0, selection.firstPart);
-            const after = selection.node.args.slice(selection.lastPart + 1);
-            selection.node.args = [...before, factoredNode, ...after];
-
-            beginPostview(getFactoringPostviewDataFromNode(factoredNode, "left", data.commonCount, termCount, colors));
-            return true;
-        }
-
-        function applyRightFactoring() {
-            const data = getFactoringData("right");
-            if (!data || data.commonCount <= 0) {
-                return false;
-            }
-
-            const termCount = selection.lastPart - selection.firstPart + 1;
-            const colors = uiState.previewColors || getDistinctRandomColors(1 + termCount);
-            const baseFactors = getTermFactors(data.selectedTerms[0]);
-            const commonFactors = baseFactors.slice(baseFactors.length - data.commonCount).map(cloneNode);
-
-            const remainders = data.selectedTerms.map(term => {
-                const factors = getTermFactors(term);
-                const remaining = factors.slice(0, factors.length - data.commonCount).map(cloneNode);
-                return makeProductFromFactors(remaining);
-            });
-
-            const innerSum = makeSumFromTerms(remainders);
-            const factoredNode = makeProductFromFactors([innerSum, ...commonFactors]);
-
-            const before = selection.node.args.slice(0, selection.firstPart);
-            const after = selection.node.args.slice(selection.lastPart + 1);
-            selection.node.args = [...before, factoredNode, ...after];
-
-            beginPostview(getFactoringPostviewDataFromNode(factoredNode, "right", data.commonCount, termCount, colors));
-            return true;
-        }
-
-        function applyIdentityInsertion(identityKind, positionKind) {
-            if (!selection.node) {
-                return false;
-            }
-
-            if (identityKind === "addZero") {
-                const first = positionKind === "top" ? new ExprNode("value", [], "0") : cloneSelectedRangeNode();
-                const second = positionKind === "top" ? cloneSelectedRangeNode() : new ExprNode("value", [], "0");
-                replaceSelectedRange(makeSumFromTerms([first, second]));
-                finishOperation();
-                return true;
-            }
-
-            if (identityKind === "multiplyByOne") {
-                const first = positionKind === "left" ? new ExprNode("value", [], "1") : cloneSelectedRangeNode();
-                const second = positionKind === "left" ? cloneSelectedRangeNode() : new ExprNode("value", [], "1");
-                replaceSelectedRange(makeProductFromFactors([first, second]));
-                finishOperation();
-                return true;
-            }
-
-            if (identityKind === "doubleNegative") {
-                const negatives = [new ExprNode("value", [], "-1"), new ExprNode("value", [], "-1")];
-                const selected = cloneSelectedRangeNode();
-                if (positionKind === "left") {
-                    replaceSelectedRange(makeProductFromFactors([...negatives, selected]));
-                } else {
-                    replaceSelectedRange(makeProductFromFactors([selected, ...negatives]));
-                }
-                finishOperation();
-                return true;
-            }
-
-            if (identityKind === "doubleInverse") {
-                const selected = cloneSelectedRangeNode();
-                replaceSelectedRange(makeInverseNode(makeInverseNode(selected)));
-                finishOperation();
-                return true;
-            }
-
-            return false;
-        }
-
-        function getDoubleInverseData() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!isInvNode(selectedNode)) {
-                return null;
-            }
-            const innerInverse = selectedNode.args[0];
-            if (!isInvNode(innerInverse)) {
-                return null;
-            }
-            return {
-                outerInverse: selectedNode,
-                innerExpression: innerInverse.args[0]
-            };
-        }
-
-        function canEliminateDoubleInverse() {
-            return !!getDoubleInverseData();
-        }
-
-        function canInsertDoubleInverse() {
-            const selectedNode = cloneSelectedRangeNode();
-            return !!selectedNode;
-        }
-
-        function applyInsertDoubleInverse() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return false;
-            }
-            replaceSelectedRange(makeInverseNode(makeInverseNode(selectedNode)));
-            finishOperation();
-            return true;
-        }
-
-        function applyEliminateDoubleInverse() {
-            const data = getDoubleInverseData();
-            if (!data) {
-                return false;
-            }
-            replaceSelectedRange(cloneNode(data.innerExpression));
-            finishOperation();
-            return true;
-        }
-
-        function applyDistributeInverseOverProduct() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!isInvNode(selectedNode)) {
-                return false;
-            }
-
-            const productNode = selectedNode.args[0];
-            if (!productNode || productNode.type !== "prod" || productNode.args.length < 2) {
-                return false;
-            }
-
-            const replacement = makeProductFromFactors(
-                productNode.args.map(factor => makeInverseNode(factor))
-            );
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyFactorProductOfInverses() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || selectedNode.type !== "prod" || selectedNode.args.length < 2) {
-                return false;
-            }
-
-            const inverseNodes = selectedNode.args.filter(child => isInvNode(child));
-            if (inverseNodes.length !== selectedNode.args.length) {
-                return false;
-            }
-
-            const innerProduct = makeProductFromFactors(
-                selectedNode.args.map(child => cloneNode(child.args[0]))
-            );
-            const replacement = makeInverseNode(innerProduct);
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-
-        function isStructuredNumericalTool(toolName) {
-            return [
-                "numEvaluatePositiveSum",
-                "numEvaluatePositiveProduct",
-                "numWritePositiveNumberAsProduct",
-                "numWritePositiveNumberAsSum",
-                "numEvaluateSignedSum",
-                "numEvaluateSignedProduct",
-                "numExpressNumberAsDifference",
-                "numSumPositive",
-                "numProductPositive",
-                "numProductWithNegatives",
-                "numSumWithNegativeProducts"
-            ].includes(toolName);
-        }
-
-        function isExpressionBuilderTool(toolName) {
-            return [
-                "replaceOneWithInverseProduct",
-                "insertZeroProduct",
-                "insertExponentZero",
-                "insertPowerOfOne",
-                "cancelOpposites",
-                "numericalEquivalence",
-                "numericalRewrite",
-                "arithmeticLevel0",
-                "arithmeticLevel1",
-                "arithmeticLevel2",
-                "arithmeticLevel3",
-                "factorNumber",
-                "writeNumberAsSum",
-                "evaluate",
-                "numEvaluatePositiveSum",
-                "numEvaluatePositiveProduct",
-                "numWritePositiveNumberAsProduct",
-                "numWritePositiveNumberAsSum",
-                "numEvaluateSignedSum",
-                "numEvaluateSignedProduct",
-                "numExpressNumberAsDifference",
-                "numSumPositive",
-                "numProductPositive",
-                "numProductWithNegatives",
-                "numSumWithNegativeProducts"
-            ].includes(toolName);
-        }
-
-        function isNumericalBuilderTool(toolName) {
-            return [
-                "numericalEquivalence",
-                "numericalRewrite",
-                "arithmeticLevel0",
-                "arithmeticLevel1",
-                "arithmeticLevel2",
-                "arithmeticLevel3",
-                "factorNumber",
-                "writeNumberAsSum",
-                "evaluate",
-                "numEvaluatePositiveSum",
-                "numEvaluatePositiveProduct",
-                "numWritePositiveNumberAsProduct",
-                "numWritePositiveNumberAsSum",
-                "numEvaluateSignedSum",
-                "numEvaluateSignedProduct",
-                "numExpressNumberAsDifference",
-                "numSumPositive",
-                "numProductPositive",
-                "numProductWithNegatives",
-                "numSumWithNegativeProducts"
-            ].includes(toolName);
-        }
-
-        function builderAllowsVariables(toolName) {
-            return !isNumericalBuilderTool(toolName);
-        }
-
-        function builderAllowsNegativeOne(toolName) {
-            if (isNumericalRewriteTool(toolName)) {
-                return getNumericalRewriteProfile().allowNegativeOne;
-            }
-            return !isNumericalBuilderTool(toolName) ||
-                toolName === "numEvaluateSignedProduct" ||
-                toolName === "numEvaluateSignedSum" ||
-                toolName === "numExpressNumberAsDifference" ||
-                toolName === "numProductWithNegatives" ||
-                toolName === "numSumWithNegativeProducts";
-        }
-
-        function getBuilderOperationTypes(toolName) {
-            if (toolName === "evaluate") {
-                return [];
-            }
-            if (isNumericalRewriteTool(toolName)) {
-                const profile = getNumericalRewriteProfile();
-                const operations = [];
-                if (profile.addition !== "none") {
-                    operations.push("sum");
-                }
-                if (profile.multiplication !== "none") {
-                    operations.push("prod");
-                }
-                if (profile.allowExponents) {
-                    operations.push("exp");
-                }
-                if (profile.allowInverses) {
-                    operations.push("inv");
-                }
-                return operations;
-            }
-            if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive" || toolName === "numProductWithNegatives") {
-                return ["prod"];
-            }
-            if (toolName === "writeNumberAsSum" || toolName === "numWritePositiveNumberAsSum" || toolName === "numSumPositive") {
-                return ["sum"];
-            }
-            if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
-                return ["sum", "prod"];
-            }
-            return ["sum", "prod", "exp"];
-        }
-
-        function makePlaceholderNode() {
-            const node = valueNode("?");
-            node.isBuilderPlaceholder = true;
-            return node;
-        }
-
-        function isBuilderPlaceholder(node) {
-            return !!node && node.type === "value" && node.value === "?" && !!node.isBuilderPlaceholder;
-        }
-
-        function getBuilderVariableNames() {
-            const level = getCurrentLevel();
-            if (level && Array.isArray(level.variables) && level.variables.length) {
-                return level.variables.slice();
-            }
-            const names = new Set();
-            const collect = node => {
-                if (node && node.type === "value" && /^[a-zA-Z]$/.test(node.value)) {
-                    names.add(node.value);
-                }
-                if (node && node.args) {
-                    node.args.forEach(collect);
-                }
-            };
-            if (level && level.startExpression) {
-                try { collect(textToExpression(level.startExpression)); } catch (e) {}
-            }
-            return Array.from(names).sort();
-        }
-
-        function cloneBuilderRootForDisplay(node, activePath = null, currentPath = []) {
-            const cloned = new ExprNode(node.type, [], node.value);
-            cloned.isBuilderPlaceholder = !!node.isBuilderPlaceholder;
-            cloned.isBuilderOuter = !!node.isBuilderOuter;
-            cloned.isBuilderActive = !!activePath && pathsEqual(activePath, currentPath);
-            cloned.args = node.args.map((child, index) => cloneBuilderRootForDisplay(child, activePath, currentPath.concat(index)));
-            return cloned;
-        }
-
-        function pathsEqual(a, b) {
-            return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => value === b[index]);
-        }
-
-        function getNodeAtPath(root, path) {
-            let node = root;
-            for (const index of path) {
-                if (!node || !node.args || !node.args[index]) {
-                    return null;
-                }
-                node = node.args[index];
-            }
-            return node;
-        }
-
-        function setNodeAtPath(root, path, replacement) {
-            if (!path.length) {
-                return replacement;
-            }
-            const parent = getNodeAtPath(root, path.slice(0, -1));
-            if (!parent) {
-                return root;
-            }
-            parent.args[path[path.length - 1]] = replacement;
-            return root;
-        }
-
-        function findPlaceholderPaths(root, path = [], out = []) {
-            if (isBuilderPlaceholder(root)) {
-                out.push(path.slice());
-            }
-            if (root && root.args) {
-                root.args.forEach((child, index) => findPlaceholderPaths(child, path.concat(index), out));
-            }
-            return out;
-        }
-
-        function findNextPlaceholderPath(root, currentPath) {
-            const paths = findPlaceholderPaths(root);
-            if (!paths.length) {
-                return null;
-            }
-            const currentKey = currentPath.join(".");
-            const index = paths.findIndex(path => path.join(".") === currentKey);
-            if (index >= 0 && index + 1 < paths.length) {
-                return paths[index + 1];
-            }
-            if (index < 0) {
-                return paths[0];
-            }
-            return null;
-        }
-
-        function makeBuilderInsertionRoot(builder) {
-            const expressionDisplay = cloneBuilderRootForDisplay(builder.root, builder.currentPath);
-            if (builder.tool === "replaceOneWithInverseProduct") {
-                const root = new ExprNode("prod", [
-                    expressionDisplay,
-                    makeInverseNode(cloneBuilderRootForDisplay(builder.root, builder.currentPath))
-                ], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "insertZeroProduct") {
-                const root = builder.zeroProductOrientation === "right"
-                    ? new ExprNode("prod", [expressionDisplay, valueNode("0")], null)
-                    : new ExprNode("prod", [valueNode("0"), expressionDisplay], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "insertExponentZero") {
-                const root = new ExprNode("exp", [expressionDisplay, valueNode("0")], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "insertPowerOfOne") {
-                const root = new ExprNode("exp", [valueNode("1"), expressionDisplay], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "cancelOpposites") {
-                const negCopy = new ExprNode("prod", [valueNode("-1"), cloneBuilderRootForDisplay(builder.root, builder.currentPath)], null);
-                const root = new ExprNode("sum", [expressionDisplay, negCopy], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "numericalEquivalence" ||
-                isNumericalRewriteTool(builder.tool) ||
-                builder.tool === "factorNumber" ||
-                builder.tool === "writeNumberAsSum" ||
-                builder.tool === "evaluate" ||
-                isStructuredNumericalTool(builder.tool)) {
-                expressionDisplay.isBuilderOuter = true;
-                return expressionDisplay;
-            }
-            return expressionDisplay;
-        }
-
-        function renderBuilderProposalSvg(node) {
-            return renderExpressionSvgMarkup(node, {
-                className: "builder-proposed-oops-svg",
-                role: "img",
-                ariaHidden: true,
-                focusable: false,
-                settings: {
-                    padding: 10,
-                    flare: 6,
-                    marginX: 12,
-                    marginY: 12,
-                    textFont: "18px Verdana, Arial, Helvetica, sans-serif",
-                    expressionStrokeFill: "rgb(95,95,95)"
-                }
-            });
-        }
-
-        function getBuilderProposalHtml() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return "";
-            }
-            const proposal = makeBuilderInsertionRoot(builder);
-            const preview = renderBuilderProposalSvg(proposal);
-            return `<div class="proposal-preview-panel">
-                <div class="proposal-preview-title">Proposed entry</div>
-                <div class="proposal-preview-oops">${preview}</div>
-                ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
-            </div>`;
-        }
-
-        function refreshExpressionBuilderPreview() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return;
-            }
-            // The expression builder is now a left-panel proposal builder.
-            // The right-side/current expression is not edited until Submit passes validation.
-            layoutExpression(expressionRoot);
-            if (uiState.stage === "builder" && uiState.expressionBuilder) {
-                renderToolArea();
-            } else {
-                renderLevelInfo(currentLevelIndex);
-            }
-            refreshStatus();
-            drawExpression();
-        }
-
-        function beginExpressionBuilder(toolName) {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return false;
-            }
-            const originalRoot = cloneExpressionTree(expressionRoot);
-            const placeholder = makePlaceholderNode();
-            uiState.expressionBuilder = {
-                tool: toolName,
-                root: placeholder,
-                currentPath: [],
-                insertionId: selection.node ? selection.node.id : -1,
-                originalRoot,
-                originalSelectedNode: selectedNode,
-                originalSelection: {
-                    node: selection.node,
-                    firstPart: selection.firstPart,
-                    lastPart: selection.lastPart
-                },
-                zeroProductOrientation: uiState.zeroProductOrientation || "left",
-                history: []
-            };
-            refreshExpressionBuilderPreview();
-            return true;
-        }
-
-        function cancelExpressionBuilder() {
-            if (uiState.expressionBuilder && uiState.expressionBuilder.originalRoot) {
-                expressionRoot = uiState.expressionBuilder.originalRoot;
-                syncCurrentExpressionRoot();
-            }
-            uiState.expressionBuilder = null;
-            finishOperation();
-        }
-
-        function replaceBuilderCurrentNode(replacement, autoAdvance = false) {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return false;
-            }
-            pushExpressionBuilderUndoState();
-            builder.root = setNodeAtPath(builder.root, builder.currentPath, replacement);
-            if (autoAdvance) {
-                const next = findNextPlaceholderPath(builder.root, builder.currentPath);
-                if (next) {
-                    builder.currentPath = next;
-                }
-            }
-            refreshExpressionBuilderPreview();
-            return true;
-        }
-
-        function appendBuilderDigit(digit) {
-            const builder = uiState.expressionBuilder;
-            const node = builder ? getNodeAtPath(builder.root, builder.currentPath) : null;
-            if (!node || node.type !== "value") {
-                uiState.message = "Digits can only be entered after you have drilled down to a value box.";
-                renderToolArea();
-                return false;
-            }
-            if (isBuilderPlaceholder(node)) {
-                pushExpressionBuilderUndoState();
-                node.value = String(digit);
-                node.isBuilderPlaceholder = false;
-            } else if (/^\d+$/.test(node.value)) {
-                pushExpressionBuilderUndoState();
-                node.value += String(digit);
-            } else {
-                uiState.message = "Use Move On before entering a different value.";
-                renderToolArea();
-                return false;
-            }
-            refreshExpressionBuilderPreview();
-            return true;
-        }
-
-        function enterBuilderValue(value, autoAdvance = true) {
-            replaceBuilderCurrentNode(valueNode(value), autoAdvance);
-        }
-
-        function insertBuilderOperation(type) {
-            const builder = uiState.expressionBuilder;
-            const node = builder ? getNodeAtPath(builder.root, builder.currentPath) : null;
-            if (!builder || !node) {
-                return false;
-            }
-
-            const currentIsPlaceholder = isBuilderPlaceholder(node);
-            const firstArgument = currentIsPlaceholder ? makePlaceholderNode() : cloneNode(node);
-            const secondArgument = makePlaceholderNode();
-
-            if (type === "inv") {
-                const replacement = new ExprNode("inv", [firstArgument], null);
-                pushExpressionBuilderUndoState();
-                builder.root = setNodeAtPath(builder.root, builder.currentPath, replacement);
-                builder.currentPath = builder.currentPath.concat(0);
-                refreshExpressionBuilderPreview();
-                return true;
-            }
-
-            // When the user inserts a sum into a sum, or a product into a product,
-            // flatten immediately. This works both for an empty question-mark box
-            // and for a filled value/expression that the user now wants to turn
-            // into the first argument of a larger sum/product.
-            if ((type === "sum" || type === "prod") && builder.currentPath.length > 0) {
-                const parentPath = builder.currentPath.slice(0, -1);
-                const childIndex = builder.currentPath[builder.currentPath.length - 1];
-                const parent = getNodeAtPath(builder.root, parentPath);
-                if (parent && parent.type === type && Array.isArray(parent.args)) {
-                    pushExpressionBuilderUndoState();
-                    parent.args.splice(childIndex, 1, firstArgument, secondArgument);
-                    builder.currentPath = currentIsPlaceholder
-                        ? parentPath.concat(childIndex)
-                        : parentPath.concat(childIndex + 1);
-                    refreshExpressionBuilderPreview();
-                    return true;
-                }
-            }
-
-            const replacement = type === "exp"
-                ? new ExprNode("exp", [firstArgument, secondArgument], null)
-                : new ExprNode(type, [firstArgument, secondArgument], null);
-            pushExpressionBuilderUndoState();
-            builder.root = setNodeAtPath(builder.root, builder.currentPath, replacement);
-            builder.currentPath = currentIsPlaceholder
-                ? builder.currentPath.concat(0)
-                : builder.currentPath.concat(1);
-            refreshExpressionBuilderPreview();
-            return true;
-        }
-
-        function moveBuilderNext() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return false;
-            }
-            const next = findNextPlaceholderPath(builder.root, builder.currentPath);
-            if (next) {
-                pushExpressionBuilderUndoState();
-                builder.currentPath = next;
-                refreshExpressionBuilderPreview();
-            } else {
-                uiState.message = "There is no next empty part. You can submit or add more structure before filling the last value.";
-                renderToolArea();
-            }
-            return true;
-        }
-
-        function getPlaceholderFillValue(parentType, toolName) {
-            if (parentType === "sum") {
-                return "0";
-            }
-            if (parentType === "prod" || parentType === "exp") {
-                return "1";
-            }
-            return toolName === "cancelOpposites" ? "0" : "1";
-        }
-
-        function fillBuilderPlaceholders(node, parentType, toolName) {
-            if (isBuilderPlaceholder(node)) {
-                return valueNode(getPlaceholderFillValue(parentType, toolName));
-            }
-            if (!node || node.type === "value") {
-                return cloneNode(node);
-            }
-            return new ExprNode(
-                node.type,
-                node.args.map(child => fillBuilderPlaceholders(child, node.type, toolName)),
-                node.value
-            );
-        }
-
-        function isAlwaysZeroExpression(node) {
-            if (!node) {
-                return false;
-            }
-            if (isValueNode(node, "0")) {
-                return true;
-            }
-            if (node.type === "prod") {
-                return node.args.some(isAlwaysZeroExpression);
-            }
-            if (node.type === "sum") {
-                return node.args.length > 0 && node.args.every(isAlwaysZeroExpression);
-            }
-            return false;
-        }
-
-        function evaluateBuilderWholeNumberExpression(node) {
-            if (!node) {
-                return null;
-            }
-            const normalized = normalizeExpressionTree(cloneNode(node));
-            if (normalized.type === "value") {
-                return parseNonNegativeInteger(normalized.value);
-            }
-            return evaluateLevelOneNode(normalized);
-        }
-
-        function builderValidationFailed(message) {
-            uiState.message = message;
-            renderToolArea();
-            refreshExpressionBuilderPreview();
-            return false;
-        }
-
-        function getOriginalBuilderTargetValue(builder) {
-            return evaluateBuilderWholeNumberExpression(builder.originalSelectedNode);
-        }
-
-        function submitExpressionBuilder() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return false;
-            }
-            const completed = normalizeExpressionTree(fillBuilderPlaceholders(builder.root, null, builder.tool));
-            if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
-                uiState.message = "That expression is always 0, so its inverse would be undefined. Choose a nonzero expression.";
-                renderToolArea();
-                refreshExpressionBuilderPreview();
-                return false;
-            }
-            let replacement;
-            if (builder.tool === "replaceOneWithInverseProduct") {
-                replacement = new ExprNode("prod", [cloneNode(completed), makeInverseNode(cloneNode(completed))], null);
-            } else if (builder.tool === "insertZeroProduct") {
-                replacement = builder.zeroProductOrientation === "right"
-                    ? new ExprNode("prod", [cloneNode(completed), valueNode("0")], null)
-                    : new ExprNode("prod", [valueNode("0"), cloneNode(completed)], null);
-            } else if (builder.tool === "insertExponentZero") {
-                replacement = makeExponentNode(completed, valueNode("0"));
-            } else if (builder.tool === "insertPowerOfOne") {
-                replacement = makeExponentNode(valueNode("1"), completed);
-            } else if (builder.tool === "cancelOpposites") {
-                replacement = makeSumFromTerms([cloneNode(completed), makeProductFromFactors([valueNode("-1"), cloneNode(completed)])]);
-            } else if (isNumericalRewriteTool(builder.tool)) {
-                const profile = getNumericalRewriteProfile();
-                const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "selected");
-                if (!originalCheck.ok) {
-                    return builderValidationFailed(originalCheck.error);
-                }
-                const replacementCheck = validateNumericalRewriteExpression(completed, profile, "replacement");
-                if (!replacementCheck.ok) {
-                    return builderValidationFailed(replacementCheck.error);
-                }
-                if (!exactRationalsAreEqual(replacementCheck.value, originalCheck.value)) {
-                    return builderValidationFailed(`That expression evaluates to ${formatExactRational(replacementCheck.value)}, not ${formatExactRational(originalCheck.value)}.`);
-                }
-                replacement = completed;
-            } else if (builder.tool === "numericalEquivalence") {
-                const target = getOriginalBuilderTargetValue(builder);
-                const computed = evaluateBuilderWholeNumberExpression(completed);
-                if (target === null || computed === null) {
-                    return builderValidationFailed("Build a whole number, a sum of whole numbers, a product of whole numbers, or one whole-number exponent.");
-                }
-                if (computed !== target) {
-                    return builderValidationFailed(`That expression evaluates to ${computed}, not ${target}.`);
-                }
-                replacement = completed;
-            } else if (builder.tool === "factorNumber") {
-                const target = getOriginalBuilderTargetValue(builder);
-                const computed = evaluateBuilderWholeNumberExpression(completed);
-                if (!completed || completed.type !== "prod" || completed.args.length < 2) {
-                    return builderValidationFailed("Build a product with at least two whole-number factors.");
-                }
-                if (target === null || computed === null) {
-                    return builderValidationFailed("Build a product of whole numbers.");
-                }
-                if (computed !== target) {
-                    return builderValidationFailed(`Those factors multiply to ${computed}, not ${target}.`);
-                }
-                replacement = completed;
-            } else if (builder.tool === "writeNumberAsSum") {
-                const target = getOriginalBuilderTargetValue(builder);
-                const computed = evaluateBuilderWholeNumberExpression(completed);
-                if (!completed || completed.type !== "sum" || completed.args.length < 2) {
-                    return builderValidationFailed("Build a sum with at least two whole-number addends.");
-                }
-                if (target === null || computed === null) {
-                    return builderValidationFailed("Build a sum of whole numbers.");
-                }
-                if (computed !== target) {
-                    return builderValidationFailed(`Those addends sum to ${computed}, not ${target}.`);
-                }
-                replacement = completed;
-            } else if (isStructuredNumericalTool(builder.tool)) {
-                const target = getSingleSignedIntegerValue(builder.originalSelectedNode);
-                if (target === null) {
-                    return builderValidationFailed("Select a single number before using this rule in the expansion direction.");
-                }
-                const validation = validateStructuredNumericalExpansion(builder.tool, completed, target);
-                if (!validation.ok) {
-                    return builderValidationFailed(validation.error);
-                }
-                replacement = completed;
-            } else if (builder.tool === "evaluate") {
-                const target = evaluateNodeForCurrentLevel(builder.originalSelectedNode);
-                const computed = evaluateBuilderWholeNumberExpression(completed);
-                if (target === null || computed === null || completed.type !== "value") {
-                    return builderValidationFailed("Enter the evaluated whole number.");
-                }
-                if (!numbersAreEqualForEvaluation(computed, target)) {
-                    return builderValidationFailed("That is not correct. Try again.");
-                }
-                replacement = valueNode(String(target));
-            } else {
-                replacement = completed;
-            }
-            replacement = normalizeExpressionTree(replacement);
-            if (builder.originalSelection) {
-                selection.status = "yes";
-                selection.node = builder.originalSelection.node;
-                selection.firstPart = builder.originalSelection.firstPart;
-                selection.lastPart = builder.originalSelection.lastPart;
-            }
-            replaceSelectedRange(replacement);
-            syncCurrentExpressionRoot();
-            uiState.expressionBuilder = null;
-            finishOperation();
-            return true;
-        }
-
-        function applyReplaceOneWithInverseProduct() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("replaceOneWithInverseProduct");
-        }
-
-        function applyInsertZeroProduct() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("insertZeroProduct");
-        }
-
-        function applyInsertExponentZero() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("insertExponentZero");
-        }
-
-        function applyInsertPowerOfOne() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("insertPowerOfOne");
-        }
-
-        function applyCancelProductWithInverse() {
-            const data = getProductInverseCancellationData();
-            if (!data) {
-                return false;
-            }
-
-            const removeSet = new Set([data.inverseIndex]);
-            data.expressionIndices.forEach(index => removeSet.add(index));
-
-            const kept = [];
-            for (let i = 0; i < data.productNode.args.length; i++) {
-                if (!removeSet.has(i)) {
-                    kept.push(cloneNode(data.productNode.args[i]));
-                }
-            }
-
-            const replacement = kept.length
-                ? makeProductFromFactors([new ExprNode("value", [], "1"), ...kept])
-                : new ExprNode("value", [], "1");
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyIdentityElimination() {
-            const data = getIdentityEliminationData();
-            if (!data) {
-                return false;
-            }
-
-            if (selection.node.type === "sum") {
-                const kept = [];
-                for (let i = 0; i < selection.node.args.length; i++) {
-                    const inRange = i >= selection.firstPart && i <= selection.lastPart;
-                    const child = selection.node.args[i];
-                    if (inRange && child.type === "value" && child.value === "0") {
-                        continue;
-                    }
-                    kept.push(child);
-                }
-                selection.node.args = kept;
-                finishOperation();
-                return true;
-            }
-
-            if (selection.node.type === "prod") {
-                const kept = [];
-                for (let i = 0; i < selection.node.args.length; i++) {
-                    const inRange = i >= selection.firstPart && i <= selection.lastPart;
-                    const child = selection.node.args[i];
-                    if (inRange && child.type === "value" && child.value === "1") {
-                        continue;
-                    }
-                    kept.push(child);
-                }
-                selection.node.args = kept;
-                finishOperation();
-                return true;
-            }
-
-            return false;
-        }
-
-        function parseNumberList(text, mode) {
-            const raw = text.trim();
-            if (!raw) {
-                return { ok: false, error: "Enter one or more numbers." };
-            }
-
-            let normalized = raw;
-            if (mode === "product") {
-                normalized = normalized.replace(/[xX*]/g, " ");
-                if (/[+]/.test(normalized)) {
-                    return { ok: false, error: "Use spaces, commas, x, or * for factoring. Do not use +." };
-                }
-            } else {
-                normalized = normalized.replace(/[+]/g, " ");
-                if (/[xX*]/.test(normalized)) {
-                    return { ok: false, error: "Use spaces, commas, or + for writing a sum. Do not use x or *." };
-                }
-            }
-
-            normalized = normalized.replace(/[;,]/g, " ");
-            const pieces = normalized.split(/\s+/).filter(Boolean);
-            if (pieces.length === 0) {
-                return { ok: false, error: "Enter one or more numbers." };
-            }
-
-            const nums = [];
-            for (const piece of pieces) {
-                if (!/^\d+$/.test(piece)) {
-                    return { ok: false, error: `Could not read "${piece}" as a nonnegative integer.` };
-                }
-                nums.push(Number(piece));
-            }
-            return { ok: true, nums };
-        }
-
-        function parseNumericalEquivalenceExpansionInput(text) {
-            const raw = String(text || "").trim();
-            if (!raw) {
-                return { ok: false, error: "Enter an equivalent sum, product, or exponent." };
-            }
-
-            const hasPlus = /[+]/.test(raw);
-            const hasProduct = /[xX*]/.test(raw);
-            const hasExponent = /\^/.test(raw);
-            const formCount = [hasPlus, hasProduct, hasExponent].filter(Boolean).length;
-            if (formCount > 1) {
-                return { ok: false, error: "Level 1 numerical equivalence uses one sum, one product, or one exponent, not a mixed expression." };
-            }
-            if (formCount === 0) {
-                return { ok: false, error: "Use + for a sum, * for a product, or ^ for an exponent, such as 2+3+4, 2*3*4, or 2^3." };
-            }
-
-            if (hasExponent) {
-                const pieces = raw.split("^").map(piece => piece.trim()).filter(piece => piece.length > 0);
-                if (pieces.length !== 2) {
-                    return { ok: false, error: "Use one binary exponent, such as 2^3." };
-                }
-                const base = parseNonNegativeInteger(pieces[0]);
-                const exponent = parseNonNegativeInteger(pieces[1]);
-                if (base === null || exponent === null) {
-                    return { ok: false, error: "Level 1 exponents use whole-number base and exponent values." };
-                }
-                return { ok: true, mode: "exponent", nums: [base, exponent] };
-            }
-
-            const mode = hasProduct ? "product" : "sum";
-            const parsed = parseNumberList(raw, mode);
-            if (!parsed.ok) {
-                return parsed;
-            }
-            if (parsed.nums.length < 2) {
-                return { ok: false, error: "Use at least two whole numbers." };
-            }
-            return { ok: true, mode, nums: parsed.nums };
-        }
-
-        function getNumericalEquivalenceModeForSelection() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return null;
-            }
-            if (selectedNode.type === "value" && parseNonNegativeInteger(selectedNode.value) !== null) {
-                return "expand";
-            }
-            if (evaluateLevelOneNode(selectedNode) !== null) {
-                return "collapse";
-            }
-            return null;
-        }
-
-        function canNumericalEquivalence() {
-            return getNumericalEquivalenceModeForSelection() !== null;
-        }
-
-        function validateArithmeticExpressionForLevel(node, allowedLevel, roleLabel) {
-            if (!node) {
-                return { ok: false, error: `There is no ${roleLabel} expression to check.` };
-            }
-            if (!isEntirelyNumericalNode(node)) {
-                return { ok: false, error: `The ${roleLabel} expression must be entirely numerical.` };
-            }
-            const actualLevel = classifyArithmeticExpressionLevel(node);
-            const clampedAllowedLevel = clampArithmeticLevel(allowedLevel, 0);
-            if (actualLevel === null) {
-                return { ok: false, error: `The ${roleLabel} expression could not be classified as arithmetic.` };
-            }
-            if (actualLevel > clampedAllowedLevel) {
-                return {
-                    ok: false,
-                    error: `The ${roleLabel} expression is arithmetic level ${actualLevel}, but this button allows only level ${clampedAllowedLevel}. ${getArithmeticLevelDescription(clampedAllowedLevel)}`
-                };
-            }
-            const value = evaluateArithmeticNode(node);
-            if (value === null) {
-                return { ok: false, error: `The ${roleLabel} expression could not be evaluated as a finite number.` };
-            }
-            return { ok: true, level: actualLevel, value };
-        }
-
-        function canArithmeticEquivalence(allowedLevel) {
-            const selectedNode = cloneSelectedRangeNode();
-            return validateArithmeticExpressionForLevel(selectedNode, allowedLevel, "selected").ok;
-        }
-
-        function canNumericalRewrite() {
-            const selectedNode = cloneSelectedRangeNode();
-            return validateNumericalRewriteExpression(
-                selectedNode,
-                getNumericalRewriteProfile(),
-                "selected"
-            ).ok;
-        }
-
-        function applyFactorNumber() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || selectedNode.type !== "value") {
-                return false;
-            }
-            const target = parseNonNegativeInteger(selectedNode.value);
-            if (target === null) {
-                return false;
-            }
-
-            const parsed = parseNumberList(uiState.inputText, "product");
-            if (!parsed.ok) {
-                uiState.message = parsed.error;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            const product = parsed.nums.reduce((a, b) => a * b, 1);
-            if (product !== target) {
-                uiState.message = `Those factors multiply to ${product}, not ${target}.`;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            const replacement = makeProductFromFactors(parsed.nums.map(n => new ExprNode("value", [], String(n))));
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyWriteNumberAsSum() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || selectedNode.type !== "value") {
-                return false;
-            }
-            const target = parseNonNegativeInteger(selectedNode.value);
-            if (target === null) {
-                return false;
-            }
-
-            const parsed = parseNumberList(uiState.inputText, "sum");
-            if (!parsed.ok) {
-                uiState.message = parsed.error;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            const sum = parsed.nums.reduce((a, b) => a + b, 0);
-            if (sum !== target) {
-                uiState.message = `Those addends sum to ${sum}, not ${target}.`;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            const replacement = makeSumFromTerms(parsed.nums.map(n => new ExprNode("value", [], String(n))));
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyEvaluate() {
-            const selectedNode = cloneSelectedRangeNode();
-            const target = evaluateNodeForCurrentLevel(selectedNode);
-            if (target === null) {
-                return false;
-            }
-
-            const enteredValue = parseNumericValue(uiState.inputText);
-            if (enteredValue === null || Number.isNaN(enteredValue) || !Number.isFinite(enteredValue)) {
-                uiState.message = "Enter a number for the evaluated result.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            if (!numbersAreEqualForEvaluation(enteredValue, target)) {
-                uiState.message = "That is not correct. Try again.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            replaceSelectedRange(new ExprNode("value", [], formatEvaluationResultForExpression(target)));
-            finishOperation();
-            return true;
-        }
-
-        function applyNumericalEquivalence() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return false;
-            }
-
-            if (selectedNode.type === "value") {
-                const target = parseNonNegativeInteger(selectedNode.value);
-                if (target === null) {
-                    return false;
-                }
-
-                const parsed = parseNumericalEquivalenceExpansionInput(uiState.inputText);
-                if (!parsed.ok) {
-                    uiState.message = parsed.error;
-                    renderToolArea();
-                    refreshStatus();
-                    return false;
-                }
-
-                const computed = parsed.mode === "sum"
-                    ? parsed.nums.reduce((a, b) => a + b, 0)
-                    : parsed.mode === "product"
-                        ? parsed.nums.reduce((a, b) => a * b, 1)
-                        : Math.pow(parsed.nums[0], parsed.nums[1]);
-
-                if (computed !== target) {
-                    uiState.message = parsed.mode === "sum"
-                        ? `Those addends sum to ${computed}, not ${target}.`
-                        : parsed.mode === "product"
-                            ? `Those factors multiply to ${computed}, not ${target}.`
-                            : `That exponent evaluates to ${computed}, not ${target}.`;
-                    renderToolArea();
-                    refreshStatus();
-                    return false;
-                }
-
-                const replacement = parsed.mode === "sum"
-                    ? makeSumFromTerms(parsed.nums.map(n => new ExprNode("value", [], String(n))))
-                    : parsed.mode === "product"
-                        ? makeProductFromFactors(parsed.nums.map(n => new ExprNode("value", [], String(n))))
-                        : makeExponentNode(valueNode(parsed.nums[0]), valueNode(parsed.nums[1]));
-                replaceSelectedRange(replacement);
-                finishOperation();
-                return true;
-            }
-
-            const target = evaluateLevelOneNode(selectedNode);
-            if (target === null) {
-                return false;
-            }
-
-            const enteredValue = parseNonNegativeInteger(uiState.inputText);
-            if (enteredValue === null) {
-                uiState.message = "Enter the equivalent whole number.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            if (enteredValue !== target) {
-                uiState.message = "That is not correct. Try again.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            replaceSelectedRange(new ExprNode("value", [], String(target)));
-            finishOperation();
-            return true;
-        }
-
-        function applyEvaluateSumOrProduct(expectedType) {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || selectedNode.type !== expectedType) {
-                return false;
-            }
-
-            const target = evaluateSumOrProductNode(selectedNode);
-            if (target === null) {
-                return false;
-            }
-
-            const enteredValue = parseNumericValue(uiState.inputText);
-            if (enteredValue === null || Number.isNaN(enteredValue)) {
-                uiState.message = "Enter a number for the evaluated result.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            if (!numbersAreEqualForEvaluation(enteredValue, target)) {
-                uiState.message = `That is not correct. Try again.`;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            replaceSelectedRange(new ExprNode("value", [], String(target)));
-            finishOperation();
-            return true;
-        }
-
-        function applyEvaluateSum() {
-            return applyEvaluateSumOrProduct("sum");
-        }
-
-        function applyEvaluateProduct() {
-            return applyEvaluateSumOrProduct("prod");
-        }
-
-        function applyEvaluateSumContainingProducts() {
-            const selectedNode = cloneSelectedRangeNode();
-            const target = evaluateSumContainingProductsNode(selectedNode);
-            if (target === null) {
-                return false;
-            }
-
-            const enteredValue = parseNumericValue(uiState.inputText);
-            if (enteredValue === null || Number.isNaN(enteredValue)) {
-                uiState.message = "Enter a number for the evaluated result.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            if (!numbersAreEqualForEvaluation(enteredValue, target)) {
-                uiState.message = "That is not correct. Try again.";
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            if (target < 0) {
-                const positiveValue = Math.abs(target);
-                replaceSelectedRange(
-                    makeProductFromFactors([
-                        new ExprNode("value", [], "-1"),
-                        new ExprNode("value", [], String(positiveValue))
-                    ])
-                );
-            } else {
-                replaceSelectedRange(new ExprNode("value", [], String(target)));
-            }
-            finishOperation();
-            return true;
-        }
-
-        function applyDoubleNegative() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (selectedNode && selectedNode.type === "value" && selectedNode.value === "1") {
-                replaceSelectedRange(makeProductFromFactors([valueNode("-1"), valueNode("-1")]));
-                finishOperation();
-                return true;
-            }
-
-            const data = getDoubleNegativeData();
-            if (!data) {
-                return false;
-            }
-
-            let toRemove = 2;
-            const kept = [];
-            for (const child of data.wrapper.args) {
-                if (toRemove > 0 && child.type === "value" && child.value === "-1") {
-                    toRemove -= 1;
-                } else {
-                    kept.push(cloneNode(child));
-                }
-            }
-            const replacement = makeProductFromFactors([new ExprNode("value", [], "1"), ...kept]);
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyZeroProduct() {
-            const data = getZeroProductData();
-            if (!data) {
-                return false;
-            }
-            replaceSelectedRange(new ExprNode("value", [], "0"));
-            finishOperation();
-            return true;
-        }
-
-        function applyCancelOpposites() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (selectedNode && selectedNode.type === "value" && selectedNode.value === "0") {
-                if (uiState.expressionBuilder) {
-                    return submitExpressionBuilder();
-                }
-                return beginExpressionBuilder("cancelOpposites");
-            }
-
-            const data = getCancelOppositesData();
-            if (!data) {
-                return false;
-            }
-
-            const removeSet = new Set();
-            for (const pair of data.pairs) {
-                const posIndices = Array.isArray(pair.posIndices) ? pair.posIndices : [pair.posIndex];
-                posIndices.forEach(index => removeSet.add(index));
-                removeSet.add(pair.negIndex);
-            }
-
-            const kept = [];
-            for (let i = 0; i < data.wrapper.args.length; i++) {
-                if (!removeSet.has(i)) {
-                    kept.push(cloneNode(data.wrapper.args[i]));
-                }
-            }
-            const replacement = makeSumFromTerms([new ExprNode("value", [], "0"), ...kept]);
-            replaceSelectedRange(replacement);
-            finishOperation();
-            return true;
-        }
-
-        function applyCommuteRotationWithPostview(direction) {
-            if (!selection.node || !canCommuteRotate()) {
-                return false;
-            }
-
-            const firstIndex = selection.firstPart;
-            const lastIndex = selection.lastPart;
-            const selectedLength = getSelectedSliceLength();
-            const colors = Array.isArray(uiState.previewColors) && uiState.previewColors.length >= selectedLength
-                ? uiState.previewColors.slice(0, selectedLength)
-                : getDistinctRandomColors(selectedLength);
-            const singleMoverDirectionalCommute = selectedLength >= 3 &&
-                (direction === "firstToLast" || direction === "lastToFirst");
-            const movedColor = direction === "lastToFirst"
-                ? (colors[colors.length - 1] || SETTINGS.selectionBlue)
-                : (colors[0] || SETTINGS.selectionBlue);
-
-            const before = selection.node.args.slice(0, firstIndex);
-            const selected = selection.node.args.slice(firstIndex, lastIndex + 1);
-            const after = selection.node.args.slice(lastIndex + 1);
-            const rotated = direction === "lastToFirst"
-                ? [selected[selected.length - 1], ...selected.slice(0, -1)]
-                : [...selected.slice(1), selected[0]];
-
-            selection.node.args = [...before, ...rotated, ...after];
-
-            if (singleMoverDirectionalCommute) {
-                beginPostview({
-                    type: "commuteRotate",
-                    node: selection.node,
-                    firstIndex,
-                    lastIndex,
-                    movedOnly: true,
-                    movedIndex: direction === "lastToFirst" ? firstIndex : lastIndex,
-                    color: movedColor
-                });
-                return true;
-            }
-
-            beginPostview({
-                type: "commuteRotate",
-                node: selection.node,
-                firstIndex,
-                lastIndex,
-                colors: direction === "lastToFirst"
-                    ? [colors[colors.length - 1], ...colors.slice(0, -1)]
-                    : [...colors.slice(1), colors[0]]
-            });
-            return true;
-        }
-
-        function applyCommuteFirstToLastWithPostview() {
-            return applyCommuteRotationWithPostview("firstToLast");
-        }
-
-        function applyCommuteLastToFirstWithPostview() {
-            return applyCommuteRotationWithPostview("lastToFirst");
-        }
-
-        function applyTwoItemCommuteWithPostview() {
-            return applyCommuteFirstToLastWithPostview();
-        }
-
-        function selectCommuteItem(clickedIndex) {
-            if (!selection.node || !canCommuteRotate()) {
-                return false;
-            }
-            if (clickedIndex < selection.firstPart || clickedIndex > selection.lastPart) {
-                return false;
-            }
-            uiState.commuteSelectedIndex = clickedIndex;
-            refreshStatus();
-            renderToolArea();
-            drawExpression();
-            return true;
-        }
-
-        function applyCommutePermutationWithPostview() {
-            if (!selection.node || !canCommuteRotate()) {
-                return false;
-            }
-            const firstIndex = selection.firstPart;
-            const lastIndex = selection.lastPart;
-            const selectedLength = lastIndex - firstIndex + 1;
-            if (!Array.isArray(uiState.commuteOrder) || uiState.commuteOrder.length !== selectedLength) {
-                return false;
-            }
-
-            const before = selection.node.args.slice(0, firstIndex);
-            const selected = selection.node.args.slice(firstIndex, lastIndex + 1);
-            const after = selection.node.args.slice(lastIndex + 1);
-            const order = uiState.commuteOrder.slice();
-            const permuted = order.map(index => selected[index - firstIndex]);
-            const colors = Array.isArray(uiState.previewColors) && uiState.previewColors.length >= selectedLength
-                ? uiState.previewColors.slice(0, selectedLength)
-                : getDistinctRandomColors(selectedLength);
-            const permutedColors = order.map(index => colors[index - firstIndex]);
-
-            selection.node.args = [...before, ...permuted, ...after];
-            beginPostview({
-                type: "commuteRotate",
-                node: selection.node,
-                firstIndex,
-                lastIndex,
-                colors: permutedColors
-            });
-            return true;
-        }
-
-        function recordCommutePermutationChoice(clickedIndex) {
-            if (!selection.node || !canCommuteRotate()) {
-                return false;
-            }
-            if (clickedIndex < selection.firstPart || clickedIndex > selection.lastPart) {
-                return false;
-            }
-            if (!Array.isArray(uiState.commuteOrder)) {
-                uiState.commuteOrder = [];
-            }
-            if (uiState.commuteOrder.includes(clickedIndex)) {
-                return false;
-            }
-            if (!isDemoCommuteChoiceAllowed(clickedIndex)) {
-                drawExpression();
-                return false;
-            }
-
-            const shouldAdvanceDemo = isDemoModeActive() && getCurrentDemoStep() && getCurrentDemoStep().type === "commuteChoice";
-            recordCommuteChoiceForSolution(clickedIndex, getExpressionTextForTrace());
-            uiState.commuteOrder.push(clickedIndex);
-            const selectedLength = getSelectedSliceLength();
-            if (uiState.commuteOrder.length >= selectedLength) {
-                drawExpression();
-                const applied = applyCommutePermutationWithPostview();
-                if (applied && shouldAdvanceDemo) {
-                    advanceDemoStep();
-                }
-                return applied;
-            }
-
-            if (shouldAdvanceDemo) {
-                advanceDemoStep();
-            } else {
-                refreshStatus();
-                renderToolArea();
-                drawExpression();
-            }
-            return true;
-        }
-
-        function copySelectionToInternalClipboard() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode) {
-                return false;
-            }
-
-            internalClipboardText = expressionToText(selectedNode);
-            uiState.inputText = internalClipboardText;
-            uiState.message = "Copied to internal clipboard.";
-            return true;
-        }
-
-        function applySubstituteFromText() {
-            const parsed = tryParseParenthesizedExpression(uiState.inputText);
-
-            if (!parsed.ok) {
-                uiState.message = parsed.error;
-                renderToolArea();
-                refreshStatus();
-                return false;
-            }
-
-            replaceSelectedRange(parsed.node);
-            finishOperation();
-            return true;
-        }
-
-
-
-        function getExpressionBuilderNote() {
-            const toolName = uiState.activeTool;
-            if (toolName === "numericalEquivalence") {
-                return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, a product of whole numbers, or one binary exponent.";
-            }
-            if (isNumericalRewriteTool(toolName)) {
-                return "Build an equivalent numerical expression using only the operations allowed by this exercise. Submit checks both the selected expression and the proposed replacement against the exercise profile, then compares their values exactly. The right-side expression stays unchanged until the check passes.";
-            }
-            if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct") {
-                return "Build a product in the left panel. The right-side expression stays unchanged until Submit checks the product.";
-            }
-            if (toolName === "writeNumberAsSum" || toolName === "numWritePositiveNumberAsSum") {
-                return "Build a sum in the left panel. The right-side expression stays unchanged until Submit checks the sum.";
-            }
-            if (toolName === "numExpressNumberAsDifference") {
-                return "Build a difference in the left panel as a sum with a negative product. The right-side expression stays unchanged until Submit checks it.";
-            }
-            if (toolName === "evaluate") {
-                return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
-            }
-
-            let note = "Use Sum, Product, or Exponent to make structure first, or enter a value first and then use those buttons to wrap it. Remaining question marks are filled on Submit.";
-            if (toolName === "replaceOneWithInverseProduct") {
-                note += " For inverse products, the completed expression may not be always equal to 0.";
-            }
-            return note;
-        }
-
-        function buildExpressionBuilderHtml() {
-            const toolName = uiState.activeTool;
-            const variables = builderAllowsVariables(toolName) ? getBuilderVariableNames().slice(0, 4) : [];
-            const variableButtons = variables.length
-                ? `<div class="builder-variable-row">${variables.map(v => `<button data-builder-action="value" data-value="${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}</div>`
-                : "";
-            const operationTypes = getBuilderOperationTypes(toolName);
-            const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
-            const operationSymbols = { exp: "^", prod: "Â·", sum: "+", inv: "1/A" };
-            const buildOperationButton = type => {
-                const enabled = operationTypes.includes(type);
-                const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
-                const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
-                return `<button class="builder-operator-button"${actionAttrs}${title}>${operationSymbols[type]}</button>`;
-            };
-            const negativeOneButton = builderAllowsNegativeOne(toolName)
-                ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" title="Keyboard shortcut: -">-1</button>`
-                : `<button class="builder-negative-one-button" disabled>-1</button>`;
-            const moveNextButton = toolName === "evaluate"
-                ? `<button class="builder-next-button" disabled>â†’</button>`
-                : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">â†’</button>`;
-            const inverseButton = operationTypes.includes("inv")
-                ? `<div class="builder-unary-row"><button class="builder-operator-button" data-builder-action="operation" data-value="inv" title="Introduce an inverse (keyboard shortcut: /)">${operationSymbols.inv}</button></div>`
-                : "";
-            return `<div class="expression-builder-panel">
-                ${getBuilderProposalHtml()}
-                <div class="builder-controls">
-                    <div class="builder-keypad" aria-label="Expression builder keypad">
-                        ${["7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("exp")}
-                        ${["4","5","6"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("prod")}
-                        ${["1","2","3"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${buildOperationButton("sum")}
-                        <button class="builder-zero-button" data-builder-action="digit" data-value="0">0</button>
-                        ${negativeOneButton}
-                    </div>
-                    ${inverseButton}
-                    ${variableButtons}
-                    <div class="builder-navigation-row">
-                        <button class="builder-undo-button" data-builder-action="undoBackspace" title="Backspace / Undo: Backspace or Delete">â†</button>
-                        ${moveNextButton}
-                    </div>
-                    <div class="builder-action-row">
-                        <button data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
-                        <button data-builder-action="cancel">Cancel</button>
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        function buildToolExponentModeHtml() {
-            const mode = getCurrentToolExponentMode();
-            return `<div class="tool-exponent-mode" role="radiogroup" aria-label="Tool list">
-                <span class="panel-menu-title">Tool list</span>
-                <label class="tool-exponent-radio-label" title="Basic algebra tools">
-                    <input type="radio" name="toolExponentMode" value="plain"${mode === TOOL_EXPONENT_MODES.plain ? " checked" : ""}>
-                    <span>1</span>
-                </label>
-                <label class="tool-exponent-radio-label" title="Multiplicative inverse tools">
-                    <input type="radio" name="toolExponentMode" value="inverse"${mode === TOOL_EXPONENT_MODES.inverse ? " checked" : ""}>
-                    <span>2</span>
-                </label>
-                <label class="tool-exponent-radio-label" title="Exponent tools">
-                    <input type="radio" name="toolExponentMode" value="exponent"${mode === TOOL_EXPONENT_MODES.exponent ? " checked" : ""}>
-                    <span>3</span>
-                </label>
-            </div>`;
-        }
-
-        function buildQuickToolRowsHtml() {
-            let html = `<div class="tool-form-grid">`;
-            for (const row of getToolFormRowsForCurrentExponentMode()) {
-                if (!isToolFormRowAvailable(row)) {
-                    continue;
-                }
-                html += buildToolFormRowHtml(row);
-            }
-            html += `</div>`;
-            return html;
-        }
-
-        function buildToolCategoryMenuHtml() {
-            uiState.activeToolCategory = null;
-            return buildToolExponentModeHtml() + buildQuickToolRowsHtml();
-        }
-
-        function collectToolFormToolsFromSide(side, out) {
-            if (side && side.tool) {
-                out.add(side.tool);
-            }
-        }
-
-        function collectToolFormToolsFromRow(row, out) {
-            if (!row) {
-                return;
-            }
-            if (row.full) {
-                collectToolFormToolsFromSide(row.full, out);
-            }
-            if (row.distributionPair) {
-                [row.leftFactored, row.topDistributed, row.bottomDistributed, row.rightFactored]
-                    .forEach(side => collectToolFormToolsFromSide(side, out));
-            }
-            if (row.triplet) {
-                [row.left, row.center, row.right].forEach(side => collectToolFormToolsFromSide(side, out));
-            }
-            collectToolFormToolsFromSide(row.left, out);
-            collectToolFormToolsFromSide(row.right, out);
-            if (Array.isArray(row.leftGroup)) {
-                row.leftGroup.forEach(side => collectToolFormToolsFromSide(side, out));
-            }
-            if (Array.isArray(row.rightGroup)) {
-                row.rightGroup.forEach(side => collectToolFormToolsFromSide(side, out));
-            }
-        }
-
-        function getToolFormModeForTool(toolName) {
-            const normalizedToolName = toolName === "commute" ? "commuteFirstToLast" : toolName;
-            for (const mode of Object.keys(TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE)) {
-                const tools = new Set();
-                (TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[mode] || []).forEach(row => {
-                    collectToolFormToolsFromRow(row, tools);
-                });
-                if (tools.has(normalizedToolName)) {
-                    return mode;
-                }
-            }
-            return null;
-        }
-
-        function syncToolListToDemoStep() {
-            const step = getCurrentDemoStep();
-            if (!step || step.type !== "tool") {
-                return;
-            }
-            const mode = getToolFormModeForTool(step.tool);
-            if (mode === TOOL_EXPONENT_MODES.plain || mode === TOOL_EXPONENT_MODES.exponent || mode === TOOL_EXPONENT_MODES.inverse) {
-                uiState.toolExponentMode = mode;
-            }
-        }
-
-        function buildSelectedToolCategoryHtml(category, visibleKeys) {
-            let html = buildToolExponentModeHtml();
-            html += `<button class="panel-menu-back-button" data-action="backToToolCategories">â† Back to tool categories</button>`;
-            html += `<div class="panel-menu-title">${escapeHtml(category.label)}</div>`;
-
-            if (visibleKeys.length === 0) {
-                html += `<div class="small-note">No rules in this category are available in the current level.</div>`;
-                return html;
-            }
-
-            html += `<div class="tool-grid">`;
-            for (const key of visibleKeys) {
-                html += buildToolButtonHtml(key);
-            }
-            html += `</div>`;
-            return html;
-        }
-
-        function buildToolAreaHtml() {
-            let html = "";
-
-            if (!selection.node || uiState.stage === "postview") {
-                return "";
-            }
-
-            if (!uiState.activeTool) {
-                if (isApplicableOnlyToolNotationMode()) {
-                    return buildApplicableToolListHtml();
-                }
-                if (isIntentCategoryToolNotationMode()) {
-                    return buildIntentCategoryToolListHtml();
-                }
-                return buildToolCategoryMenuHtml();
-            }
-
-            if (
-                getAutoExecuteFunctionForTool(uiState.activeTool) &&
-                uiState.stage === "preview"
-            ) {
-                return "";
-            } else if (uiState.activeTool === "insertIdentity" && uiState.stage === "choosePosition") {
-                html += `<div class="small-note">Choose what identity to introduce.</div>`;
-                html += `<div class="tool-grid">
-                    <button data-action="insertIdentityOption" data-value="addZero:top">An additive identity may be introduced above the selected expression.</button>
-                    <button data-action="insertIdentityOption" data-value="addZero:bottom">An additive identity may be introduced below the selected expression.</button>
-                    <button data-action="insertIdentityOption" data-value="multiplyByOne:left">A multiplicative identity may be introduced on the left.</button>
-                    <button data-action="insertIdentityOption" data-value="multiplyByOne:right">A multiplicative identity may be introduced on the right.</button>
-                    ${canEliminateIdentities() && !isIntentCategoryToolNotationMode() ? '<button data-action="previewEliminateIdentities">An additive, multiplicative, or first-power identity may be removed.</button>' : ''}
-                </div>`;
-            } else if (
-                uiState.activeTool === "numericalEquivalence" &&
-                uiState.stage === "input"
-            ) {
-                const numericalMode = getNumericalEquivalenceModeForSelection();
-                const label = numericalMode === "expand"
-                    ? "Enter an equivalent sum, product, or exponent of whole numbers, such as 2+3+4, 2*3*4, or 2^3."
-                    : "Enter the equivalent whole number for the selected sum, product, or exponent. Level 1 uses n-ary sums/products and binary exponents of whole numbers.";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                isStructuredNumericalTool(uiState.activeTool) &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">${escapeHtml(getStructuredNumericalToolInputLabel(uiState.activeTool))}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                (uiState.activeTool === "factorNumber" || uiState.activeTool === "writeNumberAsSum") &&
-                uiState.stage === "input"
-            ) {
-                const label = uiState.activeTool === "factorNumber"
-                    ? "Enter factors separated by spaces, commas, x, or *"
-                    : "Enter addends separated by spaces, commas, or +";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "evaluate" &&
-                uiState.stage === "input"
-            ) {
-                const label = "Enter the value of the selected sum or product. Evaluation level 1 allows only addition or multiplication of non-negative whole numbers, not mixed product-sum expressions. Keep trying until correct, or exit.";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "cancelOpposites" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter an expression in fully parenthesized form. The selected 0 will become that expression plus its additive inverse, for example ((x)+((-1)*(x))).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-
-            } else if (
-                isExpressionBuilderTool(uiState.activeTool) &&
-                uiState.stage === "builder"
-            ) {
-                html += buildExpressionBuilderHtml();
-            } else if (
-                uiState.activeTool === "insertExponentZero" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter a base expression in fully parenthesized form. The selected 1 will become that expression raised to the 0 power, for example ((x)^(0)).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "insertPowerOfOne" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter an exponent expression in fully parenthesized form. The selected 1 will become 1 raised to that power, for example ((1)^(5)).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "replaceOneWithInverseProduct" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter an integer or fully parenthesized expression. The selected 1 will become that expression times the same expression raised to -1, for example ((5)*((5)^(-1))) or (((x)+(2))*(((x)+(2))^(-1))).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "insertZeroProduct" &&
-                uiState.stage === "input"
-            ) {
-                const orientationLabel = uiState.zeroProductOrientation === "right"
-                    ? "The selected 0 will become that expression times 0, for example ((x)*(0)) or (((x)+(2))*(0))."
-                    : "The selected 0 will become 0 times that expression, for example ((0)*(x)) or ((0)*((x)+(2))).";
-                html += `<div class="small-note">Enter the expression to multiply by zero. ${orientationLabel}</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
-                uiState.stage === "preview"
-            ) {
-                const chosenCount = Array.isArray(uiState.commuteOrder) ? uiState.commuteOrder.length : 0;
-                const totalCount = getSelectedSliceLength();
-                const demoStep = getCurrentDemoStep();
-                const instruction = isDemoModeActive() && demoStep && demoStep.type === "commuteChoice"
-                    ? `Click the yellow-outlined ${selection.node && selection.node.type === "sum" ? "term" : "factor"} next.`
-                    : "Click the colored terms or factors in the order you want them to appear.";
-                html += `<div class="small-note">${instruction} ${chosenCount} of ${totalCount} chosen.</div>`;
-                html += `<div class="tool-row"><button data-action="done">Exit</button></div>`;
-            } else if (
-                (uiState.activeTool === "commuteFirstToLast" || uiState.activeTool === "commuteLastToFirst") &&
-                uiState.stage === "preview"
-            ) {
-                html += `<div class="tool-row"><button data-action="done">Exit</button></div>`;
-            }
-
-            return html;
-        }
-
-        function markToolButtonNotApplicable(button) {
-            button.classList.add("tool-not-applicable");
-            if (!button.matches("[data-rule-category]")) {
-                button.setAttribute("title", "This rule does not apply to the selected expression.");
-            }
-        }
-
-        function performBuilderAction(action, value = "") {
-            if (!uiState.expressionBuilder || uiState.stage !== "builder") {
-                return false;
-            }
-            if (!isDemoBuilderActionAllowed(action, value)) {
-                return false;
-            }
-
-            const beforeExpression = getExpressionTextForTrace();
-            uiState.message = "";
-            let result = true;
-            if (action === "digit") {
-                result = appendBuilderDigit(value);
-            } else if (action === "negativeOne") {
-                result = enterBuilderValue("-1", true);
-            } else if (action === "value") {
-                result = enterBuilderValue(value, true);
-            } else if (action === "operation") {
-                result = insertBuilderOperation(value);
-            } else if (action === "next") {
-                result = moveBuilderNext();
-            } else if (action === "undoBackspace") {
-                result = undoExpressionBuilderStep();
-            } else if (action === "submit") {
-                result = submitExpressionBuilder();
-            } else if (action === "cancel") {
-                result = cancelExpressionBuilder();
-            } else {
-                return false;
-            }
-
-            if (result !== false) {
-                recordBuilderForSolution(action, value, beforeExpression);
-                advanceDemoStep();
-            }
-            return result !== false;
-        }
-
-        function handleExpressionBuilderKeydown(event) {
-            if (!uiState.expressionBuilder || uiState.stage !== "builder") {
-                return false;
-            }
-            const panel = document.querySelector(".expression-builder-panel");
-            if (!panel) {
-                return false;
-            }
-            const target = event.target;
-            if (target && typeof target.matches === "function" && (target.matches("input, textarea, select") || target.isContentEditable)) {
-                return false;
-            }
-
-            let action = "";
-            let value = "";
-            if (/^[0-9]$/.test(event.key)) {
-                action = "digit";
-                value = event.key;
-            } else if (event.key === "+") {
-                action = "operation";
-                value = "sum";
-            } else if (event.key === "*") {
-                action = "operation";
-                value = "prod";
-            } else if (event.key === "^") {
-                action = "operation";
-                value = "exp";
-            } else if (event.key === "/") {
-                action = "operation";
-                value = "inv";
-            } else if (event.key === "-") {
-                action = "negativeOne";
-            } else if (event.key === "Enter") {
-                action = "submit";
-            } else if (event.key === "ArrowRight") {
-                action = "next";
-            } else if (event.key === "Backspace" || event.key === "Delete") {
-                action = "undoBackspace";
-            } else if (event.key === "Escape") {
-                action = "cancel";
-            } else if (/^[a-zA-Z]$/.test(event.key)) {
-                action = "value";
-                value = event.key.toLowerCase();
-            } else {
-                return false;
-            }
-
-            const selector = value
-                ? `[data-builder-action="${action}"][data-value="${value}"]`
-                : `[data-builder-action="${action}"]`;
-            const matchingButton = panel.querySelector(selector);
-            if (!matchingButton || matchingButton.disabled) {
-                return false;
-            }
-
-            event.preventDefault();
-            performBuilderAction(action, value);
-            return true;
-        }
-
-        function attachToolListeners(container) {
-            const intentDescription = container.querySelector(".intent-category-description");
-            const resetIntentDescription = () => {
-                if (intentDescription) {
-                    intentDescription.innerHTML = "<p>Hover over an action to see what it does.</p>";
-                }
-            };
-            container.querySelectorAll("button[data-rule-category]").forEach(btn => {
-                const showIntentDescription = () => {
-                    if (intentDescription) {
-                        intentDescription.innerHTML = getIntentCategoryDescriptionHtml(btn.dataset.ruleCategory);
-                    }
-                };
-                btn.addEventListener("mouseenter", showIntentDescription);
-                btn.addEventListener("mouseleave", () => {
-                    if (document.activeElement !== btn) {
-                        resetIntentDescription();
-                    }
-                });
-                btn.addEventListener("focus", showIntentDescription);
-                btn.addEventListener("blur", () => {
-                    if (!btn.matches(":hover")) {
-                        resetIntentDescription();
-                    }
-                });
-                btn.addEventListener("click", () => {
-                    const categoryId = btn.dataset.ruleCategory;
-                    let applicableTools = getApplicableIntentCategoryTools(categoryId);
-                    if (isDemoModeActive()) {
-                        applicableTools = applicableTools.filter(isDemoToolAllowed);
-                    }
-                    if (applicableTools.length === 0) {
-                        markToolButtonNotApplicable(btn);
-                        return;
-                    }
-                    if (applicableTools.length === 1) {
-                        const toolName = applicableTools[0];
-                        const beforeExpression = getExpressionTextForTrace();
-                        recordToolForSolution(toolName, beforeExpression);
-                        advanceDemoStep();
-                        beginTool(toolName);
-                        return;
-                    }
-                    uiState.activeToolCategory = categoryId;
-                    renderToolArea();
-                    refreshStatus();
-                    drawExpression();
-                });
-            });
-
-            container.querySelectorAll("[data-builder-action]").forEach(button => {
-                button.addEventListener("click", () => {
-                    const action = button.dataset.builderAction;
-                    const value = button.dataset.value || "";
-                    performBuilderAction(action, value);
-                });
-            });
-
-            container.querySelectorAll("input[name='toolExponentMode']").forEach(input => {
-                input.addEventListener("change", () => {
-                    if (!input.checked) {
-                        return;
-                    }
-                    if (isDemoModeActive()) {
-                        renderToolArea();
-                        return;
-                    }
-                    uiState.toolExponentMode = input.value === TOOL_EXPONENT_MODES.exponent
-                        ? TOOL_EXPONENT_MODES.exponent
-                        : input.value === TOOL_EXPONENT_MODES.inverse
-                            ? TOOL_EXPONENT_MODES.inverse
-                            : TOOL_EXPONENT_MODES.plain;
-                    renderToolArea();
-                    refreshStatus();
-                    drawExpression();
-                });
-            });
-
-            container.querySelectorAll("button[data-tool-category]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    if (isDemoModeActive()) {
-                        return;
-                    }
-                    uiState.activeToolCategory = btn.dataset.toolCategory;
-                    renderToolArea();
-                    refreshStatus();
-                    drawExpression();
-                });
-            });
-
-            container.querySelectorAll("button[data-tool]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const toolName = btn.dataset.tool;
-                    if (!isDemoToolAllowed(toolName)) {
-                        return;
-                    }
-                    if (!isToolActuallyApplicable(toolName)) {
-                        if (!isDemoModeActive() && !isApplicableOnlyToolNotationMode()) {
-                            markToolButtonNotApplicable(btn);
-                        }
-                        return;
-                    }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordToolForSolution(toolName, beforeExpression);
-                    advanceDemoStep();
-                    beginTool(toolName);
-                });
-            });
-
-            container.querySelectorAll("button[data-action]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    const action = btn.dataset.action;
-                    const value = btn.dataset.value || null;
-                    if (!isDemoActionAllowed(action, value)) {
-                        return;
-                    }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordActionForSolution(action, value, beforeExpression);
-                    advanceDemoStep();
-                    handleToolAction(action, value);
-                });
-            });
-        }
-
-        function attachInputListeners() {
-            document.querySelectorAll(".number-input").forEach(input => {
-                input.addEventListener("input", () => {
-                    uiState.inputText = input.value;
-                });
-
-                input.addEventListener("keydown", e => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleToolAction("execute", null);
-                    }
-                });
-            });
-
-            const visibleInput = levelContent.querySelector(".number-input");
-            if (visibleInput) {
-                visibleInput.focus();
-                visibleInput.setSelectionRange(visibleInput.value.length, visibleInput.value.length);
-            }
-
-            const copyTextBox = levelContent.querySelector(".copy-text-box");
-            if (copyTextBox) {
-                copyTextBox.focus();
-                copyTextBox.setSelectionRange(0, copyTextBox.value.length);
-            }
-        }
-
-
-        function selectionContainsProductTerm() {
-            if (!selection.node || selection.node.type !== "sum") {
-                return false;
-            }
-            for (let i = selection.firstPart; i <= selection.lastPart; i++) {
-                if (selection.node.args[i].type === "prod") {
-                    return true;
-                }
-            }
-            return false;
-        }
-function renderToolArea() {
-            // The old floating menu is intentionally kept in the document for
-            // possible future restoration, but the active rule menu now lives
-            // in the left panel. When no selection is active, the left panel
-            // goes back to showing the level steps.
-            hideFloatingMenu();
-            document.body.classList.toggle(
-                "expression-builder-active",
-                uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder
-            );
-
-            if (uiState.mode !== "edit") {
-                return;
-            }
-
-            if (selection.status === "inProg") {
-                if (isLeftPanelShowingToolMenu()) {
-                    renderLevelInfo(currentLevelIndex);
-                }
-                return;
-            }
-
-            applyDemoInputForCurrentStep();
-            syncToolListToDemoStep();
-            const html = buildToolAreaHtml();
-            if (!html) {
-                if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
-                    renderLevelInfo(currentLevelIndex);
-                }
-                return;
-            }
-
-            renderMoveHistoryControls(null);
-            levelContent.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
-            attachToolListeners(levelContent);
-            applyDemoButtonHighlights(levelContent);
-            attachInputListeners();
-        }
-
-        function beginAutoPreviewThenExecute(executeFn) {
-            hideFloatingMenu();
-            drawExpression();
-
-            if (uiState.previewTimerId !== null) {
-                clearTimeout(uiState.previewTimerId);
-            }
-
-            uiState.previewTimerId = setTimeout(() => {
-                uiState.previewTimerId = null;
-                executeFn();
-            }, SETTINGS.previewDurationMs);
-        }
-
-        function toolUsesTransformationAnimation(toolName) {
-            return toolName === "commute" ||
-                toolName === "commuteFirstToLast" ||
-                toolName === "commuteLastToFirst" ||
-                toolName === "commuteTerms" ||
-                toolName === "commuteFactors" ||
-                toolName === "distributeLeftToRight" ||
-                toolName === "distributeRightToLeft" ||
-                toolName === "factorLeft" ||
-                toolName === "factorRight";
-        }
-
-        function getAutoExecuteFunctionForTool(toolName) {
-            if (toolName === "commuteFirstToLast") {
-                return applyCommuteFirstToLastWithPostview;
-            }
-            if (toolName === "commuteLastToFirst") {
-                return applyCommuteLastToFirstWithPostview;
-            }
-            if (toolName === "eliminateDoubleInverse") {
-                return applyEliminateDoubleInverse;
-            }
-            if (toolName === "insertDoubleInverse") {
-                return applyInsertDoubleInverse;
-            }
-            if (toolName === "cancelProductWithInverse") {
-                return applyCancelProductWithInverse;
-            }
-            if (toolName === "eliminateIdentities") {
-                return applyIdentityElimination;
-            }
-            if (toolName === "cancelOpposites") {
-                return getCancelOppositesData() ? applyCancelOpposites : null;
-            }
-            if (toolName === "doubleNegative") {
-                return applyDoubleNegative;
-            }
-            if (toolName === "zeroProduct") {
-                return applyZeroProduct;
-            }
-            if (isPowerInverseRewriteTool(toolName)) {
-                return () => applyPowerInverseRewrite(toolName);
-            }
-            return null;
-        }
-
-        function beginTool(toolName) {
-            if (toolName === "insertIdentityAddZeroTop") {
-                if (!canInsertIdentity()) {
-                    return;
-                }
-                applyIdentityInsertion("addZero", "top");
-                return;
-            }
-            if (toolName === "insertIdentityAddZeroBottom") {
-                if (!canInsertIdentity()) {
-                    return;
-                }
-                applyIdentityInsertion("addZero", "bottom");
-                return;
-            }
-            if (toolName === "insertIdentityMultiplyByOneLeft") {
-                if (!canInsertIdentity()) {
-                    return;
-                }
-                applyIdentityInsertion("multiplyByOne", "left");
-                return;
-            }
-            if (toolName === "insertIdentityMultiplyByOneRight") {
-                if (!canInsertIdentity()) {
-                    return;
-                }
-                applyIdentityInsertion("multiplyByOne", "right");
-                return;
-            }
-            if (toolName === "insertZeroProductLeft" || toolName === "insertZeroProductRight") {
-                if (!canInsertZeroProduct()) {
-                    return;
-                }
-                uiState.activeTool = "insertZeroProduct";
-                uiState.zeroProductOrientation = toolName === "insertZeroProductRight" ? "right" : "left";
-                uiState.message = "";
-                uiState.inputText = "";
-                uiState.stage = "builder";
-                beginExpressionBuilder("insertZeroProduct");
-                renderToolArea();
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-            if (toolName === "reduceToZero") {
-                if (canZeroProduct()) {
-                    toolName = "zeroProduct";
-                } else if (canCancelOpposites()) {
-                    toolName = "cancelOpposites";
-                } else {
-                    return;
-                }
-            }
-            if (toolName === "reduceToOne") {
-                if (canCancelProductWithInverse()) {
-                    toolName = "cancelProductWithInverse";
-                } else if (canApplyPowerInverseRewrite("eliminateExponentZero")) {
-                    toolName = "eliminateExponentZero";
-                } else if (canApplyPowerInverseRewrite("oneToAnyPower")) {
-                    toolName = "oneToAnyPower";
-                } else {
-                    return;
-                }
-            }
-            if (!isToolActuallyApplicable(toolName)) {
-                return;
-            }
-
-            uiState.activeTool = toolName;
-            uiState.message = "";
-            uiState.inputText = "";
-            uiState.chosenDirection = null;
-            uiState.chosenIdentity = null;
-            uiState.zeroProductOrientation = "left";
-            uiState.commuteSelectedIndex = -1;
-            uiState.commuteOrder = [];
-            uiState.previewColors = null;
-
-            if (
-                toolName === "commute" ||
-                toolName === "commuteFirstToLast" ||
-                toolName === "commuteLastToFirst" ||
-                toolName === "commuteTerms" ||
-                toolName === "commuteFactors" ||
-                toolName === "distributeLeftToRight" ||
-                toolName === "distributeRightToLeft" ||
-                toolName === "factorLeft" ||
-                toolName === "factorRight" ||
-                toolName === "distributeInverseOverProduct" ||
-                toolName === "factorProductOfInverses" ||
-                isPowerInverseRewriteTool(toolName)
-            ) {
-                uiState.stage = "preview";
-            } else if (isStructuredNumericalTool(toolName)) {
-                const numericalMode = getStructuredNumericalToolModeForSelection(toolName);
-                if (numericalMode === "expand") {
-                    uiState.stage = "builder";
-                    beginExpressionBuilder(toolName);
-                } else {
-                    uiState.stage = "input";
-                }
-            } else if (toolName === "insertIdentity") {
-                uiState.stage = "choosePosition";
-            } else if (
-                toolName === "eliminateIdentities" ||
-                toolName === "eliminateDoubleInverse" ||
-                toolName === "insertDoubleInverse" ||
-                toolName === "cancelProductWithInverse" ||
-                (toolName === "cancelOpposites" && getCancelOppositesData()) ||
-                toolName === "doubleNegative" ||
-                toolName === "zeroProduct"
-            ) {
-                uiState.stage = "preview";
-            } else if (isExpressionBuilderTool(toolName)) {
-                uiState.stage = "builder";
-                beginExpressionBuilder(toolName);
-            } else if (
-                toolName === "factorNumber" ||
-                toolName === "writeNumberAsSum" ||
-                toolName === "evaluate" ||
-                toolName === "numericalEquivalence"
-            ) {
-                uiState.stage = "input";
-            } else {
-                uiState.stage = "idle";
-            }
-
-            if (toolName === "distributeLeftToRight" || toolName === "distributeRightToLeft") {
-                const data = toolName === "distributeLeftToRight"
-                    ? getDistributionData("left")
-                    : getDistributionData("right");
-                uiState.previewColors = data ? getDistinctRandomColors(1 + data.sumNode.args.length) : null;
-            } else if (toolName === "commute" || toolName === "commuteFirstToLast" || toolName === "commuteLastToFirst" || toolName === "commuteTerms" || toolName === "commuteFactors") {
-                const partCount = selection.lastPart - selection.firstPart + 1;
-                uiState.previewColors = getDistinctRandomColors(partCount);
-            } else if (toolName === "factorLeft" || toolName === "factorRight") {
-                const data = toolName === "factorLeft"
-                    ? getFactoringData("left")
-                    : getFactoringData("right");
-                const termCount = selection.lastPart - selection.firstPart + 1;
-                uiState.previewColors = data
-                    ? getDistinctRandomColors(1 + termCount)
-                    : null;
-            }
-
-            if (toolName === "distributeInverseOverProduct") {
-                applyDistributeInverseOverProduct();
-                return;
-            }
-
-            if (toolName === "factorProductOfInverses") {
-                applyFactorProductOfInverses();
-                return;
-            }
-
-            const immediateAutoExecuteFn = getAutoExecuteFunctionForTool(toolName);
-            if (immediateAutoExecuteFn && !toolUsesTransformationAnimation(toolName)) {
-                immediateAutoExecuteFn();
-                return;
-            }
-
-            refreshStatus();
-            drawExpression();
-
-            if (
-                (toolName === "commute" || toolName === "commuteTerms" || toolName === "commuteFactors") &&
-                getSelectedSliceLength() === 2
-            ) {
-                applyTwoItemCommuteWithPostview();
-                return;
-            }
-
-            if (toolName === "distributeLeftToRight") {
-                beginAutoPreviewThenExecute(applyLeftDistribution);
-                return;
-            }
-
-            if (toolName === "distributeRightToLeft") {
-                beginAutoPreviewThenExecute(applyRightDistribution);
-                return;
-            }
-
-            if (toolName === "factorLeft") {
-                beginAutoPreviewThenExecute(applyLeftFactoring);
-                return;
-            }
-
-            if (toolName === "factorRight") {
-                beginAutoPreviewThenExecute(applyRightFactoring);
-                return;
-            }
-
-            const autoExecuteFn = getAutoExecuteFunctionForTool(toolName);
-            if (autoExecuteFn) {
-                beginAutoPreviewThenExecute(autoExecuteFn);
-                return;
-            }
-
-            renderToolArea();
-        }
-
-        function handleToolAction(action, value) {
-            if (action === "backToIntentCategories") {
-                uiState.activeToolCategory = null;
-                renderToolArea();
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-
-            if (action === "backToToolCategories") {
-                uiState.activeToolCategory = null;
-                renderToolArea();
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-
-            if (action === "chooseIdentity") {
-                uiState.chosenIdentity = value;
-                uiState.stage = "choosePosition";
-                renderToolArea();
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-
-            if (action === "choosePosition") {
-                applyIdentityInsertion(uiState.chosenIdentity, value);
-                return;
-            }
-
-            if (action === "insertIdentityOption") {
-                const parts = String(value || "").split(":");
-                if (parts.length === 2) {
-                    uiState.chosenIdentity = parts[0];
-                    applyIdentityInsertion(parts[0], parts[1]);
-                }
-                return;
-            }
-
-            if (action === "previewEliminateIdentities") {
-                uiState.activeTool = "eliminateIdentities";
-                uiState.message = "";
-                applyIdentityElimination();
-                return;
-            }
-
-            if (action === "done") {
-                clearSelection();
-                clearInteraction();
-                renderLevelInfo(currentLevelIndex);
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-
-            if (action === "execute") {
-                if (uiState.activeTool === "distributeLeftToRight") {
-                    applyLeftDistribution();
-                } else if (uiState.activeTool === "distributeRightToLeft") {
-                    applyRightDistribution();
-                } else if (uiState.activeTool === "factorLeft") {
-                    applyLeftFactoring();
-                } else if (uiState.activeTool === "factorRight") {
-                    applyRightFactoring();
-                } else if (uiState.activeTool === "distributeInverseOverProduct") {
-                    applyDistributeInverseOverProduct();
-                } else if (uiState.activeTool === "factorProductOfInverses") {
-                    applyFactorProductOfInverses();
-                } else if (uiState.activeTool === "eliminateDoubleInverse") {
-                    applyEliminateDoubleInverse();
-                } else if (uiState.activeTool === "cancelProductWithInverse") {
-                    applyCancelProductWithInverse();
-                } else if (isPowerInverseRewriteTool(uiState.activeTool)) {
-                    applyPowerInverseRewrite(uiState.activeTool);
-                } else if (uiState.activeTool === "eliminateIdentities") {
-                    applyIdentityElimination();
-                } else if (uiState.activeTool === "factorNumber") {
-                    applyFactorNumber();
-                } else if (uiState.activeTool === "writeNumberAsSum") {
-                    applyWriteNumberAsSum();
-                } else if (uiState.activeTool === "evaluate") {
-                    applyEvaluate();
-                } else if (uiState.activeTool === "numericalEquivalence") {
-                    applyNumericalEquivalence();
-                } else if (isStructuredNumericalTool(uiState.activeTool)) {
-                    applyStructuredNumericalInputTool(uiState.activeTool);
-                } else if (uiState.activeTool === "cancelOpposites") {
-                    applyCancelOpposites();
-                } else if (uiState.activeTool === "doubleNegative") {
-                    applyDoubleNegative();
-                } else if (uiState.activeTool === "zeroProduct") {
-                    applyZeroProduct();
-                } else if (uiState.activeTool === "insertExponentZero") {
-                    applyInsertExponentZero();
-                } else if (uiState.activeTool === "insertPowerOfOne") {
-                    applyInsertPowerOfOne();
-                } else if (uiState.activeTool === "replaceOneWithInverseProduct") {
-                    applyReplaceOneWithInverseProduct();
-                } else if (uiState.activeTool === "insertZeroProduct") {
-                    applyInsertZeroProduct();
-                }
-            }
-        }
-
-        function refreshStatus() {
-            if (uiState.stage === "postview" && uiState.postviewData) {
-                if (uiState.postviewData.type === "distribution") {
-                    setStatus("Distribution postview: the transformed expression is shown with the same colors as the preview.");
-                } else if (uiState.postviewData.type === "factoring") {
-                    setStatus("Factoring postview: the transformed expression is shown with the same colors as the preview.");
-                } else {
-                    setStatus("Showing transformed expression briefly.");
-                }
-                return;
-            }
-
-            if (!selection.node) {
-                setStatus("");
-                return;
-            }
-
-            if (!uiState.activeTool) {
-                setStatus(`Selected ${selection.node.type} part${getSelectedSliceLength() === 1 ? "" : "s"} ${selection.firstPart} through ${selection.lastPart}.`);
-                return;
-            }
-
-            if (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") {
-                const chosenCount = Array.isArray(uiState.commuteOrder) ? uiState.commuteOrder.length : 0;
-                const totalCount = getSelectedSliceLength();
-                if (chosenCount === 0) {
-                    setStatus(`Commute: click the ${selection.node.type === "sum" ? "terms" : "factors"} in the order you want them to appear.`);
-                } else {
-                    setStatus(`Commute: ${chosenCount} of ${totalCount} chosen. Chosen parts are shown in a darker shade. Continue clicking the remaining ${selection.node.type === "sum" ? "terms" : "factors"}.`);
-                }
-                return;
-            }
-
-            if (uiState.activeTool === "commuteFirstToLast") {
-                setStatus("Commute preview: the first selected term or factor will move to the end of the selected group.");
-                return;
-            }
-
-            if (uiState.activeTool === "commuteLastToFirst") {
-                setStatus("Commute preview: the last selected term or factor will move to the beginning of the selected group.");
-                return;
-            }
-
-            if (uiState.activeTool === "distributeLeftToRight") {
-                setStatus("Distribution preview: the selected blue region has been partitioned into colored regions. One color marks the factor block on the left, and one color marks each term on the right. The transformation will be performed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "distributeRightToLeft") {
-                setStatus("Distribution preview: the selected blue region has been partitioned into colored regions. One color marks the factor block on the right, and one color marks each term on the left. The transformation will be performed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "factorLeft") {
-                setStatus("Factoring preview: the selected region has been partitioned into colored regions. The shared left-hand factor block uses one color across the selected terms, and each remainder region has its own color. The transformation will be performed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "factorRight") {
-                setStatus("Factoring preview: the selected region has been partitioned into colored regions. The shared right-hand factor block uses one color across the selected terms, and each remainder region has its own color. The transformation will be performed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "distributeInverseOverProduct") {
-                setStatus("Power of a product handles exponent -1 now; use the general exponent rule for this transformation.");
-                return;
-            }
-
-            if (uiState.activeTool === "factorProductOfInverses") {
-                setStatus("Factor Common Power handles common exponent -1 now; use the general exponent rule for this transformation.");
-                return;
-            }
-
-            if (uiState.activeTool === "eliminateDoubleInverse") {
-                setStatus("Double inverse preview: an expression raised to -1 and then raised to -1 again will become the original expression automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "cancelProductWithInverse") {
-                setStatus("Product-inverse preview: an expression times the same expression raised to -1 will become 1 automatically.");
-                return;
-            }
-
-            if (isPowerInverseRewriteTool(uiState.activeTool)) {
-                setStatus("Power/inverse rewrite preview. The transformation will be performed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "insertIdentity") {
-                setStatus("Choose the exact identity to introduce: add 0 above/below, multiply by 1 left/right, or introduce a double inverse around the selection.");
-                return;
-            }
-
-            if (uiState.activeTool === "replaceOneWithInverseProduct") {
-                setStatus("Use the on-screen buttons to build the expression. It will be mirrored inside the inverse.");
-                return;
-            }
-
-            if (uiState.activeTool === "eliminateIdentities") {
-                setStatus("Identity elimination preview: bold green shows all top-level removable identities in the selected sum or product. They will be removed automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "factorNumber") {
-                setStatus("Enter factors for the selected number, then click Execute.");
-                return;
-            }
-
-            if (uiState.activeTool === "writeNumberAsSum") {
-                setStatus("Enter addends for the selected number, then click Execute.");
-                return;
-            }
-
-            if (uiState.activeTool === "evaluate") {
-                setStatus("Enter the value of the selected expression. Evaluation level 1 allows numeric sums, numeric products, and numeric powers. If it is wrong, keep trying, or click Exit.");
-                return;
-            }
-
-            if (uiState.activeTool === "cancelOpposites") {
-                setStatus("Cancel-opposites preview: bold green shows all top-level opposite pairs x and (-1)x. They will be replaced by 0 and normalized automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "doubleNegative") {
-                setStatus("Double-negative preview: bold green shows two top-level -1 factors. They will be replaced by 1 and normalized automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "zeroProduct") {
-                setStatus("Zero-product preview: bold green shows a top-level 0 factor. The selected product will become 0 automatically.");
-                return;
-            }
-
-            if (uiState.activeTool === "insertZeroProduct") {
-                setStatus("Enter an expression A. The selected 0 will become 0 Â· A.");
-                return;
-            }
-
-            setStatus("");
-        }
-
-        function getClickedIndexWithinSelection(x, y) {
-            if (!selection.node || !selection.node.args) {
-                return -1;
-            }
-
-            for (let i = selection.firstPart; i <= selection.lastPart; i++) {
-                if (selection.node.type === "sum") {
-                    const term = selection.node.args[i];
-                    const y1 = term.top() - getSelectionMargin();
-                    const y2 = term.bottom() + getSelectionMargin();
-
-                    if (
-                        x >= selection.node.left() &&
-                        x <= selection.node.right() &&
-                        y >= y1 &&
-                        y <= y2
-                    ) {
-                        return i;
-                    }
-                }
-
-                if (selection.node.type === "prod") {
-                    const factor = selection.node.args[i];
-                    const x1 = factor.left() - getSelectionMargin();
-                    const x2 = factor.right() + getSelectionMargin();
-
-                    if (
-                        x >= x1 &&
-                        x <= x2 &&
-                        y >= selection.node.top() &&
-                        y <= selection.node.bottom()
-                    ) {
-                        return i;
-                    }
-                }
-            }
-
-            return -1;
-        }
-
-        function releaseWorkspacePointer(e) {
-            const pointerId = activeWorkspacePointerId;
-            activeWorkspacePointerId = null;
-            selectionHitPadding = 0;
-            if (
-                pointerId !== null &&
-                workspaceSvg.hasPointerCapture &&
-                workspaceSvg.hasPointerCapture(pointerId)
-            ) {
-                try {
-                    workspaceSvg.releasePointerCapture(pointerId);
-                } catch (error) {
-                    // The browser may already have released capture.
-                }
-            }
-        }
-
-        function finishWorkspaceSelection(e) {
-            if (e.pointerId !== activeWorkspacePointerId) {
-                return;
-            }
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            updateSelectionFromEvent(e);
-            if (selection.status === "inProg") {
-                selection.status = selection.node ? "yes" : "no";
-                if (!validateDemoSelectionAfterPointerUp()) {
-                    releaseWorkspacePointer(e);
-                    return;
-                }
-                recordCurrentSelectionForSolution();
-                clearInteraction();
-                refreshStatus();
-                drawExpression();
-                renderToolArea();
-            }
-            releaseWorkspacePointer(e);
-        }
-
-        function cancelWorkspaceSelection(e) {
-            if (e.pointerId !== activeWorkspacePointerId) {
-                return;
-            }
-            if (selection.status === "inProg") {
-                clearSelection();
-                clearInteraction();
-                refreshStatus();
-                drawExpression();
-                renderToolArea();
-            }
-            releaseWorkspacePointer(e);
-        }
-
-        workspaceSvg.addEventListener("pointerdown", e => {
-            if (e.pointerType === "mouse" && e.button !== 0) {
-                return;
-            }
-            if (activeWorkspacePointerId !== null) {
-                return;
-            }
-            if (uiState.mode !== "edit") {
-                return;
-            }
-            if (uiState.stage === "postview") {
-                return;
-            }
-            if (isDemoModeActive()) {
-                const step = getCurrentDemoStep();
-                const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
-                const choosingCommuteOrder = !!step &&
-                    uiState.stage === "preview" &&
-                    (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
-                    (step.type === "commuteChoice" || step.type !== "tool");
-                if (!selectingExpression && !choosingCommuteOrder) {
-                    return;
-                }
-            }
-
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            activeWorkspacePointerId = e.pointerId;
-            selectionHitPadding = e.pointerType === "touch" || e.pointerType === "pen"
-                ? Math.max(10, Math.min(18, Math.max(e.width || 0, e.height || 0) / 2))
-                : 0;
-            if (workspaceSvg.setPointerCapture) {
-                try {
-                    workspaceSvg.setPointerCapture(e.pointerId);
-                } catch (error) {
-                    // Continue without capture on older implementations.
-                }
-            }
-
-            const rect = workspaceSvg.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            if (selection.status === "yes") {
-                if (pointIsInCurrentSelection(x, y)) {
-                    if (
-                        (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
-                        uiState.stage === "preview"
-                    ) {
-                        const clickedIndex = getClickedIndexWithinSelection(x, y);
-                        if (clickedIndex >= 0) {
-                            recordCommutePermutationChoice(clickedIndex);
-                        }
-                        return;
-                    }
-                    return;
-                } else {
-                    if (isDemoModeActive() && getCurrentDemoStep() && getCurrentDemoStep().type === "commuteChoice") {
-                        drawExpression();
-                        return;
-                    }
-                    clearSelection();
-                    clearInteraction();
-                    selection.status = "inProg";
-                    selectionArea[0] = x;
-                    selectionArea[1] = y;
-                    selectionArea[2] = x;
-                    selectionArea[3] = y;
-                    updateSelectionFromEvent(e);
-                    refreshStatus();
-                    return;
-                }
-            }
-
-            selection.status = "inProg";
-            selectionArea[0] = x;
-            selectionArea[1] = y;
-            selectionArea[2] = x;
-            selectionArea[3] = y;
-            updateSelectionFromEvent(e);
-            refreshStatus();
-        });
-
-        workspaceSvg.addEventListener("pointermove", e => {
-            if (e.pointerId !== activeWorkspacePointerId || uiState.mode !== "edit") {
-                return;
-            }
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            updateSelectionFromEvent(e);
-        });
-
-        workspaceSvg.addEventListener("pointerup", e => {
-            finishWorkspaceSelection(e);
-        });
-
-        workspaceSvg.addEventListener("pointercancel", e => {
-            cancelWorkspaceSelection(e);
-        });
-
-        workspaceSvg.addEventListener("lostpointercapture", e => {
-            cancelWorkspaceSelection(e);
-        });
-
-        document.addEventListener("pointerdown", e => {
-            if (floatingToolMenu.classList.contains("hidden")) {
-                return;
-            }
-
-            if (floatingToolMenu.contains(e.target)) {
-                return;
-            }
-
-            if (!selection.node && selection.status !== "inProg") {
-                hideFloatingMenu();
-            }
-        });
-        let expressionRoot = null;
-        currentExpressionRoot = null;
-        window.addEventListener("resize", () => {
-            if (expressionRoot) {
-                drawExpression();
-            }
-        });
-        window.addEventListener("load", () => {
-            if (expressionRoot) {
-                drawExpression();
-            }
-        });
-}).catch(error => {
-    console.error("Exploded Algebra could not start.", error);
-    const target = document.getElementById("levelContent") || document.body;
-    target.innerHTML = "";
-    const message = document.createElement("div");
-    message.className = "level-intro";
-    message.textContent = `Exploded Algebra could not start: ${error && error.message ? error.message : String(error)}`;
-    target.appendChild(message);
-});
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éí×~ößdèµ©hºÚn¶X§zÍT›ÛZ\ÙKœ™\ÛÛ™J
+K[Š
+
+HOˆÂˆËÈÚ[™ÙH\ÈÈYHYˆ[ÝHØ[H˜YYÜ˜^H\™[\Ú\ËÛÜ\˜]Ü‹Ý˜[YBˆËÈÚ\˜XÝ\œÈÈ™XÛÛYHš\ÚX›HYØZ[ˆ[ˆHÜ^™\ÜÚ[ÛˆÕ‘Ë‚ˆÛÛœÝÒÕ×ÑQQÑV‘TÔÒSÓ—ÔÖSP“ÓÈH˜[ÙNÂˆÛÛœÝQQÑV‘TÔÒSÓ—ÔÖSP“ÓÐÓÓÔˆHˆÙŽÂ‚ˆËÈ\ØX›Y›Üˆ›ÝÎˆÝ\XØ\™™]šY]ÈÛÛ\\š\ÛÛ‹‚ˆËÈX]™H\ÈÛÙH[ˆXÙHÛÈH™]šY]ÈÛÛ\\š\ÛÛˆØ[ˆ™H™\ÝÜ™Y]\‚ˆËÈžHÚ[™Ú[™È\È˜[YHÈ˜[ÙK‚ˆÛÛœÝÕTÔ‘U’QU×ÐÓÓTT’TÓÓ—ÑTÐP“QÑ“Ô—Ó“ÕÈHYNÂ‚ˆ[˜Ý[ÛˆÙ]Ù[XÝ[Û“X\™Ú[Š
+HÂˆ™]\›ˆ
+
+ÑUS‘ÔÈ	‰ˆÑUS‘ÔË˜Y™™\”Ú^™JH
+ÑUS‘ÔÈ	‰ˆÑUS‘ÔË™XYÐÛÛ\Û™[Y™™\ŠHÑUS‘ÔËœY[™ÈMŠHÈŽÂˆB‚‚ˆÛÛœÝÓÓÒS‘“ÈHÂˆ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH›ÙXÝÙˆ[™\œÙ\ÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒHHH0­È[™\œÙJJOÜÜ[˜ˆØ[˜Ù[›ÙXÝÚ][™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YHØ[˜Ù[[™\œÙH›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH0­È[™\œÙJJHHOÜÜ[˜ˆ[[Z[˜]QÝX›R[™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™[[Ý™HÝX›H[™\œÙOÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆš[™\œÙJ[™\œÙJJJHHOÜÜ[˜ˆ[œÙ\ÝX›R[™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHÝX›H[™\œÙOÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆHH[™\œÙJ[™\œÙJJJOÜÜ[˜ˆ\ÝšX]R[™\œÙSÝ™\”›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[™\œÙHÙˆH›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆš[™\œÙJH0­ÈŠHH[™\œÙJJH0­È[™\œÙJŠOÜÜ[˜ˆ˜XÝÜ”›ÙXÝÙ’[™\œÙ\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”›ÙXÝÙˆ[™\œÙ\ÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆš[™\œÙJJH0­È[™\œÙJŠHH[™\œÙJH0­ÈŠOÜÜ[˜ˆ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[™\œÙHÙˆ™YØ]]™HÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆš[™\œÙJLJHHLOÜÜ[˜ˆ™]Üš]S™YÓÛ™UÒ[“™YÓÛ™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[™\œÙHÙˆ™YØ]]™HÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ‹LHH[™\œÙJLJOÜÜ[˜ˆ[[Z[˜]Q^Û™[Û™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™[[Ý™Hš\œÝÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\ŒOÜÝ\ˆHOÜÜ[˜ˆ[[Z[˜]Q^Û™[™\›ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™[[Ý™H™\›ÈÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\ŒÜÝ\ˆHOÜÜ[˜ˆ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH“™YØ]]™HÝÙ\ˆÈ[™\œÙHÜ\˜]ÜÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\‹LOÜÝ\ˆH[™\œÙJJOÜÜ[˜ˆ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[ˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[™\œÙHÜ\˜]ÜˆÈ™YØ]]™HÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆš[™\œÙJJHHOÝ\‹LOÜÝ\ÜÜ[˜ˆ[[Z[˜]R[™\œÙUÓ™YØ]]™SÛ™TÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YHØ[˜Ù[ÝX›H[™\œÙHÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠOÝ\‹LOÜÝ\ŠOÝ\‹LOÜÝ\ˆHOÜÜ[˜ˆ\ÝšX]TÝÙ\“Ý™\’[™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆHÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠOÝ\‹LOÜÝ\ŠOÝ\›ÜÝ\ˆH
+OÝ\›ÜÝ\ŠOÝ\‹LOÜÝ\ÜÜ[˜ˆ˜XÝÜ”ÝÙ\“Ý]Ù’[™\œÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆHÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠOÝ\›ÜÝ\ŠOÝ\‹LOÜÝ\ˆH
+OÝ\‹LOÜÝ\ŠOÝ\›ÜÝ\ÜÜ[˜ˆÝÙ\“Ù”ÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆHÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠOÝ\›OÜÝ\ŠOÝ\›ÜÝ\ˆHOÝ\›p­ÛÜÝ\ÜÜ[˜ˆÛÛXš[™TØ[YP˜\ÙTÝÙ\œÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛXš[™HØ[YKP˜\ÙHÝÙ\œÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›OÜÝ\ˆ0­ÈOÝ\›ÜÝ\ˆHOÝ\›JÛÜÝ\ÜÜ[˜ˆ^[™ÝÙ\“Ù”Ý[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”Ü]ÝÙ\ˆÝ™\ˆÝ[OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›JÛÜÝ\ˆHOÝ\›OÜÝ\ˆ0­ÈOÝ\›ÜÝ\ÜÜ[˜ˆ]šYTØ[YP˜\ÙTÝÙ\œÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝX˜XÝØ[YKP˜\ÙHÝÙ\œÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›OÜÝ\ˆ0­È
+OÝ\›ÜÝ\ŠOÝ\‹LOÜÝ\ˆHOÝ\›K[ÜÝ\ÜÜ[˜ˆ\ÝšX]Q^Û™[Ý™\”›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆH›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠH0­ÈŠOÝ\›ÜÝ\ˆHOÝ\›ÜÝ\ˆ0­ÈÝ\›ÜÝ\ÜÜ[˜ˆ˜XÝÜÛÛ[[Û‘^Û™[ˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘˜XÝÜˆÛÛ[[ÛˆÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›ÜÝ\ˆ0­ÈÝ\›ÜÝ\ˆH
+H0­ÈŠOÝ\›ÜÝ\ÜÜ[˜ˆÛ™UÐ[žTÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒOÝ\›ÜÝ\ˆHOÜÜ[˜ˆ[œÙ\^Û™[Û™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHš\œÝÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆHHOÝ\ŒOÜÝ\ÜÜ[˜ˆ[œÙ\^Û™[™\›ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH™\›ÈÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒHHOÝ\ŒÜÝ\ÜÜ[˜ˆ[œÙ\ÝÙ\“Ù“Û™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHÝÙ\ˆÙˆÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒHHOÝ\›ÜÝ\ÜÜ[˜ˆ^[™ÝÙ\“Ù”ÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”Ü]ÝÙ\ˆÙˆHÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›p­ÛÜÝ\ˆH
+OÝ\›OÜÝ\ŠOÝ\›ÜÝ\ÜÜ[˜ˆ™YØ]]™SÛ™TÜ]X\™YˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆ™YØ]]™HÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠLJOÝ\ŒÜÝ\ˆHOÜÜ[˜ˆ™YØ]]™SÛ™Q]™[”ÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆ™YØ]]™HÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠLJOÝ\Œ›ÜÝ\ˆHOÜÜ[˜ˆ™YØ]]™SÛ™SÙÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆ™YØ]]™HÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠLJOÝ\Œ›ŠÌOÜÝ\ˆHLOÜÜ[˜ˆ™\X]Y›ÙXÝÔÝÙ\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛXš[™H™\X]Y˜XÝÜœÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH0­ÈH0­È8 )ˆ0­ÈHHOÝ\›ÜÝ\ÜÜ[˜ˆÝÙ\•Ô™\X]Y›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘^[™ÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\›ÜÝ\ˆHH0­ÈH0­È8 )ˆ0­ÈOÜÜ[˜ˆ[™\œÙSÛ™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆÛ™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒOÝ\‹LOÜÝ\ˆHOÜÜ[˜ˆ˜XÝÜ”›ÙXÝÙ•ÛÒ[™\œÙ\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘˜XÝÜˆÛÛ[[ÛˆÝÙ\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆOÝ\‹LOÜÝ\ˆ0­ÈÝ\‹LOÜÝ\ˆH
+H0­ÈŠOÝ\‹LOÜÝ\ÜÜ[˜ˆ\ÝšX]R[™\œÙSÝ™\•ÛÔ›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÝÙ\ˆÙˆH›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠH0­ÈŠOÝ\‹LOÜÝ\ˆHOÝ\‹LOÜÝ\ˆ0­ÈÝ\‹LOÜÝ\ÜÜ[˜ˆ[™\œÙQ˜XÝÜ\Ó™YØ]]™Q^Û™[ˆÜ[ˆÛ\ÜÏHœ[K[˜[YH“™YØ]]™HÝÙ\ˆ›Ý][ÛÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH0­ÈÝ\‹LOÜÝ\ˆHH0­ÈÝ\‹LOÜÝ\ÜÜ[˜ˆØ[˜Ù[ÜÜÚ]\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YHØ[˜Ù[Y]]™H[™\œÙ\ÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH
+È
+PJHHÜÜ[˜ˆÝX›S™YØ]]™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘ÝX›H™YØ]]™OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠLJH0­È
+LJHHOÜÜ[˜ˆ™\›Ô›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH–™\›È›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒ0­ÈHHÜÜ[˜ˆ[œÙ\™\›Ô›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH™\›È›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŒH0­ÈOÜÜ[˜ˆ[[Z[˜]RY[]Y\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™[[Ý™HY[]OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH
+ÈHNÈH0­ÈHHOÜÜ[˜ˆ]˜[X]TÝ[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]HÝ[OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ˜H
+ÈˆHÏÜÜ[˜ˆ]˜[X]T›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]H›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ˜H0­ÈˆHÏÜÜ[˜ˆ]˜[X]TÝ[PÛÛZ[š[™Ô›ÙXÝÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]H›ÙXÝTÝ[OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ˜Xˆ
+ÈÙHOÜÜ[˜ˆ]˜[X]NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]OÜÜ[˜ˆ[Y\šXØ[\]Z]˜[[˜ÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH“[Y\šXØ[\]Z]˜[[˜ÙOÜÜ[˜ˆ[Y\šXØ[™]Üš]NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH“[Y\šXØ[™]Üš]OÜÜ[˜ˆ\š]Y]XÓ]™[ˆÜ[ˆÛ\ÜÏHœ[K[˜[YH\š]Y]XÈ]™[™\›ÏÜÜ[˜ˆ\š]Y]XÓ]™[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH\š]Y]XÈ]™[Û™OÜÜ[˜ˆ\š]Y]XÓ]™[ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH\š]Y]XÈ]™[ÛÏÜÜ[˜ˆ\š]Y]XÓ]™[ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH\š]Y]XÈ]™[™YOÜÜ[˜ˆ[Q]˜[X]TÜÚ]]™TÝ[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]HÝ[HÙˆÜÚ]]™H[X™\œÏÜÜ[˜ˆ[Q]˜[X]TÜÚ]]™T›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]H›ÙXÝÙˆÜÚ]]™H[X™\œÏÜÜ[˜ˆ[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH•Üš]HÜÚ]]™H[X™\ˆ\È›ÙXÝÜÜ[˜ˆ[UÜš]TÜÚ]]™S[X™\\ÔÝ[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH•Üš]HÜÚ]]™H[X™\ˆ\ÈÝ[OÜÜ[˜ˆ[Q]˜[X]TÚYÛ™YÝ[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]HÝ[H[ˆ\™[\Ù\È[˜ÛY[™È™YØ]]™\ÏÜÜ[˜ˆ[Q]˜[X]TÚYÛ™Y›ÙXÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘]˜[X]H›ÙXÝ[ˆ\™[\Ù\È[˜ÛY[™È™YØ]]™\ÏÜÜ[˜ˆ[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘^™\ÜÈ[X™\ˆ\ÈY™™\™[˜ÙOÜÜ[˜ˆ[TÝ[TÜÚ]]™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÜÚ]]™HÝ[H8¡å[X™\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆˆÈ
+ÈÈ8¡åÏÜÜ[˜ˆ[T›ÙXÝÜÚ]]™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”ÜÚ]]™H›ÙXÝ8¡å[X™\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆˆÈ0­ÈÈ8¡åÏÜÜ[˜ˆ[T›ÙXÝÚ]™YØ]]™\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”›ÙXÝÚ]™YØ]]™\È8¡å[X™\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆˆÈ0­È
+
+LJH0­ÈÊH8¡åÏÜÜ[˜ˆ[TÝ[UÚ]™YØ]]™T›ÙXÝÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”Ý[HÚ]™YØ]]™H›ÙXÝÈ8¡å[X™\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆˆÈ
+È
+
+LJH0­ÈÊH8¡åÏÜÜ[˜ˆ˜XÝÜ“[X™\ŽˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘˜XÝÜˆ[X™\ÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ›ˆHH0­ÈÜÜ[˜ˆÜš]S[X™\\ÔÝ[NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”Ü][X™\ˆ\ÈÝ[OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][Ûˆ›ˆHH
+ÈÜÜ[˜ˆ\ÝšX]SYÔšYÚˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘\ÝšX]HYÈšYÚÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆJˆ
+ÈÊHHPˆ
+ÈPÏÜÜ[˜ˆ\ÝšX]TšYÚÓYˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘\ÝšX]HšYÚÈYÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆŠH
+ÈŠPÈHPÈ
+ÈÏÜÜ[˜ˆ˜XÝÜ“YˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘˜XÝÜˆœ›ÛHYÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆPˆ
+ÈPÈHJˆ
+ÈÊOÜÜ[˜ˆ˜XÝÜ”šYÚˆÜ[ˆÛ\ÜÏHœ[K[˜[YH‘˜XÝÜˆœ›ÛHšYÚÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH
+ÈÐHH
+ˆ
+ÈÊPOÜÜ[˜ˆÛÛ[]]NˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛ[]]OÜÜ[˜ˆÛÛ[]]Qš\œÝÓ\ÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛ[]]Hš\œÝÈ[™ÜÜ[˜ˆÛÛ[]]S\ÝÑš\œÝˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛ[]]H\ÝÈ™YÚ[›š[™ÏÜÜ[˜ˆÛÛ[]]U\›\ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛ[]]H\›\ÏÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH
+ÈˆHˆ
+ÈOÜÜ[˜ˆÛÛ[]]Q˜XÝÜœÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YHÛÛ[]]H›ÙXÝÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆH0­ÈˆHˆ0­ÈOÜÜ[˜ˆ[œÙ\Y[]NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHY[]OÜÜ[Ü[ˆÛ\ÜÏHœ[K[›Ý][ÛˆHHH
+ÈÈHHH0­ÈOÜÜ[˜ˆ[œÙ\Y[]PY™\›ÕÜˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHY]]™HY[]HX›Ý™OÜÜ[˜ˆ[œÙ\Y[]PY™\›Ð›ÝÛNˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙHY]]™HY[]H™[ÝÏÜÜ[˜ˆ[œÙ\Y[]S][\PžSÛ™SYˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH][\XØ]]™HY[]HYÜÜ[˜ˆ[œÙ\Y[]S][\PžSÛ™TšYÚˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH][\XØ]]™HY[]HšYÚÜÜ[˜ˆ[œÙ\™\›Ô›ÙXÝYˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH™\›È›ÙXÝYÜÜ[˜ˆ[œÙ\™\›Ô›ÙXÝšYÚˆÜ[ˆÛ\ÜÏHœ[K[˜[YH’[›ÙXÙH™\›È›ÙXÝšYÚÜÜ[˜ˆ™YXÙUÖ™\›ÎˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™YXÙHÈ™\›ÏÜÜ[˜ˆ™YXÙUÓÛ™NˆÜ[ˆÛ\ÜÏHœ[K[˜[YH”™YXÙHÈÛ™OÜÜ[˜ˆNÂ‚ˆÛÛœÝURSP“WÐ–WÑQUSÕÓÓÈHÂˆ˜Ø[˜Ù[ÜÜÚ]\È‹ˆ˜Ø[˜Ù[›ÙXÝÚ][™\œÙH‹ˆ™[[Z[˜]QÝX›R[™\œÙH‹ˆš[œÙ\ÝX›R[™\œÙH‹ˆ™\ÝšX]R[™\œÙSÝ™\”›ÙXÝ‹ˆ™˜XÝÜ”›ÙXÝÙ’[™\œÙ\È‹ˆœ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™H‹ˆœ™]Üš]S™YÓÛ™UÒ[“™YÓÛ™H‹ˆœ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙH‹ˆœ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[‹ˆ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹ˆ˜ÛÛ[]]H‹ˆ˜ÛÛ[]]Qš\œÝÓ\Ý‹ˆ˜ÛÛ[]]S\ÝÑš\œÝ‹ˆ˜ÛÛ[]]Q˜XÝÜœÈ‹ˆ˜ÛÛ[]]U\›\È‹ˆ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹ˆ™\ÝšX]SYÔšYÚ‹ˆ™\ÝšX]TšYÚÓY‹ˆ™ÝX›S™YØ]]™H‹ˆ™[[Z[˜]Q^Û™[Û™H‹ˆ™[[Z[˜]Q^Û™[™\›È‹ˆ™[[Z[˜]RY[]Y\È‹ˆ™]˜[X]H‹ˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ˜\š]Y]XÓ]™[‹ˆ˜\š]Y]XÓ]™[H‹ˆ˜\š]Y]XÓ]™[ˆ‹ˆ˜\š]Y]XÓ]™[È‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‹ˆ™^[™ÝÙ\“Ù”Ý[H‹ˆ™˜XÝÜÛÛ[[Û‘^Û™[‹ˆ™˜XÝÜ“Y‹ˆ™˜XÝÜ“[X™\ˆ‹ˆ™˜XÝÜ”šYÚ‹ˆš[œÙ\Y[]H‹ˆš[œÙ\Y[]PY™\›ÕÜ‹ˆš[œÙ\Y[]PY™\›Ð›ÝÛH‹ˆš[œÙ\Y[]S][\PžSÛ™SY‹ˆš[œÙ\Y[]S][\PžSÛ™TšYÚ‹ˆš[œÙ\™\›Ô›ÙXÝ‹ˆ›Û™UÐ[žTÝÙ\ˆ‹ˆš[œÙ\^Û™[Û™H‹ˆš[œÙ\^Û™[™\›È‹ˆš[œÙ\ÝÙ\“Ù“Û™H‹ˆ™^[™ÝÙ\“Ù”ÝÙ\ˆ‹ˆœÝÙ\“Ù”ÝÙ\ˆ‹ˆœÝÙ\•Ô™\X]Y›ÙXÝ‹ˆœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝ‹ˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹ˆÜš]S[X™\\ÔÝ[H‹ˆž™\›Ô›ÙXÝ‚ˆNÂ‚ˆÛÛœÝSURSP“WÐ–WÑQUSÕÓÓÈHÂˆNÂ‚‚ˆÛÛœÝÕÑT—ÒS•‘T”ÑWÔ‘UÔ’UWÕÓÓÈHÂˆœ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™H‹ˆœ™]Üš]S™YÓÛ™UÒ[“™YÓÛ™H‹ˆœ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙH‹ˆœ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[‹ˆ™[[Z[˜]Q^Û™[Û™H‹ˆ™[[Z[˜]Q^Û™[™\›È‹ˆš[œÙ\^Û™[Û™H‹ˆœÝÙ\“Ù”ÝÙ\ˆ‹ˆ™^[™ÝÙ\“Ù”ÝÙ\ˆ‹ˆ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹ˆ™^[™ÝÙ\“Ù”Ý[H‹ˆ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹ˆ™˜XÝÜÛÛ[[Û‘^Û™[‹ˆ›Û™UÐ[žTÝÙ\ˆ‹ˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹ˆœÝÙ\•Ô™\X]Y›ÙXÝ‚ˆNÂ‚ˆ[˜Ý[Ûˆ\ÔÝÙ\’[™\œÙT™]Üš]UÛÛ
+ÛÛ˜[YJHÂˆ™]\›ˆÕÑT—ÒS•‘T”ÑWÔ‘UÔ’UWÕÓÓËš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆËÈ\K[]™[Y[Hš[\š[™Îˆ\ÙH\ÝÈ\™H[[[Û˜[Hœ›ØY\ˆ[‚ˆËÈ^XÝ\XØXš[]KˆYˆH\Ù\ˆÚÛÜÙ\ÈH[Hœ›ÛHHšYÚ\H]ˆËÈ]Ù\È›Ý\HÈHÜXÚYšXÈ^™\ÜÚ[Û‹H]Ûˆ\ÈX\šÙY™Y‚ˆÛÛœÝÓÓÒÑVT×Ð–WÔÑSPÕQÕTHHÂˆ[žNˆÂˆš[œÙ\Y[]H‹ˆKˆ˜[YNˆÂˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‹ˆœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝ‹ˆœ™]Üš]S™YÓÛ™UÒ[“™YÓÛ™H‹ˆ™˜XÝÜ“[X™\ˆ‹ˆÜš]S[X™\\ÔÝ[H‹ˆš[œÙ\™\›Ô›ÙXÝ‚ˆKˆÝ[NˆÂˆ˜ÛÛ[]]Qš\œÝÓ\Ý‹ˆ˜ÛÛ[]]S\ÝÑš\œÝ‹ˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‹ˆ˜ÛÛ[]]U\›\È‹ˆ™˜XÝÜ“Y‹ˆ™˜XÝÜ”šYÚ‹ˆ˜Ø[˜Ù[ÜÜÚ]\È‹ˆ™[[Z[˜]RY[]Y\È‹ˆ™]˜[X]H‚ˆKˆ›ÙˆÂˆ˜ÛÛ[]]Qš\œÝÓ\Ý‹ˆ˜ÛÛ[]]S\ÝÑš\œÝ‹ˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ˜ÛÛ[]]Q˜XÝÜœÈ‹ˆ™\ÝšX]SYÔšYÚ‹ˆ™\ÝšX]TšYÚÓY‹ˆ˜Ø[˜Ù[›ÙXÝÚ][™\œÙH‹ˆ™˜XÝÜ”›ÙXÝÙ’[™\œÙ\È‹ˆ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹ˆ™˜XÝÜÛÛ[[Û‘^Û™[‹ˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹ˆ™ÝX›S™YØ]]™H‹ˆž™\›Ô›ÙXÝ‹ˆ™[[Z[˜]RY[]Y\È‹ˆ™]˜[X]H‚ˆKˆ[ŽˆÂˆ›[Y\šXØ[™]Üš]H‹ˆ™[[Z[˜]QÝX›R[™\œÙH‹ˆš[œÙ\ÝX›R[™\œÙH‹ˆ™\ÝšX]R[™\œÙSÝ™\”›ÙXÝ‹ˆœ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™H‹ˆœ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[‚ˆKˆ^ˆÂˆ™]˜[X]H‹ˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ™[[Z[˜]Q^Û™[Û™H‹ˆ™[[Z[˜]Q^Û™[™\›È‹ˆš[œÙ\^Û™[Û™H‹ˆš[œÙ\^Û™[™\›È‹ˆš[œÙ\ÝÙ\“Ù“Û™H‹ˆœÝÙ\“Ù”ÝÙ\ˆ‹ˆ™^[™ÝÙ\“Ù”ÝÙ\ˆ‹ˆ™^[™ÝÙ\“Ù”Ý[H‹ˆ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹ˆ›Û™UÐ[žTÝÙ\ˆ‹ˆœÝÙ\•Ô™\X]Y›ÙXÝ‹ˆœ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙH‚ˆBˆNÂ‚ˆÛÛœÝÓÓÑVÓ‘S•ÓSÑTÈHÂˆZ[ŽˆœZ[ˆ‹ˆ[Y\šXÎˆ›[Y\šXÈ‹ˆ^Û™[ˆ™^Û™[‹ˆ[™\œÙNˆš[™\œÙH‚ˆNÂ‚ˆÛÛœÝURPÒ×ÕÓÓÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑHHÂˆZ[ŽˆÂˆÈ™]˜[X]H—KˆÈ˜ÛÛ[]]U\›\È‹˜ÛÛ[]]Q˜XÝÜœÈ—KˆÈ™\ÝšX]SYÔšYÚ‹™\ÝšX]TšYÚÓY—KˆÈ™˜XÝÜ“Y‹™˜XÝÜ”šYÚ—BˆKˆ^Û™[ˆÂˆÈ™]˜[X]H—KˆÈ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹™^[™ÝÙ\“Ù”Ý[H—KˆÈ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹™˜XÝÜÛÛ[[Û‘^Û™[—KˆÈœÝÙ\“Ù”ÝÙ\ˆ—BˆKˆ[™\œÙNˆ×BˆNÂ‚ˆÛÛœÝURPÒ×ÕÓÓÒÑVTÈH[š\]YUÛÛÙ^\ÊˆØš™XÝ˜[Y\ÊURPÒ×ÕÓÓÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑJK™›]X\
+›ÝÜÈOˆ›ÝÜË™›]
+
+JBˆ
+NÂ‚ˆËÈœ™\]Y[H\ÙY™X\œ˜[™Ú[™ÈÛÛÈ]™HX›Ý™H\ÙHØ]YÛÜšY\È\È]ZXÚÈÛÛË‚ˆËÈH˜Y[È]ÛœÈÚÛÜÙHÚ]\ˆH]ZXÚÈÛÛÈ[™š[YÝÛˆØ]YÛÜšY\ÂˆËÈÚÝ[ÚÝÈ›Û‹Y^Û™[ÛÛÈÜˆ^Û™[ÛÛË‚ˆÛÛœÝÓÓÓQS•WÐÐUQÓÔ’QTÈHÂˆÂˆYˆ˜ÛÛ\ÙTZ[ˆ‹ˆ˜[Z[Nˆ˜ÛÛ\™\ÜÚ[Ûˆ‹ˆ[ÙNˆœZ[ˆ‹ˆX™[ˆÛÛ\™\ÜÚ[ÛˆÛÛÈ‹ˆÙ^\ÎˆÂˆ˜Ø[˜Ù[ÜÜÚ]\È‹ˆ™ÝX›S™YØ]]™H‹ˆ™[[Z[˜]RY[]Y\È‹ˆž™\›Ô›ÙXÝ‚ˆBˆKˆÂˆYˆ˜ÛÛ\ÙQ^Û™[‹ˆ˜[Z[Nˆ˜ÛÛ\™\ÜÚ[Ûˆ‹ˆ[ÙNˆ™^Û™[‹ˆX™[ˆÛÛ\™\ÜÚ[ÛˆÛÛÈ‹ˆÙ^\ÎˆÂˆ˜Ø[˜Ù[›ÙXÝÚ][™\œÙH‹ˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹ˆ™[[Z[˜]Q^Û™[Û™H‹ˆ™[[Z[˜]Q^Û™[™\›È‹ˆ›Û™UÐ[žTÝÙ\ˆ‚ˆBˆKˆÂˆYˆ™^ÙTZ[ˆ‹ˆ˜[Z[Nˆ™^[œÚ[Ûˆ‹ˆ[ÙNˆœZ[ˆ‹ˆX™[ˆ‘^[œÚ[ÛˆÛÛÈ‹ˆÙ^\ÎˆÂˆ™˜XÝÜ“[X™\ˆ‹ˆš[œÙ\Y[]H‹ˆš[œÙ\™\›Ô›ÙXÝ‹ˆÜš]S[X™\\ÔÝ[H‚ˆBˆKˆÂˆYˆ™^ÙQ^Û™[‹ˆ˜[Z[Nˆ™^[œÚ[Ûˆ‹ˆ[ÙNˆ™^Û™[‹ˆX™[ˆ‘^[œÚ[ÛˆÛÛÈ‹ˆÙ^\ÎˆÂˆœÝÙ\•Ô™\X]Y›ÙXÝ‹ˆœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝ‚ˆBˆKˆÂˆYˆ›Ý\ˆ‹ˆ˜[Z[Nˆ›Ý\ˆ‹ˆ[ÙNˆ˜›Ý‹ˆX™[ˆ“Ý\ˆ‹ˆÙ^\Îˆ×BˆBˆNÂ‚ˆËÈHš^Y[KXØ]YÛÜžHY[H™\Ù[ÈH\Ù\‰ÜÈ[[[Ûˆ˜]\‚ˆËÈ[ˆH[™]šYX[[ÙXœ˜ZXÈ[Kˆ^XÝ\XØXš[]H\ÈÝ[ˆËÈXÚYYžHH^\Ý[™È[HÚXÚÜÈ™[ÝË‚ˆÛÛœÝS•S•Ô•SWÐÐUQÓÔ’QTÈHÂˆÈYˆ˜ÛÛ[]]H‹X™[ˆÛÛ[]]HˆKˆÈYˆš[œÙ\‹X™[ˆ’[›ÙXÙH[[Y[
+ÊHˆKˆÈYˆ™[]H‹X™[ˆ”™[[Ý™H[[Y[
+ÊHˆKˆÈYˆœÙ\\˜]H‹X™[ˆ”Ù\\˜]HˆKˆÈYˆ˜ÛÛœÛÛY]H‹X™[ˆÛÛXš[™HˆKˆÈYˆ˜[œÛ]S›Ý][Ûˆ‹X™[ˆÚ[™ÙH›Ü›HˆKˆÈYˆ›[Y\šXØ[™]Üš]H‹X™[ˆ“[Y\šXØ[™]Üš]HˆBˆNÂ‚ˆÛÛœÝS•S•ÐÐUQÓÔ–WÑTÐÔ’TSÓ”ÈHÂˆÛÛ[]]NˆÚ[™ÙHHÜ™\ˆÙˆÙ[XÝY\›\ÈÜˆ˜XÝÜœÈÚ]Ý]Ú[™Ú[™ÈH^™\ÜÚ[Û‰ÜÈ˜[YKˆ‹ˆ[œÙ\ˆ’[›ÙXÙHY[]H[[Y[ÈÜˆ\]Z]˜[[ÝXÝ\™KÝXÚ\ÈY[™È™\›Ë][\Z[™ÈžHÛ™KÜˆ[›ÙXÚ[™È[™\œÙ\Ëˆ‹ˆ[]Nˆ”™[[Ý™HY[]H[[Y[ÈÜˆÝ\ˆÙ[XÝYÝXÝ\™H]Ú[\YšY\È]Ø^Kˆ‹ˆÙ\\˜]Nˆ”™]Üš]HHÙ[XÝY\\ÈÙ\\˜]H\]Z]˜[[\›\ÈÜˆ˜XÝÜœËÝXÚ\ÈžH\ÝšX][™Ëˆ‹ˆÛÛœÛÛY]NˆÛÛXš[™HÙ[XÝY\›\ÈÜˆ˜XÝÜœÈ[ÈÛ™H\]Z]˜[[ÝXÝ\™KÝXÚ\ÈžH˜XÝÜš[™Ëˆ‹ˆ˜[œÛ]S›Ý][ÛŽˆ”™]Üš]HHÙ[XÝ[Ûˆ[ˆ[ˆ\]Z]˜[[›Ü›KÝXÚ\ÈÚ[™Ú[™È™]ÙY[ˆ[™\œÙH[™^Û™[›Ý][Û‹ˆ‚ˆNÂ‚ˆÛÛœÝS”ÑT•ÑSSQS•ÐÒÒPÑTÈHÂˆ[œÙ\Y[]PY™\›Ð›ÝÛNˆÂˆX™[ˆY™\›È‹ˆ\ØÜš\[ÛŽˆYÈ™\›ÈÈHÙ[XÝY^™\ÜÚ[ÛˆÚ]Ý]Ú[™Ú[™È]È˜[YKˆ‚ˆKˆ[œÙ\Y[]S][\PžSÛ™TšYÚˆÂˆX™[ˆ“][\HžHÛ™H‹ˆ\ØÜš\[ÛŽˆ“][\Y\ÈHÙ[XÝY^™\ÜÚ[ÛˆžHÛ™HÚ]Ý]Ú[™Ú[™È]È˜[YKˆ‚ˆKˆ[œÙ\ÝX›R[™\œÙNˆÂˆX™[ˆ‘ÝX›H[™\œÙ\È‹ˆ\ØÜš\[ÛŽˆ•Ü˜\ÈHÙ[XÝY^™\ÜÚ[Ûˆ[ˆÛÈ[™\œÙ\ËX]š[™ÈH^™\ÜÚ[Ûˆ[˜Ú[™ÙYˆ‚ˆKˆ[œÙ\^Û™[Û™NˆÂˆX™[ˆ”ÝÙ\ˆÙˆÛ™H‹ˆ\ØÜš\[ÛŽˆ”˜Z\Ù\ÈHÙ[XÝY^™\ÜÚ[ÛˆÈHš\œÝÝÙ\ˆÚ]Ý]Ú[™Ú[™È]È˜[YKˆ‚ˆKˆ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆÂˆX™[ˆ”›ÙXÝÙˆ[™\œÙ\È‹ˆ\ØÜš\[ÛŽˆ”™\XÙ\ÈHÙ[XÝYÛ™HÚ][ˆ^™\ÜÚ[Ûˆ][\YYžH]È[™\œÙKˆ‚ˆKˆØ[˜Ù[ÜÜÚ]\ÎˆÂˆX™[ˆ”Ý[HÙˆÜÜÚ]\È‹ˆ\ØÜš\[ÛŽˆ”™\XÙ\ÈHÙ[XÝY™\›ÈÚ][ˆ^™\ÜÚ[ÛˆYYÈ]ÈÜÜÚ]Kˆ‚ˆBˆNÂ‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžQ\ØÜš\[ÛŠØ]YÛÜžRY
+HÂˆ™]\›ˆS•S•ÐÐUQÓÔ–WÑTÐÔ’TSÓ”ÖØØ]YÛÜžRYHˆŽÂˆB‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžQ\ØÜš\[Û’[
+Ø]YÛÜžRY
+HÂˆYˆ
+Ø]YÛÜžRYOOH›[Y\šXØ[™]Üš]HŠHÂˆÛÛœÝ][\ÈHÙ][Y\šXØ[™]Üš]T›Ùš[TÝ[[X\žR][\ÊÙ][Y\šXØ[™]Üš]T›Ùš[J
+JNÂˆ™]\›ˆ”™]Üš]HH[Y\šXØ[^™\ÜÚ[Ûˆ[ˆ[ˆ\]Z]˜[[›Ü›KÜ[‰Ú][\Ë›X\
+][HOˆO‰Ù\ØØ\R[
+][J_OÛO˜
+Kš›Ú[ŠˆŠ_OÝ[˜ÂˆBˆ™]\›ˆ‰Ù\ØØ\R[
+Ù][[Ø]YÛÜžQ\ØÜš\[ÛŠØ]YÛÜžRY
+J_OÜ˜ÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛØ]YÛÜžRÙ^JØ]YÛÜžJHÂˆ™]\›ˆØ]YÛÜžK™˜[Z[HØ]YÛÜžKšYÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛØ]YÛÜžPžRY
+Ø]YÛÜžRY
+HÂˆÛÛœÝ[ÙHHÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+NÂˆÛÛœÝX]Ú[™ÐÝ\œ™[[ÙHHÓÓÓQS•WÐÐUQÓÔ’QTË™š[™
+Ø]YÛÜžHO‚ˆÙ]ÛÛØ]YÛÜžRÙ^JØ]YÛÜžJHOOHØ]YÛÜžRY	‰‚ˆ
+Ø]YÛÜžK›[ÙHOOH[ÙHØ]YÛÜžK›[ÙHOOH˜›ÝŠBˆ
+NÂˆYˆ
+X]Ú[™ÐÝ\œ™[[ÙJHÂˆ™]\›ˆX]Ú[™ÐÝ\œ™[[ÙNÂˆB‚ˆ™]\›ˆÓÓÓQS•WÐÐUQÓÔ’QTË™š[™
+Ø]YÛÜžHOˆØ]YÛÜžKšYOOHØ]YÛÜžRY
+H[ÂˆB‚ˆ[˜Ý[ÛˆÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+HÂˆYˆ
+ZTÝ]KÛÛ^Û™[[ÙHOOHÓÓÑVÓ‘S•ÓSÑTË™^Û™[
+HÂˆ™]\›ˆÓÓÑVÓ‘S•ÓSÑTË™^Û™[ÂˆBˆYˆ
+ZTÝ]KÛÛ^Û™[[ÙHOOHÓÓÑVÓ‘S•ÓSÑTËš[™\œÙJHÂˆ™]\›ˆÓÓÑVÓ‘S•ÓSÑTËš[™\œÙNÂˆBˆ™]\›ˆÓÓÑVÓ‘S•ÓSÑTËœZ[ŽÂˆB‚ˆ[˜Ý[ÛˆÙ]Y˜][ÛÛ^Û™[[ÙQ›Ü”Ù[XÝ[ÛŠ
+HÂˆYˆ
+\Ù[XÝ[Ûˆ\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆÓÓÑVÓ‘S•ÓSÑTËœZ[ŽÂˆB‚ˆÛÛœÝÙ[XÝY^™\ÜÚ[ÛˆHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝÛÛZ[œÒ[™\œÙHH›ÙHOˆH[›ÙH	‰ˆ
+ˆ›ÙK\HOOHš[ˆˆˆ
+\œ˜^Kš\Ð\œ˜^J›ÙK˜\™ÜÊH	‰ˆ›ÙK˜\™ÜËœÛÛYJÛÛZ[œÒ[™\œÙJJBˆ
+NÂˆYˆ
+ÛÛZ[œÒ[™\œÙJÙ[XÝY^™\ÜÚ[ÛŠJHÂˆ™]\›ˆÓÓÑVÓ‘S•ÓSÑTËš[™\œÙNÂˆBˆ™]\›ˆÙ[XÝY^™\ÜÚ[Ûˆ	‰ˆÙ[XÝY^™\ÜÚ[Û‹\HOOH™^‚ˆÈÓÓÑVÓ‘S•ÓSÑTË™^Û™[ˆˆÓÓÑVÓ‘S•ÓSÑTËœZ[ŽÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛØ]YÛÜšY\Ñ›ÜÝ\œ™[^Û™[[ÙJ
+HÂˆÛÛœÝ[ÙHHÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+NÂˆ™]\›ˆÓÓÓQS•WÐÐUQÓÔ’QTË™š[\ŠØ]YÛÜžHOˆØ]YÛÜžK›[ÙHOOH[ÙHØ]YÛÜžK›[ÙHOOH˜›ÝŠNÂˆB‚ˆ[˜Ý[ÛˆÙ]]ZXÚÕÛÛ›ÝÜÑ›ÜÝ\œ™[^Û™[[ÙJ
+HÂˆ™]\›ˆURPÒ×ÕÓÓÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑVÙÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+WHURPÒ×ÕÓÓÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑKœZ[ŽÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[XÝ[Û•\PØ[™Y]TÙ]
+
+HÂˆÛÛœÝÙ[XÝYHÙ]Ù[XÝY^™\ÜÚ[Û‘›Ü•ÛÛY[J
+NÂˆYˆ
+\Ù[XÝY
+HÂˆ™]\›ˆ™]ÈÙ]
+
+NÂˆBˆÛÛœÝÙ[XÝY\HHÙ[XÝY\NÂˆ™]\›ˆ™]ÈÙ]
+Âˆ‹‹ŠÓÓÒÑVT×Ð–WÔÑSPÕQÕTVÜÙ[XÝY\WH×JKˆ‹‹ŠÓÓÒÑVT×Ð–WÔÑSPÕQÕTK˜[žH×JBˆJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[XÝY^™\ÜÚ[Û‘›Ü•ÛÛY[J
+HÂˆ™]\›ˆÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆB‚ˆ[˜Ý[Ûˆ[š\]YUÛÛÙ^\ÊÙ^\ÊHÂˆÛÛœÝÙY[ˆH™]ÈÙ]
+
+NÂˆÛÛœÝÝ]H×NÂˆ›Üˆ
+ÛÛœÝÙ^HÙˆÙ^\ÊHÂˆYˆ
+\ÙY[‹š\ÊÙ^JJHÂˆÙY[‹˜Y
+Ù^JNÂˆÝ]œ\Ú
+Ù^JNÂˆBˆBˆ™]\›ˆÝ]ÂˆB‚ˆ[˜Ý[ÛˆÙ]Ø[™Y]UÛÛÙ^\Ñ›Ü”Ù[XÝ[Û•\JØ]YÛÜžRYH[
+HÂˆËÈÚÝÈ]™\žH[H[ˆHÚÜÙ[ˆØ]YÛÜžH]™[ˆÚ[ˆ]\È›Ý^XÝBˆËÈ\XØX›HÈHÝ\œ™[Ù[XÝ[Û‹ˆ›Û‹X\XØX›H[H]ÛœÂˆËÈ\™HX\šÙY™YÛ›HY\ˆH\Ù\ˆÛXÚÜÈ[K‚ˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ×NÂˆB‚ˆYˆ
+Ø]YÛÜžRY
+HÂˆÛÛœÝØ]YÛÜžHHÙ]ÛÛØ]YÛÜžPžRY
+Ø]YÛÜžRY
+NÂˆ™]\›ˆØ]YÛÜžHÈØ]YÛÜžKšÙ^\ËœÛXÙJ
+Hˆ×NÂˆB‚ˆ™]\›ˆ[š\]YUÛÛÙ^\ÊÂˆ‹‹™Ù]]ZXÚÕÛÛ›ÝÜÑ›ÜÝ\œ™[^Û™[[ÙJ
+K™›]
+
+Kˆ‹‹™Ù]ÛÛØ]YÛÜšY\Ñ›ÜÝ\œ™[^Û™[[ÙJ
+K™›]X\
+Ø]YÛÜžHOˆØ]YÛÜžKšÙ^\ÊBˆJNÂˆB‚ˆ[˜Ý[Ûˆš[\•š\ÚX›UÛÛÙ^\ÊÙ^\Ë[ÝÙYÙ^\ÊHÂˆ™]\›ˆ[š\]YUÛÛÙ^\ÊÙ^\ÊK™š[\ŠÙ^HO‚ˆÓÓÒS‘“ÖÚÙ^WH	‰‚ˆ\ÕÛÛ[ÝÙY[Ý\œ™[]™[
+Ù^JH	‰‚ˆ[ÝÙYÙ^\Ëš\ÊÙ^JBˆ
+NÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ]Û’[
+Ù^JHÂˆ™]\›ˆ]Ûˆ]K]ÛÛH‰ÚÙ^_H‰ÕÓÓÒS‘“ÖÚÙ^W_OØ]Û˜ÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[XÝYÛÛ[]]T\ÛÝ[›Ü“Y[J
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙH
+Ù[XÝ[Û‹››ÙK\HOOHœÝ[Hˆ	‰ˆÙ[XÝ[Û‹››ÙK\HOOHœ›ÙŠJHÂˆ™]\›ˆÂˆBˆ™]\›ˆÙ]Ù[XÝYÛXÙS[™Ý
+
+NÂˆB‚ˆ[˜Ý[ÛˆÚÝ[ÚÝÔÚ[™ÛPÛÛ[]]P]Û‘›Ü”Ù[XÝ[ÛŠ
+HÂˆ™]\›ˆÙ]Ù[XÝYÛÛ[]]T\ÛÝ[›Ü“Y[J
+HOOHŽÂˆB‚ˆ[˜Ý[ÛˆÚÝ[ÚÝÑ\™XÝ[Û˜[ÛÛ[]]P]ÛœÑ›Ü”Ù[XÝ[ÛŠ
+HÂˆ™]\›ˆÙ]Ù[XÝYÛÛ[]]T\ÛÝ[›Ü“Y[J
+HHÎÂˆB‚ˆÛÛœÝÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑHHÂˆZ[ŽˆÂˆÈ[ˆÈÛÛˆ›[Y\šXØ[™]Üš]H‹[ˆ“[Y\šXØ[™]Üš]HˆHKˆÂˆÛÛ[]]TZ\ŽˆYKˆYˆÈÛÛˆ˜ÛÛ[]]Qš\œÝÓ\Ý‹[ˆÛÛ[]]Hš\œÝÈ[™ˆKˆšYÚˆÈÛÛˆ˜ÛÛ[]]S\ÝÑš\œÝ‹[ˆÛÛ[]]H\ÝÈ™YÚ[›š[™ÈˆBˆKˆÂˆ\ÝšX][Û”Z\ŽˆYKˆY˜XÝÜ™YˆÂˆÛÛˆ™˜XÝÜ“Y‹ˆZ[šNˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šTÝ[JZ[šU˜[YJˆŠKZ[šU˜[YJÈŠJJBˆKˆÜ\ÝšX]YˆÂˆÛÛˆ™\ÝšX]SYÔšYÚ‹ˆZ[šNˆZ[šTÝ[JˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJˆŠJKˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJÈŠJBˆ
+BˆKˆ›ÝÛQ\ÝšX]YˆÂˆÛÛˆ™\ÝšX]TšYÚÓY‹ˆZ[šNˆZ[šTÝ[JˆZ[šT›Ù
+Z[šU˜[YJˆŠKZ[šU˜[YJHŠJKˆZ[šT›Ù
+Z[šU˜[YJÈŠKZ[šU˜[YJHŠJBˆ
+BˆKˆšYÚ˜XÝÜ™YˆÂˆÛÛˆ™˜XÝÜ”šYÚ‹ˆZ[šNˆZ[šT›Ù
+Z[šTÝ[JZ[šU˜[YJˆŠKZ[šU˜[YJÈŠJKZ[šU˜[YJHŠJBˆBˆKˆÂˆš\]ˆYKˆYˆÈÛÛˆš[œÙ\Y[]PY™\›Ð›ÝÛH‹Z[šNˆZ[šTÝ[JZ[šU˜[YJHŠKZ[šU˜[YJŒŠJHKˆÙ[\ŽˆÈÛÛˆ™[[Z[˜]RY[]Y\È‹Z[šNˆZ[šU˜[YJHŠHKˆšYÚˆÈÛÛˆš[œÙ\Y[]S][\PžSÛ™TšYÚ‹Z[šNˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJŒHŠJHBˆKˆÂˆš\]ˆYKˆYˆÈÛÛˆš[œÙ\™\›Ô›ÙXÝšYÚ‹Z[šNˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJŒŠJHKˆÙ[\ŽˆÈÛÛˆœ™YXÙUÖ™\›È‹Z[šNˆZ[šU˜[YJŒŠHKˆšYÚˆÈÛÛˆ˜Ø[˜Ù[ÜÜÚ]\È‹Z[šNˆZ[šTÝ[JZ[šU˜[YJHŠKZ[šT›Ù
+Z[šU˜[YJ‹LHŠKZ[šU˜[YJHŠJJHBˆKˆÂˆYˆÈÛÛˆ™ÝX›S™YØ]]™H‹Z[šNˆZ[šT›Ù
+Z[šU˜[YJ‹LHŠKZ[šU˜[YJ‹LHŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆœ™YXÙUÓÛ™H‹Z[šNˆZ[šU˜[YJŒHŠHBˆKˆKˆ[Y\šXÎˆÂˆÈ[ˆÈÛÛˆ›[Q]˜[X]TÜÚ]]™TÝ[H‹[ˆ‘]˜[X]HÝ[HÙˆÜÚ]]™H[X™\œÈˆHKˆÈ[ˆÈÛÛˆ›[Q]˜[X]TÜÚ]]™T›ÙXÝ‹[ˆ‘]˜[X]H›ÙXÝÙˆÜÚ]]™H[X™\œÈˆHKˆÈ[ˆÈÛÛˆ›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝ‹[ˆ•Üš]HÜÚ]]™H[X™\ˆ\È›ÙXÝˆHKˆÈ[ˆÈÛÛˆ›[UÜš]TÜÚ]]™S[X™\\ÔÝ[H‹[ˆ•Üš]HÜÚ]]™H[X™\ˆ\ÈÝ[HˆHKˆÈ[ˆÈÛÛˆ›[Q]˜[X]TÚYÛ™YÝ[H‹[ˆ‘]˜[X]HÝ[H[ˆ\™[\Ù\È[˜ÛY[™È™YØ]]™\ÈˆHKˆÈ[ˆÈÛÛˆ›[Q]˜[X]TÚYÛ™Y›ÙXÝ‹[ˆ‘]˜[X]H›ÙXÝ[ˆ\™[\Ù\È[˜ÛY[™È™YØ]]™\ÈˆHKˆÈ[ˆÈÛÛˆ›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙH‹[ˆ‘^™\ÜÈ[X™\ˆ\ÈY™™\™[˜ÙHˆHKˆÈÝ\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\ÎˆYHKˆKˆ^Û™[ˆÂˆÂˆYˆÈÛÛˆ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹Z[šNˆZ[šQ^
+Z[šU˜[YJHŠKZ[šTÝ[JZ[šU˜[YJ›HŠKZ[šU˜[YJ›ˆŠJJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆ™^[™ÝÙ\“Ù”Ý[H‹Z[šNˆZ[šT›Ù
+Z[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ›HŠJKZ[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ›ˆŠJJHBˆKˆÂˆYˆÈÛÛˆ™˜XÝÜÛÛ[[Û‘^Û™[‹Z[šNˆZ[šQ^
+Z[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJˆŠJKZ[šU˜[YJ›ˆŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹Z[šNˆZ[šT›Ù
+Z[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ›ˆŠJKZ[šQ^
+Z[šU˜[YJˆŠKZ[šU˜[YJ›ˆŠJJHBˆKˆÂˆYˆÈÛÛˆ™^[™ÝÙ\“Ù”ÝÙ\ˆ‹Z[šNˆZ[šQ^
+Z[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ›HŠJKZ[šU˜[YJ›ˆŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆœÝÙ\“Ù”ÝÙ\ˆ‹Z[šNˆZ[šQ^
+Z[šU˜[YJHŠKZ[šT›Ù
+Z[šU˜[YJ›HŠKZ[šU˜[YJ›ˆŠJJHBˆKˆÂˆYˆÈÛÛˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹Z[šNˆZ[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ›ˆŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆœÝÙ\•Ô™\X]Y›ÙXÝ‹Z[šNˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJHŠKZ[šU˜[YJ¸ )ˆŠKZ[šU˜[YJHŠJHBˆKˆÂˆš\]ˆYKˆYˆÈÛÛˆš[œÙ\^Û™[™\›È‹Z[šNˆZ[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJŒŠJHKˆÙ[\ŽˆÈÛÛˆœ™YXÙUÓÛ™H‹Z[šNˆZ[šU˜[YJŒHŠHKˆšYÚˆÈÛÛˆš[œÙ\ÝÙ\“Ù“Û™H‹Z[šNˆZ[šQ^
+Z[šU˜[YJŒHŠKZ[šU˜[YJ›ˆŠJHBˆKˆKˆ[™\œÙNˆÂˆÂˆYˆÈÛÛˆš[œÙ\ÝX›R[™\œÙH‹Z[šNˆZ[šR[ŠZ[šR[ŠZ[šU˜[YJHŠJJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆ™[[Z[˜]QÝX›R[™\œÙH‹Z[šNˆZ[šU˜[YJHŠHBˆKˆÂˆYˆÈÛÛˆ™˜XÝÜ”›ÙXÝÙ’[™\œÙ\È‹Z[šNˆZ[šR[ŠZ[šT›Ù
+Z[šU˜[YJHŠKZ[šU˜[YJˆŠJJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆ™\ÝšX]R[™\œÙSÝ™\”›ÙXÝ‹Z[šNˆZ[šT›Ù
+Z[šR[ŠZ[šU˜[YJHŠJKZ[šR[ŠZ[šU˜[YJˆŠJJHBˆKˆÂˆYˆÈÛÛˆœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝ‹Z[šNˆZ[šT›Ù
+Z[šU˜[YJHŠKZ[šR[ŠZ[šU˜[YJHŠJJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆ˜Ø[˜Ù[›ÙXÝÚ][™\œÙH‹Z[šNˆZ[šU˜[YJŒHŠHBˆKˆÂˆYˆÈÛÛˆœ™]Üš]S™YÓÛ™UÒ[“™YÓÛ™H‹Z[šNˆZ[šR[ŠZ[šU˜[YJ‹LHŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆœ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™H‹Z[šNˆZ[šU˜[YJ‹LHŠHBˆKˆÂˆYˆÈÛÛˆœ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙH‹Z[šNˆZ[šR[ŠZ[šU˜[YJHŠJHKˆ\œ›ÝÎˆ¸¡å‹ˆšYÚˆÈÛÛˆœ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[‹Z[šNˆZ[šQ^
+Z[šU˜[YJHŠKZ[šU˜[YJ‹LHŠJHBˆBˆBˆNÂ‚ˆ[˜Ý[ÛˆÙ]ÛÛ›Ü›T›ÝÜÑ›ÜÝ\œ™[^Û™[[ÙJ
+HÂˆ™]\›ˆÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑVÙÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+WHÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑKœZ[ŽÂˆB‚ˆ[˜Ý[Ûˆ\Ð\XØX›SÛ›UÛÛ›Ý][Û“[ÙJ
+HÂˆ™]\›ˆZTÝ]KÛÛ›Ý][Û“[ÙHOOH˜\XØX›HŽÂˆB‚ˆ[˜Ý[Ûˆ\Ò[[Ø]YÛÜžUÛÛ›Ý][Û“[ÙJ
+HÂˆ™]\›ˆZTÝ]KÛÛ›Ý][Û“[ÙHOOH˜Ø]YÛÜšY\ÈŽÂˆB‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžPØ[™Y]UÛÛÊØ]YÛÜžRY
+HÂˆYˆ
+Ø]YÛÜžRYOOH˜ÛÛ[]]HŠHÂˆ™]\›ˆÈ˜ÛÛ[]]H—NÂˆBˆYˆ
+Ø]YÛÜžRYOOHœÙ\\˜]HŠHÂˆ™]\›ˆÂˆ™\ÝšX]SYÔšYÚ‹ˆ™\ÝšX]TšYÚÓY‹ˆ™\ÝšX]R[™\œÙSÝ™\”›ÙXÝ‹ˆ™^[™ÝÙ\“Ù”Ý[H‹ˆ™\ÝšX]Q^Û™[Ý™\”›ÙXÝ‹ˆ™^[™ÝÙ\“Ù”ÝÙ\ˆ‚ˆNÂˆBˆYˆ
+Ø]YÛÜžRYOOH˜ÛÛœÛÛY]HŠHÂˆ™]\›ˆÂˆ™˜XÝÜ“Y‹ˆ™˜XÝÜ”šYÚ‹ˆ™˜XÝÜ”›ÙXÝÙ’[™\œÙ\È‹ˆ˜ÛÛXš[™TØ[YP˜\ÙTÝÙ\œÈ‹ˆ™˜XÝÜÛÛ[[Û‘^Û™[‹ˆœÝÙ\“Ù”ÝÙ\ˆ‚ˆNÂˆBˆYˆ
+Ø]YÛÜžRYOOH™[]HŠHÂˆ™]\›ˆÂˆ™[[Z[˜]RY[]Y\È‹ˆ‹‹ŠÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+HÈÈ˜Ø[˜Ù[ÜÜÚ]\È—Hˆ×JKˆ˜Ø[˜Ù[›ÙXÝÚ][™\œÙH‹ˆ™[[Z[˜]QÝX›R[™\œÙH‹ˆ‹‹ŠÙ]ÝX›S™YØ]]™Q]J
+HÈÈ™ÝX›S™YØ]]™H—Hˆ×JKˆž™\›Ô›ÙXÝ‹ˆ™[[Z[˜]Q^Û™[Û™H‹ˆ™[[Z[˜]Q^Û™[™\›È‹ˆ›Û™UÐ[žTÝÙ\ˆ‹ˆœ™]Üš]R[“™YÓÛ™UÓ™YÓÛ™H‚ˆNÂˆBˆYˆ
+Ø]YÛÜžRYOOHš[œÙ\ŠHÂˆÛÛœÝÛÛÈHÂˆš[œÙ\Y[]PY™\›Ð›ÝÛH‹ˆš[œÙ\Y[]S][\PžSÛ™TšYÚ‹ˆš[œÙ\ÝX›R[™\œÙH‹ˆš[œÙ\^Û™[Û™H‚ˆNÂˆYˆ
+Ø[”™\XÙSÛ™UÚ][™\œÙT›ÙXÝ
+
+JHÂˆÛÛËœ\Ú
+œ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠNÂˆBˆYˆ
+Ø[”™\XÙV™\›ÕÚ]ÜÜÚ]TÝ[J
+JHÂˆÛÛËœ\Ú
+˜Ø[˜Ù[ÜÜÚ]\ÈŠNÂˆBˆ™]\›ˆÛÛÎÂˆBˆYˆ
+Ø]YÛÜžRYOOH˜[œÛ]S›Ý][ÛˆŠHÂˆ™]\›ˆÂˆœÝÙ\•Ô™\X]Y›ÙXÝ‹ˆœ™\X]Y›ÙXÝÔÝÙ\ˆ‹ˆœ™]Üš]S™YØ]]™SÛ™Q^Û™[\Ò[™\œÙH‹ˆœ™]Üš]R[™\œÙP\Ó™YØ]]™SÛ™Q^Û™[‚ˆNÂˆBˆYˆ
+Ø]YÛÜžRYOOH›[Y\šXØ[™]Üš]HŠHÂˆ™]\›ˆÈ›[Y\šXØ[™]Üš]H—NÂˆBˆ™]\›ˆ×NÂˆB‚ˆ[˜Ý[ÛˆÙ]\XØX›R[[Ø]YÛÜžUÛÛÊØ]YÛÜžRY
+HÂˆÛÛœÝ\XØXš[]HHÙ]\XØX›UÛÛÊ
+NÂˆ™]\›ˆ[š\]YUÛÛÙ^\ÊÙ][[Ø]YÛÜžPØ[™Y]UÛÛÊØ]YÛÜžRY
+JK™š[\ŠÛÛ˜[YHO‚ˆHUÓÓÒS‘“ÖÝÛÛ˜[YWH	‰‚ˆ\ÕÛÛ[ÝÙY[Ý\œ™[]™[
+ÛÛ˜[YJH	‰‚ˆHX\XØXš[]VÝÛÛ˜[YWBˆ
+NÂˆB‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžRY›Ü•ÛÛ
+ÛÛ˜[YJHÂˆYˆ
+ˆÛÛ˜[YHOOH›[Y\šXØ[\]Z]˜[[˜ÙHˆˆÛÛ˜[YHOOH™]˜[X]HˆˆÛÛ˜[YHOOH™˜XÝÜ“[X™\ˆˆˆÛÛ˜[YHOOHÜš]S[X™\\ÔÝ[Hˆˆ\Ó[Y\šXØ[™]Üš]UÛÛ
+ÛÛ˜[YJHˆ\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+ÛÛ˜[YJBˆ
+HÂˆ™]\›ˆ›[Y\šXØ[™]Üš]HŽÂˆBˆYˆ
+ÛÛ˜[YHOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆ™]\›ˆš[œÙ\ŽÂˆBˆÛÛœÝYÈHS•S•Ô•SWÐÐUQÓÔ’QTË›X\
+Ø]YÛÜžHOˆØ]YÛÜžKšY
+NÂˆ™]\›ˆYË™š[™
+Ø]YÛÜžRYOˆÙ][[Ø]YÛÜžPØ[™Y]UÛÛÊØ]YÛÜžRY
+Kš[˜ÛY\ÊÛÛ˜[YJJH[ÂˆB‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžRXÛÛ’[
+Ø]YÛÜžRY
+HÂˆYˆ
+Ø]YÛÜžRYOOH›[Y\šXØ[™]Üš]HŠHÂˆ™]\›ˆÜ[ˆÛ\ÜÏHš[[XØ]YÛÜžK[X]ˆ\šXKZY[HYH‚ˆÜ[ŒH
+ÈÜÜ[Ü[ˆÛ\ÜÏH›X]X\œ›ÝÈ¸¡¥ÜÜ[Ü[ŒÏÜÜ[‚ˆÜÜ[˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOH˜ÛÛ[]]HŠHÂˆ™]\›ˆÝ™ÈÛ\ÜÏHš[[XØ]YÛÜžKZXÛÛˆˆšY]Ð›ÞHŒLŽˆ\šXKZY[HYHˆ›ØÝ\ØX›OH™˜[ÙH‚ˆÈ˜[œÙ›Ü›OH˜[œÛ]JNŠH‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“LÌˆÈLHHHMÈÌˆ‹Ï]Û\ÜÏHšXÛÛ‹Yš[ˆH“MMÈÎHLHŽHŒÈŽHˆ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“MMÈÌˆLHHHÌˆMÈ‹Ï]Û\ÜÏHšXÛÛ‹Yš[ˆH“LHMÈÍHLHÍHŒÈˆ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“LÌˆMÈLHHHÈÌˆ‹Ï]Û\ÜÏHšXÛÛ‹Yš[ˆH“MÈHLÈÍHHÍHˆ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“MÈÌˆLHHHÌˆÈ‹Ï]Û\ÜÏHšXÛÛ‹Yš[ˆH“LÎHÈŽHLÈŽHHˆ‹Ï‚ˆÙÏ‚ˆÜÝ™Ï˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOHš[œÙ\ŠHÂˆ™]\›ˆÝ™ÈÛ\ÜÏHš[[XØ]YÛÜžKZXÛÛˆˆšY]Ð›ÞHŒLŽˆ\šXKZY[HYHˆ›ØÝ\ØX›OH™˜[ÙH‚ˆÈ˜[œÙ›Ü›OHœ›Ý]JMÈLÍ
+H‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“LŒÈÎNˆˆŽNˆÎŒÈˆ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“LŒÈÍŒÈˆMŽ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹Yš[ˆH“NÍMÈÌMÈÎˆ‹Ï‚ˆÙÏ‚ˆÜÝ™Ï˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOH™[]HŠHÂˆ™]\›ˆÝ™ÈÛ\ÜÏHš[[XØ]YÛÜžKZXÛÛˆˆšY]Ð›ÞHŒLŽˆ\šXKZY[HYHˆ›ØÝ\ØX›OH™˜[ÙH‚ˆÈ˜[œÙ›Ü›OHœ›Ý]JMÈLÍ
+H‚ˆ™XÝÛ\ÜÏHšXÛÛ‹\Ý›ÚÙHˆHŒNHˆOHŒŒˆˆÚYHˆZYÚHŒˆžHˆ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“MˆŒˆˆ‹Ï‚ˆÙÏ‚ˆÜÝ™Ï˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOHœÙ\\˜]HŠHÂˆ™]\›ˆÝ™ÈÛ\ÜÏHš[[XØ]YÛÜžKZXÛÛˆˆšY]Ð›ÞHŒLŽˆ\šXKZY[HYHˆ›ØÝ\ØX›OH™˜[ÙH‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“NÍÌÈÍHÍMHŽMHLÌÈÍÍHÍLÈŽLÈ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹Yš[ˆH“NMMHÈŒŒÈˆNMLÈHŒHˆ‹Ï‚ˆÜÝ™Ï˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOH˜ÛÛœÛÛY]HŠHÂˆ™]\›ˆÝ™ÈÛ\ÜÏHš[[XØ]YÛÜžKZXÛÛˆˆšY]Ð›ÞHŒLŽˆ\šXKZY[HYHˆ›ØÝ\ØX›OH™˜[ÙH‚ˆ]Û\ÜÏHšXÛÛ‹\Ý›ÚÙHˆH“NMHŽHÍHMHÍÍNLÈŽHÍHLÈÍÍ‹Ï‚ˆ]Û\ÜÏHšXÛÛ‹Yš[ˆH“NMÍˆˆˆ‹Ï‚ˆÜÝ™Ï˜ÂˆBˆYˆ
+Ø]YÛÜžRYOOH˜[œÛ]S›Ý][ÛˆŠHÂˆ™]\›ˆÜ[ˆÛ\ÜÏHš[[XØ]YÛÜžK[X]˜[œÛ]K[›Ý][Û‹[X]ˆ\šXKZY[HYH‚ˆÜ[ŠÝ\ŒÜÝ\ŠOÝ\¸¢$ŒOÜÝ\ÜÜ[‚ˆÜ[ˆÛ\ÜÏH›X]X\œ›ÝÈ¸¡¥ÜÜ[‚ˆÜ[ˆÛ\ÜÏH›X]Yœ˜XÝ[Ûˆ‚ˆÜ[ˆÛ\ÜÏH›X][[Y\˜]ÜˆŒOÜÜ[‚ˆÜ[ˆÛ\ÜÏH›X]Y[›ÛZ[˜]Üˆž0­ÈÜÜ[‚ˆÜÜ[‚ˆÜÜ[˜ÂˆBˆ™]\›ˆˆŽÂˆB‚ˆ[˜Ý[ÛˆZ[[[Ø]YÛÜžP]Û’[
+Ø]YÛÜžRY
+HÂˆÛÛœÝØ]YÛÜžHHS•S•Ô•SWÐÐUQÓÔ’QTË™š[™
+][HOˆ][KšYOOHØ]YÛÜžRY
+NÂˆÛÛœÝX™[HØ]YÛÜžHÈØ]YÛÜžK›X™[ˆØ]YÛÜžRYÂˆ™]\›ˆ]ÛˆÛ\ÜÏHš[[XØ]YÛÜžKX]Ûˆˆ]K\[KXØ]YÛÜžOH‰ØØ]YÛÜžRYHˆ\šXK[X™[H‰Ù\ØØ\R[
+X™[
+_Hˆ\šXKY\ØÜšX™YžOHš[[Ø]YÛÜžQ\ØÜš\[Ûˆ‚ˆ	ÙÙ][[Ø]YÛÜžRXÛÛ’[
+Ø]YÛÜžRY
+_BˆÜ[ˆÛ\ÜÏHš[[XØ]YÛÜžK[X™[‰Ù\ØØ\R[
+X™[
+_OÜÜ[‚ˆØ]Û˜ÂˆB‚ˆ[˜Ý[ÛˆZ[[[Ø]YÛÜžSY[R[
+
+HÂˆÛÛœÝÚ[™ÙQ›Ü›P]Û’[H]™[\Ù\Ñ^ÙY^Û™[›ÙJÙ]Ý\œ™[]™[
+
+JBˆÈ]ˆÛ\ÜÏHš[[XØ]YÛÜžK\›ÝÈÚ[™ÛH‰ØZ[[[Ø]YÛÜžP]Û’[
+˜[œÛ]S›Ý][ÛˆŠ_OÙ]˜ˆˆˆŽÂˆ™]\›ˆ]ˆÛ\ÜÏHœ[™[[Y[K]]HÚÛÜÙH[ˆXÝ[ÛÙ]‚ˆ]ˆÛ\ÜÏHš[[XØ]YÛÜžK[\Ý‚ˆ]ˆÛ\ÜÏHš[[XØ]YÛÜžK\›ÝÈÚ[™ÛH‰ØZ[[[Ø]YÛÜžP]Û’[
+˜ÛÛ[]]HŠ_OÙ]‚ˆ]ˆÛ\ÜÏHš[[XØ]YÛÜžK\›ÝÈ‚ˆ	ØZ[[[Ø]YÛÜžP]Û’[
+š[œÙ\Š_Bˆ	ØZ[[[Ø]YÛÜžP]Û’[
+™[]HŠ_BˆÙ]‚ˆ]ˆÛ\ÜÏHš[[XØ]YÛÜžK\›ÝÈ‚ˆ	ØZ[[[Ø]YÛÜžP]Û’[
+œÙ\\˜]HŠ_Bˆ	ØZ[[[Ø]YÛÜžP]Û’[
+˜ÛÛœÛÛY]HŠ_BˆÙ]‚ˆ	ØÚ[™ÙQ›Ü›P]Û’[Bˆ]ˆÛ\ÜÏHš[[XØ]YÛÜžK\›ÝÈÚ[™ÛH[Y\šXØ[\™]Üš]K\›ÝÈ‰ØZ[[[Ø]YÛÜžP]Û’[
+›[Y\šXØ[™]Üš]HŠ_OÙ]‚ˆ]ˆYHš[[Ø]YÛÜžQ\ØÜš\[ÛˆˆÛ\ÜÏHš[[XØ]YÛÜžKY\ØÜš\[Ûˆˆ\šXK[]™OHœÛ]H’Ý™\ˆÝ™\ˆ[ˆXÝ[ÛˆÈÙYHÚ]]Ù\ËÜÙ]‚ˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆÙ][[Ø]YÛÜžQ^ÙYÚÚXÙQ[žJÛÛ˜[YKØ]YÛÜžRY
+HÂˆÛÛœÝHH
+
+HOˆZ[šU˜[YJHŠNÂˆÛÛœÝ™\›ÈH
+
+HOˆZ[šU˜[YJŒŠNÂˆÛÛœÝÛ™HH
+
+HOˆZ[šU˜[YJŒHŠNÂˆÛÛœÝ™YØ]]™SÛ™HH
+
+HOˆZ[šU˜[YJ‹LHŠNÂ‚ˆËÈH™]È™]™\œÚX›H[\ÈÚ\™HÛ™H[\›˜[ÛÛ˜[YKˆÚÛÜÙHBˆËÈ\™XÝ[Ûˆ™\™\Ù[YžHHÙ[XÝY[HØ]YÛÜžK‚ˆYˆ
+Ø]YÛÜžRYOOHš[œÙ\ˆ	‰ˆÛÛ˜[YHOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆ™]\›ˆÂˆÛÛˆÛÛ˜[YKˆœ›ÛSZ[šNˆ™\›Ê
+KˆÓZ[šNˆZ[šTÝ[JJ
+KZ[šT›Ù
+™YØ]]™SÛ™J
+KJ
+JJBˆNÂˆBˆYˆ
+Ø]YÛÜžRYOOH™[]Hˆ	‰ˆÛÛ˜[YHOOH™ÝX›S™YØ]]™HŠHÂˆ™]\›ˆÂˆÛÛˆÛÛ˜[YKˆœ›ÛSZ[šNˆZ[šT›Ù
+™YØ]]™SÛ™J
+K™YØ]]™SÛ™J
+JKˆÓZ[šNˆÛ™J
+BˆNÂˆB‚ˆÛÛœÝ^\Ý[™ÈHÛÛXÝ\XØX›U˜[œÙ›Ü›X][Û‘[šY\Ê
+Bˆ™š[™
+[žHOˆ[žKÛÛOOHÛÛ˜[YJNÂˆYˆ
+^\Ý[™ÊHÂˆ™]\›ˆ^\Ý[™ÎÂˆB‚ˆÛÛœÝ˜[˜XÚÔZ\œÈHÂˆ[œÙ\Y[]NˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šTÝ[JJ
+K™\›Ê
+JHKˆ[œÙ\Y[]PY™\›ÕÜˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šTÝ[J™\›Ê
+KJ
+JHKˆ[œÙ\Y[]PY™\›Ð›ÝÛNˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šTÝ[JJ
+K™\›Ê
+JHKˆ[œÙ\Y[]S][\PžSÛ™SYˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šT›Ù
+Û™J
+KJ
+JHKˆ[œÙ\Y[]S][\PžSÛ™TšYÚˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šT›Ù
+J
+KÛ™J
+JHKˆ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆÈœ›ÛSZ[šNˆÛ™J
+KÓZ[šNˆZ[šT›Ù
+J
+KZ[šR[ŠJ
+JJHKˆ[[Z[˜]RY[]Y\ÎˆÈœ›ÛSZ[šNˆZ[šTÝ[JJ
+K™\›Ê
+JKÓZ[šNˆJ
+HKˆ[œÙ\™\›Ô›ÙXÝYˆÈœ›ÛSZ[šNˆ™\›Ê
+KÓZ[šNˆZ[šT›Ù
+™\›Ê
+KJ
+JHKˆ[œÙ\™\›Ô›ÙXÝšYÚˆÈœ›ÛSZ[šNˆ™\›Ê
+KÓZ[šNˆZ[šT›Ù
+J
+K™\›Ê
+JHKˆ™\›Ô›ÙXÝˆÈœ›ÛSZ[šNˆZ[šT›Ù
+J
+K™\›Ê
+JKÓZ[šNˆ™\›Ê
+HKˆ[œÙ\^Û™[Û™NˆÈœ›ÛSZ[šNˆJ
+KÓZ[šNˆZ[šQ^
+J
+KÛ™J
+JHKˆ[[Z[˜]Q^Û™[Û™NˆÈœ›ÛSZ[šNˆZ[šQ^
+J
+KÛ™J
+JKÓZ[šNˆJ
+HKˆ[[Z[˜]Q^Û™[™\›ÎˆÈœ›ÛSZ[šNˆZ[šQ^
+J
+K™\›Ê
+JKÓZ[šNˆÛ™J
+HKˆÛ™UÐ[žTÝÙ\ŽˆÈœ›ÛSZ[šNˆZ[šQ^
+Û™J
+KJ
+JKÓZ[šNˆÛ™J
+HBˆNÂˆÛÛœÝZ\ˆH˜[˜XÚÔZ\œÖÝÛÛ˜[YWNÂˆ™]\›ˆZ\ˆÈÈÛÛˆÛÛ˜[YK‹‹œZ\ˆHˆ[ÂˆB‚ˆ[˜Ý[ÛˆZ[[[Ø]YÛÜžPÚÚXÙ\Ò[
+Ø]YÛÜžRY
+HÂˆÛÛœÝØ]YÛÜžHHS•S•Ô•SWÐÐUQÓÔ’QTË™š[™
+][HOˆ][KšYOOHØ]YÛÜžRY
+NÂˆÛÛœÝÛÛÈHÙ]\XØX›R[[Ø]YÛÜžUÛÛÊØ]YÛÜžRY
+NÂˆ][H]ÛˆÛ\ÜÏHœ[™[[Y[KX˜XÚËX]Ûˆˆ]KXXÝ[ÛH˜˜XÚÕÒ[[Ø]YÛÜšY\È¸¡¤˜XÚÈÈØ]YÛÜšY\ÏØ]Û˜Âˆ[
+ÏH]ˆÛ\ÜÏHœ[™[[Y[K]]H‰Ù\ØØ\R[
+Ø]YÛÜžHÈØ]YÛÜžK›X™[ˆÚÛÜÙHH[HŠ_OÙ]˜ÂˆYˆ
+Ø]YÛÜžRYOOHš[œÙ\ŠHÂˆ[
+ÏH]ˆÛ\ÜÏHš[œÙ\XÚÚXÙK[\Ý˜ÂˆÛÛË™›Ü‘XXÚ
+ÛÛ˜[YHOˆÂˆÛÛœÝÚÚXÙHHS”ÑT•ÑSSQS•ÐÒÒPÑTÖÝÛÛ˜[YWNÂˆYˆ
+ÚÚXÙJHÂˆ[
+ÏH]ÛˆÛ\ÜÏHÛÛY›Ü›KX]Ûˆ[œÙ\XÚÚXÙKX]Ûˆˆ]K]ÛÛH‰ÝÛÛ˜[Y_Hˆ]KZ[œÙ\Y\ØÜš\[Û‹]ÛÛH‰ÝÛÛ˜[Y_Hˆ\šXKY\ØÜšX™YžOHš[œÙ\ÚÚXÙQ\ØÜš\[Ûˆ‰Ù\ØØ\R[
+ÚÚXÙK›X™[
+_OØ]Û˜ÂˆBˆJNÂˆ[
+ÏHÙ]˜Âˆ[
+ÏH]ˆYHš[œÙ\ÚÚXÙQ\ØÜš\[ÛˆˆÛ\ÜÏHš[œÙ\XÚÚXÙKY\ØÜš\[Ûˆˆ\šXK[]™OHœÛ]H’Ý™\ˆÝ™\ˆ[ˆÜ[ÛˆÈÙYHÚ]]Ù\ËÜÙ]˜Âˆ™]\›ˆ[ÂˆBˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH“[Ü™H[ˆÛ™H[H\Y\ËˆÚÛÜÙHHÛ™H[ÝH[[™Ù]˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛY›Ü›KYÜšY\XØX›K]ÛÛ[\Ý[[XØ]YÛÜžKXÚÚXÙ\È˜ÂˆÛÛË™›Ü‘XXÚ
+ÛÛ˜[YHOˆÂˆÛÛœÝ[žHHÙ][[Ø]YÛÜžQ^ÙYÚÚXÙQ[žJÛÛ˜[YKØ]YÛÜžRY
+NÂˆYˆ
+[žJHÂˆ[
+ÏH]ˆÛ\ÜÏHÛÛY›Ü›K\›ÝÈÚ[™ÛH\XØX›K]ÛÛ\›ÝÈ‰ØZ[\XØX›U˜[œÙ›Ü›X][Û]Û’[
+[žJ_OÙ]˜ÂˆBˆJNÂˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆZ[[[Ø]YÛÜžUÛÛ\Ý[
+
+HÂˆ™]\›ˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžBˆÈZ[[[Ø]YÛÜžPÚÚXÙ\Ò[
+ZTÝ]K˜XÝ]™UÛÛØ]YÛÜžJBˆˆZ[[[Ø]YÛÜžSY[R[
+
+NÂˆB‚ˆ[˜Ý[Ûˆ\ÕÛÛ›Ü›TÚYP]˜Z[X›JÚYJHÂˆYˆ
+\ÚYJHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+\ÚYKÛÛ
+HÂˆ™]\›ˆYNÂˆB‚ˆËÈÙY\[ÜÝ[\Èš\ÚX›H]™[ˆÚ[ˆ›Ý^XÝH\XØX›K‚ˆËÈYØXÞH\š]Y]XË[]™[]ÛœÈ™[XZ[ˆš[\™Y›ÜˆÛš[\ÎÂˆËÈÝ\œ™[š[\È^ÜÙHÛ›HH›Ùš[KX˜\ÙY[Y\šXØ[™]Üš]K‚ˆYˆ
+\Ð\š]Y]XÑ\]Z]˜[[˜ÙUÛÛ
+ÚYKÛÛ
+JHÂˆ™]\›ˆHUÓÓÒS‘“ÖÜÚYKÛÛH	‰ˆ\Ð\š]Y]XÕÛÛ[ÝÙY[Ý\œ™[]™[
+ÚYKÛÛ
+NÂˆBˆ™]\›ˆHUÓÓÒS‘“ÖÜÚYKÛÛNÂˆB‚ˆ[˜Ý[Ûˆ\ÕÛÛ›Ü›T›ÝÐ]˜Z[X›J›ÝÊHÂˆYˆ
+›ÝË˜Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\ÊHÂˆ™]\›ˆYNÂˆBˆYˆ
+›ÝË™[
+HÂˆ™]\›ˆ\ÕÛÛ›Ü›TÚYP]˜Z[X›J›ÝË™[
+NÂˆBˆYˆ
+›ÝË˜ÛÛ[]]TZ\ŠHÂˆ™]\›ˆÙ]Ù[XÝYÛÛ[]]T\ÛÝ[›Ü“Y[J
+HHŽÂˆBˆYˆ
+›ÝË™\ÝšX][Û”Z\ŠHÂˆ™]\›ˆÜ›ÝË›Y˜XÝÜ™Y›ÝËÜ\ÝšX]Y›ÝË˜›ÝÛQ\ÝšX]Y›ÝËœšYÚ˜XÝÜ™YBˆœÛÛYJ\ÕÛÛ›Ü›TÚYP]˜Z[X›JNÂˆBˆYˆ
+›ÝËš\]
+HÂˆ™]\›ˆÜ›ÝË›Y›ÝË˜Ù[\‹›ÝËœšYÚKœÛÛYJ\ÕÛÛ›Ü›TÚYP]˜Z[X›JNÂˆBˆÛÛœÝY]˜Z[X›HH›ÝË›YÜ›Ý\ˆÈ›ÝË›YÜ›Ý\œÛÛYJ\ÕÛÛ›Ü›TÚYP]˜Z[X›JBˆˆ\ÕÛÛ›Ü›TÚYP]˜Z[X›J›ÝË›Y
+NÂˆÛÛœÝšYÚ]˜Z[X›HH›ÝËœšYÚÜ›Ý\ˆÈ›ÝËœšYÚÜ›Ý\œÛÛYJ\ÕÛÛ›Ü›TÚYP]˜Z[X›JBˆˆ\ÕÛÛ›Ü›TÚYP]˜Z[X›J›ÝËœšYÚ
+NÂˆ™]\›ˆY]˜Z[X›HšYÚ]˜Z[X›NÂˆB‚ˆ[˜Ý[ÛˆZ[Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\Ò[
+
+HÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆÛÛœÝÝ\ÝÛHH]™[	‰ˆ\œ˜^Kš\Ð\œ˜^J]™[˜Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\ÊBˆÈ]™[˜Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\Âˆˆ×NÂˆ][H]ˆÛ\ÜÏHÛÛY›Ü›K\ÙXÝ[Û‹]]HÝ\ÝÛH[Y\šXØ[\]Z]˜[[˜Ù\ÏÙ]˜ÂˆYˆ
+XÝ\ÝÛK›[™Ý
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH“›ÈÝ\ÝÛH[Y\šXØ[\]Z]˜[[˜Ù\È]™H™Y[ˆYYÈ\È]™[Y]Ù]˜Âˆ™]\›ˆ[ÂˆBˆ[
+ÏH]ˆÛ\ÜÏHÛÛYÜšY˜ÂˆÝ\ÝÛK™›Ü‘XXÚ
+
+][K[™^
+HOˆÂˆÛÛœÝX™[H][H	‰ˆ][K›X™[ˆÈ][K›X™[ˆˆÝ\ÝÛH\]Z]˜[[˜ÙH	Ú[™^
+È_XÂˆ[
+ÏH]Ûˆ]K]ÛÛH˜Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜ÙIÚ[™^H‰Ù\ØØ\R[
+X™[
+_OØ]Û˜ÂˆJNÂˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆZ[šQ^™\ÜÚ[Û•ÐÛÛ™[[Û˜[^
+›ÙJHÂˆYˆ
+[›ÙJHÂˆ™]\›ˆˆŽÂˆB‚ˆÛÛœÝ\Ó™YØ]]™U˜[YHH][HOˆ][H	‰ˆ][K\HOOH˜[YHˆ	‰ˆ×‹KË\Ý
+Ýš[™Ê][K^ÏÈ][K˜[YHÏÈˆŠJNÂˆÛÛœÝ™[™\ˆH][HOˆÂˆYˆ
+Z][JHÂˆ™]\›ˆˆŽÂˆBˆYˆ
+][K\HOOH˜[YHŠHÂˆ™]\›ˆÝš[™Ê][K^ÏÈ][K˜[YHÏÈˆŠNÂˆBˆYˆ
+][K\HOOHœÝ[HŠHÂˆ™]\›ˆ
+][K˜\™ÜÈ×JK›X\
+™[™\ŠKš›Ú[ŠŠÈŠNÂˆBˆYˆ
+][K\HOOHœ›ÙŠHÂˆ™]\›ˆ
+][K˜\™ÜÈ×JK›X\
+˜XÝÜˆOˆÂˆYˆ
+Y˜XÝÜŠHÂˆ™]\›ˆˆŽÂˆBˆYˆ
+˜XÝÜ‹\HOOHœÝ[Hˆ\Ó™YØ]]™U˜[YJ˜XÝÜŠJHÂˆ™]\›ˆ
+	Ü™[™\Š˜XÝÜŠ_JXÂˆBˆ™]\›ˆ™[™\Š˜XÝÜŠNÂˆJKš›Ú[Š°­ÈŠNÂˆBˆYˆ
+][K\HOOH™^ŠHÂˆÛÛœÝ˜\ÙHH][K˜˜\ÙH
+\œ˜^Kš\Ð\œ˜^J][K˜\™ÜÊHÈ][K˜\™ÜÖÌHˆ[
+NÂˆÛÛœÝ^Û™[H][K™^Û™[
+\œ˜^Kš\Ð\œ˜^J][K˜\™ÜÊHÈ][K˜\™ÜÖÌWHˆ[
+NÂˆÛÛœÝ˜\ÙU^H˜\ÙH	‰ˆ˜\ÙK\HOOH˜[YHˆ	‰ˆZ\Ó™YØ]]™U˜[YJ˜\ÙJBˆÈ™[™\Š˜\ÙJBˆˆ
+	Ü™[™\Š˜\ÙJ_JXÂˆÛÛœÝ^Û™[^H^Û™[	‰ˆ^Û™[\HOOH˜[YH‚ˆÈ™[™\Š^Û™[
+Bˆˆ
+	Ü™[™\Š^Û™[
+_JXÂˆ™]\›ˆ	Ø˜\ÙU^W‰Ù^Û™[^XÂˆBˆYˆ
+][K\HOOHš[ˆŠHÂˆÛÛœÝ\™ÈH][K˜\™È
+\œ˜^Kš\Ð\œ˜^J][K˜\™ÜÊHÈ][K˜\™ÜÖÌHˆ[
+NÂˆÛÛœÝ\™Õ^H\™È	‰ˆ\™Ë\HOOH˜[YHˆ	‰ˆZ\Ó™YØ]]™U˜[YJ\™ÊBˆÈ™[™\Š\™ÊBˆˆ
+	Ü™[™\Š\™Ê_JXÂˆ™]\›ˆ	Ø\™Õ^W‹LXÂˆBˆ™]\›ˆˆŽÂˆNÂ‚ˆ™]\›ˆ™[™\Š›ÙJNÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛ›Ü›S›Ý][Û“X™[
+ÚYJHÂˆYˆ
+\ÚYH\ÚYK›Z[šJHÂˆ™]\›ˆÚYH	‰ˆÚYKš[ÈÚYKš[ˆˆŽÂˆBˆYˆ
+ZTÝ]KÛÛ›Ý][Û“[ÙHOOH˜ÛÛ™[[Û˜[ŠHÂˆ™]\›ˆÜ[ˆÛ\ÜÏHÛÛY›Ü›KXÛÛ™[[Û˜[[X™[‰Ù\ØØ\R[
+Z[šQ^™\ÜÚ[Û•ÐÛÛ™[[Û˜[^
+ÚYK›Z[šJJ_OÜÜ[˜ÂˆBˆ™]\›ˆ™[™\“Z[šSÛÜÔÝ™ÊÚYK›Z[šJNÂˆB‚ˆ[˜Ý[ÛˆÝš\[YÜÊ[
+HÂˆ™]\›ˆÝš[™Ê[ˆŠBˆœ™\XÙJÏ×—J‹ÙËˆŠBˆœ™\XÙJ×ÊËÙËˆŠBˆš[J
+NÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛ›Ü›PXÝ[Û“˜[YJÚYJHÂˆYˆ
+\ÚYH\ÚYKÛÛ
+HÂˆ™]\›ˆˆŽÂˆBˆÛÛœÝ[™›ÈHÓÓÒS‘“ÖÜÚYKÛÛHˆŽÂˆÛÛœÝX]ÚH[™›Ë›X]Ú
+ÏÜ[ˆÛ\ÜÏHœ[K[˜[YHŠ×××JÊOÜÜ[‹ÚJNÂˆYˆ
+X]Ú
+HÂˆ™]\›ˆÝš\[YÜÊX]ÚÌWJNÂˆBˆ™]\›ˆÝš\[YÜÊÚYKš[
+NÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›TÚYR[
+ÚYJHÂˆYˆ
+\ÚYHZ\ÕÛÛ›Ü›TÚYP]˜Z[X›JÚYJJHÂˆ™]\›ˆÜ[ˆÛ\ÜÏHÛÛY›Ü›K\Ý]XÈÜÜ[˜ÂˆB‚ˆÛÛœÝX™[ÛÛ[HÙ]ÛÛ›Ü›S›Ý][Û“X™[
+ÚYJNÂˆÛÛœÝX™[Û\ÜÈHÚYK›Z[šH	‰ˆZTÝ]KÛÛ›Ý][Û“[ÙHOOH˜ÛÛ™[[Û˜[‚ˆÈÛÛY›Ü›K[X™[ÛÛY›Ü›K[Z[šK[X™[‚ˆˆÛÛY›Ü›K[X™[ŽÂˆÛÛœÝXÝ[Û“˜[YHHZTÝ]KÛÛ›Ý][Û“[ÙHOOH˜ÛÛ™[[Û˜[ˆ	‰ˆÚYK›Z[šH	‰ˆÚYKÛÛˆÈÙ]ÛÛ›Ü›PXÝ[Û“˜[YJÚYJBˆˆˆŽÂˆÛÛœÝX™[[›™\ˆHXÝ[Û“˜[YBˆÈ	ÛX™[ÛÛ[OÜ[ˆÛ\ÜÏHÛÛY›Ü›KXÛÛ™[[Û˜[XXÝ[Ûˆ‰Ù\ØØ\R[
+XÝ[Û“˜[YJ_OÜÜ[˜ˆˆX™[ÛÛ[ÂˆÛÛœÝX™[HÜ[ˆÛ\ÜÏH‰ÛX™[Û\ÜßH‰ÛX™[[›™\ŸOÜÜ[˜ÂˆYˆ
+\ÚYKÛÛ
+HÂˆ™]\›ˆÜ[ˆÛ\ÜÏHÛÛY›Ü›K\Ý]XÈ‰ÛX™[OÜÜ[˜ÂˆB‚ˆÛÛœÝ]HHÚYK]HÈ]OH‰Ù\ØØ\R[
+ÚYK]J_H˜ˆˆŽÂˆ™]\›ˆ]ÛˆÛ\ÜÏHÛÛY›Ü›KX]Ûˆˆ]K]ÛÛH‰ÜÚYKÛÛH‰Ý]_O‰ÛX™[OØ]Û˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›TÚYSÜ‘Ü›Ý\[
+ÚYKÚYQÜ›Ý\
+HÂˆYˆ
+\œ˜^Kš\Ð\œ˜^JÚYQÜ›Ý\
+H	‰ˆÚYQÜ›Ý\›[™Ý
+HÂˆÛÛœÝYXÙ\ÈH×NÂˆÚYQÜ›Ý\™›Ü‘XXÚ
+
+Ü›Ý\ÚYK[™^
+HOˆÂˆYˆ
+[™^ˆ
+HÂˆYXÙ\Ëœ\Ú
+Ü[ˆÛ\ÜÏHÛÛY›Ü›K[Üˆ›ÜÜÜ[˜
+NÂˆBˆYXÙ\Ëœ\Ú
+Z[ÛÛ›Ü›TÚYR[
+Ü›Ý\ÚYJJNÂˆJNÂˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›KZ[›[™KYÜ›Ý\‰ÜYXÙ\Ëš›Ú[ŠˆŠ_OÙ]˜ÂˆBˆ™]\›ˆZ[ÛÛ›Ü›TÚYR[
+ÚYJNÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›PÛÛ[]]TZ\’[
+›ÝÊHÂˆYˆ
+Ù]Ù[XÝYÛÛ[]]T\ÛÝ[›Ü“Y[J
+HŠHÂˆ™]\›ˆˆŽÂˆBˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›K\›ÝÈÚ[™ÛH‰ØZ[ÛÛ›Ü›TÚYR[
+ÈÛÛˆ˜ÛÛ[]]H‹[ˆÛÛ[]]HˆJ_OÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›Q\ÝšX][Û”Z\’[
+›ÝÊHÂˆÛÛœÝ\œ›ÝÈH]ˆÛ\ÜÏHÛÛY›Ü›KX\œ›ÝÈ¸¡åÙ]˜ÂˆÛÛœÝ[\HH]ˆÛ\ÜÏHÛÛY›Ü›KY\ÝšX][Û‹Y[\Hˆ\šXKZY[HYHÙ]˜Âˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›KY\ÝšX][Û‹\Z\ˆ‚ˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝË›Y˜XÝÜ™Y
+_Bˆ	Ø\œ›ÝßBˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝËÜ\ÝšX]Y
+_Bˆ	Ù[\_Bˆ	Ù[\_Bˆ	Ù[\_Bˆ	Ù[\_Bˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝË˜›ÝÛQ\ÝšX]Y
+_Bˆ	Ø\œ›ÝßBˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝËœšYÚ˜XÝÜ™Y
+_BˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›TZ\’[
+›ÝÊHÂˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›K\Z\ˆ‚ˆ	ØZ[ÛÛ›Ü›TÚYSÜ‘Ü›Ý\[
+›ÝË›Y›ÝË›YÜ›Ý\
+_Bˆ]ˆÛ\ÜÏHÛÛY›Ü›KX\œ›ÝÈ‰Ù\ØØ\R[
+›ÝË˜\œ›ÝÈ¸¡åŠ_OÙ]‚ˆ	ØZ[ÛÛ›Ü›TÚYSÜ‘Ü›Ý\[
+›ÝËœšYÚ›ÝËœšYÚÜ›Ý\
+_BˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›Uš\][
+›ÝÊHÂˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›K]š\]‚ˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝË›Y
+_Bˆ]ˆÛ\ÜÏHÛÛY›Ü›KX\œ›ÝÈ¸¡åÙ]‚ˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝË˜Ù[\Š_Bˆ]ˆÛ\ÜÏHÛÛY›Ü›KX\œ›ÝÈ¸¡åÙ]‚ˆ	ØZ[ÛÛ›Ü›TÚYR[
+›ÝËœšYÚ
+_BˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ›Ü›T›ÝÒ[
+›ÝÊHÂˆYˆ
+›ÝË˜Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\ÊHÂˆ™]\›ˆZ[Ý\ÝÛS[Y\šXØ[\]Z]˜[[˜Ù\Ò[
+
+NÂˆB‚ˆYˆ
+›ÝË™[
+HÂˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY›Ü›K\›ÝÈÚ[™ÛH‰ØZ[ÛÛ›Ü›TÚYR[
+›ÝË™[
+_OÙ]˜ÂˆB‚ˆYˆ
+›ÝË˜ÛÛ[]]TZ\ŠHÂˆ™]\›ˆZ[ÛÛ›Ü›PÛÛ[]]TZ\’[
+›ÝÊNÂˆB‚ˆYˆ
+›ÝË™\ÝšX][Û”Z\ŠHÂˆ™]\›ˆZ[ÛÛ›Ü›Q\ÝšX][Û”Z\’[
+›ÝÊNÂˆB‚ˆYˆ
+›ÝËš\]
+HÂˆ™]\›ˆZ[ÛÛ›Ü›Uš\][
+›ÝÊNÂˆB‚ˆ™]\›ˆZ[ÛÛ›Ü›TZ\’[
+›ÝÊNÂˆB‚ˆ[˜Ý[ÛˆÙ]\XØX›S›Ý][ÛÛÛ[]]SZ[šTZ\ŠÛÛ˜[YJHÂˆÛÛœÝ\Ô›ÙXÝHH\Ù[XÝ[Û‹››ÙH	‰ˆÙ[XÝ[Û‹››ÙK\HOOHœ›ÙŽÂˆÛÛœÝÛÛXš[™HH
+‹‹˜\™ÜÊHOˆ\Ô›ÙXÝÈZ[šT›Ù
+‹‹˜\™ÜÊHˆZ[šTÝ[J‹‹˜\™ÜÊNÂˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]HŠHÂˆ™]\›ˆÂˆœ›ÛNˆÛÛXš[™JZ[šU˜[YJHŠKZ[šU˜[YJˆŠJKˆÎˆÛÛXš[™JZ[šU˜[YJˆŠKZ[šU˜[YJHŠJBˆNÂˆBˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝŠHÂˆ™]\›ˆÂˆœ›ÛNˆÛÛXš[™JZ[šU˜[YJHŠKZ[šU˜[YJˆŠKZ[šU˜[YJÈŠJKˆÎˆÛÛXš[™JZ[šU˜[YJˆŠKZ[šU˜[YJÈŠKZ[šU˜[YJHŠJBˆNÂˆBˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝŠHÂˆ™]\›ˆÂˆœ›ÛNˆÛÛXš[™JZ[šU˜[YJHŠKZ[šU˜[YJˆŠKZ[šU˜[YJÈŠJKˆÎˆÛÛXš[™JZ[šU˜[YJÈŠKZ[šU˜[YJHŠKZ[šU˜[YJˆŠJBˆNÂˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[Ûˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJÝ]ÛÛœ›ÛSZ[šKÓZ[šJHÂˆYˆ
+]ÛÛYœ›ÛSZ[šH]ÓZ[šJHÂˆ™]\›ŽÂˆBˆYˆ
+UÓÓÒS‘“ÖÝÛÛHZ\ÕÛÛ[ÝÙY[Ý\œ™[]™[
+ÛÛ
+HZ\ÕÛÛXÝX[P\XØX›JÛÛ
+JHÂˆ™]\›ŽÂˆBˆÝ]œ\Ú
+ÈÛÛœ›ÛSZ[šKÓZ[šHJNÂˆB‚ˆ[˜Ý[ÛˆÛÛXÝ\XØX›U˜[œÙ›Ü›X][Û‘[šY\Ê
+HÂˆÛÛœÝ[šY\ÈH×NÂˆÛÛœÝ[Ù\ÈHÈœZ[ˆ‹™^Û™[‹š[™\œÙH—NÂ‚ˆ›Üˆ
+ÛÛœÝ[ÙHÙˆ[Ù\ÊHÂˆ
+ÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑVÛ[ÙWH×JK™›Ü‘XXÚ
+›ÝÈOˆÂˆYˆ
+\›ÝÊHÂˆ™]\›ŽÂˆBˆYˆ
+›ÝË˜ÛÛ[]]TZ\ŠHÂˆYˆ
+ÚÝ[ÚÝÔÚ[™ÛPÛÛ[]]P]Û‘›Ü”Ù[XÝ[ÛŠ
+JHÂˆÛÛœÝZ\ˆHÙ]\XØX›S›Ý][ÛÛÛ[]]SZ[šTZ\Š˜ÛÛ[]]HŠNÂˆYˆ
+Z\ŠHÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë˜ÛÛ[]]H‹Z\‹™œ›ÛKZ\‹ÊNÂˆBˆH[ÙHYˆ
+ÚÝ[ÚÝÑ\™XÝ[Û˜[ÛÛ[]]P]ÛœÑ›Ü”Ù[XÝ[ÛŠ
+JHÂˆÛÛœÝš\œÝZ\ˆHÙ]\XØX›S›Ý][ÛÛÛ[]]SZ[šTZ\Š˜ÛÛ[]]Qš\œÝÓ\ÝŠNÂˆÛÛœÝ\ÝZ\ˆHÙ]\XØX›S›Ý][ÛÛÛ[]]SZ[šTZ\Š˜ÛÛ[]]S\ÝÑš\œÝŠNÂˆYˆ
+š\œÝZ\ŠHÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë˜ÛÛ[]]Qš\œÝÓ\Ý‹š\œÝZ\‹™œ›ÛKš\œÝZ\‹ÊNÂˆBˆYˆ
+\ÝZ\ŠHÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë˜ÛÛ[]]S\ÝÑš\œÝ‹\ÝZ\‹™œ›ÛK\ÝZ\‹ÊNÂˆBˆBˆ™]\›ŽÂˆBˆYˆ
+›ÝË™\ÝšX][Û”Z\ŠHÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË›Y˜XÝÜ™Y	‰ˆ›ÝË›Y˜XÝÜ™YÛÛ›ÝËÜ\ÝšX]Y	‰ˆ›ÝËÜ\ÝšX]Y›Z[šK›ÝË›Y˜XÝÜ™Y	‰ˆ›ÝË›Y˜XÝÜ™Y›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝËÜ\ÝšX]Y	‰ˆ›ÝËÜ\ÝšX]YÛÛ›ÝË›Y˜XÝÜ™Y	‰ˆ›ÝË›Y˜XÝÜ™Y›Z[šK›ÝËÜ\ÝšX]Y	‰ˆ›ÝËÜ\ÝšX]Y›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝËœšYÚ˜XÝÜ™Y	‰ˆ›ÝËœšYÚ˜XÝÜ™YÛÛ›ÝË˜›ÝÛQ\ÝšX]Y	‰ˆ›ÝË˜›ÝÛQ\ÝšX]Y›Z[šK›ÝËœšYÚ˜XÝÜ™Y	‰ˆ›ÝËœšYÚ˜XÝÜ™Y›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË˜›ÝÛQ\ÝšX]Y	‰ˆ›ÝË˜›ÝÛQ\ÝšX]YÛÛ›ÝËœšYÚ˜XÝÜ™Y	‰ˆ›ÝËœšYÚ˜XÝÜ™Y›Z[šK›ÝË˜›ÝÛQ\ÝšX]Y	‰ˆ›ÝË˜›ÝÛQ\ÝšX]Y›Z[šJNÂˆ™]\›ŽÂˆBˆYˆ
+›ÝËš\]
+HÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË›Y	‰ˆ›ÝË›YÛÛ›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹›Z[šK›ÝË›Y	‰ˆ›ÝË›Y›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹ÛÛ›ÝË›Y	‰ˆ›ÝË›Y›Z[šK›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝËœšYÚ	‰ˆ›ÝËœšYÚÛÛ›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹›Z[šK›ÝËœšYÚ	‰ˆ›ÝËœšYÚ›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹ÛÛ›ÝËœšYÚ	‰ˆ›ÝËœšYÚ›Z[šK›ÝË˜Ù[\ˆ	‰ˆ›ÝË˜Ù[\‹›Z[šJNÂˆ™]\›ŽÂˆBˆYˆ
+›ÝË›Y	‰ˆ›ÝËœšYÚ
+HÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝË›YÛÛ›ÝËœšYÚ›Z[šK›ÝË›Y›Z[šJNÂˆ\Ú\XØX›U˜[œÙ›Ü›X][Û‘[žJ[šY\Ë›ÝËœšYÚÛÛ›ÝË›Y›Z[šK›ÝËœšYÚ›Z[šJNÂˆBˆJNÂˆB‚ˆ™]\›ˆ[šY\ÎÂˆB‚ˆ[˜Ý[ÛˆZ[\XØX›U˜[œÙ›Ü›X][Û]Û’[
+[žJHÂˆ™]\›ˆ]ÛˆÛ\ÜÏHÛÛY›Ü›KX]Ûˆ\XØX›K]ÛÛX]Ûˆˆ]K]ÛÛH‰Ù[žKÛÛH‚ˆÜ[ˆÛ\ÜÏH˜\XØX›K]ÛÛY›ÝÈ‚ˆÜ[ˆÛ\ÜÏH˜\XØX›K]ÛÛ\ÚYH‰Ü™[™\“Z[šSÛÜÔÝ™Ê[žK™œ›ÛSZ[šJ_OÜÜ[‚ˆÜ[ˆÛ\ÜÏH˜\XØX›K]ÛÛX\œ›ÝÈ¸¡¤ÜÜ[‚ˆÜ[ˆÛ\ÜÏH˜\XØX›K]ÛÛ\ÚYH‰Ü™[™\“Z[šSÛÜÔÝ™Ê[žKÓZ[šJ_OÜÜ[‚ˆÜÜ[‚ˆØ]Û˜ÂˆB‚ˆ[˜Ý[ÛˆZ[\XØX›UÛÛ\Ý[
+
+HÂˆÛÛœÝ[šY\ÈHÛÛXÝ\XØX›U˜[œÙ›Ü›X][Û‘[šY\Ê
+NÂˆ][H]ˆÛ\ÜÏHÛÛY›Ü›KYÜšY\XØX›K]ÛÛ[\Ý˜ÂˆYˆ
+Y[šY\Ë›[™Ý
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH“›È\XØX›H˜[œÙ›Ü›X][Ûˆ[\È\™H]˜Z[X›H›ÜˆHÝ\œ™[Ù[XÝ[Û‹Ù]˜Âˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆBˆ[šY\Ë™›Ü‘XXÚ
+[žHOˆÂˆ[
+ÏH]ˆÛ\ÜÏHÛÛY›Ü›K\›ÝÈÚ[™ÛH\XØX›K]ÛÛ\›ÝÈ‰ØZ[\XØX›U˜[œÙ›Ü›X][Û]Û’[
+[žJ_OÙ]˜ÂˆJNÂˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[Ûˆ\ÓY[™[ÚÝÚ[™ÕÛÛY[J
+HÂˆ™]\›ˆ]™[ÛÛ[	‰ˆH[]™[ÛÛ[œ]Y\žTÙ[XÝÜŠ‹œ[™[]ÛÛ[Y[HŠNÂˆB‚ˆ[˜Ý[Ûˆ\ÕÛÛXÝX[P\XØX›JÛÛ˜[YJHÂˆÛÛœÝ\XØX›HHÙ]\XØX›UÛÛÊ
+NÂˆ™]\›ˆHX\XØX›VÝÛÛ˜[YWNÂˆB‚ˆÛÛœÝÛÜšÜÜXÙTÝ™ÈHØÝ[Y[™Ù][[Y[žRY
+™^™\ÜÚ[Û•ÛÜšÜÜXÙTÝ™ÈŠNÂˆÛÛœÝÝHÜ™X]TÝ™ÐÛÛ^
+ÛÜšÜÜXÙTÝ™ÊNÂˆÛÛœÝ›Ø][™ÕÛÛY[HHØÝ[Y[™Ù][[Y[žRY
+™›Ø][™ÕÛÛY[HŠNÂˆÛÛœÝ]šY\ˆHØÝ[Y[™Ù][[Y[žRY
+™]šY\ˆŠNÂˆÛÛœÝY[™[HØÝ[Y[™Ù][[Y[žRY
+›Y[™[ŠNÂˆÛÛœÝÝ™ÐÛÛZ[™\ˆHØÝ[Y[™Ù][[Y[žRY
+œÝ™ÐÛÛZ[™\ˆŠNÂˆÛÛœÝ\™Ù]^™\ÜÚ[Û”Ý™ÈHØÝ[Y[™Ù][[Y[žRY
+\™Ù]^™\ÜÚ[Û”Ý™ÈŠNÂˆÛÛœÝ\™Ù]^™\ÜÚ[ÛÝH\™Ù]^™\ÜÚ[Û”Ý™ÈÈÜ™X]TÝ™ÐÛÛ^
+\™Ù]^™\ÜÚ[Û”Ý™ÊHˆ[ÂˆÛÛœÝÝ\œ™[^™\ÜÚ[Û”Ý™ÈHØÝ[Y[™Ù][[Y[žRY
+˜Ý\œ™[^™\ÜÚ[Û”Ý™ÈŠNÂˆÛÛœÝÝ\œ™[^™\ÜÚ[ÛÝHÝ\œ™[^™\ÜÚ[Û”Ý™ÈÈÜ™X]TÝ™ÐÛÛ^
+Ý\œ™[^™\ÜÚ[Û”Ý™ÊHˆ[ÂˆÛÛœÝ[œÜXÝ^]]ÛˆHØÝ[Y[™Ù][[Y[žRY
+š[œÜXÝ^]]ÛˆŠNÂ‚ˆÛÛœÝU‘SÈH×NÂ‚ˆ[˜Ý[Ûˆ[™™\•˜\šXX›\Ñœ›ÛQ^™\ÜÚ[Û•^›Ü“]™[
+^
+HÂˆÛÛœÝX]Ú\ÈHÝš[™Ê^ˆŠK›X]Ú
+ÖØK^KV—KÙÊH×NÂˆ™]\›ˆ\œ˜^K™œ›ÛJ™]ÈÙ]
+X]Ú\ÊJKœÛÜ
+
+NÂˆB‚ˆU‘SË™›Ü‘XXÚ
+]™[OˆÂˆYˆ
+P\œ˜^Kš\Ð\œ˜^J]™[˜\šXX›\ÊH[]™[˜\šXX›\Ë›[™Ý
+HÂˆ]™[˜\šXX›\ÈH[™™\•˜\šXX›\Ñœ›ÛQ^™\ÜÚ[Û•^›Ü“]™[
+]™[œÝ\^™\ÜÚ[ÛŠNÂˆBˆJNÂ‚‚‚ˆÛÛœÝ]™[š[R[œ]HØÝ[Y[™Ù][[Y[žRY
+›]™[š[R[œ]ŠNÂˆÛÛœÝØYY]™[š[S˜[YHHØÝ[Y[™Ù][[Y[žRY
+›ØYY]™[š[S˜[YHŠNÂˆÛÛœÝ]™[ÛÛ[HØÝ[Y[™Ù][[Y[žRY
+›]™[ÛÛ[ŠNÂˆÛÛœÝ[Ý™R\ÝÜžPÛÛ›ÛÈHØÝ[Y[™Ù][[Y[žRY
+›[Ý™R\ÝÜžPÛÛ›ÛÈŠNÂˆÛÛœÝ™YÝ[\“[ÙT˜Y[ÈHØÝ[Y[™Ù][[Y[žRY
+œ™YÝ[\“[ÙT˜Y[ÈŠNÂˆÛÛœÝ[[Ó[ÙT˜Y[ÈHØÝ[Y[™Ù][[Y[žRY
+™[[Ó[ÙT˜Y[ÈŠNÂ‚ˆÛÛœÝVWÓSÑTÈHÂˆ™YÝ[\Žˆœ™YÝ[\ˆ‹ˆ[[Îˆ™[[È‚ˆNÂ‚ˆ]^S[ÙHHVWÓSÑTËœ™YÝ[\ŽÂˆ][[ÔÝ\[™^HÂ‚ˆ]Ý\œ™[]™[[™^HÂˆ]ÛÛ\]YÝ\ÈH×NÂˆ]Ý\œ™[^™\ÜÚ[Û”›ÛÝH[Âˆ][œÜXÝØ]™Y^™\ÜÚ[Û”›ÛÝH[Âˆ]ÛÛ][Û”™XÛÜ™\ˆH[Âˆ]ÛÛ\][Û‘^Ü™XYQ›Ü”[ˆH˜[ÙNÂˆ]ÛÛ\][Û‘^ÜÛÛ\]Y]]HH[Â‚ˆ][\›˜[Û\›Ø\™^HˆŽÂˆ]\Ñ˜YÙÚ[™Ñ]šY\ˆH˜[ÙNÂ‚ˆ]šY\‹˜Y]™[\Ý[™\Š›[Ý\ÙYÝÛˆ‹
+
+HOˆÂˆ\Ñ˜YÙÚ[™Ñ]šY\ˆHYNÂˆØÝ[Y[˜›ÙKœÝ[K˜Ý\œÛÜˆH˜ÛÛ\™\Ú^™HŽÂˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\Š›[Ý\Ù[[Ý™H‹HOˆÂˆYˆ
+Z\Ñ˜YÙÚ[™Ñ]šY\ŠHÂˆ™]\›ŽÂˆB‚ˆ]\˜Ù[H
+K˜ÛY[ÈÚ[™ÝËš[›™\•ÚY
+H
+ˆLÂˆ\˜Ù[HX]›X^
+LX]›Z[ŠL\˜Ù[
+JNÂˆY[™[œÝ[KÚYH\˜Ù[
+È‰HŽÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\Š›[Ý\Ù]\‹
+
+HOˆÂˆYˆ
+Z\Ñ˜YÙÚ[™Ñ]šY\ŠHÂˆ™]\›ŽÂˆBˆ\Ñ˜YÙÚ[™Ñ]šY\ˆH˜[ÙNÂˆØÝ[Y[˜›ÙKœÝ[K˜Ý\œÛÜˆH™Y˜][ŽÂˆJNÂ‚‚‚ˆ[˜Ý[ÛˆÛÛ™Q^™\ÜÚ[Û•™YJ›ÙJHÂˆ™]\›ˆ›ÙHÈÛÛ™S›ÙJ›ÙJHˆ[ÂˆB‚ˆÛÛœÝ•RST—ÒTÕÔ–WÓSRUHLÂ‚ˆ[˜Ý[ÛˆÛÛ™PZ[\“›ÙQ›Ü’\ÝÜžJ›ÙJHÂˆYˆ
+[›ÙJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝÛÛ™YH™]È^“›ÙJˆ›ÙK\Kˆ›ÙK˜\™ÜË›X\
+ÛÛ™PZ[\“›ÙQ›Ü’\ÝÜžJKˆ›ÙK˜[YBˆ
+NÂˆÛÛ™Yš\ÐZ[\”XÙZÛ\ˆHH[›ÙKš\ÐZ[\”XÙZÛ\ŽÂˆÛÛ™Yš\ÐZ[\“Ý]\ˆHH[›ÙKš\ÐZ[\“Ý]\ŽÂˆÛÛ™Yš\ÐZ[\XÝ]™HHH[›ÙKš\ÐZ[\XÝ]™NÂˆ™]\›ˆÛÛ™YÂˆB‚ˆ[˜Ý[ÛˆÙ]Z[\•[™ÔÛ˜\ÚÝ
+Z[\ŠHÂˆ™]\›ˆÂˆ›ÛÝˆÛÛ™PZ[\“›ÙQ›Ü’\ÝÜžJZ[\‹œ›ÛÝ
+KˆÝ\œ™[]ˆZ[\‹˜Ý\œ™[]œÛXÙJ
+BˆNÂˆB‚ˆ[˜Ý[Ûˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ŽÂˆBˆYˆ
+P\œ˜^Kš\Ð\œ˜^JZ[\‹š\ÝÜžJJHÂˆZ[\‹š\ÝÜžHH×NÂˆBˆZ[\‹š\ÝÜžKœ\Ú
+Ù]Z[\•[™ÔÛ˜\ÚÝ
+Z[\ŠJNÂˆYˆ
+Z[\‹š\ÝÜžK›[™Ýˆ•RST—ÒTÕÔ–WÓSRU
+HÂˆZ[\‹š\ÝÜžKœÚY
+
+NÂˆBˆB‚ˆ[˜Ý[Ûˆ[™Ñ^™\ÜÚ[ÛZ[\”Ý\
+
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ˆP\œ˜^Kš\Ð\œ˜^JZ[\‹š\ÝÜžJHXZ[\‹š\ÝÜžK›[™Ý
+HÂˆZTÝ]K›Y\ÜØYÙHH•\™H\È›Ý[™ÈÈ[™ÈY]ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝÛ˜\ÚÝHZ[\‹š\ÝÜžKœÜ
+
+NÂˆZ[\‹œ›ÛÝHÛ˜\ÚÝœ›ÛÝÂˆZ[\‹˜Ý\œ™[]HÛ˜\ÚÝ˜Ý\œ™[]ÂˆZTÝ]K›Y\ÜØYÙHHˆŽÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆÞ[˜ÐÝ\œ™[^™\ÜÚ[Û”›ÛÝ
+
+HÂˆYˆ
+ZTÝ]K›[ÙHOOH™Y]ŠHÂˆÝ\œ™[^™\ÜÚ[Û”›ÛÝH^™\ÜÚ[Û”›ÛÝÂˆBˆB‚ˆ[˜Ý[Ûˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+HÂˆYˆ
+ZTÝ]H	‰ˆZTÝ]K›[ÙHOOHš[œÜXÝŠHÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆÛÛœÝ\™Ù]^H]™[	‰ˆ]™[œÝ\È	‰ˆ]™[œÝ\ÖÝZTÝ]Kš[œÜXÝÝ\[™^BˆÈ]™[œÝ\ÖÝZTÝ]Kš[œÜXÝÝ\[™^K™^™\ÜÚ[Û‚ˆˆˆŽÂˆÛÛœÝÝ\œ™[^HÝ\œ™[^™\ÜÚ[Û”›ÛÝˆÈ^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+Ý\œ™[^™\ÜÚ[Û”›ÛÝ
+Bˆˆ
+^™\ÜÚ[Û”›ÛÝÈ^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+^™\ÜÚ[Û”›ÛÝ
+HˆˆŠNÂ‚ˆ˜]Ô\™[\Ú^™Y^™\ÜÚ[Û”Ý™Ê\™Ù]^\™Ù]^™\ÜÚ[Û”Ý™Ë\™Ù]^™\ÜÚ[ÛÝ
+NÂˆ˜]Ô\™[\Ú^™Y^™\ÜÚ[Û”Ý™ÊÝ\œ™[^Ý\œ™[^™\ÜÚ[Û”Ý™ËÝ\œ™[^™\ÜÚ[ÛÝ
+NÂˆ™]\›ŽÂˆB‚ˆÛX\”\™[\Ú^™Y^™\ÜÚ[Û”Ý™Ê\™Ù]^™\ÜÚ[Û”Ý™Ë\™Ù]^™\ÜÚ[ÛÝ
+NÂˆÛX\”\™[\Ú^™Y^™\ÜÚ[Û”Ý™ÊÝ\œ™[^™\ÜÚ[Û”Ý™ËÝ\œ™[^™\ÜÚ[ÛÝ
+NÂˆB‚ˆ[˜Ý[ÛˆÙ]X]Ú[™Ô\™[\Ú\ÔZ\œÊ^
+HÂˆÛÛœÝÝXÚÈH×NÂˆÛÛœÝZ\œÈH×NÂ‚ˆ›Üˆ
+]HHÈH^›[™ÝÈJÊÊHÂˆÛÛœÝÚH^ÚWNÂˆYˆ
+ÚOOHŠŠHÂˆÝXÚËœ\Ú
+JNÂˆH[ÙHYˆ
+ÚOOHŠHŠHÂˆÛÛœÝÜ[’[™^HÝXÚËœÜ
+
+NÂˆYˆ
+Ü[’[™^OOH[™Yš[™Y
+HÂˆZ\œËœ\Ú
+ÈÜ[’[™^ÛÜÙR[™^ˆHJNÂˆBˆBˆB‚ˆ™]\›ˆZ\œÎÂˆB‚ˆ[˜Ý[Ûˆ\ÐÛÛ\™\ÜÙY™]šY]ÐÚ\˜XÝ\ŠÚ
+HÂˆ™]\›ˆÚOOHŠˆ	‰ˆÚOOHŠHŽÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ\™\ÜÙY^™\ÜÚ[Û“^[Ý]
+Ý^Ý\˜\Ù[[™VJHÂˆÛÛœÝš\ÚX›PÚ\œÈH×NÂˆÛÛœÝÜšYÚ[˜[Õš\ÚX›HH™]ÈX\
+
+NÂˆ]š\ÚX›U^HˆŽÂˆ]Ý\œÛÜ–HÝ\Â‚ˆ›Üˆ
+]HHÈH^›[™ÝÈJÊÊHÂˆÛÛœÝÚH^ÚWNÂˆYˆ
+Z\ÐÛÛ\™\ÜÙY™]šY]ÐÚ\˜XÝ\ŠÚ
+JHÂˆÛÛ[YNÂˆB‚ˆÛÛœÝY]šXÜÈHÝ›YX\Ý\™U^
+Ú
+NÂˆÛÛœÝÚYHY]šXÜËÚYÂˆÛÛœÝ\ØÙ[HX]˜XœÊY]šXÜË˜XÝX[›Ý[™[™Ð›Þ\ØÙ[L
+NÂˆÛÛœÝ\ØÙ[HX]˜XœÊY]šXÜË˜XÝX[›Ý[™[™Ð›Þ\ØÙ[
+NÂˆÛÛœÝ[™›ÈHÂˆÜšYÚ[˜[[™^ˆKˆÚˆˆÝ\œÛÜ–ˆÚYˆÙ[\–ˆÝ\œÛÜ–
+ÈÚYÈ‹ˆÙ[\–Nˆ˜\Ù[[™VHH\ØÙ[
+È
+\ØÙ[
+È\ØÙ[
+HÈ‚ˆNÂ‚ˆš\ÚX›PÚ\œËœ\Ú
+[™›ÊNÂˆÜšYÚ[˜[Õš\ÚX›KœÙ]
+K[™›ÊNÂˆš\ÚX›U^
+ÏHÚÂˆÝ\œÛÜ–
+ÏHÚYÂˆB‚ˆ™]\›ˆÂˆš\ÚX›U^ˆš\ÚX›PÚ\œËˆÜšYÚ[˜[Õš\ÚX›KˆÚYˆÝ\œÛÜ–HÝ\ˆNÂˆB‚ˆ[˜Ý[Ûˆš[™š\œÝš\ÚX›PÚ\’[œÚYTZ\Šš\ÚX›PÚ\œËZ\ŠHÂˆ›Üˆ
+ÛÛœÝ[™›ÈÙˆš\ÚX›PÚ\œÊHÂˆYˆ
+[™›Ë›ÜšYÚ[˜[[™^ˆZ\‹›Ü[’[™^	‰ˆ[™›Ë›ÜšYÚ[˜[[™^Z\‹˜ÛÜÙR[™^
+HÂˆ™]\›ˆ[™›ÎÂˆBˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[Ûˆš[™\Ýš\ÚX›PÚ\’[œÚYTZ\Šš\ÚX›PÚ\œËZ\ŠHÂˆ›Üˆ
+]HHš\ÚX›PÚ\œË›[™ÝHNÈHHÈKKJHÂˆÛÛœÝ[™›ÈHš\ÚX›PÚ\œÖÚWNÂˆYˆ
+[™›Ë›ÜšYÚ[˜[[™^ˆZ\‹›Ü[’[™^	‰ˆ[™›Ë›ÜšYÚ[˜[[™^Z\‹˜ÛÜÙR[™^
+HÂˆ™]\›ˆ[™›ÎÂˆBˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛ\™\ÜÙY\™[\Ú\Ð\˜Ñ\ØÜš\ÜœÊ^ÛÛ\™\ÜÙY^[Ý]\˜Ð˜\Ù[[™VJHÂˆÛÛœÝ\˜ÜÈH×NÂˆÛÛœÝZ\œÈHÙ]X]Ú[™Ô\™[\Ú\ÔZ\œÊ^
+NÂ‚ˆ›Üˆ
+ÛÛœÝZ\ˆÙˆZ\œÊHÂˆÛÛœÝš\œÝš\ÚX›HHš[™š\œÝš\ÚX›PÚ\’[œÚYTZ\ŠÛÛ\™\ÜÙY^[Ý]š\ÚX›PÚ\œËZ\ŠNÂˆÛÛœÝ\Ýš\ÚX›HHš[™\Ýš\ÚX›PÚ\’[œÚYTZ\ŠÛÛ\™\ÜÙY^[Ý]š\ÚX›PÚ\œËZ\ŠNÂˆYˆ
+Yš\œÝš\ÚX›H[\Ýš\ÚX›JHÂˆÛÛ[YNÂˆB‚ˆËÈH]\˜[\™[\Ú\ÈX\šÜÈ\™HÛÛ™KÛÈHÜ›Ý\[™È\˜ÈÜ[œÂˆËÈHš\ÚX›HÝXœÝš[™È]\ÙYÈ™H[œÚYH]\™[\Ú\ÈZ\‹‚ˆÛÛœÝÝ\Hš\œÝš\ÚX›KžÂˆÛÛœÝ[™H\Ýš\ÚX›Kž
+È\Ýš\ÚX›KÚYÂˆÛÛœÝ˜Y]\ÈH
+[™HÝ\
+HÈŽÂˆYˆ
+J˜Y]\Èˆ
+JHÂˆÛÛ[YNÂˆB‚ˆ\˜ÜËœ\Ú
+ÂˆÝ\ˆ[™ˆÙ[\–ˆ
+Ý\
+È[™
+HÈ‹ˆÙ[\–Nˆ\˜Ð˜\Ù[[™VKˆ˜Y]\ËˆÜ[’[™^ˆZ\‹›Ü[’[™^ˆÛÜÙR[™^ˆZ\‹˜ÛÜÙR[™^ˆJNÂˆB‚ˆ™]\›ˆ\˜ÜÎÂˆB‚ˆ[˜Ý[Ûˆ˜]ÐÛÛ\™\ÜÙY\™[\Ú\ÔÙ[ZXÚ\˜Û\ÊÝ\˜ÜÊHÂˆYˆ
+X\˜ÜË›[™Ý
+HÂˆ™]\›ŽÂˆB‚ˆÝœØ]™J
+NÂˆÝœÝ›ÚÙTÝ[HHˆÌŽÂˆÝ›[™UÚYHKŒŽÂ‚ˆËÈ˜]È\™Ù\ˆÜ›Ý\[™È\˜ÜÈš\œÝÛÈÛX[\ˆØØ[Ü›Ý\[™ÜÈ™[XZ[ˆ™XYX›HÛˆÜ‚ˆÛÛœÝÛÜY\˜ÜÈH\˜ÜËœÛXÙJ
+KœÛÜ
+
+KŠHOˆ‹œ˜Y]\ÈHKœ˜Y]\ÊNÂˆ›Üˆ
+ÛÛœÝ\˜ÈÙˆÛÜY\˜ÜÊHÂˆÝ˜™YÚ[”]
+
+NÂˆËÈ˜]ÈHÝÙ\ˆ[ˆÙˆHÚ\˜ÛHÛÈHÛÛ›™XÝÜˆÜ[œÈ\Ø\™‚ˆÝ˜\˜Ê\˜Ë˜Ù[\–\˜Ë˜Ù[\–K\˜Ëœ˜Y]\ËX]”K˜[ÙJNÂˆÝœÝ›ÚÙJ
+NÂˆB‚ˆÝœ™\ÝÜ™J
+NÂˆB‚ˆ[˜Ý[ÛˆÛX\”\™[\Ú^™Y^™\ÜÚ[Û”Ý™ÊÝ™Ñ[[Y[Ý™ÐÛÛ^
+HÂˆYˆ
+\Ý™Ñ[[Y[\Ý™ÐÛÛ^
+HÂˆ™]\›ŽÂˆB‚ˆÙ]Ý™ÔÚ^™JÝ™Ñ[[Y[KJNÂˆÝ™ÐÛÛ^˜ÛX\”™XÝ
+KJNÂˆB‚ˆ[˜Ý[Ûˆ˜]Ô\™[\Ú^™Y^™\ÜÚ[Û”Ý™Ê^Ý™Ñ[[Y[Ý™ÐÛÛ^
+HÂˆYˆ
+\Ý™Ñ[[Y[\Ý™ÐÛÛ^
+HÂˆ™]\›ŽÂˆB‚ˆÛÛœÝ›ÛHŒMœ™\™[˜K\šX[[™]XØKØ[œË\Ù\šYˆŽÂˆÛÛœÝY[™ÖHLÂˆÛÛœÝY[™ÖHHÂˆÛÛœÝ^™\ÜÚ[Û˜\Ù[[™HHY[™ÖH
+ÈMŽÂˆÛÛœÝ\˜Ð˜\Ù[[™HH^™\ÜÚ[Û˜\Ù[[™H
+ÈLŽÂˆÛÛœÝ\™[ÚYHÝ™Ñ[[Y[œ\™[[[Y[ˆÈÝ™Ñ[[Y[œ\™[[[Y[˜ÛY[ÚYˆˆÂ‚ˆÝ™ÐÛÛ^™›ÛH›ÛÂˆÝ™ÐÛÛ^^[YÛˆH›YŽÂˆÝ™ÐÛÛ^^˜\Ù[[™HH˜[X™]XÈŽÂ‚ˆÛÛœÝÛÛ\™\ÜÙY^[Ý]HZ[ÛÛ\™\ÜÙY^™\ÜÚ[Û“^[Ý]
+ˆÝ™ÐÛÛ^ˆ^ˆY[™Öˆ^™\ÜÚ[Û˜\Ù[[™Bˆ
+NÂˆÛÛœÝ\˜ÜÈHÙ]ÛÛ\™\ÜÙY\™[\Ú\Ð\˜Ñ\ØÜš\ÜœÊ^ÛÛ\™\ÜÙY^[Ý]\˜Ð˜\Ù[[™JNÂ‚ˆ]X^\˜Ð›ÝÛHH\˜Ð˜\Ù[[™H
+ÈY[™ÖNÂˆ›Üˆ
+ÛÛœÝ\˜ÈÙˆ\˜ÜÊHÂˆX^\˜Ð›ÝÛHHX]›X^
+X^\˜Ð›ÝÛK\˜Ë˜Ù[\–H
+È\˜Ëœ˜Y]\È
+ÈY[™ÖJNÂˆB‚ˆÛÛœÝÜÜÕÚYHX]›X^
+KX]˜ÙZ[
+X]›X^
+ÛÛ\™\ÜÙY^[Ý]ÚY
+ÈY[™Ö
+ˆ‹\™[ÚY
+JJNÂˆÛÛœÝÜÜÒZYÚHX]›X^
+KX]˜ÙZ[
+X^\˜Ð›ÝÛH
+ÈŠJNÂ‚ˆÙ]Ý™ÔÚ^™JÝ™Ñ[[Y[ÜÜÕÚYÜÜÒZYÚ
+NÂˆÝ™ÐÛÛ^˜ÛX\”™XÝ
+ÜÜÕÚYÜÜÒZYÚ
+NÂˆÝ™ÐÛÛ^™›ÛH›ÛÂˆÝ™ÐÛÛ^^[YÛˆH›YŽÂˆÝ™ÐÛÛ^^˜\Ù[[™HH˜[X™]XÈŽÂ‚ˆÛÛœÝ™Y˜]ÛÛÛ\™\ÜÙY^[Ý]HZ[ÛÛ\™\ÜÙY^™\ÜÚ[Û“^[Ý]
+ˆÝ™ÐÛÛ^ˆ^ˆY[™Öˆ^™\ÜÚ[Û˜\Ù[[™Bˆ
+NÂˆÛÛœÝ™Y˜]Û\˜ÜÈHÙ]ÛÛ\™\ÜÙY\™[\Ú\Ð\˜Ñ\ØÜš\ÜœÊ^™Y˜]ÛÛÛ\™\ÜÙY^[Ý]\˜Ð˜\Ù[[™JNÂ‚ˆÝ™ÐÛÛ^™š[Ý[HHˆÌŽÂˆÝ™ÐÛÛ^™š[^
+™Y˜]ÛÛÛ\™\ÜÙY^[Ý]š\ÚX›U^Y[™Ö^™\ÜÚ[Û˜\Ù[[™JNÂˆ˜]ÐÛÛ\™\ÜÙY\™[\Ú\ÔÙ[ZXÚ\˜Û\ÊÝ™ÐÛÛ^™Y˜]Û\˜ÜÊNÂˆB‚ˆ[˜Ý[Ûˆ[\’[œÜXÝ[ÙJÝ\[™^
+HÂˆYˆ
+ÕTÔ‘U’QU×ÐÓÓTT’TÓÓ—ÑTÐP“QÑ“Ô—Ó“ÕÊHÂˆ™]\›ŽÂˆB‚ˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆYˆ
+[]™[[]™[œÝ\È[]™[œÝ\ÖÜÝ\[™^JHÂˆ™]\›ŽÂˆB‚ˆÝ\œ™[^™\ÜÚ[Û”›ÛÝHÛÛ™Q^™\ÜÚ[Û•™YJÝ\œ™[^™\ÜÚ[Û”›ÛÝ^™\ÜÚ[Û”›ÛÝ
+NÂˆ^™\ÜÚ[Û”›ÛÝHÝ\œ™[^™\ÜÚ[Û”›ÛÝÂ‚ˆZTÝ]K›[ÙHHš[œÜXÝŽÂˆZTÝ]Kš[œÜXÝÝ\[™^HÝ\[™^ÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ý˜Y
+š[œÜXÝ[[ÙHŠNÂ‚ˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆYQ›Ø][™ÓY[J
+NÂ‚ˆYˆ
+[œÜXÝ^]]ÛŠHÂˆ[œÜXÝ^]]Û‹˜Û\ÜÓ\Ý˜Y
+šY[ˆŠNÂˆB‚ˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+NÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆB‚ˆ[˜Ý[Ûˆ^][œÜXÝ[ÙJ
+HÂˆYˆ
+ZTÝ]K›[ÙHOOHš[œÜXÝŠHÂˆ™]\›ŽÂˆB‚ˆ^™\ÜÚ[Û”›ÛÝHÝ\œ™[^™\ÜÚ[Û”›ÛÝ^™\ÜÚ[Û”›ÛÝÂˆ^™\ÜÚ[Û”›ÛÝH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^™\ÜÚ[Û”›ÛÝ
+NÂˆÝ\œ™[^™\ÜÚ[Û”›ÛÝH^™\ÜÚ[Û”›ÛÝÂˆ[œÜXÝØ]™Y^™\ÜÚ[Û”›ÛÝH[Â‚ˆZTÝ]K›[ÙHH™Y]ŽÂˆZTÝ]Kš[œÜXÝÝ\[™^HLNÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ýœ™[[Ý™Jš[œÜXÝ[[ÙHŠNÂ‚ˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆYQ›Ø][™ÓY[J
+NÂ‚ˆYˆ
+[œÜXÝ^]]ÛŠHÂˆ[œÜXÝ^]]Û‹˜Û\ÜÓ\Ý˜Y
+šY[ˆŠNÂˆB‚ˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+NÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆB‚ˆ[˜Ý[Ûˆ™[™\“Y[™[X]
+
+HÂˆÛÛœÝXÙZÛ\œÈHY[™[œ]Y\žTÙ[XÝÜ[
+‹šØ]^\XÙZÛ\ˆŠNÂˆYˆ
+]Ú[™ÝËšØ]^
+HÂˆXÙZÛ\œË™›Ü‘XXÚ
+›ÙHOˆÂˆÛÛœÝ^ˆH›ÙK™Ù]]šX]J™]KY^ˆŠHˆŽÂˆ›ÙK^ÛÛ[H^ŽÂˆJNÂˆ™]\›ŽÂˆB‚ˆXÙZÛ\œË™›Ü‘XXÚ
+›ÙHOˆÂˆÛÛœÝ^ˆH›ÙK™Ù]]šX]J™]KY^ˆŠHˆŽÂˆ›ÙKš[›™\’SHˆŽÂˆØ]^œ™[™\Š^‹›ÙKÂˆ›ÝÓÛ‘\œ›ÜŽˆ˜[ÙKˆ\Ü^S[ÙNˆ˜[ÙBˆJNÂˆJNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[ÓÛ›S]™[
+]™[
+HÂˆYˆ
+[]™[
+HÂˆ™]\›ˆ˜[ÙNÂˆBˆ™]\›ˆ]™[šÚ[™OOH™[[ÓÛ›Hˆ]™[\HOOH™[[ÓÛ›Hˆ]™[›[ÙHOOH™[[ÓÛ›HŽÂˆB‚ˆ[˜Ý[Ûˆ\Ò[\˜XÝ]™S]™[
+]™[
+HÂˆ™]\›ˆH[]™[	‰ˆZ\Ñ[[ÓÛ›S]™[
+]™[
+NÂˆB‚ˆ[˜Ý[ÛˆÛÛ™TZ[‘]J˜[YJHÂˆ™]\›ˆ˜[YHOOH[™Yš[™YÈ[™Yš[™Yˆ”ÓÓ‹œ\œÙJ”ÓÓ‹œÝš[™ÚYžJ˜[YJJNÂˆB‚ˆ[˜Ý[ÛˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+HÂˆ™]\›ˆ^™\ÜÚ[Û”›ÛÝÈ^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+^™\ÜÚ[Û”›ÛÝ
+HˆˆŽÂˆB‚ˆ[˜Ý[ÛˆXZÙS]™[Yš[š][Û‘›Ü‘^Ü
+]™[
+HÂˆÛÛœÝÛÜHHÛÛ™TZ[‘]J]™[ßJNÂˆYˆ
+XÛÜJHÂˆ™]\›ˆßNÂˆBˆ[]HÛÜK™[[ÎÂˆ[]HÛÜKœÛÝ\˜ÙS]™[Âˆ[]HÛÜKœ™XÛÜ™YXÝ[ÛœÎÂˆ[]HÛÜK˜ÛÛ\]Y]Âˆ[]HÛÜK˜Ü™X]Y]ÂˆÛÜKšÚ[™Hš[\˜XÝ]™HŽÂˆ™]\›ˆÛÜNÂˆB‚ˆ[˜Ý[Ûˆ›Ü›X]ÛÛ\][Û’YÝ[\
+]JHÂˆ™]\›ˆ]KÒTÓÔÝš[™Ê
+Bˆœ™\XÙJ×—ÌßV‰Ë–ˆŠBˆœ™\XÙJÖ×ŒNPKV˜K^—JËÙË‹HŠBˆœ™\XÙJ×‹JßJÉÙËˆŠBˆÓÝÙ\Ø\ÙJ
+NÂˆB‚ˆ[˜Ý[Ûˆ›Ü›X]ÛÛ\][Û•]TÝ[\
+]JHÂˆžHÂˆ™]\›ˆ]KÓØØ[TÝš[™Ê
+NÂˆHØ]Ú
+\œŠHÂˆ™]\›ˆ]KÒTÓÔÝš[™Ê
+NÂˆBˆB‚ˆ[˜Ý[Ûˆ™\Ù]ÛÛ][Û”™XÛÜ™\‘›ÜÝ\œ™[]™[
+
+HÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆÛÛ\][Û‘^Ü™XYQ›Ü”[ˆH˜[ÙNÂˆÛÛ\][Û‘^ÜÛÛ\]Y]]HH[ÂˆYˆ
+Z\Ò[\˜XÝ]™S]™[
+]™[
+JHÂˆÛÛ][Û”™XÛÜ™\ˆH[Âˆ™]\›ŽÂˆBˆÛÛ][Û”™XÛÜ™\ˆHÂˆ›Ü›X]ˆ™^ÙYX[ÙXœ˜K\ÛÛ][Û‹]˜XÙK]ŒÈ‹ˆÜ™X]Y]ˆ™]È]J
+KÒTÓÔÝš[™Ê
+Kˆ]™[Yˆ]™[šYˆ‹ˆ]™[]Nˆ]™[]Hˆ‹ˆÝ\^™\ÜÚ[ÛŽˆ]™[œÝ\^™\ÜÚ[Ûˆˆ‹ˆXÝ[ÛœÎˆ×Kˆ[[ÔÝ\Îˆ×BˆNÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠXÝ[Û‹[[ÔÝ\
+HÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆYˆ
+\ÛÛ][Û”™XÛÜ™\ˆZ\Ò[\˜XÝ]™S]™[
+]™[
+H\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ŽÂˆBˆÛÛœÝXÝ[ÛÛÜHHÛÛ™TZ[‘]JXÝ[ÛˆßJNÂˆYˆ
+XÝ[ÛÛÜJHÂˆXÝ[ÛÛÜKš[™^HÛÛ][Û”™XÛÜ™\‹˜XÝ[ÛœË›[™ÝÂˆÛÛ][Û”™XÛÜ™\‹˜XÝ[ÛœËœ\Ú
+XÝ[ÛÛÜJNÂˆBˆYˆ
+[[ÔÝ\
+HÂˆÛÛ][Û”™XÛÜ™\‹™[[ÔÝ\Ëœ\Ú
+ÛÛ™TZ[‘]J[[ÔÝ\
+JNÂˆBˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™Ý\œ™[Ù[XÝ[Û‘›Ü”ÛÛ][ÛŠ
+HÂˆÛÛœÝÙ[XÝY^™\ÜÚ[ÛˆHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY^™\ÜÚ[Ûˆ\Ù[XÝ[Û‹››ÙHÙ[XÝ[Û‹œÝ]\ÈOOHžY\ÈŠHÂˆ™]\›ŽÂˆBˆÛÛœÝ^™\ÜÚ[ÛˆH^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+Ù[XÝY^™\ÜÚ[ÛŠNÂˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠÂˆ\NˆœÙ[XÝ‹ˆ^™\ÜÚ[Û‹ˆÙ[XÝY\NˆÙ[XÝY^™\ÜÚ[Û‹\Kˆš\œÝ\ˆÙ[XÝ[Û‹™š\œÝ\ˆ\Ý\ˆÙ[XÝ[Û‹›\Ý\ˆ™Y›Ü™Q^™\ÜÚ[ÛŽˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+BˆKÂˆ\NˆœÙ[XÝ‹ˆ^™\ÜÚ[Û‚ˆJNÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™ÛÛ›Ü”ÛÛ][ÛŠÛÛ˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠHÂˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠÂˆ\NˆÛÛ‹ˆÛÛˆÛÛ˜[YKˆ™Y›Ü™Q^™\ÜÚ[ÛŽˆ™Y›Ü™Q^™\ÜÚ[ÛˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+KˆY\‘^™\ÜÚ[ÛŽˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+BˆKÂˆ\NˆÛÛ‹ˆÛÛˆÛÛ˜[YBˆJNÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™XÝ[Û‘›Ü”ÛÛ][ÛŠXÝ[Û‹˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠHÂˆÛÛœÝÝ\HÈ\Nˆ˜XÝ[Ûˆ‹XÝ[ÛˆNÂˆYˆ
+˜[YHOOH[™Yš[™Y	‰ˆ˜[YHOOH[	‰ˆ˜[YHOOHˆŠHÂˆÝ\˜[YHHÝš[™Ê˜[YJNÂˆBˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠÂˆ‹‹œÝ\ˆ™Y›Ü™Q^™\ÜÚ[ÛŽˆ™Y›Ü™Q^™\ÜÚ[ÛˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+KˆY\‘^™\ÜÚ[ÛŽˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+BˆKÝ\
+NÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™Z[\‘›Ü”ÛÛ][ÛŠXÝ[Û‹˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠHÂˆÛÛœÝÝ\HÈ\Nˆ˜Z[\ˆ‹XÝ[ÛˆNÂˆYˆ
+˜[YHOOH[™Yš[™Y	‰ˆ˜[YHOOH[	‰ˆ˜[YHOOHˆŠHÂˆÝ\˜[YHHÝš[™Ê˜[YJNÂˆBˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠÂˆ‹‹œÝ\ˆ™Y›Ü™Q^™\ÜÚ[ÛŽˆ™Y›Ü™Q^™\ÜÚ[ÛˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+KˆY\‘^™\ÜÚ[ÛŽˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+BˆKÝ\
+NÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™ÛÛ[]]PÚÚXÙQ›Ü”ÛÛ][ÛŠÛXÚÙY[™^™Y›Ü™Q^™\ÜÚ[ÛŠHÂˆYˆ
+\Ù[XÝ[Û‹››ÙHÛXÚÙY[™^Ù[XÝ[Û‹™š\œÝ\ÛXÚÙY[™^ˆÙ[XÝ[Û‹›\Ý\
+HÂˆ™]\›ŽÂˆBˆÛÛœÝ™[]]™R[™^HÛXÚÙY[™^HÙ[XÝ[Û‹™š\œÝ\ÂˆÛÛœÝ^™\ÜÚ[ÛˆH^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+Ù[XÝ[Û‹››ÙK˜\™ÜÖØÛXÚÙY[™^JNÂˆÛÛœÝÝ\HÂˆ\Nˆ˜ÛÛ[]]PÚÚXÙH‹ˆ™[]]™R[™^ˆ^™\ÜÚ[Û‚ˆNÂˆ™XÛÜ™ÛÛ][ÛXÝ[ÛŠÂˆ‹‹œÝ\ˆ™Y›Ü™Q^™\ÜÚ[ÛŽˆ™Y›Ü™Q^™\ÜÚ[ÛˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+KˆY\‘^™\ÜÚ[ÛŽˆÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+BˆKÝ\
+NÂˆB‚ˆ[˜Ý[ÛˆXZÙQ[[ÓÛ›S]™[œ›ÛPÝ\œ™[[ŠÛÛ\]Y]]JHÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆÛÛœÝÛÛ\]Y]HÛÛ\]Y]]KÒTÓÔÝš[™Ê
+NÂˆÛÛœÝÛÝ\˜ÙS]™[HXZÙS]™[Yš[š][Û‘›Ü‘^Ü
+]™[
+NÂˆÛÛœÝY˜\ÙHHÝš[™Ê]™[	‰ˆ]™[šYÈ]™[šYˆ›]™[ŠKœ™\XÙJÖ×ŒNPKV˜K^—ËWJËÙË‹HŠNÂˆÛÛœÝYH	ÚY˜\Ù_KY[[ËIÙ›Ü›X]ÛÛ\][Û’YÝ[\
+ÛÛ\]Y]]J_XÂˆÛÛœÝ]HH[[Îˆ	Û]™[	‰ˆ]™[]HÈ]™[]Hˆ•[]Y]™[ŸH
+	Ù›Ü›X]ÛÛ\][Û•]TÝ[\
+ÛÛ\]Y]]J_JXÂˆ™]\›ˆÂˆ‹‹˜ÛÛ™TZ[‘]JÛÝ\˜ÙS]™[
+KˆÚ[™ˆ™[[ÓÛ›H‹ˆYˆ]KˆÛÝ\˜ÙS]™[YˆÛÝ\˜ÙS]™[šYˆ‹ˆÛÝ\˜ÙS]™[]NˆÛÝ\˜ÙS]™[]Hˆ‹ˆÜ™X]Y]ˆÛÛ][Û”™XÛÜ™\ˆÈÛÛ][Û”™XÛÜ™\‹˜Ü™X]Y]ˆÛÛ\]Y]ˆÛÛ\]Y]ˆÝ\^™\ÜÚ[ÛŽˆÛÝ\˜ÙS]™[œÝ\^™\ÜÚ[Ûˆˆ‹ˆ]˜[X][Û“]™[ˆÛÝ\˜ÙS]™[™]˜[X][Û“]™[ˆ[Y\šXØ[™]Üš]NˆÛÛ™TZ[‘]JÛÝ\˜ÙS]™[›[Y\šXØ[™]Üš]JKˆ˜\šXX›\ÎˆÛÛ™TZ[‘]JÛÝ\˜ÙS]™[˜\šXX›\È×JKˆÝ\ÎˆÛÛ™TZ[‘]JÛÝ\˜ÙS]™[œÝ\È×JKˆÛÝ\˜ÙS]™[ˆ[[ÎˆÂˆÝ\ÎˆÛÛ™TZ[‘]JÛÛ][Û”™XÛÜ™\ˆÈÛÛ][Û”™XÛÜ™\‹™[[ÔÝ\Èˆ×JBˆKˆ™XÛÜ™YXÝ[ÛœÎˆÛÛ™TZ[‘]JÛÛ][Û”™XÛÜ™\ˆÈÛÛ][Û”™XÛÜ™\‹˜XÝ[ÛœÈˆ×JBˆNÂˆB‚ˆ[˜Ý[ÛˆÝÛ›ØY[Ý™R\ÝÜžRœÛÛŠ[[ÓÛ›S]™[
+HÂˆÛÛœÝœÛÛˆH	Ò”ÓÓ‹œÝš[™ÚYžJ[[ÓÛ›S]™[[Š_W˜ÂˆÛÛœÝ›ØˆH™]È›ØŠÚœÛÛ—KÈ\Nˆ˜\XØ][Û‹ÚœÛÛˆˆJNÂˆÛÛœÝ\›HT“˜Ü™X]SØš™XÝT“
+›ØŠNÂˆÛÛœÝØY™RYHÝš[™Ê[[ÓÛ›S]™[	‰ˆ[[ÓÛ›S]™[šYÈ[[ÓÛ›S]™[šYˆ›[Ý™KZ\ÝÜžHŠBˆœ™\XÙJÖ×ŒNPKV˜K^—ËWJËÙË‹HŠBˆœ™\XÙJ×‹JßJÉÙËˆŠH›[Ý™KZ\ÝÜžHŽÂˆÛÛœÝ[šÈHØÝ[Y[˜Ü™X]Q[[Y[
+˜HŠNÂˆ[šËš™YˆH\›Âˆ[šË™ÝÛ›ØYH	ÜØY™RYKšœÛÛ˜Âˆ[šËœÝ[K™\Ü^HH››Û™HŽÂˆØÝ[Y[˜›ÙK˜\[™Ú[
+[šÊNÂˆ[šË˜ÛXÚÊ
+NÂˆ[šËœ™[[Ý™J
+NÂˆÙ][Y[Ý]
+
+
+HOˆT“œ™]›ÚÙSØš™XÝT“
+\›
+KL
+NÂˆB‚ˆ[˜Ý[ÛˆX^X™T™\\™PÛÛ\]Y]™[^Ü
+]™[
+HÂˆYˆ
+\ÛÛ][Û”™XÛÜ™\ˆÛÛ\][Û‘^Ü™XYQ›Ü”[ˆZ\Ò[\˜XÝ]™S]™[
+]™[
+JHÂˆ™]\›ŽÂˆBˆYˆ
+[]™[P\œ˜^Kš\Ð\œ˜^J]™[œÝ\ÊH[]™[œÝ\Ë›[™Ý
+HÂˆ™]\›ŽÂˆBˆÛÛœÝš[˜[[™^H]™[œÝ\Ë›[™ÝHNÂˆYˆ
+XÛÛ\]YÝ\ÖÙš[˜[[™^JHÂˆ™]\›ŽÂˆBˆÛÛ\][Û‘^Ü™XYQ›Ü”[ˆHYNÂˆÛÛ\][Û‘^ÜÛÛ\]Y]]HH™]È]J
+NÂˆÛÛ][Û”™XÛÜ™\‹˜ÛÛ\]Y]HÛÛ\][Û‘^ÜÛÛ\]Y]]KÒTÓÔÝš[™Ê
+NÂˆÛÛ][Û”™XÛÜ™\‹™š[˜[^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆB‚ˆ[˜Ý[Ûˆ\Ó][U\›PÛÛ[]]UÛÛ˜[YJÛÛ˜[YJHÂˆ™]\›ˆÛÛ˜[YHOOH˜ÛÛ[]]HˆÛÛ˜[YHOOH˜ÛÛ[]]U\›\ÈˆÛÛ˜[YHOOH˜ÛÛ[]]Q˜XÝÜœÈŽÂˆB‚ˆ[˜Ý[ÛˆX]Ú\›]]][Û“Ü™\ŠÛÝ\˜ÙP\™ÜËØ[™Y]P\™ÜÊHÂˆYˆ
+P\œ˜^Kš\Ð\œ˜^JÛÝ\˜ÙP\™ÜÊHP\œ˜^Kš\Ð\œ˜^JØ[™Y]P\™ÜÊHÛÝ\˜ÙP\™ÜË›[™ÝOOHØ[™Y]P\™ÜË›[™Ý
+HÂˆ™]\›ˆ[ÂˆBˆÛÛœÝ\ÙYH™]ÈÙ]
+
+NÂˆÛÛœÝÜ™\ˆH×NÂˆ›Üˆ
+ÛÛœÝØ[™Y]HÙˆØ[™Y]P\™ÜÊHÂˆ]X]Ú[™^HLNÂˆ›Üˆ
+][™^HÈ[™^ÛÝ\˜ÙP\™ÜË›[™ÝÈ[™^
+ÊÊHÂˆYˆ
+]\ÙYš\Ê[™^
+H	‰ˆØ[YQ^™\ÜÚ[Û‘›Ü“X]Ú[™ÊÛÝ\˜ÙP\™ÜÖÚ[™^KØ[™Y]JJHÂˆX]Ú[™^H[™^Âˆœ™XZÎÂˆBˆBˆYˆ
+X]Ú[™^
+HÂˆ™]\›ˆ[ÂˆBˆ\ÙY˜Y
+X]Ú[™^
+NÂˆÜ™\‹œ\Ú
+X]Ú[™^
+NÂˆBˆ™]\›ˆÜ™\ŽÂˆB‚ˆ[˜Ý[Ûˆ[™™\“YØXÞPÛÛ[]]SÜ™\ŠÙ[XÝY^™\ÜÚ[Û•^Y\‘^™\ÜÚ[Û•^
+HÂˆYˆ
+\Ù[XÝY^™\ÜÚ[Û•^XY\‘^™\ÜÚ[Û•^
+HÂˆ™]\›ˆ[ÂˆBˆžHÂˆÛÛœÝÙ[XÝY›ÙHH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^Ñ^™\ÜÚ[ÛŠÙ[XÝY^™\ÜÚ[Û•^
+JNÂˆÛÛœÝY\”›ÛÝH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^Ñ^™\ÜÚ[ÛŠY\‘^™\ÜÚ[Û•^
+JNÂˆYˆ
+\Ù[XÝY›ÙH
+Ù[XÝY›ÙK\HOOHœÝ[Hˆ	‰ˆÙ[XÝY›ÙK\HOOHœ›ÙŠHÙ[XÝY›ÙK˜\™ÜË›[™ÝÊHÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝØ[™Y]\ÈH×NÂˆ˜]™\œÙT™SÜ™\ŠY\”›ÛÝ›ÙHOˆÂˆYˆ
+[›ÙH›ÙK\HOOHÙ[XÝY›ÙK\H›ÙK˜\™ÜË›[™ÝÙ[XÝY›ÙK˜\™ÜË›[™Ý
+HÂˆ™]\›ŽÂˆBˆÛÛœÝ[™ÝHÙ[XÝY›ÙK˜\™ÜË›[™ÝÂˆ›Üˆ
+]š\œÝHÈš\œÝH›ÙK˜\™ÜË›[™ÝH[™ÝÈš\œÝ
+ÊÊHÂˆÛÛœÝÜ™\ˆHX]Ú\›]]][Û“Ü™\ŠÙ[XÝY›ÙK˜\™ÜË›ÙK˜\™ÜËœÛXÙJš\œÝš\œÝ
+È[™Ý
+JNÂˆYˆ
+[Ü™\ˆÜ™\‹™]™\žJ
+ÛÝ\˜ÙR[™^\™Ù][™^
+HOˆÛÝ\˜ÙR[™^OOH\™Ù][™^
+JHÂˆÛÛ[YNÂˆBˆØ[™Y]\Ëœ\Ú
+ÂˆÜ™\‹ˆ^XÝ›ÙNˆ›ÙK˜\™ÜË›[™ÝOOH[™ÝˆJNÂˆBˆJNÂˆØ[™Y]\ËœÛÜ
+
+KŠHOˆ[X™\Š‹™^XÝ›ÙJHH[X™\ŠK™^XÝ›ÙJJNÂˆ™]\›ˆØ[™Y]\Ë›[™ÝÈØ[™Y]\ÖÌK›Ü™\ˆˆ[ÂˆHØ]Ú
+\œ›ÜŠHÂˆ™]\›ˆ[ÂˆBˆB‚ˆ[˜Ý[Ûˆ\Ü˜YSYØXÞPÛÛ[]]Q[[ÔÝ\Ê]™[
+HÂˆYˆ
+ˆZ\Ñ[[ÓÛ›S]™[
+]™[
+Hˆ[]™[™[[ÈˆP\œ˜^Kš\Ð\œ˜^J]™[™[[ËœÝ\ÊHˆP\œ˜^Kš\Ð\œ˜^J]™[œ™XÛÜ™YXÝ[ÛœÊBˆ
+HÂˆ™]\›ŽÂˆB‚ˆÛÛœÝÜšYÚ[˜[Ý\ÈH]™[™[[ËœÝ\ÎÂˆÛÛœÝXÝ[ÛœÈH]™[œ™XÛÜ™YXÝ[ÛœÎÂˆÛÛœÝ\Ü˜YYÝ\ÈH×NÂ‚ˆÜšYÚ[˜[Ý\Ë™›Ü‘XXÚ
+
+Ý\[™^
+HOˆÂˆ\Ü˜YYÝ\Ëœ\Ú
+Ý\
+NÂˆYˆ
+ˆ\Ý\ˆÝ\\HOOHÛÛˆˆZ\Ó][U\›PÛÛ[]]UÛÛ˜[YJÝ\ÛÛ
+Hˆ
+ÜšYÚ[˜[Ý\ÖÚ[™^
+ÈWH	‰ˆÜšYÚ[˜[Ý\ÖÚ[™^
+ÈWK\HOOH˜ÛÛ[]]PÚÚXÙHŠBˆ
+HÂˆ™]\›ŽÂˆB‚ˆÛÛœÝÙ[XÝ[ÛXÝ[ÛˆHXÝ[ÛœÖÚ[™^HWNÂˆÛÛœÝ›ÛÝÚ[™ÐXÝ[ÛˆHXÝ[ÛœÖÚ[™^
+ÈWNÂˆYˆ
+ˆ\Ù[XÝ[ÛXÝ[ÛˆˆÙ[XÝ[ÛXÝ[Û‹\HOOHœÙ[XÝˆˆÙ[XÝ[ÛXÝ[Û‹›\Ý\HÙ[XÝ[ÛXÝ[Û‹™š\œÝ\
+ÈHÈˆY›ÛÝÚ[™ÐXÝ[Ûˆˆ\[Ùˆ›ÛÝÚ[™ÐXÝ[Û‹˜™Y›Ü™Q^™\ÜÚ[ÛˆOOHœÝš[™È‚ˆ
+HÂˆ™]\›ŽÂˆB‚ˆÛÛœÝÜ™\ˆH[™™\“YØXÞPÛÛ[]]SÜ™\ŠÙ[XÝ[ÛXÝ[Û‹™^™\ÜÚ[Û‹›ÛÝÚ[™ÐXÝ[Û‹˜™Y›Ü™Q^™\ÜÚ[ÛŠNÂˆYˆ
+[Ü™\ŠHÂˆ™]\›ŽÂˆB‚ˆ]Ù[XÝY›ÙHH[ÂˆžHÂˆÙ[XÝY›ÙHH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^Ñ^™\ÜÚ[ÛŠÙ[XÝ[ÛXÝ[Û‹™^™\ÜÚ[ÛŠJNÂˆHØ]Ú
+\œ›ÜŠHÂˆ™]\›ŽÂˆBˆÜ™\‹™›Ü‘XXÚ
+™[]]™R[™^OˆÂˆ\Ü˜YYÝ\Ëœ\Ú
+Âˆ\Nˆ˜ÛÛ[]]PÚÚXÙH‹ˆ™[]]™R[™^ˆ^™\ÜÚ[ÛŽˆ^™\ÜÚ[Û•Ñ[T\™[\Ú^™Y^
+Ù[XÝY›ÙK˜\™ÜÖÜ™[]]™R[™^JBˆJNÂˆJNÂˆJNÂ‚ˆ]™[™[[ËœÝ\ÈH\Ü˜YYÝ\ÎÂˆB‚ˆ[˜Ý[Ûˆ›Ü›X[^™U^›ØÚÜÊ˜[YJHÂˆYˆ
+\œ˜^Kš\Ð\œ˜^J˜[YJJHÂˆ™]\›ˆ˜[YK›X\
+][HOˆÝš[™Ê][JKš[J
+JK™š[\Š›ÛÛX[ŠNÂˆBˆ™]\›ˆ\[Ùˆ˜[YHOOHœÝš[™Èˆ	‰ˆ˜[YKš[J
+HÈÝ˜[YKš[J
+WHˆ×NÂˆB‚ˆ[˜Ý[Ûˆ\Õ˜[Y^›ØÚÜÊ˜[YJHÂˆ™]\›ˆ
+\[Ùˆ˜[YHOOHœÝš[™Èˆ	‰ˆH]˜[YKš[J
+JH
+ˆ\œ˜^Kš\Ð\œ˜^J˜[YJH	‰‚ˆ˜[YK›[™Ýˆ	‰‚ˆ˜[YK™]™\žJ][HOˆ\[Ùˆ][HOOHœÝš[™Èˆ	‰ˆHZ][Kš[J
+JBˆ
+NÂˆB‚ˆ[˜Ý[Ûˆ^™\ÜÚ[Û•™YPÛÛZ[œÑ^Û™[
+›ÙJHÂˆ™]\›ˆH[›ÙH	‰ˆ
+ˆ›ÙK\HOOH™^ˆˆ
+\œ˜^Kš\Ð\œ˜^J›ÙK˜\™ÜÊH	‰ˆ›ÙK˜\™ÜËœÛÛYJ^™\ÜÚ[Û•™YPÛÛZ[œÑ^Û™[
+JBˆ
+NÂˆB‚ˆÛÛœÝVÑQÔÕTÑV‘TÔÒSÓ—Ñ’QSÈHÂˆ™^™\ÜÚ[Ûˆ‹ˆ™^ÙY^™\ÜÚ[Ûˆ‹ˆ˜™Y›Ü™Q^™\ÜÚ[Ûˆ‹ˆ˜Y\‘^™\ÜÚ[Ûˆ‹ˆ˜™Y›Ü™Q^ÙY^™\ÜÚ[Ûˆ‹ˆ˜Y\‘^ÙY^™\ÜÚ[Ûˆ‚ˆNÂˆÛÛœÝVÑQÔÕTÕT’PS•Ñ’QSÈHÈœ™PÛÛ\][Ûˆ‹œÜÝÛÛ\][Ûˆ—NÂˆÛÛœÝ^ÙY^Û™[]˜Z[Xš[]PØXÚHH™]ÈÙXZÓX\
+
+NÂ‚ˆ[˜Ý[ÛˆÙ]^ÙY^™\ÜÚ[Û•^Ñ›Ü”Ý\
+Ý\
+HÂˆYˆ
+\Ý\\[ÙˆÝ\OOH›Øš™XÝŠHÂˆ™]\›ˆ×NÂˆBˆÛÛœÝ^ÈHVÑQÔÕTÑV‘TÔÒSÓ—Ñ’QSÂˆ›X\
+šY[˜[YHOˆÝ\ÙšY[˜[YWJBˆ™š[\Š˜[YHOˆ\[Ùˆ˜[YHOOHœÝš[™Èˆ	‰ˆH]˜[YKš[J
+JNÂˆVÑQÔÕTÕT’PS•Ñ’QSË™›Ü‘XXÚ
+˜\šX[šY[˜[YHOˆÂˆÛÛœÝ˜\šX[HÝ\Ý˜\šX[šY[˜[YWNÂˆYˆ
+]˜\šX[\[Ùˆ˜\šX[OOH›Øš™XÝŠHÂˆ™]\›ŽÂˆBˆÈ™^™\ÜÚ[Ûˆ‹™^ÙY^™\ÜÚ[Ûˆ—K™›Ü‘XXÚ
+šY[˜[YHOˆÂˆÛÛœÝ˜[YHH˜\šX[ÙšY[˜[YWNÂˆYˆ
+\[Ùˆ˜[YHOOHœÝš[™Èˆ	‰ˆ˜[YKš[J
+JHÂˆ^Ëœ\Ú
+˜[YJNÂˆBˆJNÂˆJNÂˆ™]\›ˆË‹‹›™]ÈÙ]
+^ÊWNÂˆB‚ˆ[˜Ý[Ûˆ]™[\Ù\Ñ^ÙY^Û™[›ÙJ]™[
+HÂˆYˆ
+[]™[\[Ùˆ]™[OOH›Øš™XÝŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+^ÙY^Û™[]˜Z[Xš[]PØXÚKš\Ê]™[
+JHÂˆ™]\›ˆ^ÙY^Û™[]˜Z[Xš[]PØXÚK™Ù]
+]™[
+NÂˆB‚ˆÛÛœÝ^ÙY^™\ÜÚ[Û•^ÈH×NÂˆYˆ
+\[Ùˆ]™[œÝ\^™\ÜÚ[ÛˆOOHœÝš[™Èˆ	‰ˆ]™[œÝ\^™\ÜÚ[Û‹š[J
+JHÂˆ^ÙY^™\ÜÚ[Û•^Ëœ\Ú
+]™[œÝ\^™\ÜÚ[ÛŠNÂˆBˆ
+]™[œÝ\È×JK™›Ü‘XXÚ
+Ý\OˆÂˆ^ÙY^™\ÜÚ[Û•^Ëœ\Ú
+‹‹™Ù]^ÙY^™\ÜÚ[Û•^Ñ›Ü”Ý\
+Ý\
+JNÂˆJNÂ‚ˆÛÛœÝÛÛZ[œÑ^Û™[HË‹‹›™]ÈÙ]
+^ÙY^™\ÜÚ[Û•^ÊWKœÛÛYJ^™\ÜÚ[Û•^OˆÂˆžHÂˆ™]\›ˆ^™\ÜÚ[Û•™YPÛÛZ[œÑ^Û™[
+^Ñ^™\ÜÚ[ÛŠ^™\ÜÚ[Û•^
+JNÂˆHØ]Ú
+\œ›ÜŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆJNÂˆ^ÙY^Û™[]˜Z[Xš[]PØXÚKœÙ]
+]™[ÛÛZ[œÑ^Û™[
+NÂˆ™]\›ˆÛÛZ[œÑ^Û™[ÂˆB‚ˆ[˜Ý[Ûˆ^™\ÜÚ[Û•^ÓX]Ú
+š\œÝ^ÙXÛÛ™^
+HÂˆžHÂˆÛÛœÝš\œÝH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^Ñ^™\ÜÚ[ÛŠš\œÝ^
+JNÂˆÛÛœÝÙXÛÛ™H›Ü›X[^™Q^™\ÜÚ[Û•™YJ^Ñ^™\ÜÚ[ÛŠÙXÛÛ™^
+JNÂˆ™]\›ˆØ[YQ^™\ÜÚ[Û‘›Ü“X]Ú[™Êš\œÝÙXÛÛ™
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆB‚ˆ[˜Ý[Ûˆ˜[Y]PÚÜÙ[“]™[
+]™[š[S˜[YJHÂˆÛÛœÝÛÝ\˜ÙS˜[YHHš[S˜[YH•HÙ[XÝYš[HŽÂˆYˆ
+[]™[\[Ùˆ]™[OOH›Øš™XÝˆ\œ˜^Kš\Ð\œ˜^J]™[
+JHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H]\ÝÛÛZ[ˆÛ™H”ÓÓˆ]™[Øš™XÝ˜
+NÂˆBˆYˆ
+\[Ùˆ]™[šYOOHœÝš[™Èˆ[]™[šYš[J
+JHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\ÈZ\ÜÚ[™ÈH˜[YY˜
+NÂˆBˆYˆ
+\[Ùˆ]™[]HOOHœÝš[™Èˆ[]™[]Kš[J
+JHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\ÈZ\ÜÚ[™ÈH˜[Y]K˜
+NÂˆBˆYˆ
+\[Ùˆ]™[œÝ\^™\ÜÚ[ÛˆOOHœÝš[™Èˆ[]™[œÝ\^™\ÜÚ[Û‹š[J
+JHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\ÈZ\ÜÚ[™ÈH˜[YÝ\^™\ÜÚ[Û‹˜
+NÂˆBˆYˆ
+P\œ˜^Kš\Ð\œ˜^J]™[œÝ\ÊH]™[œÝ\Ë›[™ÝOOH
+HÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H]\ÝÛÛZ[ˆ]X\ÝÛ™HÝ\˜
+NÂˆBˆYˆ
+]™[™\ØÜš\[ÛˆOOH[™Yš[™Y	‰ˆ
+\[Ùˆ]™[™\ØÜš\[ÛˆOOHœÝš[™Èˆ[]™[™\ØÜš\[Û‹š[J
+JJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y\ØÜš\[Û‹˜
+NÂˆBˆYˆ
+]™[š[œÝXÝ[ÛœÈOOH[™Yš[™Y
+HÂˆYˆ
+Z\Õ˜[Y^›ØÚÜÊ]™[š[œÝXÝ[ÛœÊJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[˜[Y[œÝXÝ[ÛœË˜
+NÂˆBˆBˆÂˆš[œÝXÝ[Ûˆ‹ˆš[›ÙXÝ[Ûˆ‹ˆ˜ÛÛ˜Û\Ú[Ûˆ‹ˆ™^\˜Ú\ÙR[™›È‹ˆ˜ÛÛ\][Û“Y\ÜØYÙH‚ˆK™›Ü‘XXÚ
+šY[˜[YHOˆÂˆYˆ
+]™[ÙšY[˜[YWHOOH[™Yš[™Y
+HÂˆ™]\›ŽÂˆBˆYˆ
+Z\Õ˜[Y^›ØÚÜÊ]™[ÙšY[˜[YWJJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y	ÙšY[˜[Y_K˜
+NÂˆBˆJNÂˆYˆ
+]™[š[š]X[Ø]^OOH[™Yš[™Y	‰ˆ
+\[Ùˆ]™[š[š]X[Ø]^OOHœÝš[™Èˆ[]™[š[š]X[Ø]^š[J
+JJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y[š]X[Ø]^˜
+NÂˆBˆYˆ
+]™[›[Y\šXØ[™]Üš]HOOH[™Yš[™Y
+HÂˆ˜[Y]S[Y\šXØ[™]Üš]T›Ùš[QYš[š][ÛŠ]™[›[Y\šXØ[™]Üš]KÛÝ\˜ÙS˜[YJNÂˆB‚ˆ^Ñ^™\ÜÚ[ÛŠ]™[œÝ\^™\ÜÚ[ÛŠNÂˆ]™[œÝ\Ë™›Ü‘XXÚ
+
+Ý\[™^
+HOˆÂˆYˆ
+\Ý\\[ÙˆÝ\™^™\ÜÚ[ÛˆOOHœÝš[™Èˆ\Ý\™^™\ÜÚ[Û‹š[J
+JHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y^™\ÜÚ[Ûˆ[ˆÝ\	Ú[™^
+È_K˜
+NÂˆBˆ^Ñ^™\ÜÚ[ÛŠÝ\™^™\ÜÚ[ÛŠNÂˆÈ™ÝZY[˜ÙH‹š[›ÙXÝ[Ûˆ‹˜ÛÛ˜Û\Ú[Ûˆ—K™›Ü‘XXÚ
+šY[˜[YHOˆÂˆYˆ
+Ý\ÙšY[˜[YWHOOH[™Yš[™Y
+HÂˆ™]\›ŽÂˆBˆYˆ
+Z\Õ˜[Y^›ØÚÜÊÝ\ÙšY[˜[YWJJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y	ÙšY[˜[Y_H[ˆÝ\	Ú[™^
+È_K˜
+NÂˆBˆJNÂˆÈšØ]^‹˜™Y›Ü™RØ]^‹˜Y\’Ø]^—K™›Ü‘XXÚ
+šY[˜[YHOˆÂˆYˆ
+Ý\ÙšY[˜[YWHOOH[™Yš[™Y	‰ˆ
+\[ÙˆÝ\ÙšY[˜[YWHOOHœÝš[™Èˆ\Ý\ÙšY[˜[YWKš[J
+JJHÂˆ›ÝÈ™]È\œ›ÜŠ	ÜÛÝ\˜ÙS˜[Y_H\È[ˆ[˜[Y	ÙšY[˜[Y_H[ˆÝ\	Ú[™^
+È_K˜
+NÂˆBˆJNÂˆÙ]^ÙY^™\ÜÚ[Û•^Ñ›Ü”Ý\
+Ý\
+K™›Ü‘XXÚ
+^™\ÜÚ[Û•^OˆÂˆ^Ñ^™\ÜÚ[ÛŠ^™\ÜÚ[Û•^
+NÂˆJNÂˆJNÂ‚ˆÛÛœÝ]™[ÛÜHHÛÛ™TZ[‘]J]™[
+NÂˆÛÛœÝÛÜHH\Ñ[[ÓÛ›S]™[
+]™[ÛÜJH	‰ˆ]™[ÛÜKœÛÝ\˜ÙS]™[	‰ˆ\[Ùˆ]™[ÛÜKœÛÝ\˜ÙS]™[OOH›Øš™XÝ‚ˆÈÈ‹‹˜ÛÛ™TZ[‘]J]™[ÛÜKœÛÝ\˜ÙS]™[
+K‹‹›]™[ÛÜHBˆˆ]™[ÛÜNÂˆYˆ
+P\œ˜^Kš\Ð\œ˜^JÛÜK˜\šXX›\ÊHXÛÜK˜\šXX›\Ë›[™Ý
+HÂˆÛÜK˜\šXX›\ÈH[™™\•˜\šXX›\Ñœ›ÛQ^™\ÜÚ[Û•^›Ü“]™[
+ÛÜKœÝ\^™\ÜÚ[ÛŠNÂˆBˆ\Ü˜YSYØXÞPÛÛ[]]Q[[ÔÝ\ÊÛÜJNÂˆ™]\›ˆÛÜNÂˆB‚ˆ[˜Ý[ÛˆÙ]]™[š[TÝ]\ÊY\ÜØYÙK\Ñ\œ›ÜˆH˜[ÙJHÂˆYˆ
+[ØYY]™[š[S˜[YJHÂˆ™]\›ŽÂˆBˆØYY]™[š[S˜[YK^ÛÛ[HY\ÜØYÙNÂˆØYY]™[š[S˜[YK˜Û\ÜÓ\ÝÙÙÛJ™š[KY\œ›Üˆ‹\Ñ\œ›ÜŠNÂˆB‚ˆ[˜Ý[ÛˆÚÝÓ›Ó]™[Ù[XÝYÝ]JY\ÜØYÙHHÚÛÜÙHH”ÓÓˆ]™[š[HÈ™YÚ[‹ˆŠHÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ý˜Y
+››Ë[]™[[ØYYŠNÂˆ]™[ÛÛ[š[›™\’SHˆ]ˆÛ\ÜÏH›]™[Z[›È‚ˆ]ˆÛ\ÜÏH›]™[]]H“›È]™[Ù[XÝYÙ]‚ˆ‰Ù\ØØ\R[
+Y\ÜØYÙJ_OÜ‚ˆÙ]‚ˆÂˆ™[™\“[Ý™R\ÝÜžPÛÛ›ÛÊ[
+NÂˆÛX\”\™[\Ú^™Y^™\ÜÚ[Û”Ý™Ê\™Ù]^™\ÜÚ[Û”Ý™Ë\™Ù]^™\ÜÚ[ÛÝ
+NÂˆÛX\”\™[\Ú^™Y^™\ÜÚ[Û”Ý™ÊÝ\œ™[^™\ÜÚ[Û”Ý™ËÝ\œ™[^™\ÜÚ[ÛÝ
+NÂˆÛÜšÜÜXÙTÝ™Ëœ™\XÙPÚ[™[Š
+NÂˆ›Ø][™ÕÛÛY[K˜Û\ÜÓ\Ý˜Y
+šY[ˆŠNÂˆB‚ˆ\Þ[˜È[˜Ý[ÛˆØYÚÜÙ[“]™[š[Jš[JHÂˆYˆ
+Yš[JHÂˆ™]\›ŽÂˆBˆ]ØYÝXØÙYYYH˜[ÙNÂˆžHÂˆÛÛœÝ\œÙYH”ÓÓ‹œ\œÙJ]ØZ]š[K^
+
+JNÂˆÛÛœÝ]™[H˜[Y]PÚÜÙ[“]™[
+\œÙYš[K›˜[YJNÂˆU‘SËœÜXÙJU‘SË›[™Ý]™[
+NÂˆÝ\œ™[]™[[™^HÂˆÙ]]™[š[TÝ]\Ê	Ùš[K›˜[Y_H8 %	Û]™[]_X
+NÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ýœ™[[Ý™J››Ë[]™[[ØYYŠNÂˆØY]™[
+
+NÂˆØYÝXØÙYYYHYNÂˆHØ]Ú
+\œ›ÜŠHÂˆÛÛœÛÛK™\œ›ÜŠ•HÙ[XÝY]™[š[HÛÝ[›Ý™HØYYˆ‹\œ›ÜŠNÂˆÙ]]™[š[TÝ]\Ê\œ›Üˆ	‰ˆ\œ›Ü‹›Y\ÜØYÙHÈ\œ›Ü‹›Y\ÜØYÙHˆ•HÙ[XÝYš[HÛÝ[›Ý™HØYYˆ‹YJNÂˆYˆ
+YÙ]Ý\œ™[]™[
+
+JHÂˆÚÝÓ›Ó]™[Ù[XÝYÝ]J•]š[HÛÝ[›Ý™HØYYˆÚÛÜÙHH˜[Y^ÙY[ÙXœ˜H]™[”ÓÓˆš[KˆŠNÂˆBˆHš[˜[HÂˆYˆ
+[ØYÝXØÙYYY	‰ˆ]™[š[R[œ]
+HÂˆ]™[š[R[œ]˜[YHHˆŽÂˆBˆBˆB‚‚ˆÛÛœÝÕTÕÓWÓU‘SÔÕÔQÑWÒÑVHH™^ÙY[ÙXœ˜K˜Ý\œ™[Ý\ÝÛS]™[ŽÂˆÛÛœÝÕTÕÓWÓU‘SÕÒS‘Õ×ÓSQWÔ‘Q’VH—×ÑVÑQÐSÑP”WÓU‘S×ÎˆŽÂ‚ˆ[˜Ý[Ûˆ™XYÝ\ÝÛS]™[˜[œÙ™\”^[ØY
+
+HÂˆ]^[ØY^H[Â‚ˆžHÂˆ^[ØY^HÚ[™ÝËœÙ\ÜÚ[Û”ÝÜ˜YÙK™Ù]][JÕTÕÓWÓU‘SÔÕÔQÑWÒÑVJNÂˆHØ]Ú
+\œ›ÜŠHÂˆËÈš[N‹ËÈYÙ\ÈØ[ˆ]™Hœ›ÝÜÙ\‹\ÜXÚYšXÈÝÜ˜YÙH™Z]š[Ü‹‚ˆB‚ˆYˆ
+\^[ØY^	‰ˆ\[ÙˆÚ[™ÝË›˜[YHOOHœÝš[™Èˆ	‰ˆÚ[™ÝË›˜[YKœÝ\ÕÚ]
+ÕTÕÓWÓU‘SÕÒS‘Õ×ÓSQWÔ‘Q’V
+JHÂˆ^[ØY^HÚ[™ÝË›˜[YKœÛXÙJÕTÕÓWÓU‘SÕÒS‘Õ×ÓSQWÔ‘Q’V›[™Ý
+NÂˆB‚ˆYˆ
+\^[ØY^
+HÂˆ›ÝÈ™]È\œ›ÜŠ•HÝ\ÝÛH]™[]H\È›ÈÛ™Ù\ˆ]˜Z[X›H[ˆ\ÈX‹ˆ™]\›ˆÈHÛYHYÙH[™ÚÛÜÙHHš[HYØZ[‹ˆŠNÂˆB‚ˆ]^[ØYÂˆžHÂˆ^[ØYH”ÓÓ‹œ\œÙJ^[ØY^
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆ›ÝÈ™]È\œ›ÜŠ•HØ]™YÝ\ÝÛH]™[˜[œÙ™\ˆ]HÛÝ[›Ý™H™XYˆŠNÂˆB‚ˆYˆ
+\^[ØY\[Ùˆ^[ØY^OOHœÝš[™ÈŠHÂˆ›ÝÈ™]È\œ›ÜŠ•HØ]™YÝ\ÝÛH]™[˜[œÙ™\ˆ]H\È[˜ÛÛ\]KˆŠNÂˆB‚ˆ™]\›ˆ^[ØYÂˆB‚ˆ[˜Ý[Ûˆ[œÝ[]™[œ›ÛT\œÙYœÛÛŠ\œÙYÛÝ\˜ÙS˜[YJHÂˆÛÛœÝ]™[H˜[Y]PÚÜÙ[“]™[
+\œÙYÛÝ\˜ÙS˜[YJNÂˆU‘SËœÜXÙJU‘SË›[™Ý]™[
+NÂˆÝ\œ™[]™[[™^HÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ýœ™[[Ý™J››Ë[]™[[ØYYŠNÂˆØY]™[
+
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆØY[™Y]™[š[J]™[š[JHÂˆÚÝÓ›Ó]™[Ù[XÝYÝ]JØY[™È	Û]™[š[_x )˜
+NÂ‚ˆÛÛœÝ]™[\›H™]ÈT“
+]™[š[KÚ[™ÝË›ØØ][Û‹š™YŠNÂˆ™]\›ˆ™]Ú
+]™[\›
+Bˆ[Š™\ÜÛœÙHOˆÂˆYˆ
+\™\ÜÛœÙK›ÚÊHÂˆ›ÝÈ™]È\œ›ÜŠÛÝ[›ÝØY	Û]™[š[_H
+	Ü™\ÜÛœÙKœÝ]\ßH	Ü™\ÜÛœÙKœÝ]\Õ^JK˜
+NÂˆBˆ™]\›ˆ™\ÜÛœÙK^
+
+NÂˆJBˆ[Š^OˆÂˆ]\œÙYÂˆžHÂˆ\œÙYH”ÓÓ‹œ\œÙJ^
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆ›ÝÈ™]È\œ›ÜŠ	Û]™[š[_HÙ\È›ÝÛÛZ[ˆ˜[Y”ÓÓ‹˜
+NÂˆBˆ™]\›ˆ[œÝ[]™[œ›ÛT\œÙYœÛÛŠ\œÙY]™[š[JNÂˆJBˆ˜Ø]Ú
+\œ›ÜˆOˆÂˆÛÛœÛÛK™\œ›ÜŠ•H[™Y]™[ÛÝ[›Ý™HØYYˆ‹\œ›ÜŠNÂˆÛÛœÝØØ[š[S›ÝHHÚ[™ÝË›ØØ][Û‹œ›ÝØÛÛOOH™š[Nˆ‚ˆÈˆœ›ÝÜÙ\œÈ›Ü›X[H›ØÚÈ˜]˜TØÜš\œ›ÛH™]Ú[™È™ZYÚ›Üš[™È”ÓÓˆš[\ÈÚ[ˆHÚ]H\ÈÜ[™YÚ]š[N‹ËËˆ\ÙHHÝ\ÝÛHš[HÚÛÜÙ\ˆÛˆHÛYHYÙKÜˆÙ\™H\È›Û\ˆÚ]HØØ[ÙXˆÙ\™\ˆÈÚ]XˆYÙ\Ëˆ‚ˆˆˆŽÂˆÚÝÓ›Ó]™[Ù[XÝYÝ]J
+\œ›Üˆ	‰ˆ\œ›Ü‹›Y\ÜØYÙBˆÈ\œ›Ü‹›Y\ÜØYÙBˆˆ•H[™Y]™[ÛÝ[›Ý™HØYYˆŠH
+ÈØØ[š[S›ÝJNÂˆ™]\›ˆ˜[ÙNÂˆJNÂˆB‚ˆ[˜Ý[ÛˆØY[š]X[]™[œ›ÛS˜]šYØ][ÛŠ
+HÂˆÛÛœÝ\˜[\ÈH™]ÈT“ÙX\˜Ú\˜[\ÊÚ[™ÝË›ØØ][Û‹œÙX\˜Ú
+NÂˆÛÛœÝ™\]Y\ÝY]™[š[HHÝš[™Ê\˜[\Ë™Ù]
+›]™[ŠHˆŠKš[J
+NÂˆÛÛœÝ˜]šYØ][Û”ÛÝ\˜ÙHHÝš[™Ê\˜[\Ë™Ù]
+œÛÝ\˜ÙHŠHˆŠKÓÝÙ\Ø\ÙJ
+NÂ‚ˆYˆ
+™\]Y\ÝY]™[š[JHÂˆËÈ]™[È][˜ÚYœ›ÛHHÛYHYÙHØ\œžHZ\ˆ”ÓÓˆ[ˆ\ÈXˆÛÂˆËÈš[N‹ËÈÛÜšÜËÚ[HHT“Ý[Y[YšY\ÈHÙ[XÝYš[K‚ˆYˆ
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Z[[ˆˆ˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Ý\ÝÛHŠHÂˆžHÂˆÛÛœÝ^[ØYH™XYÝ\ÝÛS]™[˜[œÙ™\”^[ØY
+
+NÂˆYˆ
+^[ØY™š[S˜[YH	‰ˆ^[ØY™š[S˜[YHOOH™\]Y\ÝY]™[š[JHÂˆYˆ
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Ý\ÝÛHŠHÂˆ›ÝÈ™]È\œ›ÜŠ•HØ]™YÝ\ÝÛH]™[Ù\È›ÝX]ÚH]™[˜[YY[ˆ\ÈT“ˆ™]\›ˆÈHÛYHYÙH[™ÚÛÜÙHHš[HYØZ[‹ˆŠNÂˆBˆH[ÙHÂˆÛÛœÝ\œÙYH”ÓÓ‹œ\œÙJ^[ØY^
+NÂˆ™]\›ˆ[œÝ[]™[œ›ÛT\œÙYœÛÛŠ\œÙY^[ØY™š[S˜[YH™\]Y\ÝY]™[š[JNÂˆBˆHØ]Ú
+\œ›ÜŠHÂˆYˆ
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Ý\ÝÛHŠHÂˆÛÛœÛÛK™\œ›ÜŠ•HÙ[XÝYÝ\ÝÛH]™[ÛÝ[›Ý™HØYYˆ‹\œ›ÜŠNÂˆÚÝÓ›Ó]™[Ù[XÝYÝ]J\œ›Üˆ	‰ˆ\œ›Ü‹›Y\ÜØYÙBˆÈ\œ›Ü‹›Y\ÜØYÙBˆˆ•HÙ[XÝYÝ\ÝÛH]™[ÛÝ[›Ý™HØYYˆ™]\›ˆÈHÛYHYÙH[™ÚÛÜÙH]YØZ[‹ˆŠNÂˆ™]\›ˆ˜[ÙNÂˆBˆËÈH\™XÝÜÝYZ[Z[ˆ[šÈX^H]™H›È˜[œÙ™\ˆ^[ØY‚ˆËÈ[ˆ]Ø\ÙHH›Ü›X[”ÓÓˆ™]Ú™[ÝÈ\ÈHÛÜœ™XÝ˜[˜XÚË‚ˆBˆB‚ˆYˆ
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Ý\ÝÛHŠHÂˆØY[™Y]™[š[J™\]Y\ÝY]™[š[JNÂˆ™]\›ˆYNÂˆBˆB‚ˆYˆ
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Ý\ÝÛHˆ˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Z[[ˆŠHÂˆžHÂˆÛÛœÝ^[ØYH™XYÝ\ÝÛS]™[˜[œÙ™\”^[ØY
+
+NÂˆÛÛœÝ\œÙYH”ÓÓ‹œ\œÙJ^[ØY^
+NÂˆÛÛœÝÛÝ\˜ÙS˜[YHH^[ØY™š[S˜[YH
+˜]šYØ][Û”ÛÝ\˜ÙHOOH˜Z[[ˆ‚ˆÈ•HÙ[XÝYZ[Z[ˆ]™[‚ˆˆ•HÙ[XÝYÝ\ÝÛH]™[š[HŠNÂˆ™]\›ˆ[œÝ[]™[œ›ÛT\œÙYœÛÛŠ\œÙYÛÝ\˜ÙS˜[YJNÂˆHØ]Ú
+\œ›ÜŠHÂˆÛÛœÛÛK™\œ›ÜŠ•HÙ[XÝY]™[ÛÝ[›Ý™HØYYˆ‹\œ›ÜŠNÂˆÚÝÓ›Ó]™[Ù[XÝYÝ]J\œ›Üˆ	‰ˆ\œ›Ü‹›Y\ÜØYÙBˆÈ\œ›Ü‹›Y\ÜØYÙBˆˆ•HÙ[XÝY]™[ÛÝ[›Ý™HØYYˆ™]\›ˆÈHÛYHYÙH[™ÚÛÜÙH]YØZ[‹ˆŠNÂˆ™]\›ˆ˜[ÙNÂˆBˆB‚ˆÚÝÓ›Ó]™[Ù[XÝYÝ]JÚÛÜÙHHZ[Z[ˆ]™[ÜˆHÝ\ÝÛH]™[š[Hœ›ÛHHÛYHYÙHÈ™YÚ[‹ˆŠNÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ý\œ™[]™[
+
+HÂˆ™]\›ˆU‘SÖØÝ\œ™[]™[[™^H[ÂˆB‚ˆ[˜Ý[ÛˆÙ][ÝÙYÛÛÑ›Ü“]™[
+]™[
+HÂˆYˆ
+[]™[
+HÂˆ™]\›ˆURSP“WÐ–WÑQUSÕÓÓËœÛXÙJ
+NÂˆB‚ˆÛÛœÝ^ÛYYY˜][ÛÛÈH™]ÈÙ]
+]™[™^ÛYYY˜][ÛÛÈ×JNÂˆÛÛœÝ[ÝÙY[˜]˜Z[X›UÛÛÈH]™[˜[ÝÙY[˜]˜Z[X›UÛÛÈ×NÂ‚ˆ™]\›ˆÂˆ‹‹URSP“WÐ–WÑQUSÕÓÓË™š[\ŠÛÛOˆY^ÛYYY˜][ÛÛËš\ÊÛÛ
+JKˆ‹‹˜[ÝÙY[˜]˜Z[X›UÛÛË™š[\ŠÛÛOˆSURSP“WÐ–WÑQUSÕÓÓËš[˜ÛY\ÊÛÛ
+JBˆNÂˆB‚ˆ[˜Ý[Ûˆ\ÕÛÛ[ÝÙY[Ý\œ™[]™[
+ÛÛ˜[YJHÂˆ™]\›ˆÙ][ÝÙYÛÛÑ›Ü“]™[
+Ù]Ý\œ™[]™[
+
+JKš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ý\œ™[[[ÔÝ\Ê
+HÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆ™]\›ˆ]™[	‰ˆ]™[™[[È	‰ˆ\œ˜^Kš\Ð\œ˜^J]™[™[[ËœÝ\ÊBˆÈ]™[™[[ËœÝ\Âˆˆ×NÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[Ó[ÙPXÝ]™J
+HÂˆ™]\›ˆ\Ñ[[ÓÛ›S]™[
+Ù]Ý\œ™[]™[
+
+JH	‰ˆÙ]Ý\œ™[[[ÔÝ\Ê
+K›[™ÝˆÂˆB‚ˆ[˜Ý[ÛˆÙ]Ý\œ™[[[ÔÝ\
+
+HÂˆÛÛœÝÝ\ÈHÙ]Ý\œ™[[[ÔÝ\Ê
+NÂˆ™]\›ˆ\Ñ[[Ó[ÙPXÝ]™J
+H	‰ˆ[[ÔÝ\[™^H	‰ˆ[[ÔÝ\[™^Ý\Ë›[™ÝˆÈÝ\ÖÙ[[ÔÝ\[™^Bˆˆ[ÂˆB‚ˆ[˜Ý[ÛˆÙ][[ÐÛÛ[]]PÚÚXÙPXœÛÛ]R[™^
+Ý\HÙ]Ý\œ™[[[ÔÝ\
+
+JHÂˆYˆ
+\Ý\Ý\\HOOH˜ÛÛ[]]PÚÚXÙHˆ\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆLNÂˆBˆÛÛœÝ™[]]™R[™^H[X™\ŠÝ\œ™[]]™R[™^
+NÂˆYˆ
+S[X™\‹š\Ò[YÙ\Š™[]]™R[™^
+JHÂˆ™]\›ˆLNÂˆBˆÛÛœÝXœÛÛ]R[™^HÙ[XÝ[Û‹™š\œÝ\
+È™[]]™R[™^Âˆ™]\›ˆXœÛÛ]R[™^HÙ[XÝ[Û‹™š\œÝ\	‰ˆXœÛÛ]R[™^HÙ[XÝ[Û‹›\Ý\ˆÈXœÛÛ]R[™^ˆˆLNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[ÐÛÛ[]]PÚÚXÙP[ÝÙY
+ÛXÚÙY[™^
+HÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ˆYNÂˆBˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+Ý\	‰ˆÝ\\HOOH˜ÛÛ[]]PÚÚXÙHŠHÂˆ™]\›ˆÛXÚÙY[™^OOHÙ][[ÐÛÛ[]]PÚÚXÙPXœÛÛ]R[™^
+Ý\
+NÂˆBˆËÈÛ\ˆ[Ý™H\ÝÜšY\ÈY›ÝÝÜ™H\›]]][ÛˆÛXÚÜËˆYˆZ\‚ˆËÈÜ™\ˆÛÝ[›Ý™H[™™\œ™Y\š[™Èš[HØY[™Ë[ÝÈH\Ù\ˆÂˆËÈÚÛÜÙHHÜ™\ˆX[X[H[œÝXYÙˆ˜\[™ÈH[[È[ˆ™]šY]Ë‚ˆ™]\›ˆH\Ý\	‰ˆÝ\\HOOHÛÛˆ	‰ˆZTÝ]KœÝYÙHOOHœ™]šY]ÈŽÂˆB‚ˆ[˜Ý[Ûˆ™Yœ™\Ú[[Ð›ÙPÛ\ÜÊ
+HÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\ÝÙÙÛJ™[[Ë[[ÙKXXÝ]™H‹\Ñ[[Ó[ÙPXÝ]™J
+JNÂˆB‚ˆ[˜Ý[Ûˆ\]S[ÙPÛÛ›ÛÊ
+HÂˆ^S[ÙHH\Ñ[[ÓÛ›S]™[
+Ù]Ý\œ™[]™[
+
+JHÈVWÓSÑTË™[[ÈˆVWÓSÑTËœ™YÝ[\ŽÂˆ™Yœ™\Ú[[Ð›ÙPÛ\ÜÊ
+NÂˆB‚ˆ[˜Ý[Ûˆ™\Ù][[ÔÝ]Q›ÜÝ\œ™[]™[
+
+HÂˆ[[ÔÝ\[™^HÂˆ\]S[ÙPÛÛ›ÛÊ
+NÂˆB‚ˆ[˜Ý[ÛˆÙ]^S[ÙJ[ÙKÜ[ÛœÈHßJHÂˆÛÛœÝ™^[ÙHH[ÙHOOHVWÓSÑTË™[[ÈÈVWÓSÑTË™[[ÈˆVWÓSÑTËœ™YÝ[\ŽÂˆÛÛœÝÚ[™ÙYH^S[ÙHOOH™^[ÙNÂˆ^S[ÙHH™^[ÙNÂˆ\]S[ÙPÛÛ›ÛÊ
+NÂˆYˆ
+Ü[ÛœËœ™[ØY	‰ˆÚ[™ÙY
+HÂˆØY]™[
+Ý\œ™[]™[[™^
+NÂˆH[ÙHÂˆ™[™\•ÛÛ\™XJ
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆBˆB‚ˆ[˜Ý[Ûˆ\]S[ÙT]Y\žTÝš[™Ê[ÙJHÂˆYˆ
+]Ú[™ÝËš\ÝÜžH]Ú[™ÝËš\ÝÜžKœ™\XÙTÝ]JHÂˆ™]\›ŽÂˆBˆÛÛœÝ\›H™]ÈT“
+Ú[™ÝË›ØØ][Û‹š™YŠNÂˆYˆ
+[ÙHOOHVWÓSÑTË™[[ÊHÂˆ\›œÙX\˜Ú\˜[\ËœÙ]
+›[ÙH‹™[[ÈŠNÂˆH[ÙHÂˆ\›œÙX\˜Ú\˜[\Ë™[]J›[ÙHŠNÂˆBˆÚ[™ÝËš\ÝÜžKœ™\XÙTÝ]J[ˆ‹\›ÔÝš[™Ê
+JNÂˆB‚ˆ[˜Ý[Ûˆ^S[ÙQœ›ÛT]Y\žTÝš[™Ê
+HÂˆÛÛœÝ\˜[\ÈH™]ÈT“ÙX\˜Ú\˜[\ÊÚ[™ÝË›ØØ][Û‹œÙX\˜Ú
+NÂˆ™]\›ˆÝš[™Ê\˜[\Ë™Ù]
+›[ÙHŠHˆŠKÓÝÙ\Ø\ÙJ
+HOOH™[[È‚ˆÈVWÓSÑTË™[[ÂˆˆVWÓSÑTËœ™YÝ[\ŽÂˆB‚ˆ[˜Ý[ÛˆÙ][[Õ\™Ù]›ÙJÝ\
+HÂˆYˆ
+\Ý\\Ý\™^™\ÜÚ[ÛŠHÂˆ™]\›ˆ[ÂˆBˆYˆ
+Ý\—Ý\™Ù]›ÙJHÂˆ™]\›ˆÝ\—Ý\™Ù]›ÙNÂˆBˆžHÂˆÝ\—Ý\™Ù]›ÙHH›Ü›X[^™Q^™\ÜÚ[Û•™YJ\œÙT\™[\Ú^™Y^™\ÜÚ[Û”ÝšXÝ
+Ý\™^™\ÜÚ[ÛŠJNÂˆHØ]Ú
+\œŠHÂˆÝ\—Ý\™Ù]›ÙHH[ÂˆBˆ™]\›ˆÝ\—Ý\™Ù]›ÙNÂˆB‚ˆ[˜Ý[ÛˆXZÙPØ[™Y]S›ÙQ›Ü‘[[Ô˜[™ÙJ›ÙKš\œÝ\\Ý\
+HÂˆYˆ
+[›ÙJHÂˆ™]\›ˆ[ÂˆBˆYˆ
+›ÙK\HOOHœÝ[HŠHÂˆ™]\›ˆXZÙTÝ[Qœ›ÛU\›\Ê›ÙK˜\™ÜËœÛXÙJš\œÝ\\Ý\
+ÈJK›X\
+ÛÛ™S›ÙJJNÂˆBˆYˆ
+›ÙK\HOOHœ›ÙŠHÂˆ™]\›ˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ›ÙK˜\™ÜËœÛXÙJš\œÝ\\Ý\
+ÈJK›X\
+ÛÛ™S›ÙJJNÂˆBˆ™]\›ˆÛÛ™S›ÙJ›ÙJNÂˆB‚ˆ[˜Ý[ÛˆÙ[XÝ[Û”˜[™ÙSX]Ú\Ñ[[Õ\™Ù]
+›ÙKš\œÝ\\Ý\\™Ù]›ÙJHÂˆÛÛœÝØ[™Y]HHXZÙPØ[™Y]S›ÙQ›Ü‘[[Ô˜[™ÙJ›ÙKš\œÝ\\Ý\
+NÂˆ™]\›ˆHXØ[™Y]H	‰ˆH]\™Ù]›ÙH	‰ˆØ[YQ^™\ÜÚ[Û‘›Ü“X]Ú[™ÊØ[™Y]K\™Ù]›ÙJNÂˆB‚ˆ[˜Ý[ÛˆÙ][[ÔÙ[XÝ[Û\™XJØ[™Y]JHÂˆYˆ
+XØ[™Y]HXØ[™Y]K››ÙJHÂˆ™]\›ˆ[X™\‹”ÔÒUU‘WÒS‘’S’UNÂˆBˆÛÛœÝ›ÙHHØ[™Y]K››ÙNÂˆ]ÚYÂˆ]ZYÚÂˆYˆ
+›ÙK\HOOHœ›ÙŠHÂˆÛÛœÝHH›ÙK˜\™ÜÖØØ[™Y]K™š\œÝ\K›Y
+
+HHÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÛÛœÝˆH›ÙK˜\™ÜÖØØ[™Y]K›\Ý\KœšYÚ
+
+H
+ÈÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÚYHˆHNÂˆZYÚH›ÙK˜›ÝÛJ
+HH›ÙKÜ
+
+NÂˆH[ÙHYˆ
+›ÙK\HOOHœÝ[HŠHÂˆÛÛœÝLHH›ÙK˜\™ÜÖØØ[™Y]K™š\œÝ\KÜ
+
+HHÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÛÛœÝLˆH›ÙK˜\™ÜÖØØ[™Y]K›\Ý\K˜›ÝÛJ
+H
+ÈÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÚYH›ÙKœšYÚ
+
+HH›ÙK›Y
+
+NÂˆZYÚHLˆHLNÂˆH[ÙHÂˆÚYH›ÙKœšYÚ
+
+HH›ÙK›Y
+
+NÂˆZYÚH›ÙK˜›ÝÛJ
+HH›ÙKÜ
+
+NÂˆBˆ™]\›ˆX]›X^
+KÚY
+H
+ˆX]›X^
+KZYÚ
+NÂˆB‚ˆ[˜Ý[Ûˆš[™[[ÔÙ[XÝ[Û•\™Ù]
+Ý\
+HÂˆÛÛœÝ\™Ù]›ÙHHÙ][[Õ\™Ù]›ÙJÝ\
+NÂˆYˆ
+]\™Ù]›ÙHY^™\ÜÚ[Û”›ÛÝ
+HÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝØ[™Y]\ÈH×NÂˆ˜]™\œÙT™SÜ™\Š^™\ÜÚ[Û”›ÛÝ›ÙHOˆÂˆYˆ
+Ø[YQ^™\ÜÚ[Û‘›Ü“X]Ú[™Ê›ÙK\™Ù]›ÙJJHÂˆØ[™Y]\Ëœ\Ú
+È›ÙKš\œÝ\ˆ\Ý\ˆX]›X^
+
+›ÙK˜\™ÜÈ×JK›[™ÝHJHJNÂˆB‚ˆYˆ
+›ÙK\HOOHœÝ[Hˆ›ÙK\HOOHœ›ÙŠHÂˆ›Üˆ
+]š\œÝHÈš\œÝ›ÙK˜\™ÜË›[™ÝÈš\œÝ
+ÊÊHÂˆ›Üˆ
+]\ÝHš\œÝÈ\Ý›ÙK˜\™ÜË›[™ÝÈ\Ý
+ÊÊHÂˆYˆ
+Ù[XÝ[Û”˜[™ÙSX]Ú\Ñ[[Õ\™Ù]
+›ÙKš\œÝ\Ý\™Ù]›ÙJJHÂˆØ[™Y]\Ëœ\Ú
+È›ÙKš\œÝ\ˆš\œÝ\Ý\ˆ\ÝJNÂˆBˆBˆBˆBˆJNÂ‚ˆØ[™Y]\ËœÛÜ
+
+KŠHOˆÙ][[ÔÙ[XÝ[Û\™XJJHHÙ][[ÔÙ[XÝ[Û\™XJŠJNÂˆ™]\›ˆØ[™Y]\ÖÌH[ÂˆB‚ˆ[˜Ý[ÛˆÝ\œ™[Ù[XÝ[Û“X]Ú\Ñ[[ÔÝ\
+
+HÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\Ý\\HOOHœÙ[XÝˆ\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ\™Ù]›ÙHHÙ][[Õ\™Ù]›ÙJÝ\
+NÂˆ™]\›ˆÙ[XÝ[Û”˜[™ÙSX]Ú\Ñ[[Õ\™Ù]
+Ù[XÝ[Û‹››ÙKÙ[XÝ[Û‹™š\œÝ\Ù[XÝ[Û‹›\Ý\\™Ù]›ÙJNÂˆB‚ˆ[˜Ý[Ûˆ™Yœ™\Ú[[Ô›Û\Y\Y˜[˜ÙJ
+HÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆB‚ˆ[˜Ý[ÛˆY˜[˜ÙQ[[ÔÝ\
+
+HÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ŽÂˆBˆÛÛœÝÝ\ÈHÙ]Ý\œ™[[[ÔÝ\Ê
+NÂˆ[[ÔÝ\[™^HX]›Z[Š[[ÔÝ\[™^
+ÈKÝ\Ë›[™Ý
+NÂˆ™Yœ™\Ú[[Ð›ÙPÛ\ÜÊ
+NÂˆ™Yœ™\Ú[[Ô›Û\Y\Y˜[˜ÙJ
+NÂˆB‚ˆ[˜Ý[Ûˆ˜[Y]Q[[ÔÙ[XÝ[ÛY\”Ú[\•\
+
+HÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ˆYNÂˆBˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\Ý\\HOOHœÙ[XÝŠHÂˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+Ý\œ™[Ù[XÝ[Û“X]Ú\Ñ[[ÔÝ\
+
+JHÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆ™]\›ˆYNÂˆBˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[ÛˆÙ][[Õ\™Ù]ÛÛØ[™Y]\ÊÛÛ˜[YJHÂˆYˆ
+ÛÛ˜[YHOOH›[Y\šXØ[\]Z]˜[[˜ÙHˆ\Ó[Y\šXØ[™]Üš]UÛÛ
+ÛÛ˜[YJJHÂˆ™]\›ˆ[š\]YUÛÛÙ^\ÊÂˆÛÛ˜[YKˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ\š]Y]XÓ]™[	ÙÙ]\š]Y]XÓ]™[›ÜÝ\œ™[]™[
+
+_XˆJNÂˆBˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]HŠHÂˆ™]\›ˆÈ˜ÛÛ[]]H‹˜ÛÛ[]]Qš\œÝÓ\Ý—NÂˆBˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝˆÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝŠHÂˆ™]\›ˆÝÛÛ˜[YK˜ÛÛ[]]H—NÂˆBˆ™]\›ˆÝÛÛ˜[YWNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[ÕÛÛ[ÝÙY
+ÛÛ˜[YJHÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ˆYNÂˆBˆYˆ
+\Ý\Ý\\HOOHÛÛŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™]\›ˆÙ][[Õ\™Ù]ÛÛØ[™Y]\ÊÝ\ÛÛ
+Kš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[ÐXÝ[Û[ÝÙY
+XÝ[Û‹˜[YJHÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ˆYNÂˆBˆYˆ
+\Ý\Ý\\HOOH˜XÝ[ÛˆˆÝ\˜XÝ[ÛˆOOHXÝ[ÛŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+Ý\˜[YHOOH[™Yš[™Y	‰ˆÝš[™ÊÝ\˜[YJHOOHÝš[™Ê˜[YHÏÈˆŠJHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ[[ÐZ[\XÝ[Û[ÝÙY
+XÝ[Û‹˜[YJHÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ˆYNÂˆBˆYˆ
+\Ý\Ý\\HOOH˜Z[\ˆˆÝ\˜XÝ[ÛˆOOHXÝ[ÛŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+Ý\˜[YHOOH[™Yš[™Y	‰ˆÝš[™ÊÝ\˜[YJHOOHÝš[™Ê˜[YHÏÈˆŠJHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q[[Ò[œ]›ÜÝ\œ™[Ý\
+
+HÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\Ý\\HOOH˜XÝ[ÛˆˆÝ\š[œ]OOH[™Yš[™Y
+HÂˆ™]\›ŽÂˆBˆZTÝ]Kš[œ]^HÝš[™ÊÝ\š[œ]
+NÂˆB‚ˆ[˜Ý[Ûˆ\ØØ\PÜÜÔÙ[XÝÜ•˜[YJ˜[YJHÂˆÛÛœÝ^HÝš[™Ê˜[YHÏÈˆŠNÂˆYˆ
+Ú[™ÝËÔÔÈ	‰ˆ\[ÙˆÚ[™ÝËÔÔË™\ØØ\HOOH™[˜Ý[ÛˆŠHÂˆ™]\›ˆÚ[™ÝËÔÔË™\ØØ\J^
+NÂˆBˆ™]\›ˆ^œ™\XÙJ×ÙË—ŠKœ™\XÙJÈ‹ÙË—ˆŠNÂˆB‚ˆ[˜Ý[Ûˆ\Q[[Ð]Û’YÚYÚÊÛÛZ[™\ŠHÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+HXÛÛZ[™\ŠHÂˆ™]\›ŽÂˆBˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+‹™[[Ë]\™Ù]X]Û‹™[[ËX›ØÚÙYX]ÛˆŠK™›Ü‘XXÚ
+]ÛˆOˆÂˆ]Û‹˜Û\ÜÓ\Ýœ™[[Ý™J™[[Ë]\™Ù]X]Ûˆ‹™[[ËX›ØÚÙYX]ÛˆŠNÂˆJNÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\
+HÂˆ™]\›ŽÂˆB‚ˆ]\™Ù]]ÛˆH[ÂˆYˆ
+Ý\\HOOHÛÛŠHÂˆ›Üˆ
+ÛÛœÝ\™Ù]ÛÛÙˆÙ][[Õ\™Ù]ÛÛØ[™Y]\ÊÝ\ÛÛ
+JHÂˆ\™Ù]]ÛˆHÛÛZ[™\‹œ]Y\žTÙ[XÝÜŠ]Û–Ù]K]ÛÛH‰Ù\ØØ\PÜÜÔÙ[XÝÜ•˜[YJ\™Ù]ÛÛ
+_H—X
+NÂˆYˆ
+\™Ù]]ÛŠHÂˆœ™XZÎÂˆBˆBˆYˆ
+]\™Ù]]Ûˆ	‰ˆ\Ò[[Ø]YÛÜžUÛÛ›Ý][Û“[ÙJ
+JHÂˆÛÛœÝØ]YÛÜžRYHÙ][[Ø]YÛÜžRY›Ü•ÛÛ
+Ý\ÛÛ
+NÂˆYˆ
+Ø]YÛÜžRY
+HÂˆ\™Ù]]ÛˆHÛÛZ[™\‹œ]Y\žTÙ[XÝÜŠ]Û–Ù]K\[KXØ]YÛÜžOH‰Ù\ØØ\PÜÜÔÙ[XÝÜ•˜[YJØ]YÛÜžRY
+_H—X
+NÂˆBˆBˆH[ÙHYˆ
+Ý\\HOOH˜XÝ[ÛˆŠHÂˆÛÛœÝXÝ[Û”Ù[XÝÜˆH]Û–Ù]KXXÝ[ÛH‰Ù\ØØ\PÜÜÔÙ[XÝÜ•˜[YJÝ\˜XÝ[ÛŠ_H—XÂˆÛÛœÝXÝ[Û]ÛœÈH\œ˜^K™œ›ÛJÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+XÝ[Û”Ù[XÝÜŠJNÂˆ\™Ù]]ÛˆHÝ\˜[YHOOH[™Yš[™YˆÈXÝ[Û]ÛœÖÌBˆˆXÝ[Û]ÛœË™š[™
+]ÛˆOˆÝš[™Ê]Û‹™]\Ù]˜[YHˆŠHOOHÝš[™ÊÝ\˜[YJJNÂˆH[ÙHYˆ
+Ý\\HOOH˜Z[\ˆŠHÂˆÛÛœÝZ[\”Ù[XÝÜˆH]Û–Ù]KXZ[\‹XXÝ[ÛH‰Ù\ØØ\PÜÜÔÙ[XÝÜ•˜[YJÝ\˜XÝ[ÛŠ_H—XÂˆÛÛœÝZ[\]ÛœÈH\œ˜^K™œ›ÛJÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+Z[\”Ù[XÝÜŠJNÂˆ\™Ù]]ÛˆHÝ\˜[YHOOH[™Yš[™YˆÈZ[\]ÛœÖÌBˆˆZ[\]ÛœË™š[™
+]ÛˆOˆÝš[™Ê]Û‹™]\Ù]˜[YHˆŠHOOHÝš[™ÊÝ\˜[YJJNÂˆB‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]K]ÛÛK]Û–Ù]KXXÝ[Û—K]Û–Ù]KXZ[\‹XXÝ[Û—K]Û–Ù]K]ÛÛXØ]YÛÜžWK]Û–Ù]K\[KXØ]YÛÜžWHŠK™›Ü‘XXÚ
+]ÛˆOˆÂˆYˆ
+]ÛˆOOH\™Ù]]ÛŠHÂˆ]Û‹˜Û\ÜÓ\Ý˜Y
+™[[Ë]\™Ù]X]ÛˆŠNÂˆH[ÙHÂˆ]Û‹˜Û\ÜÓ\Ý˜Y
+™[[ËX›ØÚÙYX]ÛˆŠNÂˆBˆJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[XÝ[Û”™XÝ[™ÛQ›Ü“›ÙT˜[™ÙJ›ÙKš\œÝ\\Ý\
+HÂˆYˆ
+[›ÙJHÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝX\™Ú[ˆHÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆ]Âˆ]NÂˆ]ÚYÂˆ]ZYÚÂ‚ˆYˆ
+›ÙK\HOOHœ›ÙŠHÂˆH›ÙK˜\™ÜÖÙš\œÝ\K›Y
+
+HHX\™Ú[ŽÂˆHH›ÙKÜ
+
+HHX\™Ú[ŽÂˆÚYH›ÙK˜\™ÜÖÛ\Ý\KœšYÚ
+
+H
+ÈX\™Ú[ˆHÂˆZYÚH›ÙK˜›ÝÛJ
+H
+ÈX\™Ú[ˆHNÂˆH[ÙHYˆ
+›ÙK\HOOHœÝ[HŠHÂˆH›ÙK›Y
+
+HHX\™Ú[ŽÂˆHH›ÙK˜\™ÜÖÙš\œÝ\KÜ
+
+HHX\™Ú[ŽÂˆÚYH›ÙKœšYÚ
+
+H
+ÈX\™Ú[ˆHÂˆZYÚH›ÙK˜\™ÜÖÛ\Ý\K˜›ÝÛJ
+H
+ÈX\™Ú[ˆHNÂˆH[ÙHÂˆH›ÙK›Y
+
+HHX\™Ú[ŽÂˆHH›ÙKÜ
+
+HHX\™Ú[ŽÂˆÚYH›ÙKœšYÚ
+
+H
+ÈX\™Ú[ˆHÂˆZYÚH›ÙK˜›ÝÛJ
+H
+ÈX\™Ú[ˆHNÂˆB‚ˆ™]\›ˆÂˆˆKˆÚYˆX]›X^
+KÚY
+KˆZYÚˆX]›X^
+KZYÚ
+BˆNÂˆB‚ˆ[˜Ý[Ûˆ˜]Ñ\ÚY[[ÔÙ[XÝ[Û”™XÝ[™ÛJ›ÙKš\œÝ\\Ý\
+HÂˆÛÛœÝ™XÝHÙ]Ù[XÝ[Û”™XÝ[™ÛQ›Ü“›ÙT˜[™ÙJ›ÙKš\œÝ\\Ý\
+NÂˆYˆ
+\™XÝ
+HÂˆ™]\›ŽÂˆB‚ˆÝœØ]™J
+NÂˆÝ™ÛØ˜[[HHNÂˆÝ›[™UÚYHÎÂˆÝœÝ›ÚÙTÝ[HHœ™ØŠŒ‹MÍ‹
+HŽÂˆÝœÙ][™Q\Ú
+ÌËWJNÂˆÝœÝ›ÚÙT™XÝ
+™XÝž™XÝžK™XÝÚY™XÝšZYÚ
+NÂˆÝœ™\ÝÜ™J
+NÂˆB‚ˆ[˜Ý[Ûˆ˜]Ñ[[ÔÙ[XÝ[Û”›Û\
+
+HÂˆYˆ
+ˆZ\Ñ[[Ó[ÙPXÝ]™J
+HˆZTÝ]KœÝYÙHOOHœÜÝšY]ÈˆˆZTÝ]Kœ™]šY]Õ[Y\’YOOH[ˆZTÝ]KœÜÝšY]Õ[Y\’YOOH[ˆ
+HÂˆ™]\›ŽÂˆBˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\
+HÂˆ™]\›ŽÂˆBˆYˆ
+Ý\\HOOH˜ÛÛ[]]PÚÚXÙHˆ	‰ˆZTÝ]KœÝYÙHOOHœ™]šY]ÈŠHÂˆÛÛœÝ\™Ù][™^HÙ][[ÐÛÛ[]]PÚÚXÙPXœÛÛ]R[™^
+Ý\
+NÂˆYˆ
+\™Ù][™^H
+HÂˆ˜]Ñ\ÚY[[ÔÙ[XÝ[Û”™XÝ[™ÛJÙ[XÝ[Û‹››ÙK\™Ù][™^\™Ù][™^
+NÂˆBˆ™]\›ŽÂˆBˆYˆ
+ZTÝ]KœÝYÙHOOHœ™]šY]ÈˆÝ\\HOOHœÙ[XÝŠHÂˆ™]\›ŽÂˆBˆÛÛœÝ\™Ù]Hš[™[[ÔÙ[XÝ[Û•\™Ù]
+Ý\
+NÂˆYˆ
+]\™Ù]
+HÂˆ™]\›ŽÂˆBˆ˜]Ñ\ÚY[[ÔÙ[XÝ[Û”™XÝ[™ÛJ\™Ù]››ÙK\™Ù]™š\œÝ\\™Ù]›\Ý\
+NÂˆB‚ˆ[˜Ý[Ûˆ^™\ÜÚ[Û“X]Ú\Ô\™[\Ú^™Y^
+\™[\Ú^™Y^
+HÂˆžHÂˆÛÛœÝ\™Ù]›ÙHH\œÙT\™[\Ú^™Y^™\ÜÚ[Û”ÝšXÝ
+\™[\Ú^™Y^
+NÂˆ™]\›ˆØ[YQ^™\ÜÚ[Û‘›Ü“X]Ú[™ÊÝ\œ™[^™\ÜÚ[Û”›ÛÝ^™\ÜÚ[Û”›ÛÝ\™Ù]›ÙJNÂˆHØ]Ú
+\œŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆB‚ˆ[˜Ý[Ûˆ\]TÝ\ÛÛ\][ÛŠ]™[
+HÂˆYˆ
+[]™[P\œ˜^Kš\Ð\œ˜^J]™[œÝ\ÊJHÂˆ™]\›ŽÂˆBˆYˆ
+P\œ˜^Kš\Ð\œ˜^JÛÛ\]YÝ\ÊHÛÛ\]YÝ\Ë›[™ÝOOH]™[œÝ\Ë›[™Ý
+HÂˆÛÛ\]YÝ\ÈH™]È\œ˜^J]™[œÝ\Ë›[™Ý
+K™š[
+˜[ÙJNÂˆBˆÛÛœÝ™^Ý\[™^HÛÛ\]YÝ\Ë™š[™[™^
+\ÐÛÛ\]HOˆZ\ÐÛÛ\]JNÂˆYˆ
+ˆ™^Ý\[™^Hˆ	‰ˆ^™\ÜÚ[Û“X]Ú\Ô\™[\Ú^™Y^
+]™[œÝ\ÖÛ™^Ý\[™^K™^™\ÜÚ[ÛŠBˆ
+HÂˆÛÛ\]YÝ\ÖÛ™^Ý\[™^HHYNÂˆBˆX^X™T™\\™PÛÛ\]Y]™[^Ü
+]™[
+NÂˆB‚ˆ[˜Ý[ÛˆÙ]Ý\ÛÛ\][Û”Ý]\Ê]™[
+HÂˆYˆ
+[]™[P\œ˜^Kš\Ð\œ˜^J]™[œÝ\ÊJHÂˆ™]\›ˆ×NÂˆBˆYˆ
+P\œ˜^Kš\Ð\œ˜^JÛÛ\]YÝ\ÊHÛÛ\]YÝ\Ë›[™ÝOOH]™[œÝ\Ë›[™Ý
+HÂˆÛÛ\]YÝ\ÈH™]È\œ˜^J]™[œÝ\Ë›[™Ý
+K™š[
+˜[ÙJNÂˆBˆ\]TÝ\ÛÛ\][ÛŠ]™[
+NÂˆ™]\›ˆÛÛ\]YÝ\ËœÛXÙJ
+NÂˆB‚ˆ[˜Ý[Ûˆ™[™\“[Ý™R\ÝÜžPÛÛ›ÛÊ]™[
+HÂˆYˆ
+[[Ý™R\ÝÜžPÛÛ›ÛÊHÂˆ™]\›ŽÂˆBˆYˆ
+Z\Ò[\˜XÝ]™S]™[
+]™[
+JHÂˆ[Ý™R\ÝÜžPÛÛ›ÛËš[›™\’SHˆŽÂˆ™]\›ŽÂˆB‚ˆ[Ý™R\ÝÜžPÛÛ›ÛËš[›™\’SH	Ï]Ûˆ\OH˜]ÛˆˆÛ\ÜÏH˜ÛÛ\][Û‹Y^ÜX]Ûˆ‘ÝÛ›ØY[Ý™H\ÝÜžOØ]Û‰ÎÂˆÛÛœÝ]ÛˆH[Ý™R\ÝÜžPÛÛ›ÛËœ]Y\žTÙ[XÝÜŠ‹˜ÛÛ\][Û‹Y^ÜX]ÛˆŠNÂˆ]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆYˆ
+\ÛÛ][Û”™XÛÜ™\ŠHÂˆ™]\›ŽÂˆBˆÛÛœÝ\ÝÜžQ]HHÛÛ\][Û‘^ÜÛÛ\]Y]]H™]È]J
+NÂˆÛÛ][Û”™XÛÜ™\‹™š[˜[^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆÝÛ›ØY[Ý™R\ÝÜžRœÛÛŠXZÙQ[[ÓÛ›S]™[œ›ÛPÝ\œ™[[Š\ÝÜžQ]JJNÂˆJNÂˆB‚ˆ[˜Ý[Ûˆ™[™\“]™[[™›Ê]™[[™^
+HÂˆÛÛœÝ]™[HU‘SÖÛ]™[[™^NÂˆYˆ
+[]™[
+HÂˆ]™[ÛÛ[š[›™\’SHˆŽÂˆ™[™\“[Ý™R\ÝÜžPÛÛ›ÛÊ[
+NÂˆ™]\›ŽÂˆB‚ˆÛÛœÝÛÛ\][ÛˆHÙ]Ý\ÛÛ\][Û”Ý]\Ê]™[
+NÂˆÛÛœÝ™[™\”\˜YÜ˜\ÈH˜[YHOˆ›Ü›X[^™U^›ØÚÜÊ˜[YJBˆ›X\
+^Oˆ‰Ù\ØØ\R[
+^
+_OÜ˜
+Bˆš›Ú[ŠˆŠNÂ‚ˆÛÛœÝ^\˜Ú\ÙR[œÝXÝ[ÛˆH›Ü›X[^™U^›ØÚÜÊ]™[š[œÝXÝ[ÛŠK›[™ÝˆÈ›Ü›X[^™U^›ØÚÜÊ]™[š[œÝXÝ[ÛŠBˆˆ›Ü›X[^™U^›ØÚÜÊ]™[š[›ÙXÝ[ÛŠNÂˆÛÛœÝš\œÝÝ\H]™[œÝ\È	‰ˆ]™[œÝ\ÖÌHÈ]™[œÝ\ÖÌHˆ[ÂˆÛÛœÝš\œÝÝ\\Ò[š]X[^™\ÜÚ[ÛˆHHYš\œÝÝ\	‰ˆ^™\ÜÚ[Û•^ÓX]Ú
+ˆ]™[œÝ\^™\ÜÚ[Û‹ˆš\œÝÝ\™^™\ÜÚ[Û‚ˆ
+NÂˆÛÛœÝ[š]X[Ø]^H]™[š[š]X[Ø]^
+ˆš\œÝÝ\ˆÈš\œÝÝ\˜Y\’Ø]^š\œÝÝ\šØ]^š\œÝÝ\˜™Y›Ü™RØ]^]™[œÝ\^™\ÜÚ[Û‚ˆˆ]™[œÝ\^™\ÜÚ[Û‚ˆ
+NÂ‚ˆÛÛœÝÝ\œ™[Ý\[™^HÛÛ\][Û‹™š[™[™^
+\ÐÛÛ\]HOˆZ\ÐÛÛ\]JNÂˆÛÛœÝ\Ñ^\˜Ú\ÙPÛÛ\]HHÝ\œ™[Ý\[™^ÂˆÛÛœÝš\œÝÛÛ][Û”Ý\[™^Hš\œÝÝ\\Ò[š]X[^™\ÜÚ[ÛˆÈHˆÂˆÛÛœÝ\Ýš\ÚX›TÝ\[™^HÝ\œ™[Ý\[™^HˆÈÝ\œ™[Ý\[™^ˆˆX]›X^
+
+]™[œÝ\È×JK›[™ÝHJNÂˆÛÛœÝÝ\Ò[H
+]™[œÝ\È×JBˆœÛXÙJš\œÝÛÛ][Û”Ý\[™^\Ýš\ÚX›TÝ\[™^
+ÈJBˆ›X\
+
+Ý\™[]]™R[™^
+HOˆÂˆÛÛœÝ[™^Hš\œÝÛÛ][Û”Ý\[™^
+È™[]]™R[™^ÂˆÛÛœÝ\ÐÛÛ\]HHHXÛÛ\][Û–Ú[™^NÂˆÛÛœÝ\ÐÝ\œ™[H[™^OOHÝ\œ™[Ý\[™^ÂˆÛÛœÝÛÛ\]YØ]^HÝ\˜Y\’Ø]^Ý\šØ]^ˆŽÂˆÛÛœÝ\Ü^RØ]^HZ\ÐÛÛ\]H	‰ˆÝ\˜™Y›Ü™RØ]^ÈÝ\˜™Y›Ü™RØ]^ˆÛÛ\]YØ]^ÂˆÛÛœÝ^XÚ]ÝZY[˜ÙHH›Ü›X[^™U^›ØÚÜÊÝ\™ÝZY[˜ÙJNÂˆÛÛœÝYØXÞQÝZY[˜ÙHHÂˆ‹‹››Ü›X[^™U^›ØÚÜÊÝ\š[›ÙXÝ[ÛŠKˆ‹‹››Ü›X[^™U^›ØÚÜÊÝ\˜ÛÛ˜Û\Ú[ÛŠBˆNÂˆÛÛœÝX™[ÝZY[˜ÙHH\[ÙˆÝ\›X™[OOHœÝš[™Èˆ	‰ˆÝ\›X™[š[J
+H	‰ˆÝ\›X™[š[J
+KÓÝÙ\Ø\ÙJ
+HOOHœÝ\‚ˆÈÜÝ\›X™[š[J
+WBˆˆ×NÂˆÛÛœÝÝ\ÝZY[˜ÙHH^XÚ]ÝZY[˜ÙK›[™ÝˆÈ^XÚ]ÝZY[˜ÙBˆˆYØXÞQÝZY[˜ÙK›[™ÝˆÈYØXÞQÝZY[˜ÙBˆˆX™[ÝZY[˜ÙNÂˆÛÛœÝÝ\ÝZY[˜ÙR[H\ÐÝ\œ™[	‰ˆÝ\ÝZY[˜ÙK›[™ÝˆÈ]ˆÛ\ÜÏHœÝ\YÝZY[˜ÙHˆ\šXK[X™[HÝ\œ™[\Ý\ÝZY[˜ÙH‰ÜÝ\ÝZY[˜ÙK›X\
+^Oˆ‰Ù\ØØ\R[
+^
+_OÜ˜
+Kš›Ú[ŠˆŠ_OÙ]˜ˆˆˆŽÂˆÛÛœÝÛÛ\]YÚXÚÒ[H\ÐÛÛ\]BˆÈÜ[ˆÛ\ÜÏH˜ÛÛ\]Y\Ý\XÚXÚÈˆ\šXK[X™[HÛÛ\]Yˆ]OHÛÛ\]Y¸§$ÏÜÜ[˜ˆˆˆŽÂˆ™]\›ˆˆ	ÜÝ\ÝZY[˜ÙR[Bˆ]ˆÛ\ÜÏHœÛÛ][Û‹\Ý\Ý\XØ\™	Ú\ÐÛÛ\]HÈ˜ÛÛ\]Y\Ý\ˆˆˆŸH	Ú\ÐÝ\œ™[È˜Ý\œ™[\Ý\ˆˆˆŸH	ÝZTÝ]K›[ÙHOOHš[œÜXÝˆ	‰ˆZTÝ]Kš[œÜXÝÝ\[™^OOH[™^Èš[œÜXÝ\Ù[XÝY\Ý\ˆˆˆŸHˆ]K\Ý\Z[™^H‰Ú[™^H‚ˆ]ˆÛ\ÜÏH›X]X›ØÚÈÜ[ˆÛ\ÜÏHšØ]^\XÙZÛ\ˆˆ]KY^H‰Ù\ØØ\R[
+\Ü^RØ]^
+_HÜÜ[Ù]‚ˆ	ØÛÛ\]YÚXÚÒ[BˆÙ]‚ˆÂˆJKš›Ú[ŠˆŠNÂ‚ˆÛÛœÝ^\˜Ú\ÙR[™›ÈH›Ü›X[^™U^›ØÚÜÊ]™[™^\˜Ú\ÙR[™›ÊK›[™ÝˆÈ›Ü›X[^™U^›ØÚÜÊ]™[™^\˜Ú\ÙR[™›ÊBˆˆÂˆ‹‹››Ü›X[^™U^›ØÚÜÊ]™[™\ØÜš\[ÛŠKˆ‹‹››Ü›X[^™U^›ØÚÜÊ]™[š[œÝXÝ[ÛœÊBˆNÂˆÛÛœÝÛÛ\][Û“Y\ÜØYÙHH›Ü›X[^™U^›ØÚÜÊ]™[˜ÛÛ\][Û“Y\ÜØYÙJK›[™ÝˆÈ›Ü›X[^™U^›ØÚÜÊ]™[˜ÛÛ\][Û“Y\ÜØYÙJBˆˆ›Ü›X[^™U^›ØÚÜÊ]™[˜ÛÛ˜Û\Ú[ÛŠNÂˆÛÛœÝ›ÛÝ\•]HH\Ñ^\˜Ú\ÙPÛÛ\]HÈÛÛ˜Û\Ú[Ûˆˆˆ‘^\˜Ú\ÙH[™›Ü›X][ÛˆŽÂˆÛÛœÝ›ÛÝ\›ØÚÜÈH\Ñ^\˜Ú\ÙPÛÛ\]BˆÈ
+ÛÛ\][Û“Y\ÜØYÙK›[™ÝÈÛÛ\][Û“Y\ÜØYÙHˆÈ‘^\˜Ú\ÙHÛÛ\]Kˆ—JBˆˆ^\˜Ú\ÙR[™›ÎÂ‚ˆ]™[ÛÛ[š[›™\’SHˆ]ˆÛ\ÜÏH^›ÛÚË\ÛÛ][Ûˆ‚ˆÙXÝ[ÛˆÛ\ÜÏHœÛÛ][Û‹\ÙXÝ[Ûˆ›Ø›[K\Ý][Y[ˆ\šXK[X™[H”›Ø›[HÝ][Y[‚ˆ	Ù^\˜Ú\ÙR[œÝXÝ[Û‹›X\
+^OˆÛ\ÜÏHœ›Ø›[KZ[œÝXÝ[Ûˆ‰Ù\ØØ\R[
+^
+_OÜ˜
+Kš›Ú[ŠˆŠ_Bˆ]ˆÛ\ÜÏHœ›Ø›[KY^™\ÜÚ[Ûˆˆ\šXK[X™[H’[š]X[ÛÛ™[[Û˜[^™\ÜÚ[Ûˆ‚ˆ]ˆÛ\ÜÏH›X]X›ØÚÈÜ[ˆÛ\ÜÏHšØ]^\XÙZÛ\ˆˆ]KY^H‰Ù\ØØ\R[
+[š]X[Ø]^
+_HÜÜ[Ù]‚ˆÙ]‚ˆÜÙXÝ[Û‚ˆˆÛ\ÜÏHœÛÛ][Û‹\Ù\\˜]Üˆ‚ˆÙXÝ[ÛˆÛ\ÜÏHœÛÛ][Û‹\ÙXÝ[Ûˆ[›š[™Ë\ÛÛ][Ûˆˆ\šXK[X™[H”[›š[™ÈÛÛ][Ûˆ‚ˆ	ÜÝ\Ò[BˆÜÙXÝ[Û‚ˆˆÛ\ÜÏHœÛÛ][Û‹\Ù\\˜]Üˆ‚ˆÙXÝ[ÛˆÛ\ÜÏHœÛÛ][Û‹\ÙXÝ[Ûˆ^\˜Ú\ÙKY›ÛÝ\ˆ^\˜Ú\ÙKYÝZY[˜ÙH	Ú\Ñ^\˜Ú\ÙPÛÛ\]HÈ™^\˜Ú\ÙKXÛÛ˜Û\Ú[Ûˆˆˆ™^\˜Ú\ÙKZ[™›Ü›X][ÛˆŸHˆ\šXK[X™[H‰Ù\ØØ\R[
+›ÛÝ\•]J_H‚ˆÏ‰Ù\ØØ\R[
+›ÛÝ\•]J_OÚÏ‚ˆ	Ü™[™\”\˜YÜ˜\Ê›ÛÝ\›ØÚÜÊ_BˆÜÙXÝ[Û‚ˆÙ]‚ˆÂˆ™[™\“[Ý™R\ÝÜžPÛÛ›ÛÊ]™[
+NÂ‚ˆ™[™\“Y[™[X]
+
+NÂˆ]™[ÛÛ[œ]Y\žTÙ[XÝÜ[
+‹œÝ\XØ\™ŠK™›Ü‘XXÚ
+Ø\™OˆÂˆØ\™˜Y]™[\Ý[™\Š˜ÛXÚÈ‹]™[OˆÂˆYˆ
+ÕTÔ‘U’QU×ÐÓÓTT’TÓÓ—ÑTÐP“QÑ“Ô—Ó“ÕÊHÂˆËÈ™]šY]ÈÛÛ\\š\ÛÛˆ\È\ØX›Y›Üˆ›ÝËˆX]™HH\Ý[™\‚ˆËÈ\™HÛÈ]Ø[ˆ™H™\ÝÜ™YžHÚ[™Ú[™ÈH›YÈX›Ý™K‚ˆ]™[œÝÜ›ÜYØ][ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆÛÛœÝÝ\[™^H[X™\ŠØ\™™Ù]]šX]J™]K\Ý\Z[™^ŠJNÂ‚ˆYˆ
+ZTÝ]K›[ÙHOOHš[œÜXÝŠHÂˆ[\’[œÜXÝ[ÙJÝ\[™^
+NÂˆ]™[œÝÜ›ÜYØ][ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆ[\’[œÜXÝ[ÙJÝ\[™^
+NÂ‚ˆËÈÈ›Ý]HØ[YHÛXÚÈ][\™Y[œÜXÝ[ÙBˆËÈ[[YYX][HX˜›H\[™^][œÜXÝ[ÙK‚ˆ]™[œÝÜ›ÜYØ][ÛŠ
+NÂˆJNÂˆJNÂ‚ˆBˆ[˜Ý[ÛˆØY]™[
+]™[[™^
+HÂˆÛÛœÝ]™[HU‘SÖÛ]™[[™^NÂˆYˆ
+[]™[
+HÂˆ™]\›ŽÂˆB‚ˆÝ\œ™[]™[[™^H]™[[™^Âˆ™\Ù][[ÔÝ]Q›ÜÝ\œ™[]™[
+
+NÂˆ™\Ù]ÛÛ][Û”™XÛÜ™\‘›ÜÝ\œ™[]™[
+
+NÂˆÛÛ\]YÝ\ÈH™]È\œ˜^J
+]™[œÝ\È×JK›[™Ý
+K™š[
+˜[ÙJNÂˆÝ\œ™[^™\ÜÚ[Û”›ÛÝH^Ñ^™\ÜÚ[ÛŠ]™[œÝ\^™\ÜÚ[ÛŠNÂˆÝ\œ™[^™\ÜÚ[Û”›ÛÝH›Ü›X[^™Q^™\ÜÚ[Û•™YJÝ\œ™[^™\ÜÚ[Û”›ÛÝ
+NÂˆ^™\ÜÚ[Û”›ÛÝHÝ\œ™[^™\ÜÚ[Û”›ÛÝÂˆ[œÜXÝØ]™Y^™\ÜÚ[Û”›ÛÝH[ÂˆZTÝ]K›[ÙHH™Y]ŽÂˆZTÝ]Kš[œÜXÝÝ\[™^HLNÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\Ýœ™[[Ý™Jš[œÜXÝ[[ÙHŠNÂˆYˆ
+[œÜXÝ^]]ÛŠHÂˆ[œÜXÝ^]]Û‹˜Û\ÜÓ\Ý˜Y
+šY[ˆŠNÂˆBˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆ\]TÝ\ÛÛ\][ÛŠÙ]Ý\œ™[]™[
+
+JNÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆB‚ˆ[˜Ý[Ûˆ[š]X[^™Q^ÙY[ÙXœ˜J
+HÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\ÝÙÙÛJœ™]šY]ËXÛÛ\\š\ÛÛ‹Y\ØX›Y‹ÕTÔ‘U’QU×ÐÓÓTT’TÓÓ—ÑTÐP“QÑ“Ô—Ó“ÕÊNÂˆØY[š]X[]™[œ›ÛS˜]šYØ][ÛŠ
+NÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\Š˜ÛXÚÈ‹]™[OˆÂˆYˆ
+ZTÝ]K›[ÙHOOHš[œÜXÝŠHÂˆ™]\›ŽÂˆB‚ˆ^][œÜXÝ[ÙJ
+NÂˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\ŠšÙ^YÝÛˆ‹]™[OˆÂˆYˆ
+[™Q^™\ÜÚ[ÛZ[\’Ù^YÝÛŠ]™[
+JHÂˆ™]\›ŽÂˆBˆYˆ
+]™[šÙ^HOOH‘\ØØ\Hˆ	‰ˆZTÝ]K›[ÙHOOHš[œÜXÝŠHÂˆ^][œÜXÝ[ÙJ
+NÂˆBˆJNÂˆB‚ˆYˆ
+ØÝ[Y[œ™XYTÝ]HOOH›ØY[™ÈŠHÂˆØÝ[Y[˜Y]™[\Ý[™\Š‘ÓPÛÛ[ØYY‹[š]X[^™Q^ÙY[ÙXœ˜KÈÛ˜ÙNˆYHJNÂˆH[ÙHÂˆËÈH”ÓÓˆØY\ˆØ[ˆš[š\ÚY\ˆÓPÛÛ[ØYYˆ]Y]YHÝ\\ÛÂˆËÈ\Èš[IÜÈ™[XZ[š[™ÈXÛ\˜][ÛœÈ\™H[š]X[^™Yš\œÝ‚ˆ]Y]YSZXÜ›Ý\ÚÊ[š]X[^™Q^ÙY[ÙXœ˜JNÂˆB‚ˆÚ[™ÝË˜Y]™[\Ý[™\Šœ™\Ú^™H‹
+
+HOˆÂˆYˆ
+^™\ÜÚ[Û”›ÛÝ
+HÂˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+NÂˆBˆJNÂ‚‚‚ˆ[˜Ý[ÛˆÙ]^™\ÜÚ[Û›Ý[™Ê
+HÂˆ™]\›ˆÂˆYˆ^™\ÜÚ[Û”›ÛÝ›Y
+
+KˆÜˆ^™\ÜÚ[Û”›ÛÝÜ
+
+KˆšYÚˆ^™\ÜÚ[Û”›ÛÝœšYÚ
+
+Kˆ›ÝÛNˆ^™\ÜÚ[Û”›ÛÝ˜›ÝÛJ
+BˆNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[XÝ[Û\™XP›Ý[™Ê
+HÂˆYˆ
+Ù[XÝ[Û‹œÝ]\ÈOOHš[”›ÙÈŠHÂˆ™]\›ˆ[ÂˆB‚ˆ™]\›ˆÂˆYˆX]›Z[ŠÙ[XÝ[Û\™XVÌKÙ[XÝ[Û\™XVÌ—JKˆÜˆX]›Z[ŠÙ[XÝ[Û\™XVÌWKÙ[XÝ[Û\™XVÌ×JKˆšYÚˆX]›X^
+Ù[XÝ[Û\™XVÌKÙ[XÝ[Û\™XVÌ—JKˆ›ÝÛNˆX]›X^
+Ù[XÝ[Û\™XVÌWKÙ[XÝ[Û\™XVÌ×JBˆNÂˆB‚ˆ[˜Ý[ÛˆÙ]›Ø][™ÓY[P›Ý[™Ê
+HÂˆYˆ
+›Ø][™ÕÛÛY[K˜Û\ÜÓ\Ý˜ÛÛZ[œÊšY[ˆŠJHÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝHZTÝ]K™›Ø][™ÓY[VÂˆÛÛœÝHHZTÝ]K™›Ø][™ÓY[VNÂˆÛÛœÝÚYH›Ø][™ÕÛÛY[K›Ù™œÙ]ÚYÂˆÛÛœÝZYÚH›Ø][™ÕÛÛY[K›Ù™œÙ]ZYÚÂ‚ˆ™]\›ˆÂˆYˆˆÜˆKˆšYÚˆ
+ÈÚYˆ›ÝÛNˆH
+ÈZYÚˆNÂˆB‚ˆ[˜Ý[Ûˆ™\Ú^™TÝ™ÕÑš]ÛÛ[
+
+HÂˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂ‚ˆÛÛœÝY[™ÈHÂˆÛÛœÝ^™\ÜÚ[Û›Ý[™ÈHÙ]^™\ÜÚ[Û›Ý[™Ê
+NÂˆÛÛœÝXZ[•ÚYHÝ™ÐÛÛZ[™\‹˜ÛY[ÚYÂˆÛÛœÝXZ[’ZYÚHÝ™ÐÛÛZ[™\‹˜ÛY[ZYÚÂ‚ˆ]X^šYÚH^™\ÜÚ[Û›Ý[™ËœšYÚÂˆ]X^›ÝÛHH^™\ÜÚ[Û›Ý[™Ë˜›ÝÛNÂ‚ˆÛÛœÝÙ[XÝ[Û›Ý[™ÈHÙ]Ù[XÝ[Û\™XP›Ý[™Ê
+NÂˆYˆ
+Ù[XÝ[Û›Ý[™ÊHÂˆX^šYÚHX]›X^
+X^šYÚÙ[XÝ[Û›Ý[™ËœšYÚ
+NÂˆX^›ÝÛHHX]›X^
+X^›ÝÛKÙ[XÝ[Û›Ý[™Ë˜›ÝÛJNÂˆB‚ˆÛÛœÝY[P›Ý[™ÈHÙ]›Ø][™ÓY[P›Ý[™Ê
+NÂˆYˆ
+Y[P›Ý[™ÊHÂˆX^šYÚHX]›X^
+X^šYÚY[P›Ý[™ËœšYÚ
+NÂˆX^›ÝÛHHX]›X^
+X^›ÝÛKY[P›Ý[™Ë˜›ÝÛJNÂˆB‚ˆÛÛœÝ™YYYÚYHX]›X^
+XZ[•ÚYX]˜ÙZ[
+X^šYÚ
+ÈY[™ÊJNÂˆÛÛœÝ™YYYZYÚHX]›X^
+XZ[’ZYÚX]˜ÙZ[
+X^›ÝÛH
+ÈY[™ÊJNÂ‚ˆYˆ
+Ù]Ý™ÕÚY
+ÛÜšÜÜXÙTÝ™ÊHOOH™YYYÚYÙ]Ý™ÒZYÚ
+ÛÜšÜÜXÙTÝ™ÊHOOH™YYYZYÚ
+HÂˆÙ]Ý™ÔÚ^™JÛÜšÜÜXÙTÝ™Ë™YYYÚY™YYYZYÚ
+NÂ‚ˆÝ™›ÛHÑUS‘ÔË^›ÛÂˆÝ^[YÛˆH˜Ù[\ˆŽÂˆÝ^˜\Ù[[™HH›ZYHŽÂ‚ˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆBˆB‚˜Ý™›ÛHÑUS‘ÔË^›ÛÂˆÝ^[YÛˆH˜Ù[\ˆŽÂˆÝ^˜\Ù[[™HH›ZYHŽÂ‚ˆÛÛœÝÙ[XÝ[Û\™XHHËLKLKLKLWNÂˆ]XÝ]™UÛÜšÜÜXÙTÚ[\’YH[Âˆ]Ù[XÝ[Û’]Y[™ÈHÂˆÛÛœÝÙ[XÝ[ÛˆHÂˆÝ]\Îˆ››È‹ˆ›ÙNˆ[ˆš\œÝ\ˆLKˆ\Ý\ˆLBˆNÂ‚ˆÛÛœÝZTÝ]HHÂˆXÝ]™UÛÛˆ[ˆÝYÙNˆšYH‹ˆÚÜÙ[‘\™XÝ[ÛŽˆ[ˆÚÜÙ[’Y[]Nˆ[ˆ[œ]^ˆˆ‹ˆ^™\ÜÚ[ÛZ[\Žˆ[ˆY\ÜØYÙNˆˆ‹ˆÛÛ[]]TÙ[XÝY[™^ˆLKˆÛÛ[]]SÜ™\Žˆ×Kˆ™]šY]ÐÛÛÜœÎˆ[ˆÜÝšY]Ñ]Nˆ[ˆÜÝšY]Õ[Y\’Yˆ[ˆ™]šY]Õ[Y\’Yˆ[ˆÚÝÑ›Ø][™ÓY[NˆYKˆXÝ]™UÛÛØ]YÛÜžNˆ[ˆÛÛ^Û™[[ÙNˆÓÓÑVÓ‘S•ÓSÑTËœZ[‹ˆÛÛ›Ý][Û“[ÙNˆ˜Ø]YÛÜšY\È‹ˆ™\›Ô›ÙXÝÜšY[][ÛŽˆ›Y‹ˆ›Ø][™ÓY[Vˆˆ›Ø][™ÓY[VNˆˆ[ÙNˆ™Y]‹ˆ[œÜXÝÝ\[™^ˆLBˆNÂ‚ˆ[˜Ý[ÛˆÙ]Ý]\ÊY\ÜØYÙJHÂˆB‚ˆ[˜Ý[Ûˆ^Ñ^™\ÜÚ[ÛŠ^
+HÂˆ^“›ÙK›™^YHNÂˆ™]\›ˆ\œÙT\™[\Ú^™Y^™\ÜÚ[Û”ÝšXÝ
+^š[J
+JNÂˆB‚ˆ[˜Ý[Ûˆš[™X]Ú[™ÐÛÜÙT\™[ŠËÜ[’[™^
+HÂˆYˆ
+ÖÛÜ[’[™^HOOHŠŠHÂˆ™]\›ˆLNÂˆB‚ˆ]]™[HÂˆ›Üˆ
+]HHÜ[’[™^ÈHË›[™ÝÈJÊÊHÂˆYˆ
+ÖÚWHOOHŠŠHÂˆ]™[
+ÏHNÂˆH[ÙHYˆ
+ÖÚWHOOHŠHŠHÂˆ]™[OHNÂˆYˆ
+]™[OOH
+HÂˆ™]\›ˆNÂˆBˆYˆ
+]™[
+HÂˆ™]\›ˆLNÂˆBˆBˆB‚ˆ™]\›ˆLNÂˆB‚ˆ[˜Ý[Ûˆ\ÕÜ˜\YžTÚ[™ÛSÝ]\”Z\ŠÊHÂˆYˆ
+\ËœÝ\ÕÚ]
+ŠŠH\Ë™[™ÕÚ]
+ŠHŠJHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™]\›ˆš[™X]Ú[™ÐÛÜÙT\™[ŠË
+HOOHË›[™ÝHNÂˆB‚ˆ[˜Ý[ÛˆÜ]Ü]™[žSÜ\˜]ÜŠËÜ\˜]ÜŠHÂˆÛÛœÝ\ÈH×NÂˆ]]™[HÂˆ]Ý\HÂ‚ˆ›Üˆ
+]HHÈHË›[™ÝÈJÊÊHÂˆÛÛœÝÚHÖÚWNÂˆYˆ
+ÚOOHŠŠHÂˆ]™[
+ÏHNÂˆH[ÙHYˆ
+ÚOOHŠHŠHÂˆ]™[OHNÂˆYˆ
+]™[
+HÂˆ›ÝÈ™]È\œ›ÜŠ•ÛÈX[žHÛÜÚ[™È\™[\Ù\ËˆŠNÂˆBˆH[ÙHYˆ
+ÚOOHÜ\˜]Üˆ	‰ˆ]™[OOH
+HÂˆÛÛœÝ\HËœÛXÙJÝ\JKš[J
+NÂˆYˆ
+\\
+HÂˆ›ÝÈ™]È\œ›ÜŠ“Z\ÜÚ[™È^™\ÜÚ[Ûˆ™X\ˆˆ
+ÈÜ\˜]Üˆ
+È‹ˆŠNÂˆBˆ\Ëœ\Ú
+\
+NÂˆÝ\HH
+ÈNÂˆBˆB‚ˆYˆ
+]™[OOH
+HÂˆ›ÝÈ™]È\œ›ÜŠ•[›X]ÚY\™[\Ù\ËˆŠNÂˆB‚ˆYˆ
+\Ë›[™ÝOOH
+HÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝ\ÝHËœÛXÙJÝ\
+Kš[J
+NÂˆYˆ
+[\Ý
+HÂˆ›ÝÈ™]È\œ›ÜŠ“Z\ÜÚ[™È^™\ÜÚ[ÛˆY\ˆˆ
+ÈÜ\˜]Üˆ
+È‹ˆŠNÂˆBˆ\Ëœ\Ú
+\Ý
+NÂˆ™]\›ˆ\ÎÂˆB‚ˆ[˜Ý[Ûˆš[™Ü]™[Ü\˜]Ü’[™^
+ËÜ\˜]ÜŠHÂˆ]]™[HÂˆ]›Ý[™HLNÂ‚ˆ›Üˆ
+]HHÈHË›[™ÝÈJÊÊHÂˆÛÛœÝÚHÖÚWNÂˆYˆ
+ÚOOHŠŠHÂˆ]™[
+ÏHNÂˆH[ÙHYˆ
+ÚOOHŠHŠHÂˆ]™[OHNÂˆYˆ
+]™[
+HÂˆ›ÝÈ™]È\œ›ÜŠ•ÛÈX[žHÛÜÚ[™È\™[\Ù\ËˆŠNÂˆBˆH[ÙHYˆ
+ÚOOHÜ\˜]Üˆ	‰ˆ]™[OOH
+HÂˆYˆ
+›Ý[™OOHLJHÂˆ›ÝÈ™]È\œ›ÜŠ•\ÙH\™[\Ù\ÈÈXZÙHˆ
+ÈÜ\˜]Üˆ
+Èˆ[˜[XšYÝ[Ý\ËˆŠNÂˆBˆ›Ý[™HNÂˆBˆB‚ˆYˆ
+]™[OOH
+HÂˆ›ÝÈ™]È\œ›ÜŠ•[›X]ÚY\™[\Ù\ËˆŠNÂˆBˆ™]\›ˆ›Ý[™ÂˆB‚ˆ[˜Ý[Ûˆ\œÙT\™[\Ú^™Y^™\ÜÚ[Û”ÝšXÝ
+ÛÝ\˜ÙJHÂˆÛÛœÝÈHÝš[™ÊÛÝ\˜ÙJKš[J
+Kœ™\XÙJ×ÊËÙËˆŠNÂˆYˆ
+\ÊHÂˆ›ÝÈ™]È\œ›ÜŠ‘[\H^™\ÜÚ[Û‹ˆŠNÂˆB‚ˆYˆ
+Z\ÕÜ˜\YžTÚ[™ÛSÝ]\”Z\ŠÊJHÂˆYˆ
+×–ÐKV˜K^—VÐKV˜K^ŒNW×J‰Ë\Ý
+ÊH×‹O×
+ÊÎ——
+ÊOÉË\Ý
+ÊJHÂˆ™]\›ˆ™]È^“›ÙJ˜[YH‹×KÊNÂˆBˆ›ÝÈ™]È\œ›ÜŠ‘]™\žH˜[YH[™]™\žHÜ\˜][Ûˆ]\Ý™H[˜ÛÜÙY[ˆ\™[\Ù\ËˆŠNÂˆB‚ˆÛÛœÝ[œÚYHHËœÛXÙJKLJKš[J
+NÂˆYˆ
+Z[œÚYJHÂˆ›ÝÈ™]È\œ›ÜŠ‘[\H\™[\Ù\È\™H›Ý[ˆ^™\ÜÚ[Û‹ˆŠNÂˆB‚ˆÛÛœÝÝ[T\ÈHÜ]Ü]™[žSÜ\˜]ÜŠ[œÚYKŠÈŠNÂˆYˆ
+7ïmö¶‰žËkºwµçYHOOH™^[™ˆÈZ[[ˆ\]Z]˜[[[X™\ˆ^™\ÜÚ[Û‹ˆˆˆ‘[\ˆH\]Z]˜[[[YÙ\‹ˆŽÂˆB‚ˆ[˜Ý[Ûˆ˜[Y]TÝXÝ\™Y[Y\šXØ[^[œÚ[ÛŠÛÛ˜[YKÛÛ\]Y\™Ù]
+HÂˆ]ÚÈH˜[ÙNÂˆ]^XÝYHˆŽÂˆYˆ
+ÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝˆÛÛ˜[YHOOH›[T›ÙXÝÜÚ]]™HŠHÂˆÚÈH\ÔÜÚ]]™T›ÙXÝ›ÙJÛÛ\]Y
+NÂˆ^XÝYHZ[H›ÙXÝÚ]]X\ÝÛÈÜÚ]]™HÚÛK[[X™\ˆ˜XÝÜœËˆŽÂˆH[ÙHYˆ
+ÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\ÔÝ[HˆÛÛ˜[YHOOH›[TÝ[TÜÚ]]™HŠHÂˆÚÈH\ÔÜÚ]]™TÝ[S›ÙJÛÛ\]Y
+NÂˆ^XÝYHZ[HÝ[HÚ]]X\ÝÛÈÜÚ]]™HÚÛK[[X™\ˆY[™ËˆŽÂˆH[ÙHYˆ
+ÛÛ˜[YHOOH›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙHˆÛÛ˜[YHOOH›[TÝ[UÚ]™YØ]]™T›ÙXÝÈŠHÂˆÚÈH\ÑY™™\™[˜ÙS›ÙJÛÛ\]Y
+NÂˆ^XÝYHZ[HY™™\™[˜ÙH\ÈHÝ[HÚ]]X\ÝÛ™H\›HÜš][ˆ\ÈH™YØ]]™H›ÙXÝÝXÚ\È
+È
+
+LJp­ÌÊKˆŽÂˆH[ÙHYˆ
+ÛÛ˜[YHOOH›[T›ÙXÝÚ]™YØ]]™\ÈŠHÂˆÚÈH\ÔÚYÛ™Y›ÙXÝ›ÙJÛÛ\]Y
+NÂˆ^XÝYHZ[H›ÙXÝ][˜ÛY\ÈLH[™ÛÛZ[œÈÛ›H[YÙ\ˆ[X™\ˆ˜XÝÜœËˆŽÂˆBˆYˆ
+[ÚÊHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ^XÝYNÂˆBˆÛÛœÝÛÛ\]YH]˜[X]TÚYÛ™Y[YÙ\“›ÙJÛÛ\]Y
+NÂˆYˆ
+ÛÛ\]YOOH[
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆZ[[ˆ[YÙ\‹]˜[YY[X™\ˆ^™\ÜÚ[Û‹ˆˆNÂˆBˆYˆ
+ÛÛ\]YOOH\™Ù]
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ]^™\ÜÚ[Ûˆ]˜[X]\ÈÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜NÂˆBˆ™]\›ˆÈÚÎˆYHNÂˆB‚ˆ[˜Ý[Ûˆ\TÝXÝ\™Y[Y\šXØ[[œ]ÛÛ
+ÛÛ˜[YJHÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝ\™Ù]H]˜[X]TÚYÛ™Y[YÙ\“›ÙJÙ[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ[\™YH\œÙR[YÙ\’[œ]
+ZTÝ]Kš[œ]^
+NÂˆYˆ
+[\™YOOH[
+HÂˆZTÝ]K›Y\ÜØYÙHH‘[\ˆHÚ[™ÛH[YÙ\‹ˆ™YØ]]™H[œÝÙ\œÈX^H™H\YÚ]HZ[\ÈÚYÛ‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+[\™YOOH\™Ù]
+HÂˆZTÝ]K›Y\ÜØYÙHH]\È›ÝÛÜœ™XÝˆHÙ[XÝY^™\ÜÚ[Ûˆ]˜[X]\ÈÈ	Ý\™Ù]K˜Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆ™\XÙTÙ[XÝY˜[™ÙJXZÙTÚYÛ™Y[YÙ\“›ÙJ[\™Y
+JNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆØ[‘]˜[X]J
+HÂˆ™]\›ˆ]˜[X]S›ÙQ›ÜÝ\œ™[]™[
+ÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+JHOOH[ÂˆB‚ˆ[˜Ý[ÛˆÙ]ÝX›S™YØ]]™Q]J
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝÜ˜\\ˆHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+]Ü˜\\ˆÜ˜\\‹\HOOHœ›ÙŠHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝ[™XÙ\ÈH×NÂˆ›Üˆ
+]HHÈHÜ˜\\‹˜\™ÜË›[™ÝÈJÊÊHÂˆYˆ
+Ü˜\\‹˜\™ÜÖÚWK\HOOH˜[YHˆ	‰ˆÜ˜\\‹˜\™ÜÖÚWK˜[YHOOH‹LHŠHÂˆ[™XÙ\Ëœ\Ú
+JNÂˆBˆBˆYˆ
+[™XÙ\Ë›[™ÝŠHÂˆ™]\›ˆ[ÂˆBˆ™]\›ˆÈÜ˜\\‹[™XÙ\ÈNÂˆB‚ˆ[˜Ý[ÛˆØ[‘ÝX›S™YØ]]™J
+HÂˆÛÛœÝ›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™]\›ˆHYÙ]ÝX›S™YØ]]™Q]J
+H
+H[›ÙH	‰ˆ›ÙK\HOOH˜[YHˆ	‰ˆ›ÙK˜[YHOOHŒHŠNÂˆB‚ˆ[˜Ý[ÛˆÙ]™\›Ô›ÙXÝ]J
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝÜ˜\\ˆHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+]Ü˜\\ˆÜ˜\\‹\HOOHœ›ÙŠHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝ™\›Ó›ÙHHÜ˜\\‹˜\™ÜË™š[™
+\™ÈOˆ\™Ë\HOOH˜[YHˆ	‰ˆ\™Ë˜[YHOOHŒŠNÂˆYˆ
+^™\›Ó›ÙJHÂˆ™]\›ˆ[ÂˆBˆ™]\›ˆÈÜ˜\\‹™\›Ó›ÙHNÂˆB‚ˆ[˜Ý[ÛˆØ[–™\›Ô›ÙXÝ
+
+HÂˆ™]\›ˆHYÙ]™\›Ô›ÙXÝ]J
+NÂˆB‚ˆ[˜Ý[Ûˆ\Ó™YØ]]™SÙŠ›ÙJHÂˆYˆ
+[›ÙH›ÙK\HOOHœ›ÙŠHÂˆ™]\›ˆ[ÂˆB‚ˆËÈ›ÙXÝÈ\™H›Ü›X[^™YžH›][š[™È™\ÝY›ÙXÝËˆ]YX[œÂˆËÈH™YØ]]™HÙˆH›ÙXÝÝXÚ\È
+LJH0­È
+ˆ0­È
+H™XÛÛY\ÂˆËÈ
+LJH0­Èˆ0­Èˆ™X][žHÚ[™ÛHÜ[]™[LH˜XÝÜˆ\ÈBˆËÈX\šÙ\ˆ›Üˆ›™YØ]]™HÙˆH›ÙXÝÙˆH™[XZ[š[™È˜XÝÜœËˆ‚ˆÛÛœÝ™YØ]]™Q˜XÝÜ’[™^H›ÙK˜\™ÜË™š[™[™^
+\™ÈO‚ˆ\™Ë\HOOH˜[YHˆ	‰ˆ\™Ë˜[YHOOH‹LH‚ˆ
+NÂˆYˆ
+™YØ]]™Q˜XÝÜ’[™^OOHLJHÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝ™[XZ[š[™Ñ˜XÝÜœÈH›ÙK˜\™ÜÂˆ™š[\Š
+Ë[™^
+HOˆ[™^OOH™YØ]]™Q˜XÝÜ’[™^
+Bˆ›X\
+ÛÛ™S›ÙJNÂˆ™]\›ˆ›Ü›X[^™PÛÛ™Q›Ü“X]Ú[™ÊXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ™[XZ[š[™Ñ˜XÝÜœÊJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝÜ˜\\ˆHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+]Ü˜\\ˆÜ˜\\‹\HOOHœÝ[HŠHÂˆ™]\›ˆ[ÂˆB‚ˆÛÛœÝ\ÙYH™]ÈÙ]
+
+NÂˆÛÛœÝZ\œÈH×NÂˆ›Üˆ
+]™YÒ[™^HÈ™YÒ[™^Ü˜\\‹˜\™ÜË›[™ÝÈ™YÒ[™^
+ÊÊHÂˆYˆ
+\ÙYš\Ê™YÒ[™^
+JHÂˆÛÛ[YNÂˆB‚ˆÛÛœÝÜÚ]]™Q^™\ÜÚ[ÛˆH\Ó™YØ]]™SÙŠÜ˜\\‹˜\™ÜÖÛ™YÒ[™^JNÂˆYˆ
+\ÜÚ]]™Q^™\ÜÚ[ÛŠHÂˆÛÛ[YNÂˆB‚ˆËÈHX^H]Ù[ˆ™HHÝ[KˆÚ[˜ÙHÝ[\È\™H›Ü›X[^™YžH›][š[™ÂˆËÈ™\ÝYÝ[\ËH
+È
+LJH0­ÈHØ[ˆ\X\ˆ\ÂˆËÈH
+Èˆ
+ÈÈ
+È
+LJH0­È
+H
+Èˆ
+ÈÊKˆX]ÚH™YØ]]™H\›BˆËÈYØZ[œÝ\ÈX[žHÚX›[™È\›\È\ÈH™YYË˜]\ˆ[ˆ™\]Z\š[™ÂˆËÈHÈ™HHÚ[™ÛHÚX›[™È\›K‚ˆÛÛœÝ™\]Z\™YÜÚ]]™U\›\ÈHÙ]Ý[U\›\Ñ›Ü“X]Ú[™ÊÜÚ]]™Q^™\ÜÚ[ÛŠNÂˆÛÛœÝÜÒ[™XÙ\ÈHš[™X]Ú[™Ó›ÙR[™XÙ\Ê™\]Z\™YÜÚ]]™U\›\ËÜ˜\\‹˜\™ÜË\ÙY™YÒ[™^
+NÂˆYˆ
+\ÜÒ[™XÙ\ÊHÂˆÛÛ[YNÂˆB‚ˆ\ÙY˜Y
+™YÒ[™^
+NÂˆÜÒ[™XÙ\Ë™›Ü‘XXÚ
+[™^Oˆ\ÙY˜Y
+[™^
+JNÂˆZ\œËœ\Ú
+ÂˆÜÒ[™^ˆÜÒ[™XÙ\ÖÌKˆÜÒ[™XÙ\Ëˆ™YÒ[™^ˆJNÂˆB‚ˆYˆ
+Z\œË›[™ÝOOH
+HÂˆ™]\›ˆ[ÂˆBˆ™]\›ˆÈÜ˜\\‹Z\œÈNÂˆB‚ˆ[˜Ý[ÛˆØ[Ø[˜Ù[ÜÜÚ]\Ê
+HÂˆÛÛœÝ›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™]\›ˆHYÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+H
+H[›ÙH	‰ˆ›ÙK\HOOH˜[YHˆ	‰ˆ›ÙK˜[YHOOHŒŠNÂˆB‚ˆ[˜Ý[Ûˆ™YÚ[”ÜÝšY]ÊÜÝšY]Ñ]JHÂˆYˆ
+ZTÝ]KœÜÝšY]Õ[Y\’YOOH[
+HÂˆÛX\•[Y[Ý]
+ZTÝ]KœÜÝšY]Õ[Y\’Y
+NÂˆB‚ˆZTÝ]KœÝYÙHHœÜÝšY]ÈŽÂˆZTÝ]KœÜÝšY]Ñ]HHÜÝšY]Ñ]NÂ‚ˆ^™\ÜÚ[Û”›ÛÝH›Ü›X[^™Q^™\ÜÚ[Û•™YJ^™\ÜÚ[Û”›ÛÝ
+NÂˆÞ[˜ÐÝ\œ™[^™\ÜÚ[Û”›ÛÝ
+
+NÂˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆ\]TÝ\ÛÛ\][ÛŠÙ]Ý\œ™[]™[
+
+JNÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ™[™\Ý\œ™[^™\ÜÚ[Û‘\Ü^J
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂ‚ˆZTÝ]KœÜÝšY]Õ[Y\’YHÙ][Y[Ý]
+
+
+HOˆÂˆZTÝ]KœÜÝšY]Õ[Y\’YH[ÂˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆ\]TÝ\ÛÛ\][ÛŠÙ]Ý\œ™[]™[
+
+JNÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆKÑUS‘ÔËœÜÝšY]Ñ\˜][Û“\ÊNÂˆB‚ˆ[˜Ý[ÛˆÙ]\ÝšX][Û”ÜÝšY]Ñ]Qœ›ÛS›ÙJ\ÝšX]Y›ÙK\™XÝ[Û‹ÛÛÜœÊHÂˆÛÛœÝ˜XÝÜ”™YÚ[ÛœÈH×NÂˆÛÛœÝ\›T™YÚ[ÛœÈH×NÂ‚ˆÛÛœÝ\›S\ÝH\ÝšX]Y›ÙK\HOOHœÝ[H‚ˆÈ\ÝšX]Y›ÙK˜\™ÜÂˆˆÙ\ÝšX]Y›ÙWNÂ‚ˆ›Üˆ
+ÛÛœÝ\›S›ÙHÙˆ\›S\Ý
+HÂˆYˆ
+\›S›ÙK\HOOHœ›ÙŠHÂˆYˆ
+\™XÝ[ÛˆOOH›YŠHÂˆÛÛœÝ\ÝšX]Y˜XÝÜÛÝ[H\›S›ÙK˜\™ÜË›[™ÝHNÂˆÛÛœÝÜšYÚ[˜[\›S›ÙHH\›S›ÙK˜\™ÜÖÝ\›S›ÙK˜\™ÜË›[™ÝHWNÂˆÛÛœÝÜšYÚ[˜[\›Q˜XÝÜÛÝ[HÙ]\›Q˜XÝÜœÊÜšYÚ[˜[\›S›ÙJK›[™ÝÂ‚ˆYˆ
+\ÝšX]Y˜XÝÜÛÝ[ˆ
+HÂˆ˜XÝÜ”™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ\›S›ÙKˆš\œÝ[™^ˆˆ\Ý[™^ˆ\ÝšX]Y˜XÝÜÛÝ[HBˆJNÂˆB‚ˆ\›T™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ\›S›ÙKˆš\œÝ[™^ˆ\ÝšX]Y˜XÝÜÛÝ[ˆ\Ý[™^ˆ\ÝšX]Y˜XÝÜÛÝ[
+ÈÜšYÚ[˜[\›Q˜XÝÜÛÝ[HBˆJNÂˆH[ÙHÂˆÛÛœÝÜšYÚ[˜[\›S›ÙHH\›S›ÙK˜\™ÜÖÌNÂˆÛÛœÝÜšYÚ[˜[\›Q˜XÝÜÛÝ[HÙ]\›Q˜XÝÜœÊÜšYÚ[˜[\›S›ÙJK›[™ÝÂˆÛÛœÝ\ÝšX]Y˜XÝÜÛÝ[H\›S›ÙK˜\™ÜË›[™ÝHNÂ‚ˆ\›T™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ\›S›ÙKˆš\œÝ[™^ˆˆ\Ý[™^ˆÜšYÚ[˜[\›Q˜XÝÜÛÝ[HBˆJNÂ‚ˆYˆ
+\ÝšX]Y˜XÝÜÛÝ[ˆ
+HÂˆ˜XÝÜ”™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ\›S›ÙKˆš\œÝ[™^ˆÜšYÚ[˜[\›Q˜XÝÜÛÝ[ˆ\Ý[™^ˆÜšYÚ[˜[\›Q˜XÝÜÛÝ[
+È\ÝšX]Y˜XÝÜÛÝ[HBˆJNÂˆBˆBˆH[ÙHÂˆ\›T™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ\›S›ÙKˆš\œÝ[™^ˆˆ\Ý[™^ˆˆJNÂˆBˆB‚ˆ™]\›ˆÂˆ\Nˆ™\ÝšX][Ûˆ‹ˆ˜XÝÜ”™YÚ[ÛœËˆ\›T™YÚ[ÛœËˆÛÛÜœÂˆNÂˆB‚ˆ[˜Ý[ÛˆÙ]˜XÝÜš[™ÔÜÝšY]Ñ]Qœ›ÛS›ÙJ˜XÝÜ™Y›ÙK\™XÝ[Û‹ÛÛ[[ÛÛÝ[\›PÛÝ[ÛÛÜœÊHÂˆÛÛœÝÛÛ[[Û‘˜XÝÜ”™YÚ[ÛœÈH×NÂˆÛÛœÝ™[XZ[™\“›Ù\ÈH×NÂ‚ˆYˆ
+˜XÝÜ™Y›ÙK\HOOHœ›ÙŠHÂˆYˆ
+\™XÝ[ÛˆOOH›YŠHÂˆÛÛœÝÛÛ[[Û“\Ý[™^HX]›Z[ŠÛÛ[[ÛÛÝ[HK˜XÝÜ™Y›ÙK˜\™ÜË›[™ÝHJNÂˆYˆ
+ÛÛ[[Û“\Ý[™^H
+HÂˆÛÛ[[Û‘˜XÝÜ”™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ˜XÝÜ™Y›ÙKˆš\œÝ[™^ˆˆ\Ý[™^ˆÛÛ[[Û“\Ý[™^ˆJNÂˆB‚ˆÛÛœÝ[›™\“›ÙHH˜XÝÜ™Y›ÙK˜\™ÜÖÓX]›Z[ŠÛÛ[[ÛÛÝ[˜XÝÜ™Y›ÙK˜\™ÜË›[™ÝHJWNÂˆYˆ
+[›™\“›ÙJHÂˆYˆ
+[›™\“›ÙK\HOOHœÝ[HŠHÂˆ™[XZ[™\“›Ù\Ëœ\Ú
+‹‹š[›™\“›ÙK˜\™ÜÊNÂˆH[ÙHÂˆ™[XZ[™\“›Ù\Ëœ\Ú
+[›™\“›ÙJNÂˆBˆBˆH[ÙHÂˆÛÛœÝÝ[R[™^HX]›X^
+˜XÝÜ™Y›ÙK˜\™ÜË›[™ÝHÛÛ[[ÛÛÝ[HJNÂˆÛÛœÝ[›™\“›ÙHH˜XÝÜ™Y›ÙK˜\™ÜÖÜÝ[R[™^NÂˆYˆ
+[›™\“›ÙJHÂˆYˆ
+[›™\“›ÙK\HOOHœÝ[HŠHÂˆ™[XZ[™\“›Ù\Ëœ\Ú
+‹‹š[›™\“›ÙK˜\™ÜÊNÂˆH[ÙHÂˆ™[XZ[™\“›Ù\Ëœ\Ú
+[›™\“›ÙJNÂˆBˆB‚ˆÛÛœÝÛÛ[[Û‘š\œÝ[™^HÝ[R[™^
+ÈNÂˆÛÛœÝÛÛ[[Û“\Ý[™^H˜XÝÜ™Y›ÙK˜\™ÜË›[™ÝHNÂˆYˆ
+ÛÛ[[Û‘š\œÝ[™^HÛÛ[[Û“\Ý[™^
+HÂˆÛÛ[[Û‘˜XÝÜ”™YÚ[ÛœËœ\Ú
+Âˆ›ÙNˆ˜XÝÜ™Y›ÙKˆš\œÝ[™^ˆÛÛ[[Û‘š\œÝ[™^ˆ\Ý[™^ˆÛÛ[[Û“\Ý[™^ˆJNÂˆBˆBˆH[ÙHÂˆ™[XZ[™\“›Ù\Ëœ\Ú
+˜XÝÜ™Y›ÙJNÂˆB‚ˆÚ[H
+™[XZ[™\“›Ù\Ë›[™Ýˆ\›PÛÝ[
+HÂˆ™[XZ[™\“›Ù\ËœÜ
+
+NÂˆB‚ˆ™]\›ˆÂˆ\Nˆ™˜XÝÜš[™È‹ˆÛÛ[[Û‘˜XÝÜ”™YÚ[ÛœËˆ™[XZ[™\“›Ù\ËˆÛÛÜœÂˆNÂˆB‚ˆ[˜Ý[ÛˆÙ]\XØX›UÛÛÊ
+HÂˆÛÛœÝY˜XÝÜ‘]HHÙ]˜XÝÜš[™Ñ]J›YŠNÂˆÛÛœÝšYÚ˜XÝÜ‘]HHÙ]˜XÝÜš[™Ñ]JœšYÚŠNÂˆÛÛœÝÝÙ\’[™\œÙP\XØXš[]HHÙ]ÝÙ\’[™\œÙT™]Üš]P\XØXš[]J
+NÂ‚ˆ™]\›ˆÂˆÛÛ[]]NˆØ[ÛÛ[]]T›Ý]J
+KˆÛÛ[]]Qš\œÝÓ\ÝˆØ[ÛÛ[]]T›Ý]J
+KˆÛÛ[]]S\ÝÑš\œÝˆØ[ÛÛ[]]T›Ý]J
+KˆÛÛ[]]U\›\ÎˆH\Ù[XÝ[Û‹››ÙH	‰ˆÙ[XÝ[Û‹››ÙK\HOOHœÝ[Hˆ	‰ˆØ[ÛÛ[]]T›Ý]J
+KˆÛÛ[]]Q˜XÝÜœÎˆH\Ù[XÝ[Û‹››ÙH	‰ˆÙ[XÝ[Û‹››ÙK\HOOHœ›Ùˆ	‰ˆØ[ÛÛ[]]T›Ý]J
+Kˆ\ÝšX]SYÔšYÚˆHYÙ]\ÝšX][Û‘]J›YŠKˆ\ÝšX]TšYÚÓYˆHYÙ]\ÝšX][Û‘]JœšYÚŠKˆ˜XÝÜ“YˆH[Y˜XÝÜ‘]H	‰ˆY˜XÝÜ‘]K˜ÛÛ[[ÛÛÝ[ˆˆ˜XÝÜ”šYÚˆH\šYÚ˜XÝÜ‘]H	‰ˆšYÚ˜XÝÜ‘]K˜ÛÛ[[ÛÛÝ[ˆˆ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆØ[”™\XÙSÛ™UÚ][™\œÙT›ÙXÝ
+
+Kˆ[œÙ\™\›Ô›ÙXÝˆØ[’[œÙ\™\›Ô›ÙXÝ
+
+Kˆ[œÙ\™\›Ô›ÙXÝYˆØ[’[œÙ\™\›Ô›ÙXÝ
+
+Kˆ[œÙ\™\›Ô›ÙXÝšYÚˆØ[’[œÙ\™\›Ô›ÙXÝ
+
+Kˆ[œÙ\^Û™[™\›ÎˆØ[’[œÙ\^Û™[™\›Ê
+Kˆ[œÙ\ÝÙ\“Ù“Û™NˆØ[’[œÙ\ÝÙ\“Ù“Û™J
+KˆØ[˜Ù[›ÙXÝÚ][™\œÙNˆØ[Ø[˜Ù[›ÙXÝÚ][™\œÙJ
+Kˆ[[Z[˜]QÝX›R[™\œÙNˆØ[‘[[Z[˜]QÝX›R[™\œÙJ
+Kˆ[œÙ\ÝX›R[™\œÙNˆØ[’[œÙ\ÝX›R[™\œÙJ
+Kˆ\ÝšX]R[™\œÙSÝ™\”›ÙXÝˆØ[‘\ÝšX]R[™\œÙSÝ™\”›ÙXÝ
+
+Kˆ˜XÝÜ”›ÙXÝÙ’[™\œÙ\ÎˆØ[‘˜XÝÜ”›ÙXÝÙ’[™\œÙ\Ê
+Kˆ‹‹œÝÙ\’[™\œÙP\XØXš[]Kˆ[œÙ\Y[]NˆØ[’[œÙ\Y[]J
+Kˆ[œÙ\Y[]PY™\›ÕÜˆØ[’[œÙ\Y[]J
+Kˆ[œÙ\Y[]PY™\›Ð›ÝÛNˆØ[’[œÙ\Y[]J
+Kˆ[œÙ\Y[]S][\PžSÛ™SYˆØ[’[œÙ\Y[]J
+Kˆ[œÙ\Y[]S][\PžSÛ™TšYÚˆØ[’[œÙ\Y[]J
+Kˆ[[Z[˜]RY[]Y\ÎˆØ[‘[[Z[˜]RY[]Y\Ê
+Kˆ˜XÝÜ“[X™\ŽˆØ[‘˜XÝÜ“[X™\Š
+KˆÜš]S[X™\\ÔÝ[NˆØ[•Üš]S[X™\\ÔÝ[J
+Kˆ]˜[X]NˆØ[‘]˜[X]J
+Kˆ[Y\šXØ[\]Z]˜[[˜ÙNˆØ[“[Y\šXØ[\]Z]˜[[˜ÙJ
+Kˆ[Y\šXØ[™]Üš]NˆØ[“[Y\šXØ[™]Üš]J
+Kˆ\š]Y]XÓ]™[ˆØ[“[Y\šXØ[™]Üš]J
+Kˆ\š]Y]XÓ]™[NˆØ[“[Y\šXØ[™]Üš]J
+Kˆ\š]Y]XÓ]™[ŽˆØ[“[Y\šXØ[™]Üš]J
+Kˆ\š]Y]XÓ]™[ÎˆØ[“[Y\šXØ[™]Üš]J
+Kˆ[Q]˜[X]TÜÚ]]™TÝ[NˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[Q]˜[X]TÜÚ]]™TÝ[HŠKˆ[Q]˜[X]TÜÚ]]™T›ÙXÝˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[Q]˜[X]TÜÚ]]™T›ÙXÝŠKˆ[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝŠKˆ[UÜš]TÜÚ]]™S[X™\\ÔÝ[NˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[UÜš]TÜÚ]]™S[X™\\ÔÝ[HŠKˆ[Q]˜[X]TÚYÛ™YÝ[NˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[Q]˜[X]TÚYÛ™YÝ[HŠKˆ[Q]˜[X]TÚYÛ™Y›ÙXÝˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[Q]˜[X]TÚYÛ™Y›ÙXÝŠKˆ[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙNˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙHŠKˆ[TÝ[TÜÚ]]™NˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[TÝ[TÜÚ]]™HŠKˆ[T›ÙXÝÜÚ]]™NˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[T›ÙXÝÜÚ]]™HŠKˆ[T›ÙXÝÚ]™YØ]]™\ÎˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[T›ÙXÝÚ]™YØ]]™\ÈŠKˆ[TÝ[UÚ]™YØ]]™T›ÙXÝÎˆØ[”ÝXÝ\™Y[Y\šXØ[ÛÛ
+›[TÝ[UÚ]™YØ]]™T›ÙXÝÈŠKˆØ[˜Ù[ÜÜÚ]\ÎˆØ[Ø[˜Ù[ÜÜÚ]\Ê
+KˆÝX›S™YØ]]™NˆØ[‘ÝX›S™YØ]]™J
+Kˆ™\›Ô›ÙXÝˆØ[–™\›Ô›ÙXÝ
+
+Kˆ™YXÙUÖ™\›ÎˆØ[–™\›Ô›ÙXÝ
+
+HØ[Ø[˜Ù[ÜÜÚ]\Ê
+Kˆ™YXÙUÓÛ™NˆØ[Ø[˜Ù[›ÙXÝÚ][™\œÙJ
+HH\ÝÙ\’[™\œÙP\XØXš[]K™[[Z[˜]Q^Û™[™\›ÈH\ÝÙ\’[™\œÙP\XØXš[]K›Û™UÐ[žTÝÙ\‚ˆNÂˆB‚ˆ[˜Ý[Ûˆ\SY\ÝšX][ÛŠ
+HÂˆÛÛœÝ]HHÙ]\ÝšX][Û‘]J›YŠNÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÛÛÜœÈHZTÝ]Kœ™]šY]ÐÛÛÜœÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È]KœÝ[S›ÙK˜\™ÜË›[™Ý
+NÂˆÛÛœÝY˜XÝÜœÈHÙ[XÝ[Û‹››ÙK˜\™ÜÂˆœÛXÙJÙ[XÝ[Û‹™š\œÝ\Ù[XÝ[Û‹›\Ý\
+Bˆ›X\
+ÛÛ™S›ÙJNÂˆÛÛœÝÝ[S›ÙHHÙ[XÝ[Û‹››ÙK˜\™ÜÖÜÙ[XÝ[Û‹›\Ý\NÂˆÛÛœÝ\ÝšX]Y\›\ÈHÝ[S›ÙK˜\™ÜË›X\
+\›HOˆÂˆÛÛœÝ™]Ñ˜XÝÜœÈHY˜XÝÜœË›X\
+ÛÛ™S›ÙJNÂˆ™]Ñ˜XÝÜœËœ\Ú
+ÛÛ™S›ÙJ\›JJNÂˆ™]\›ˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ™]Ñ˜XÝÜœÊNÂˆJNÂˆÛÛœÝ\ÝšX]Y›ÙHHXZÙTÝ[Qœ›ÛU\›\Ê\ÝšX]Y\›\ÊNÂ‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹™š\œÝ\
+NÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹›\Ý\
+ÈJNÂˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K\ÝšX]Y›ÙK‹‹˜Y\—NÂ‚ˆ™YÚ[”ÜÝšY]ÊÙ]\ÝšX][Û”ÜÝšY]Ñ]Qœ›ÛS›ÙJ\ÝšX]Y›ÙK›Y‹ÛÛÜœÊJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\TšYÚ\ÝšX][ÛŠ
+HÂˆÛÛœÝ]HHÙ]\ÝšX][Û‘]JœšYÚŠNÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÛÛÜœÈHZTÝ]Kœ™]šY]ÐÛÛÜœÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È]KœÝ[S›ÙK˜\™ÜË›[™Ý
+NÂˆÛÛœÝÝ[S›ÙHHÙ[XÝ[Û‹››ÙK˜\™ÜÖÜÙ[XÝ[Û‹™š\œÝ\NÂˆÛÛœÝšYÚ˜XÝÜœÈHÙ[XÝ[Û‹››ÙK˜\™ÜÂˆœÛXÙJÙ[XÝ[Û‹™š\œÝ\
+ÈKÙ[XÝ[Û‹›\Ý\
+ÈJBˆ›X\
+ÛÛ™S›ÙJNÂ‚ˆÛÛœÝ\ÝšX]Y\›\ÈHÝ[S›ÙK˜\™ÜË›X\
+\›HOˆÂˆÛÛœÝ™]Ñ˜XÝÜœÈHØÛÛ™S›ÙJ\›JK‹‹œšYÚ˜XÝÜœË›X\
+ÛÛ™S›ÙJWNÂˆ™]\›ˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ™]Ñ˜XÝÜœÊNÂˆJNÂˆÛÛœÝ\ÝšX]Y›ÙHHXZÙTÝ[Qœ›ÛU\›\Ê\ÝšX]Y\›\ÊNÂ‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹™š\œÝ\
+NÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹›\Ý\
+ÈJNÂˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K\ÝšX]Y›ÙK‹‹˜Y\—NÂ‚ˆ™YÚ[”ÜÝšY]ÊÙ]\ÝšX][Û”ÜÝšY]Ñ]Qœ›ÛS›ÙJ\ÝšX]Y›ÙKœšYÚ‹ÛÛÜœÊJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\SY˜XÝÜš[™Ê
+HÂˆÛÛœÝ]HHÙ]˜XÝÜš[™Ñ]J›YŠNÂˆYˆ
+Y]H]K˜ÛÛ[[ÛÛÝ[H
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\›PÛÝ[HÙ[XÝ[Û‹›\Ý\HÙ[XÝ[Û‹™š\œÝ\
+ÈNÂˆÛÛœÝÛÛÜœÈHZTÝ]Kœ™]šY]ÐÛÛÜœÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È\›PÛÝ[
+NÂˆÛÛœÝÛÛ[[Û‘˜XÝÜœÈHÙ]\›Q˜XÝÜœÊ]KœÙ[XÝY\›\ÖÌJBˆœÛXÙJ]K˜ÛÛ[[ÛÛÝ[
+Bˆ›X\
+ÛÛ™S›ÙJNÂ‚ˆÛÛœÝ™[XZ[™\œÈH]KœÙ[XÝY\›\Ë›X\
+\›HOˆÂˆÛÛœÝ˜XÝÜœÈHÙ]\›Q˜XÝÜœÊ\›JNÂˆÛÛœÝ™[XZ[š[™ÈH˜XÝÜœËœÛXÙJ]K˜ÛÛ[[ÛÛÝ[
+K›X\
+ÛÛ™S›ÙJNÂˆ™]\›ˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ™[XZ[š[™ÊNÂˆJNÂ‚ˆÛÛœÝ[›™\”Ý[HHXZÙTÝ[Qœ›ÛU\›\Ê™[XZ[™\œÊNÂˆÛÛœÝ˜XÝÜ™Y›ÙHHXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊË‹‹˜ÛÛ[[Û‘˜XÝÜœË[›™\”Ý[WJNÂ‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹™š\œÝ\
+NÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹›\Ý\
+ÈJNÂˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K˜XÝÜ™Y›ÙK‹‹˜Y\—NÂ‚ˆ™YÚ[”ÜÝšY]ÊÙ]˜XÝÜš[™ÔÜÝšY]Ñ]Qœ›ÛS›ÙJ˜XÝÜ™Y›ÙK›Y‹]K˜ÛÛ[[ÛÛÝ[\›PÛÝ[ÛÛÜœÊJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\TšYÚ˜XÝÜš[™Ê
+HÂˆÛÛœÝ]HHÙ]˜XÝÜš[™Ñ]JœšYÚŠNÂˆYˆ
+Y]H]K˜ÛÛ[[ÛÛÝ[H
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\›PÛÝ[HÙ[XÝ[Û‹›\Ý\HÙ[XÝ[Û‹™š\œÝ\
+ÈNÂˆÛÛœÝÛÛÜœÈHZTÝ]Kœ™]šY]ÐÛÛÜœÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È\›PÛÝ[
+NÂˆÛÛœÝ˜\ÙQ˜XÝÜœÈHÙ]\›Q˜XÝÜœÊ]KœÙ[XÝY\›\ÖÌJNÂˆÛÛœÝÛÛ[[Û‘˜XÝÜœÈH˜\ÙQ˜XÝÜœËœÛXÙJ˜\ÙQ˜XÝÜœË›[™ÝH]K˜ÛÛ[[ÛÛÝ[
+K›X\
+ÛÛ™S›ÙJNÂ‚ˆÛÛœÝ™[XZ[™\œÈH]KœÙ[XÝY\›\Ë›X\
+\›HOˆÂˆÛÛœÝ˜XÝÜœÈHÙ]\›Q˜XÝÜœÊ\›JNÂˆÛÛœÝ™[XZ[š[™ÈH˜XÝÜœËœÛXÙJ˜XÝÜœË›[™ÝH]K˜ÛÛ[[ÛÛÝ[
+K›X\
+ÛÛ™S›ÙJNÂˆ™]\›ˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ™[XZ[š[™ÊNÂˆJNÂ‚ˆÛÛœÝ[›™\”Ý[HHXZÙTÝ[Qœ›ÛU\›\Ê™[XZ[™\œÊNÂˆÛÛœÝ˜XÝÜ™Y›ÙHHXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÚ[›™\”Ý[K‹‹˜ÛÛ[[Û‘˜XÝÜœ×JNÂ‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹™š\œÝ\
+NÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJÙ[XÝ[Û‹›\Ý\
+ÈJNÂˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K˜XÝÜ™Y›ÙK‹‹˜Y\—NÂ‚ˆ™YÚ[”ÜÝšY]ÊÙ]˜XÝÜš[™ÔÜÝšY]Ñ]Qœ›ÛS›ÙJ˜XÝÜ™Y›ÙKœšYÚ‹]K˜ÛÛ[[ÛÛÝ[\›PÛÝ[ÛÛÜœÊJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\RY[]R[œÙ\[ÛŠY[]RÚ[™ÜÚ][Û’Ú[™
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+Y[]RÚ[™OOH˜Y™\›ÈŠHÂˆÛÛœÝš\œÝHÜÚ][Û’Ú[™OOHÜˆÈ™]È^“›ÙJ˜[YH‹×KŒŠHˆÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝÙXÛÛ™HÜÚ][Û’Ú[™OOHÜˆÈÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+Hˆ™]È^“›ÙJ˜[YH‹×KŒŠNÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙTÝ[Qœ›ÛU\›\ÊÙš\œÝÙXÛÛ™JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆYˆ
+Y[]RÚ[™OOH›][\PžSÛ™HŠHÂˆÛÛœÝš\œÝHÜÚ][Û’Ú[™OOH›YˆÈ™]È^“›ÙJ˜[YH‹×KŒHŠHˆÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝÙXÛÛ™HÜÚ][Û’Ú[™OOH›YˆÈÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+Hˆ™]È^“›ÙJ˜[YH‹×KŒHŠNÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÙš\œÝÙXÛÛ™JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆYˆ
+Y[]RÚ[™OOH™ÝX›S™YØ]]™HŠHÂˆÛÛœÝ™YØ]]™\ÈHÛ™]È^“›ÙJ˜[YH‹×K‹LHŠK™]È^“›ÙJ˜[YH‹×K‹LHŠWNÂˆÛÛœÝÙ[XÝYHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+ÜÚ][Û’Ú[™OOH›YŠHÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊË‹‹›™YØ]]™\ËÙ[XÝYJJNÂˆH[ÙHÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÜÙ[XÝY‹‹›™YØ]]™\×JJNÂˆBˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆYˆ
+Y[]RÚ[™OOH™ÝX›R[™\œÙHŠHÂˆÛÛœÝÙ[XÝYHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙR[™\œÙS›ÙJXZÙR[™\œÙS›ÙJÙ[XÝY
+JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[ÛˆÙ]ÝX›R[™\œÙQ]J
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+Z\Ò[“›ÙJÙ[XÝY›ÙJJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝ[›™\’[™\œÙHHÙ[XÝY›ÙK˜\™ÜÖÌNÂˆYˆ
+Z\Ò[“›ÙJ[›™\’[™\œÙJJHÂˆ™]\›ˆ[ÂˆBˆ™]\›ˆÂˆÝ]\’[™\œÙNˆÙ[XÝY›ÙKˆ[›™\‘^™\ÜÚ[ÛŽˆ[›™\’[™\œÙK˜\™ÜÖÌBˆNÂˆB‚ˆ[˜Ý[ÛˆØ[‘[[Z[˜]QÝX›R[™\œÙJ
+HÂˆ™]\›ˆHYÙ]ÝX›R[™\œÙQ]J
+NÂˆB‚ˆ[˜Ý[ÛˆØ[’[œÙ\ÝX›R[™\œÙJ
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™]\›ˆH\Ù[XÝY›ÙNÂˆB‚ˆ[˜Ý[Ûˆ\R[œÙ\ÝX›R[™\œÙJ
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™\XÙTÙ[XÝY˜[™ÙJXZÙR[™\œÙS›ÙJXZÙR[™\œÙS›ÙJÙ[XÝY›ÙJJJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q[[Z[˜]QÝX›R[™\œÙJ
+HÂˆÛÛœÝ]HHÙ]ÝX›R[™\œÙQ]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™\XÙTÙ[XÝY˜[™ÙJÛÛ™S›ÙJ]Kš[›™\‘^™\ÜÚ[ÛŠJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q\ÝšX]R[™\œÙSÝ™\”›ÙXÝ
+
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+Z\Ò[“›ÙJÙ[XÝY›ÙJJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ›ÙXÝ›ÙHHÙ[XÝY›ÙK˜\™ÜÖÌNÂˆYˆ
+\›ÙXÝ›ÙH›ÙXÝ›ÙK\HOOHœ›Ùˆ›ÙXÝ›ÙK˜\™ÜË›[™ÝŠHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™\XÙ[Y[HXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊˆ›ÙXÝ›ÙK˜\™ÜË›X\
+˜XÝÜˆOˆXZÙR[™\œÙS›ÙJ˜XÝÜŠJBˆ
+NÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q˜XÝÜ”›ÙXÝÙ’[™\œÙ\Ê
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙHÙ[XÝY›ÙK\HOOHœ›ÙˆÙ[XÝY›ÙK˜\™ÜË›[™ÝŠHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[™\œÙS›Ù\ÈHÙ[XÝY›ÙK˜\™ÜË™š[\ŠÚ[Oˆ\Ò[“›ÙJÚ[
+JNÂˆYˆ
+[™\œÙS›Ù\Ë›[™ÝOOHÙ[XÝY›ÙK˜\™ÜË›[™Ý
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[›™\”›ÙXÝHXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊˆÙ[XÝY›ÙK˜\™ÜË›X\
+Ú[OˆÛÛ™S›ÙJÚ[˜\™ÜÖÌJJBˆ
+NÂˆÛÛœÝ™\XÙ[Y[HXZÙR[™\œÙS›ÙJ[›™\”›ÙXÝ
+NÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚‚ˆ[˜Ý[Ûˆ\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+ÛÛ˜[YJHÂˆ™]\›ˆÂˆ›[Q]˜[X]TÜÚ]]™TÝ[H‹ˆ›[Q]˜[X]TÜÚ]]™T›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\ÔÝ[H‹ˆ›[Q]˜[X]TÚYÛ™YÝ[H‹ˆ›[Q]˜[X]TÚYÛ™Y›ÙXÝ‹ˆ›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙH‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‚ˆKš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆ[˜Ý[Ûˆ\Ñ^™\ÜÚ[ÛZ[\•ÛÛ
+ÛÛ˜[YJHÂˆ™]\›ˆÂˆœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝ‹ˆš[œÙ\™\›Ô›ÙXÝ‹ˆš[œÙ\^Û™[™\›È‹ˆš[œÙ\ÝÙ\“Ù“Û™H‹ˆ˜Ø[˜Ù[ÜÜÚ]\È‹ˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ˜\š]Y]XÓ]™[‹ˆ˜\š]Y]XÓ]™[H‹ˆ˜\š]Y]XÓ]™[ˆ‹ˆ˜\š]Y]XÓ]™[È‹ˆ™˜XÝÜ“[X™\ˆ‹ˆÜš]S[X™\\ÔÝ[H‹ˆ™]˜[X]H‹ˆ›[Q]˜[X]TÜÚ]]™TÝ[H‹ˆ›[Q]˜[X]TÜÚ]]™T›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\ÔÝ[H‹ˆ›[Q]˜[X]TÚYÛ™YÝ[H‹ˆ›[Q]˜[X]TÚYÛ™Y›ÙXÝ‹ˆ›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙH‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‚ˆKš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆ[˜Ý[Ûˆ\Ó[Y\šXØ[Z[\•ÛÛ
+ÛÛ˜[YJHÂˆ™]\›ˆÂˆ›[Y\šXØ[\]Z]˜[[˜ÙH‹ˆ›[Y\šXØ[™]Üš]H‹ˆ˜\š]Y]XÓ]™[‹ˆ˜\š]Y]XÓ]™[H‹ˆ˜\š]Y]XÓ]™[ˆ‹ˆ˜\š]Y]XÓ]™[È‹ˆ™˜XÝÜ“[X™\ˆ‹ˆÜš]S[X™\\ÔÝ[H‹ˆ™]˜[X]H‹ˆ›[Q]˜[X]TÜÚ]]™TÝ[H‹ˆ›[Q]˜[X]TÜÚ]]™T›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝ‹ˆ›[UÜš]TÜÚ]]™S[X™\\ÔÝ[H‹ˆ›[Q]˜[X]TÚYÛ™YÝ[H‹ˆ›[Q]˜[X]TÚYÛ™Y›ÙXÝ‹ˆ›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙH‹ˆ›[TÝ[TÜÚ]]™H‹ˆ›[T›ÙXÝÜÚ]]™H‹ˆ›[T›ÙXÝÚ]™YØ]]™\È‹ˆ›[TÝ[UÚ]™YØ]]™T›ÙXÝÈ‚ˆKš[˜ÛY\ÊÛÛ˜[YJNÂˆB‚ˆ[˜Ý[ÛˆZ[\[ÝÜÕ˜\šXX›\ÊÛÛ˜[YJHÂˆ™]\›ˆZ\Ó[Y\šXØ[Z[\•ÛÛ
+ÛÛ˜[YJNÂˆB‚ˆ[˜Ý[ÛˆZ[\[ÝÜÓ™YØ]]™SÛ™JÛÛ˜[YJHÂˆYˆ
+\Ó[Y\šXØ[™]Üš]UÛÛ
+ÛÛ˜[YJJHÂˆ™]\›ˆYNÂˆBˆ™]\›ˆZ\Ó[Y\šXØ[Z[\•ÛÛ
+ÛÛ˜[YJHˆÛÛ˜[YHOOH›[Q]˜[X]TÚYÛ™Y›ÙXÝˆˆÛÛ˜[YHOOH›[Q]˜[X]TÚYÛ™YÝ[HˆˆÛÛ˜[YHOOH›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙHˆˆÛÛ˜[YHOOH›[T›ÙXÝÚ]™YØ]]™\ÈˆˆÛÛ˜[YHOOH›[TÝ[UÚ]™YØ]]™T›ÙXÝÈŽÂˆB‚ˆ[˜Ý[ÛˆÙ]Z[\“Ü\˜][Û•\\ÊÛÛ˜[YJHÂˆYˆ
+ÛÛ˜[YHOOH™]˜[X]HŠHÂˆ™]\›ˆ×NÂˆBˆYˆ
+\Ó[Y\šXØ[™]Üš]UÛÛ
+ÛÛ˜[YJJHÂˆËÈÙY\[[Y\šXØ[Ü\˜][ÛœÈ]˜Z[X›HÛÈÝX›Z]Ø[ˆ^Z[‚ˆËÈ[žH^\˜Ú\ÙK\ÜXÚYšXÈ™\ÝšXÝ[ÛˆHX\›™\ˆ\È^ÙYYY‚ˆ™]\›ˆÈœÝ[H‹œ›Ù‹™^‹š[ˆ—NÂˆBˆYˆ
+ÛÛ˜[YHOOH™˜XÝÜ“[X™\ˆˆÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝˆÛÛ˜[YHOOH›[T›ÙXÝÜÚ]]™HˆÛÛ˜[YHOOH›[T›ÙXÝÚ]™YØ]]™\ÈŠHÂˆ™]\›ˆÈœ›Ù—NÂˆBˆYˆ
+ÛÛ˜[YHOOHÜš]S[X™\\ÔÝ[HˆÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\ÔÝ[HˆÛÛ˜[YHOOH›[TÝ[TÜÚ]]™HŠHÂˆ™]\›ˆÈœÝ[H—NÂˆBˆYˆ
+ÛÛ˜[YHOOH›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙHˆÛÛ˜[YHOOH›[TÝ[UÚ]™YØ]]™T›ÙXÝÈŠHÂˆ™]\›ˆÈœÝ[H‹œ›Ù—NÂˆBˆ™]\›ˆÈœÝ[H‹œ›Ù‹™^—NÂˆB‚ˆ[˜Ý[ÛˆXZÙTXÙZÛ\“›ÙJ
+HÂˆÛÛœÝ›ÙHH˜[YS›ÙJÈŠNÂˆ›ÙKš\ÐZ[\”XÙZÛ\ˆHYNÂˆ™]\›ˆ›ÙNÂˆB‚ˆ[˜Ý[Ûˆ\ÐZ[\”XÙZÛ\Š›ÙJHÂˆ™]\›ˆH[›ÙH	‰ˆ›ÙK\HOOH˜[YHˆ	‰ˆ›ÙK˜[YHOOHÈˆ	‰ˆH[›ÙKš\ÐZ[\”XÙZÛ\ŽÂˆB‚ˆ[˜Ý[ÛˆÙ]Z[\•˜\šXX›S˜[Y\Ê
+HÂˆÛÛœÝ]™[HÙ]Ý\œ™[]™[
+
+NÂˆYˆ
+]™[	‰ˆ\œ˜^Kš\Ð\œ˜^J]™[˜\šXX›\ÊH	‰ˆ]™[˜\šXX›\Ë›[™Ý
+HÂˆ™]\›ˆ]™[˜\šXX›\ËœÛXÙJ
+NÂˆBˆÛÛœÝ˜[Y\ÈH™]ÈÙ]
+
+NÂˆÛÛœÝÛÛXÝH›ÙHOˆÂˆYˆ
+›ÙH	‰ˆ›ÙK\HOOH˜[YHˆ	‰ˆ×–ØK^KV—IË\Ý
+›ÙK˜[YJJHÂˆ˜[Y\Ë˜Y
+›ÙK˜[YJNÂˆBˆYˆ
+›ÙH	‰ˆ›ÙK˜\™ÜÊHÂˆ›ÙK˜\™ÜË™›Ü‘XXÚ
+ÛÛXÝ
+NÂˆBˆNÂˆYˆ
+]™[	‰ˆ]™[œÝ\^™\ÜÚ[ÛŠHÂˆžHÈÛÛXÝ
+^Ñ^™\ÜÚ[ÛŠ]™[œÝ\^™\ÜÚ[ÛŠJNÈHØ]Ú
+JHßBˆBˆ™]\›ˆ\œ˜^K™œ›ÛJ˜[Y\ÊKœÛÜ
+
+NÂˆB‚ˆ[˜Ý[ÛˆÛÛ™PZ[\”›ÛÝ›Ü‘\Ü^J›ÙKXÝ]™T]H[Ý\œ™[]H×JHÂˆÛÛœÝÛÛ™YH™]È^“›ÙJ›ÙK\K×K›ÙK˜[YJNÂˆÛÛ™Yš\ÐZ[\”XÙZÛ\ˆHH[›ÙKš\ÐZ[\”XÙZÛ\ŽÂˆÛÛ™Yš\ÐZ[\“Ý]\ˆHH[›ÙKš\ÐZ[\“Ý]\ŽÂˆÛÛ™Yš\ÐZ[\XÝ]™HHHXXÝ]™T]	‰ˆ]Ñ\]X[
+XÝ]™T]Ý\œ™[]
+NÂˆÛÛ™Y˜\™ÜÈH›ÙK˜\™ÜË›X\
+
+Ú[[™^
+HOˆÛÛ™PZ[\”›ÛÝ›Ü‘\Ü^JÚ[XÝ]™T]Ý\œ™[]˜ÛÛ˜Ø]
+[™^
+JJNÂˆ™]\›ˆÛÛ™YÂˆB‚ˆ[˜Ý[Ûˆ]Ñ\]X[
+KŠHÂˆ™]\›ˆ\œ˜^Kš\Ð\œ˜^JJH	‰ˆ\œ˜^Kš\Ð\œ˜^JŠH	‰ˆK›[™ÝOOH‹›[™Ý	‰ˆK™]™\žJ
+˜[YK[™^
+HOˆ˜[YHOOH–Ú[™^JNÂˆB‚ˆ[˜Ý[ÛˆÙ]›ÙP]]
+›ÛÝ]
+HÂˆ]›ÙHH›ÛÝÂˆ›Üˆ
+ÛÛœÝ[™^Ùˆ]
+HÂˆYˆ
+[›ÙH[›ÙK˜\™ÜÈ[›ÙK˜\™ÜÖÚ[™^JHÂˆ™]\›ˆ[ÂˆBˆ›ÙHH›ÙK˜\™ÜÖÚ[™^NÂˆBˆ™]\›ˆ›ÙNÂˆB‚ˆ[˜Ý[ÛˆÙ]›ÙP]]
+›ÛÝ]™\XÙ[Y[
+HÂˆYˆ
+\]›[™Ý
+HÂˆ™]\›ˆ™\XÙ[Y[ÂˆBˆÛÛœÝ\™[HÙ]›ÙP]]
+›ÛÝ]œÛXÙJLJJNÂˆYˆ
+\\™[
+HÂˆ™]\›ˆ›ÛÝÂˆBˆ\™[˜\™ÜÖÜ]Ü]›[™ÝHWWHH™\XÙ[Y[Âˆ™]\›ˆ›ÛÝÂˆB‚ˆ[˜Ý[Ûˆš[™XÙZÛ\”]Ê›ÛÝ]H×KÝ]H×JHÂˆYˆ
+\ÐZ[\”XÙZÛ\Š›ÛÝ
+JHÂˆÝ]œ\Ú
+]œÛXÙJ
+JNÂˆBˆYˆ
+›ÛÝ	‰ˆ›ÛÝ˜\™ÜÊHÂˆ›ÛÝ˜\™ÜË™›Ü‘XXÚ
+
+Ú[[™^
+HOˆš[™XÙZÛ\”]ÊÚ[]˜ÛÛ˜Ø]
+[™^
+KÝ]
+JNÂˆBˆ™]\›ˆÝ]ÂˆB‚ˆ[˜Ý[Ûˆš[™™^XÙZÛ\”]
+›ÛÝÝ\œ™[]
+HÂˆÛÛœÝ]ÈHš[™XÙZÛ\”]Ê›ÛÝ
+NÂˆYˆ
+\]Ë›[™Ý
+HÂˆ™]\›ˆ[ÂˆBˆÛÛœÝÝ\œ™[Ù^HHÝ\œ™[]š›Ú[Š‹ˆŠNÂˆÛÛœÝ[™^H]Ë™š[™[™^
+]Oˆ]š›Ú[Š‹ˆŠHOOHÝ\œ™[Ù^JNÂˆYˆ
+[™^H	‰ˆ[™^
+ÈH]Ë›[™Ý
+HÂˆ™]\›ˆ]ÖÚ[™^
+ÈWNÂˆBˆYˆ
+[™^
+HÂˆ™]\›ˆ]ÖÌNÂˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆXZÙPZ[\’[œÙ\[Û”›ÛÝ
+Z[\ŠHÂˆÛÛœÝ^™\ÜÚ[Û‘\Ü^HHÛÛ™PZ[\”›ÛÝ›Ü‘\Ü^JZ[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+NÂˆYˆ
+Z[\‹ÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆÛÛœÝ›ÛÝH™]È^“›ÙJœ›Ù‹Âˆ^™\ÜÚ[Û‘\Ü^KˆXZÙR[™\œÙS›ÙJÛÛ™PZ[\”›ÛÝ›Ü‘\Ü^JZ[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+JBˆK[
+NÂˆ›ÛÝš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ›ÛÝÂˆBˆYˆ
+Z[\‹ÛÛOOHš[œÙ\™\›Ô›ÙXÝŠHÂˆÛÛœÝ›ÛÝHZ[\‹ž™\›Ô›ÙXÝÜšY[][ÛˆOOHœšYÚ‚ˆÈ™]È^“›ÙJœ›Ù‹Ù^™\ÜÚ[Û‘\Ü^K˜[YS›ÙJŒŠWK[
+Bˆˆ™]È^“›ÙJœ›Ù‹Ý˜[YS›ÙJŒŠK^™\ÜÚ[Û‘\Ü^WK[
+NÂˆ›ÛÝš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ›ÛÝÂˆBˆYˆ
+Z[\‹ÛÛOOHš[œÙ\^Û™[™\›ÈŠHÂˆÛÛœÝ›ÛÝH™]È^“›ÙJ™^‹Ù^™\ÜÚ[Û‘\Ü^K˜[YS›ÙJŒŠWK[
+NÂˆ›ÛÝš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ›ÛÝÂˆBˆYˆ
+Z[\‹ÛÛOOHš[œÙ\ÝÙ\“Ù“Û™HŠHÂˆÛÛœÝ›ÛÝH™]È^“›ÙJ™^‹Ý˜[YS›ÙJŒHŠK^™\ÜÚ[Û‘\Ü^WK[
+NÂˆ›ÛÝš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ›ÛÝÂˆBˆYˆ
+Z[\‹ÛÛOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆÛÛœÝ™YÐÛÜHH™]È^“›ÙJœ›Ù‹Ý˜[YS›ÙJ‹LHŠKÛÛ™PZ[\”›ÛÝ›Ü‘\Ü^JZ[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+WK[
+NÂˆÛÛœÝ›ÛÝH™]È^“›ÙJœÝ[H‹Ù^™\ÜÚ[Û‘\Ü^K™YÐÛÜWK[
+NÂˆ›ÛÝš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ›ÛÝÂˆBˆYˆ
+Z[\‹ÛÛOOH›[Y\šXØ[\]Z]˜[[˜ÙHˆˆ\Ó[Y\šXØ[™]Üš]UÛÛ
+Z[\‹ÛÛ
+HˆZ[\‹ÛÛOOH™˜XÝÜ“[X™\ˆˆˆZ[\‹ÛÛOOHÜš]S[X™\\ÔÝ[HˆˆZ[\‹ÛÛOOH™]˜[X]Hˆˆ\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+Z[\‹ÛÛ
+JHÂˆ^™\ÜÚ[Û‘\Ü^Kš\ÐZ[\“Ý]\ˆHYNÂˆ™]\›ˆ^™\ÜÚ[Û‘\Ü^NÂˆBˆ™]\›ˆ^™\ÜÚ[Û‘\Ü^NÂˆB‚ˆ[˜Ý[Ûˆ™[™\Z[\”›ÜÜØ[Ý™Ê›ÙJHÂˆÛÛœÝÚY[™ÈH×NÂˆÛÛœÝÛÛXÝÚY[™ÈH
+Ý\œ™[]H×JHOˆÂˆYˆ
+XÝ\œ™[
+HÂˆ™]\›ŽÂˆBˆYˆ
+Ý\œ™[š\ÐZ[\”XÙZÛ\ŠHÂˆÚY[™Ëœ\Ú
+Âˆ]ˆÛÛÜŽˆˆÙXYÙ™ˆ‹ˆ›Ü™YÜ›Ý[™ÛÛÜŽˆˆÙXYÙ™ˆ‹ˆY[™Îˆ‚ˆJNÂˆBˆYˆ
+Ý\œ™[š\ÐZ[\XÝ]™JHÂˆÚY[™Ëœ\Ú
+Âˆ]ˆÛÛÜŽˆˆØÍØ™XH‹ˆ›Ü™YÜ›Ý[™ÛÛÜŽˆÝ\œ™[š\ÐZ[\”XÙZÛ\ˆÈˆØÍØ™XHˆˆ[™Yš[™YˆY[™ÎˆÂˆJNÂˆBˆÝ\œ™[˜\™ÜË™›Ü‘XXÚ
+
+Ú[[™^
+HOˆÛÛXÝÚY[™ÊÚ[]˜ÛÛ˜Ø]
+[™^
+JJNÂˆNÂˆÛÛXÝÚY[™Ê›ÙJNÂˆ™]\›ˆ™[™\‘^™\ÜÚ[Û”Ý™ÓX\šÝ\
+›ÙKÂˆÛ\ÜÓ˜[YNˆ˜Z[\‹\›ÜÜÙY[ÛÜË\Ý™È‹ˆ›ÛNˆš[YÈ‹ˆ\šXRY[ŽˆYKˆ›ØÝ\ØX›Nˆ˜[ÙKˆÚY[™ËˆÙ][™ÜÎˆÂˆY[™ÎˆLˆ›\™Nˆ‹ˆX\™Ú[–ˆL‹ˆX\™Ú[–NˆL‹ˆ^›ÛˆŒN™\™[˜K\šX[[™]XØKØ[œË\Ù\šYˆ‹ˆ^™\ÜÚ[Û”Ý›ÚÙQš[ˆœ™ØŠMKMKMJH‚ˆBˆJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Z[\”›ÜÜØ[[
+
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ˆˆŽÂˆBˆÛÛœÝ›ÜÜØ[HXZÙPZ[\’[œÙ\[Û”›ÛÝ
+Z[\ŠNÂˆÛÛœÝ™]šY]ÈH™[™\Z[\”›ÜÜØ[Ý™Ê›ÜÜØ[
+NÂˆ™]\›ˆ]ˆÛ\ÜÏHœ›ÜÜØ[\™]šY]Ë\[™[‚ˆ]ˆÛ\ÜÏHœ›ÜÜØ[\™]šY]Ë]]H”›ÜÜÙY[žOÙ]‚ˆ]ˆÛ\ÜÏHœ›ÜÜØ[\™]šY]Ë[ÛÜÈ‰Ü™]šY]ßOÙ]‚ˆ	ÝZTÝ]K›Y\ÜØYÙHÈ]ˆÛ\ÜÏH˜Z[\‹[Y\ÜØYÙHÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ˆˆŸBˆÙ]˜ÂˆB‚ˆ[˜Ý[Ûˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ŽÂˆBˆËÈH^™\ÜÚ[ÛˆZ[\ˆ\È›ÝÈHY\[™[›ÜÜØ[Z[\‹‚ˆËÈHšYÚ\ÚYKØÝ\œ™[^™\ÜÚ[Ûˆ\È›ÝY]Y[[ÝX›Z]\ÜÙ\È˜[Y][Û‹‚ˆ^[Ý]^™\ÜÚ[ÛŠ^™\ÜÚ[Û”›ÛÝ
+NÂˆYˆ
+ZTÝ]KœÝYÙHOOH˜Z[\ˆˆ	‰ˆZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™[™\•ÛÛ\™XJ
+NÂˆH[ÙHÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆBˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆB‚ˆ[˜Ý[Ûˆ™YÚ[‘^™\ÜÚ[ÛZ[\ŠÛÛ˜[YJHÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝÜšYÚ[˜[›ÛÝHÛÛ™Q^™\ÜÚ[Û•™YJ^™\ÜÚ[Û”›ÛÝ
+NÂˆÛÛœÝXÙZÛ\ˆHXZÙTXÙZÛ\“›ÙJ
+NÂˆZTÝ]K™^™\ÜÚ[ÛZ[\ˆHÂˆÛÛˆÛÛ˜[YKˆ›ÛÝˆXÙZÛ\‹ˆÝ\œ™[]ˆ×Kˆ[œÙ\[Û’YˆÙ[XÝ[Û‹››ÙHÈÙ[XÝ[Û‹››ÙKšYˆLKˆÜšYÚ[˜[›ÛÝˆÜšYÚ[˜[Ù[XÝY›ÙNˆÙ[XÝY›ÙKˆÜšYÚ[˜[Ù[XÝ[ÛŽˆÂˆ›ÙNˆÙ[XÝ[Û‹››ÙKˆš\œÝ\ˆÙ[XÝ[Û‹™š\œÝ\ˆ\Ý\ˆÙ[XÝ[Û‹›\Ý\ˆKˆ™\›Ô›ÙXÝÜšY[][ÛŽˆZTÝ]Kž™\›Ô›ÙXÝÜšY[][Ûˆ›Y‹ˆ\ÝÜžNˆ×BˆNÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆØ[˜Ù[^™\ÜÚ[ÛZ[\Š
+HÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ˆ	‰ˆZTÝ]K™^™\ÜÚ[ÛZ[\‹›ÜšYÚ[˜[›ÛÝ
+HÂˆ^™\ÜÚ[Û”›ÛÝHZTÝ]K™^™\ÜÚ[ÛZ[\‹›ÜšYÚ[˜[›ÛÝÂˆÞ[˜ÐÝ\œ™[^™\ÜÚ[Û”›ÛÝ
+
+NÂˆBˆZTÝ]K™^™\ÜÚ[ÛZ[\ˆH[Âˆš[š\ÚÜ\˜][ÛŠ
+NÂˆB‚ˆ[˜Ý[Ûˆ™\XÙPZ[\Ý\œ™[›ÙJ™\XÙ[Y[]]ÐY˜[˜ÙHH˜[ÙJHÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆZ[\‹œ›ÛÝHÙ]›ÙP]]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]™\XÙ[Y[
+NÂˆYˆ
+]]ÐY˜[˜ÙJHÂˆÛÛœÝ™^Hš[™™^XÙZÛ\”]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+NÂˆYˆ
+™^
+HÂˆZ[\‹˜Ý\œ™[]H™^ÂˆBˆBˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\[™Z[\‘YÚ]
+YÚ]
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆÛÛœÝ›ÙHHZ[\ˆÈÙ]›ÙP]]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+Hˆ[ÂˆYˆ
+[›ÙH›ÙK\HOOH˜[YHŠHÂˆZTÝ]K›Y\ÜØYÙHH‘YÚ]ÈØ[ˆÛ›H™H[\™YY\ˆ[ÝH]™Hš[YÝÛˆÈH˜[YH›ÞˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+\ÐZ[\”XÙZÛ\Š›ÙJJHÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆ›ÙK˜[YHHÝš[™ÊYÚ]
+NÂˆ›ÙKš\ÐZ[\”XÙZÛ\ˆH˜[ÙNÂˆH[ÙHYˆ
+×—
+ÉË\Ý
+›ÙK˜[YJJHÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆ›ÙK˜[YH
+ÏHÝš[™ÊYÚ]
+NÂˆH[ÙHÂˆZTÝ]K›Y\ÜØYÙHH•\ÙH[Ý™HÛˆ™Y›Ü™H[\š[™ÈHY™™\™[˜[YKˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ[\Z[\•˜[YJ˜[YK]]ÐY˜[˜ÙHHYJHÂˆ™\XÙPZ[\Ý\œ™[›ÙJ˜[YS›ÙJ˜[YJK]]ÐY˜[˜ÙJNÂˆB‚ˆ[˜Ý[Ûˆ[œÙ\Z[\“Ü\˜][ÛŠ\JHÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆÛÛœÝ›ÙHHZ[\ˆÈÙ]›ÙP]]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+Hˆ[ÂˆYˆ
+XZ[\ˆ[›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÝ\œ™[\ÔXÙZÛ\ˆH\ÐZ[\”XÙZÛ\Š›ÙJNÂˆÛÛœÝš\œÝ\™Ý[Y[HÝ\œ™[\ÔXÙZÛ\ˆÈXZÙTXÙZÛ\“›ÙJ
+HˆÛÛ™S›ÙJ›ÙJNÂˆÛÛœÝÙXÛÛ™\™Ý[Y[HXZÙTXÙZÛ\“›ÙJ
+NÂ‚ˆYˆ
+\HOOHš[ˆŠHÂˆÛÛœÝ™\XÙ[Y[H™]È^“›ÙJš[ˆ‹Ùš\œÝ\™Ý[Y[K[
+NÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆZ[\‹œ›ÛÝHÙ]›ÙP]]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]™\XÙ[Y[
+NÂˆZ[\‹˜Ý\œ™[]HZ[\‹˜Ý\œ™[]˜ÛÛ˜Ø]
+
+NÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆËÈÚ[ˆH\Ù\ˆ[œÙ\ÈHÝ[H[ÈHÝ[KÜˆH›ÙXÝ[ÈH›ÙXÝˆËÈ›][ˆ[[YYX][Kˆ\ÈÛÜšÜÈ›Ý›Üˆ[ˆ[\H]Y\Ý[Û‹[X\šÈ›ÞˆËÈ[™›ÜˆHš[Y˜[YKÙ^™\ÜÚ[Ûˆ]H\Ù\ˆ›ÝÈØ[ÈÈ\›‚ˆËÈ[ÈHš\œÝ\™Ý[Y[ÙˆH\™Ù\ˆÝ[KÜ›ÙXÝ‚ˆYˆ
+
+\HOOHœÝ[Hˆ\HOOHœ›ÙŠH	‰ˆZ[\‹˜Ý\œ™[]›[™Ýˆ
+HÂˆÛÛœÝ\™[]HZ[\‹˜Ý\œ™[]œÛXÙJLJNÂˆÛÛœÝÚ[[™^HZ[\‹˜Ý\œ™[]ØZ[\‹˜Ý\œ™[]›[™ÝHWNÂˆÛÛœÝ\™[HÙ]›ÙP]]
+Z[\‹œ›ÛÝ\™[]
+NÂˆYˆ
+\™[	‰ˆ\™[\HOOH\H	‰ˆ\œ˜^Kš\Ð\œ˜^J\™[˜\™ÜÊJHÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆ\™[˜\™ÜËœÜXÙJÚ[[™^Kš\œÝ\™Ý[Y[ÙXÛÛ™\™Ý[Y[
+NÂˆZ[\‹˜Ý\œ™[]HÝ\œ™[\ÔXÙZÛ\‚ˆÈ\™[]˜ÛÛ˜Ø]
+Ú[[™^
+Bˆˆ\™[]˜ÛÛ˜Ø]
+Ú[[™^
+ÈJNÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆBˆB‚ˆÛÛœÝ™\XÙ[Y[H\HOOH™^‚ˆÈ™]È^“›ÙJ™^‹Ùš\œÝ\™Ý[Y[ÙXÛÛ™\™Ý[Y[K[
+Bˆˆ™]È^“›ÙJ\KÙš\œÝ\™Ý[Y[ÙXÛÛ™\™Ý[Y[K[
+NÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆZ[\‹œ›ÛÝHÙ]›ÙP]]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]™\XÙ[Y[
+NÂˆZ[\‹˜Ý\œ™[]HÝ\œ™[\ÔXÙZÛ\‚ˆÈZ[\‹˜Ý\œ™[]˜ÛÛ˜Ø]
+
+BˆˆZ[\‹˜Ý\œ™[]˜ÛÛ˜Ø]
+JNÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ[Ý™PZ[\“™^
+
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ™^Hš[™™^XÙZÛ\”]
+Z[\‹œ›ÛÝZ[\‹˜Ý\œ™[]
+NÂˆYˆ
+™^
+HÂˆ\Ú^™\ÜÚ[ÛZ[\•[™ÔÝ]J
+NÂˆZ[\‹˜Ý\œ™[]H™^Âˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆH[ÙHÂˆZTÝ]K›Y\ÜØYÙHH•\™H\È›È™^[\H\ˆ[ÝHØ[ˆÝX›Z]ÜˆY[Ü™HÝXÝ\™H™Y›Ü™Hš[[™ÈH\Ý˜[YKˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆBˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆÙ]XÙZÛ\‘š[˜[YJ\™[\KÛÛ˜[YJHÂˆYˆ
+\™[\HOOHœÝ[HŠHÂˆ™]\›ˆŒŽÂˆBˆYˆ
+\™[\HOOHœ›Ùˆ\™[\HOOH™^ŠHÂˆ™]\›ˆŒHŽÂˆBˆ™]\›ˆÛÛ˜[YHOOH˜Ø[˜Ù[ÜÜÚ]\ÈˆÈŒˆˆŒHŽÂˆB‚ˆ[˜Ý[Ûˆš[Z[\”XÙZÛ\œÊ›ÙK\™[\KÛÛ˜[YJHÂˆYˆ
+\ÐZ[\”XÙZÛ\Š›ÙJJHÂˆ™]\›ˆ˜[YS›ÙJÙ]XÙZÛ\‘š[˜[YJ\™[\KÛÛ˜[YJJNÂˆBˆYˆ
+[›ÙH›ÙK\HOOH˜[YHŠHÂˆ™]\›ˆÛÛ™S›ÙJ›ÙJNÂˆBˆ™]\›ˆ™]È^“›ÙJˆ›ÙK\Kˆ›ÙK˜\™ÜË›X\
+Ú[Oˆš[Z[\”XÙZÛ\œÊÚ[›ÙK\KÛÛ˜[YJJKˆ›ÙK˜[YBˆ
+NÂˆB‚ˆ[˜Ý[Ûˆ\Ð[Ø^\Ö™\›Ñ^™\ÜÚ[ÛŠ›ÙJHÂˆYˆ
+[›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+\Õ˜[YS›ÙJ›ÙKŒŠJHÂˆ™]\›ˆYNÂˆBˆYˆ
+›ÙK\HOOHœ›ÙŠHÂˆ™]\›ˆ›ÙK˜\™ÜËœÛÛYJ\Ð[Ø^\Ö™\›Ñ^™\ÜÚ[ÛŠNÂˆBˆYˆ
+›ÙK\HOOHœÝ[HŠHÂˆ™]\›ˆ›ÙK˜\™ÜË›[™Ýˆ	‰ˆ›ÙK˜\™ÜË™]™\žJ\Ð[Ø^\Ö™\›Ñ^™\ÜÚ[ÛŠNÂˆBˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[Ûˆ]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠ›ÙJHÂˆYˆ
+[›ÙJHÂˆ™]\›ˆ[ÂˆBˆÛÛœÝ›Ü›X[^™YH›Ü›X[^™Q^™\ÜÚ[Û•™YJÛÛ™S›ÙJ›ÙJJNÂˆYˆ
+›Ü›X[^™Y\HOOH˜[YHŠHÂˆ™]\›ˆ\œÙS›Û“™YØ]]™R[YÙ\Š›Ü›X[^™Y˜[YJNÂˆBˆ™]\›ˆ]˜[X]S]™[Û™S›ÙJ›Ü›X[^™Y
+NÂˆB‚ˆ[˜Ý[ÛˆZ[\•˜[Y][Û‘˜Z[Y
+Y\ÜØYÙJHÂˆZTÝ]K›Y\ÜØYÙHHY\ÜØYÙNÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[ÛˆÙ]ÜšYÚ[˜[Z[\•\™Ù]˜[YJZ[\ŠHÂˆ™]\›ˆ]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠZ[\‹›ÜšYÚ[˜[Ù[XÝY›ÙJNÂˆB‚ˆ[˜Ý[ÛˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+HÂˆÛÛœÝZ[\ˆHZTÝ]K™^™\ÜÚ[ÛZ[\ŽÂˆYˆ
+XZ[\ŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝÛÛ\]YH›Ü›X[^™Q^™\ÜÚ[Û•™YJš[Z[\”XÙZÛ\œÊZ[\‹œ›ÛÝ[Z[\‹ÛÛ
+JNÂˆYˆ
+Z[\‹ÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆ	‰ˆ\Ð[Ø^\Ö™\›Ñ^™\ÜÚ[ÛŠÛÛ\]Y
+JHÂˆZTÝ]K›Y\ÜØYÙHH•]^™\ÜÚ[Ûˆ\È[Ø^\ÈÛÈ]È[™\œÙHÛÝ[™H[™Yš[™YˆÚÛÜÙHH›Ûž™\›È^™\ÜÚ[Û‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\Ú^™\ÜÚ[ÛZ[\”™]šY]Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆBˆ]™\XÙ[Y[ÂˆYˆ
+Z[\‹ÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆ™\XÙ[Y[H™]È^“›ÙJœ›Ù‹ØÛÛ™S›ÙJÛÛ\]Y
+KXZÙR[™\œÙS›ÙJÛÛ™S›ÙJÛÛ\]Y
+JWK[
+NÂˆH[ÙHYˆ
+Z[\‹ÛÛOOHš[œÙ\™\›Ô›ÙXÝŠHÂˆ™\XÙ[Y[HZ[\‹ž™\›Ô›ÙXÝÜšY[][ÛˆOOHœšYÚ‚ˆÈ™]È^“›ÙJœ›Ù‹ØÛÛ™S›ÙJÛÛ\]Y
+K˜[YS›ÙJŒŠWK[
+Bˆˆ™]È^“›ÙJœ›Ù‹Ý˜[YS›ÙJŒŠKÛÛ™S›ÙJÛÛ\]Y
+WK[
+NÂˆH[ÙHYˆ
+Z[\‹ÛÛOOHš[œÙ\^Û™[™\›ÈŠHÂˆ™\XÙ[Y[HXZÙQ^Û™[›ÙJÛÛ\]Y˜[YS›ÙJŒŠJNÂˆH[ÙHYˆ
+Z[\‹ÛÛOOHš[œÙ\ÝÙ\“Ù“Û™HŠHÂˆ™\XÙ[Y[HXZÙQ^Û™[›ÙJ˜[YS›ÙJŒHŠKÛÛ\]Y
+NÂˆH[ÙHYˆ
+Z[\‹ÛÛOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆ™\XÙ[Y[HXZÙTÝ[Qœ›ÛU\›\ÊØÛÛ™S›ÙJÛÛ\]Y
+KXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÝ˜[YS›ÙJ‹LHŠKÛÛ™S›ÙJÛÛ\]Y
+WJWJNÂˆH[ÙHYˆ
+\Ó[Y\šXØ[™]Üš]UÛÛ
+Z[\‹ÛÛ
+JHÂˆÛÛœÝ›Ùš[HHÙ][Y\šXØ[™]Üš]T›Ùš[J
+NÂˆÛÛœÝÜšYÚ[˜[˜[YHH]˜[X]S[Y\šXØ[™]Üš]S›ÙQ^XÝJˆ›Ü›X[^™Q^™\ÜÚ[Û•™YJÛÛ™S›ÙJZ[\‹›ÜšYÚ[˜[Ù[XÝY›ÙJJBˆ
+NÂˆÛÛœÝ™\XÙ[Y[˜[YHH]˜[X]S[Y\šXØ[™]Üš]S›ÙQ^XÝJˆ›Ü›X[^™Q^™\ÜÚ[Û•™YJÛÛ™S›ÙJÛÛ\]Y
+JBˆ
+NÂˆYˆ
+[ÜšYÚ[˜[˜[YJHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+•HÜšYÚ[˜[^™\ÜÚ[ÛˆÛÝ[›Ý™H]˜[X]Y^XÝKˆŠNÂˆBˆYˆ
+\™\XÙ[Y[˜[YJHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+•H›ÜÜÙY[žHÛÝ[›Ý™H]˜[X]Y^XÝKˆŠNÂˆBˆYˆ
+Y^XÝ˜][Û˜[Ð\™Q\]X[
+™\XÙ[Y[˜[YKÜšYÚ[˜[˜[YJJHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+•H›ÜÜÙY[žHÙ\È›Ý]™HHØ[YH[Y\šXØ[˜[YH\ÈHÜšYÚ[˜[^™\ÜÚ[Û‹ˆŠNÂˆB‚ˆÛÛœÝÜšYÚ[˜[ÚXÚÈH˜[Y]S[Y\šXØ[™]Üš]Q^™\ÜÚ[ÛŠZ[\‹›ÜšYÚ[˜[Ù[XÝY›ÙK›Ùš[K›ÜšYÚ[˜[ŠNÂˆYˆ
+[ÜšYÚ[˜[ÚXÚË›ÚÊHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+ÜšYÚ[˜[ÚXÚË™\œ›ÜŠNÂˆBˆÛÛœÝ™\XÙ[Y[ÚXÚÈH˜[Y]S[Y\šXØ[™]Üš]Q^™\ÜÚ[ÛŠÛÛ\]Y›Ùš[Kœ›ÜÜÙYŠNÂˆYˆ
+\™\XÙ[Y[ÚXÚË›ÚÊHÂˆÛÛœÝ^[˜][ÛˆH™\XÙ[Y[ÚXÚË™\œ›Ü‹˜Ú\]
+
+KÓÝÙ\Ø\ÙJ
+H
+È™\XÙ[Y[ÚXÚË™\œ›Ü‹œÛXÙJJNÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+H›ÜÜÙY[žH\ÈHÛÜœ™XÝ[Y\šXØ[˜[YK]	Ù^[˜][ÛŸX
+NÂˆBˆ™\XÙ[Y[HÛÛ\]YÂˆH[ÙHYˆ
+Z[\‹ÛÛOOH›[Y\šXØ[\]Z]˜[[˜ÙHŠHÂˆÛÛœÝ\™Ù]HÙ]ÜšYÚ[˜[Z[\•\™Ù]˜[YJZ[\ŠNÂˆÛÛœÝÛÛ\]YH]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠÛÛ\]Y
+NÂˆYˆ
+\™Ù]OOH[ÛÛ\]YOOH[
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+Z[HÚÛH[X™\‹HÝ[HÙˆÚÛH[X™\œËH›ÙXÝÙˆÚÛH[X™\œËÜˆÛ™HÚÛK[[X™\ˆ^Û™[ˆŠNÂˆBˆYˆ
+ÛÛ\]YOOH\™Ù]
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+]^™\ÜÚ[Ûˆ]˜[X]\ÈÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜
+NÂˆBˆ™\XÙ[Y[HÛÛ\]YÂˆH[ÙHYˆ
+Z[\‹ÛÛOOH™˜XÝÜ“[X™\ˆŠHÂˆÛÛœÝ\™Ù]HÙ]ÜšYÚ[˜[Z[\•\™Ù]˜[YJZ[\ŠNÂˆÛÛœÝÛÛ\]YH]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠÛÛ\]Y
+NÂˆYˆ
+XÛÛ\]YÛÛ\]Y\HOOHœ›ÙˆÛÛ\]Y˜\™ÜË›[™ÝŠHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+Z[H›ÙXÝÚ]]X\ÝÛÈÚÛK[[X™\ˆ˜XÝÜœËˆŠNÂˆBˆYˆ
+\™Ù]OOH[ÛÛ\]YOOH[
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+Z[H›ÙXÝÙˆÚÛH[X™\œËˆŠNÂˆBˆYˆ
+ÛÛ\]YOOH\™Ù]
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+ÜÙH˜XÝÜœÈ][\HÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜
+NÂˆBˆ™\XÙ[Y[HÛÛ\]YÂˆH[ÙHYˆ
+Z[\‹ÛÛOOHÜš]S[X™\\ÔÝ[HŠHÂˆÛÛœÝ\™Ù]HÙ]ÜšYÚ[˜[Z[\•\™Ù]˜[YJZ[\ŠNÂˆÛÛœÝÛÛ\]YH]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠÛÛ\]Y
+NÂˆYˆ
+XÛÛ\]YÛÛ\]Y\HOOHœÝ[HˆÛÛ\]Y˜\™ÜË›[™ÝŠHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+Z[HÝ[HÚ]]X\ÝÛÈÚÛK[[X™\ˆY[™ËˆŠNÂˆBˆYˆ
+\™Ù]OOH[ÛÛ\]YOOH[
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+Z[HÝ[HÙˆÚÛH[X™\œËˆŠNÂˆBˆYˆ
+ÛÛ\]YOOH\™Ù]
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+ÜÙHY[™ÈÝ[HÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜
+NÂˆBˆ™\XÙ[Y[HÛÛ\]YÂˆH[ÙHYˆ
+\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+Z[\‹ÛÛ
+JHÂˆÛÛœÝ\™Ù]HÙ]Ú[™ÛTÚYÛ™Y[YÙ\•˜[YJZ[\‹›ÜšYÚ[˜[Ù[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+”Ù[XÝHÚ[™ÛH[X™\ˆ™Y›Ü™H\Ú[™È\È[H[ˆH^[œÚ[Ûˆ\™XÝ[Û‹ˆŠNÂˆBˆÛÛœÝ˜[Y][ÛˆH˜[Y]TÝXÝ\™Y[Y\šXØ[^[œÚ[ÛŠZ[\‹ÛÛÛÛ\]Y\™Ù]
+NÂˆYˆ
+]˜[Y][Û‹›ÚÊHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+˜[Y][Û‹™\œ›ÜŠNÂˆBˆ™\XÙ[Y[HÛÛ\]YÂˆH[ÙHYˆ
+Z[\‹ÛÛOOH™]˜[X]HŠHÂˆÛÛœÝ\™Ù]H]˜[X]S›ÙQ›ÜÝ\œ™[]™[
+Z[\‹›ÜšYÚ[˜[Ù[XÝY›ÙJNÂˆÛÛœÝÛÛ\]YH]˜[X]PZ[\•ÚÛS[X™\‘^™\ÜÚ[ÛŠÛÛ\]Y
+NÂˆYˆ
+\™Ù]OOH[ÛÛ\]YOOH[ÛÛ\]Y\HOOH˜[YHŠHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+‘[\ˆH]˜[X]YÚÛH[X™\‹ˆŠNÂˆBˆYˆ
+[[X™\œÐ\™Q\]X[›Ü‘]˜[X][ÛŠÛÛ\]Y\™Ù]
+JHÂˆ™]\›ˆZ[\•˜[Y][Û‘˜Z[Y
+•]\È›ÝÛÜœ™XÝˆžHYØZ[‹ˆŠNÂˆBˆ™\XÙ[Y[H˜[YS›ÙJÝš[™Ê\™Ù]
+JNÂˆH[ÙHÂˆ™\XÙ[Y[HÛÛ\]YÂˆBˆ™\XÙ[Y[H›Ü›X[^™Q^™\ÜÚ[Û•™YJ™\XÙ[Y[
+NÂˆYˆ
+Z[\‹›ÜšYÚ[˜[Ù[XÝ[ÛŠHÂˆÙ[XÝ[Û‹œÝ]\ÈHžY\ÈŽÂˆÙ[XÝ[Û‹››ÙHHZ[\‹›ÜšYÚ[˜[Ù[XÝ[Û‹››ÙNÂˆÙ[XÝ[Û‹™š\œÝ\HZ[\‹›ÜšYÚ[˜[Ù[XÝ[Û‹™š\œÝ\ÂˆÙ[XÝ[Û‹›\Ý\HZ[\‹›ÜšYÚ[˜[Ù[XÝ[Û‹›\Ý\ÂˆBˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆÞ[˜ÐÝ\œ™[^™\ÜÚ[Û”›ÛÝ
+
+NÂˆZTÝ]K™^™\ÜÚ[ÛZ[\ˆH[Âˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\T™\XÙSÛ™UÚ][™\œÙT›ÙXÝ
+
+HÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™]\›ˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆBˆ™]\›ˆ™YÚ[‘^™\ÜÚ[ÛZ[\Šœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠNÂˆB‚ˆ[˜Ý[Ûˆ\R[œÙ\™\›Ô›ÙXÝ
+
+HÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™]\›ˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆBˆ™]\›ˆ™YÚ[‘^™\ÜÚ[ÛZ[\Šš[œÙ\™\›Ô›ÙXÝŠNÂˆB‚ˆ[˜Ý[Ûˆ\R[œÙ\^Û™[™\›Ê
+HÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™]\›ˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆBˆ™]\›ˆ™YÚ[‘^™\ÜÚ[ÛZ[\Šš[œÙ\^Û™[™\›ÈŠNÂˆB‚ˆ[˜Ý[Ûˆ\R[œÙ\ÝÙ\“Ù“Û™J
+HÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™]\›ˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆBˆ™]\›ˆ™YÚ[‘^™\ÜÚ[ÛZ[\Šš[œÙ\ÝÙ\“Ù“Û™HŠNÂˆB‚ˆ[˜Ý[Ûˆ\PØ[˜Ù[›ÙXÝÚ][™\œÙJ
+HÂˆÛÛœÝ]HHÙ]›ÙXÝ[™\œÙPØ[˜Ù[][Û‘]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™[[Ý™TÙ]H™]ÈÙ]
+Ù]Kš[™\œÙR[™^JNÂˆ]K™^™\ÜÚ[Û’[™XÙ\Ë™›Ü‘XXÚ
+[™^Oˆ™[[Ý™TÙ]˜Y
+[™^
+JNÂ‚ˆÛÛœÝÙ\H×NÂˆ›Üˆ
+]HHÈH]Kœ›ÙXÝ›ÙK˜\™ÜË›[™ÝÈJÊÊHÂˆYˆ
+\™[[Ý™TÙ]š\ÊJJHÂˆÙ\œ\Ú
+ÛÛ™S›ÙJ]Kœ›ÙXÝ›ÙK˜\™ÜÖÚWJJNÂˆBˆB‚ˆÛÛœÝ™\XÙ[Y[HÙ\›[™ÝˆÈXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÛ™]È^“›ÙJ˜[YH‹×KŒHŠK‹‹šÙ\JBˆˆ™]È^“›ÙJ˜[YH‹×KŒHŠNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\RY[]Q[[Z[˜][ÛŠ
+HÂˆÛÛœÝ]HHÙ]Y[]Q[[Z[˜][Û‘]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+Ù[XÝ[Û‹››ÙK\HOOHœÝ[HŠHÂˆÛÛœÝÙ\H×NÂˆ›Üˆ
+]HHÈHÙ[XÝ[Û‹››ÙK˜\™ÜË›[™ÝÈJÊÊHÂˆÛÛœÝ[”˜[™ÙHHHHÙ[XÝ[Û‹™š\œÝ\	‰ˆHHÙ[XÝ[Û‹›\Ý\ÂˆÛÛœÝÚ[HÙ[XÝ[Û‹››ÙK˜\™ÜÖÚWNÂˆYˆ
+[”˜[™ÙH	‰ˆÚ[\HOOH˜[YHˆ	‰ˆÚ[˜[YHOOHŒŠHÂˆÛÛ[YNÂˆBˆÙ\œ\Ú
+Ú[
+NÂˆBˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHÙ\Âˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆYˆ
+Ù[XÝ[Û‹››ÙK\HOOHœ›ÙŠHÂˆÛÛœÝÙ\H×NÂˆ›Üˆ
+]HHÈHÙ[XÝ[Û‹››ÙK˜\™ÜË›[™ÝÈJÊÊHÂˆÛÛœÝ[”˜[™ÙHHHHÙ[XÝ[Û‹™š\œÝ\	‰ˆHHÙ[XÝ[Û‹›\Ý\ÂˆÛÛœÝÚ[HÙ[XÝ[Û‹››ÙK˜\™ÜÖÚWNÂˆYˆ
+[”˜[™ÙH	‰ˆÚ[\HOOH˜[YHˆ	‰ˆÚ[˜[YHOOHŒHŠHÂˆÛÛ[YNÂˆBˆÙ\œ\Ú
+Ú[
+NÂˆBˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHÙ\Âˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[˜Ý[Ûˆ\œÙS[X™\“\Ý
+^[ÙJHÂˆÛÛœÝ˜]ÈH^š[J
+NÂˆYˆ
+\˜]ÊHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ‘[\ˆÛ™HÜˆ[Ü™H[X™\œËˆˆNÂˆB‚ˆ]›Ü›X[^™YH˜]ÎÂˆYˆ
+[ÙHOOHœ›ÙXÝŠHÂˆ›Ü›X[^™YH›Ü›X[^™Yœ™\XÙJÖÞ
+—KÙËˆŠNÂˆYˆ
+ÖÊ×KË\Ý
+›Ü›X[^™Y
+JHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ•\ÙHÜXÙ\ËÛÛ[X\ËÜˆ
+ˆ›Üˆ˜XÝÜš[™ËˆÈ›Ý\ÙH
+ËˆˆNÂˆBˆH[ÙHÂˆ›Ü›X[^™YH›Ü›X[^™Yœ™\XÙJÖÊ×KÙËˆŠNÂˆYˆ
+ÖÞ
+—KË\Ý
+›Ü›X[^™Y
+JHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ•\ÙHÜXÙ\ËÛÛ[X\ËÜˆ
+È›ÜˆÜš][™ÈHÝ[KˆÈ›Ý\ÙHÜˆ
+‹ˆˆNÂˆBˆB‚ˆ›Ü›X[^™YH›Ü›X[^™Yœ™\XÙJÖÎËKÙËˆŠNÂˆÛÛœÝYXÙ\ÈH›Ü›X[^™YœÜ]
+×ÊËÊK™š[\Š›ÛÛX[ŠNÂˆYˆ
+YXÙ\Ë›[™ÝOOH
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ‘[\ˆÛ™HÜˆ[Ü™H[X™\œËˆˆNÂˆB‚ˆÛÛœÝ[\ÈH×NÂˆ›Üˆ
+ÛÛœÝYXÙHÙˆYXÙ\ÊHÂˆYˆ
+K×—
+ÉË\Ý
+YXÙJJHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆÛÝ[›Ý™XY‰ÜYXÙ_Hˆ\ÈH›Û›™YØ]]™H[YÙ\‹˜NÂˆBˆ[\Ëœ\Ú
+[X™\ŠYXÙJJNÂˆBˆ™]\›ˆÈÚÎˆYK[\ÈNÂˆB‚ˆ[˜Ý[Ûˆ\œÙS[Y\šXØ[\]Z]˜[[˜ÙQ^[œÚ[Û’[œ]
+^
+HÂˆÛÛœÝ˜]ÈHÝš[™Ê^ˆŠKš[J
+NÂˆYˆ
+\˜]ÊHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ‘[\ˆ[ˆ\]Z]˜[[Ý[K›ÙXÝÜˆ^Û™[ˆˆNÂˆB‚ˆÛÛœÝ\Ô\ÈHÖÊ×KË\Ý
+˜]ÊNÂˆÛÛœÝ\Ô›ÙXÝHÖÞ
+—KË\Ý
+˜]ÊNÂˆÛÛœÝ\Ñ^Û™[H×‹Ë\Ý
+˜]ÊNÂˆÛÛœÝ›Ü›PÛÝ[HÚ\Ô\Ë\Ô›ÙXÝ\Ñ^Û™[K™š[\Š›ÛÛX[ŠK›[™ÝÂˆYˆ
+›Ü›PÛÝ[ˆJHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ“]™[H[Y\šXØ[\]Z]˜[[˜ÙH\Ù\ÈÛ™HÝ[KÛ™H›ÙXÝÜˆÛ™H^Û™[›ÝHZ^Y^™\ÜÚ[Û‹ˆˆNÂˆBˆYˆ
+›Ü›PÛÝ[OOH
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ•\ÙH
+È›ÜˆHÝ[K
+ˆ›ÜˆH›ÙXÝÜˆˆ›Üˆ[ˆ^Û™[ÝXÚ\ÈŠÌÊÍŠŒÊÜˆ—ŒËˆˆNÂˆB‚ˆYˆ
+\Ñ^Û™[
+HÂˆÛÛœÝYXÙ\ÈH˜]ËœÜ]
+—ˆŠK›X\
+YXÙHOˆYXÙKš[J
+JK™š[\ŠYXÙHOˆYXÙK›[™Ýˆ
+NÂˆYˆ
+YXÙ\Ë›[™ÝOOHŠHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ•\ÙHÛ™Hš[˜\žH^Û™[ÝXÚ\È—ŒËˆˆNÂˆBˆÛÛœÝ˜\ÙHH\œÙS›Û“™YØ]]™R[YÙ\ŠYXÙ\ÖÌJNÂˆÛÛœÝ^Û™[H\œÙS›Û“™YØ]]™R[YÙ\ŠYXÙ\ÖÌWJNÂˆYˆ
+˜\ÙHOOH[^Û™[OOH[
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ“]™[H^Û™[È\ÙHÚÛK[[X™\ˆ˜\ÙH[™^Û™[˜[Y\ËˆˆNÂˆBˆ™]\›ˆÈÚÎˆYK[ÙNˆ™^Û™[‹[\ÎˆØ˜\ÙK^Û™[HNÂˆB‚ˆÛÛœÝ[ÙHH\Ô›ÙXÝÈœ›ÙXÝˆˆœÝ[HŽÂˆÛÛœÝ\œÙYH\œÙS[X™\“\Ý
+˜]Ë[ÙJNÂˆYˆ
+\\œÙY›ÚÊHÂˆ™]\›ˆ\œÙYÂˆBˆYˆ
+\œÙY›[\Ë›[™ÝŠHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ•\ÙH]X\ÝÛÈÚÛH[X™\œËˆˆNÂˆBˆ™]\›ˆÈÚÎˆYK[ÙK[\Îˆ\œÙY›[\ÈNÂˆB‚ˆ[˜Ý[ÛˆÙ][Y\šXØ[\]Z]˜[[˜ÙS[ÙQ›Ü”Ù[XÝ[ÛŠ
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙJHÂˆ™]\›ˆ[ÂˆBˆYˆ
+Ù[XÝY›ÙK\HOOH˜[YHˆ	‰ˆ\œÙS›Û“™YØ]]™R[YÙ\ŠÙ[XÝY›ÙK˜[YJHOOH[
+HÂˆ™]\›ˆ™^[™ŽÂˆBˆYˆ
+]˜[X]S]™[Û™S›ÙJÙ[XÝY›ÙJHOOH[
+HÂˆ™]\›ˆ˜ÛÛ\ÙHŽÂˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆØ[“[Y\šXØ[\]Z]˜[[˜ÙJ
+HÂˆ™]\›ˆÙ][Y\šXØ[\]Z]˜[[˜ÙS[ÙQ›Ü”Ù[XÝ[ÛŠ
+HOOH[ÂˆB‚ˆ[˜Ý[Ûˆ˜[Y]P\š]Y]XÑ^™\ÜÚ[Û‘›Ü“]™[
+›ÙK[ÝÙY]™[›ÛSX™[
+HÂˆYˆ
+[›ÙJHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆ\™H\È›È	Ü›ÛSX™[H^™\ÜÚ[ÛˆÈÚXÚË˜NÂˆBˆYˆ
+Z\Ñ[\™[S[Y\šXØ[›ÙJ›ÙJJHÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆH	Ü›ÛSX™[H^™\ÜÚ[Ûˆ]\Ý™H[\™[H[Y\šXØ[˜NÂˆBˆÛÛœÝXÝX[]™[HÛ\ÜÚYžP\š]Y]XÑ^™\ÜÚ[Û“]™[
+›ÙJNÂˆÛÛœÝÛ[\Y[ÝÙY]™[HÛ[\\š]Y]XÓ]™[
+[ÝÙY]™[
+NÂˆYˆ
+XÝX[]™[OOH[
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆH	Ü›ÛSX™[H^™\ÜÚ[ÛˆÛÝ[›Ý™HÛ\ÜÚYšYY\È\š]Y]XË˜NÂˆBˆYˆ
+XÝX[]™[ˆÛ[\Y[ÝÙY]™[
+HÂˆ™]\›ˆÂˆÚÎˆ˜[ÙKˆ\œ›ÜŽˆH	Ü›ÛSX™[H^™\ÜÚ[Ûˆ\È\š]Y]XÈ]™[	ØXÝX[]™[K]\È]Ûˆ[ÝÜÈÛ›H]™[	ØÛ[\Y[ÝÙY]™[Kˆ	ÙÙ]\š]Y]XÓ]™[\ØÜš\[ÛŠÛ[\Y[ÝÙY]™[
+_XˆNÂˆBˆÛÛœÝ˜[YHH]˜[X]P\š]Y]XÓ›ÙJ›ÙJNÂˆYˆ
+˜[YHOOH[
+HÂˆ™]\›ˆÈÚÎˆ˜[ÙK\œ›ÜŽˆH	Ü›ÛSX™[H^™\ÜÚ[ÛˆÛÝ[›Ý™H]˜[X]Y\ÈHš[š]H[X™\‹˜NÂˆBˆ™]\›ˆÈÚÎˆYK]™[ˆXÝX[]™[˜[YHNÂˆB‚ˆ[˜Ý[ÛˆØ[\š]Y]XÑ\]Z]˜[[˜ÙJ[ÝÙY]™[
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™]\›ˆ˜[Y]P\š]Y]XÑ^™\ÜÚ[Û‘›Ü“]™[
+Ù[XÝY›ÙK[ÝÙY]™[œÙ[XÝYŠK›ÚÎÂˆB‚ˆ[˜Ý[ÛˆØ[“[Y\šXØ[™]Üš]J
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆ™]\›ˆ˜[Y]S[Y\šXØ[™]Üš]Q^™\ÜÚ[ÛŠˆÙ[XÝY›ÙKˆÙ][Y\šXØ[™]Üš]T›Ùš[J
+KˆœÙ[XÝY‚ˆ
+K›ÚÎÂˆB‚ˆ[˜Ý[Ûˆ\Q˜XÝÜ“[X™\Š
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙHÙ[XÝY›ÙK\HOOH˜[YHŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ\™Ù]H\œÙS›Û“™YØ]]™R[YÙ\ŠÙ[XÝY›ÙK˜[YJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\œÙYH\œÙS[X™\“\Ý
+ZTÝ]Kš[œ]^œ›ÙXÝŠNÂˆYˆ
+\\œÙY›ÚÊHÂˆZTÝ]K›Y\ÜØYÙHH\œÙY™\œ›ÜŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ›ÙXÝH\œÙY›[\Ëœ™YXÙJ
+KŠHOˆH
+ˆ‹JNÂˆYˆ
+›ÙXÝOOH\™Ù]
+HÂˆZTÝ]K›Y\ÜØYÙHHÜÙH˜XÝÜœÈ][\HÈ	Ü›ÙXÝK›Ý	Ý\™Ù]K˜Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™\XÙ[Y[HXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ\œÙY›[\Ë›X\
+ˆOˆ™]È^“›ÙJ˜[YH‹×KÝš[™ÊŠJJJNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\UÜš]S[X™\\ÔÝ[J
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙHÙ[XÝY›ÙK\HOOH˜[YHŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ\™Ù]H\œÙS›Û“™YØ]]™R[YÙ\ŠÙ[XÝY›ÙK˜[YJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\œÙYH\œÙS[X™\“\Ý
+ZTÝ]Kš[œ]^œÝ[HŠNÂˆYˆ
+\\œÙY›ÚÊHÂˆZTÝ]K›Y\ÜØYÙHH\œÙY™\œ›ÜŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÝ[HH\œÙY›[\Ëœ™YXÙJ
+KŠHOˆH
+È‹
+NÂˆYˆ
+Ý[HOOH\™Ù]
+HÂˆZTÝ]K›Y\ÜØYÙHHÜÙHY[™ÈÝ[HÈ	ÜÝ[_K›Ý	Ý\™Ù]K˜Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™\XÙ[Y[HXZÙTÝ[Qœ›ÛU\›\Ê\œÙY›[\Ë›X\
+ˆOˆ™]È^“›ÙJ˜[YH‹×KÝš[™ÊŠJJJNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q]˜[X]J
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝ\™Ù]H]˜[X]S›ÙQ›ÜÝ\œ™[]™[
+Ù[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[\™Y˜[YHH\œÙS[Y\šXÕ˜[YJZTÝ]Kš[œ]^
+NÂˆYˆ
+[\™Y˜[YHOOH[[X™\‹š\Ó˜SŠ[\™Y˜[YJHS[X™\‹š\Ñš[š]J[\™Y˜[YJJHÂˆZTÝ]K›Y\ÜØYÙHH‘[\ˆH[X™\ˆ›ÜˆH]˜[X]Y™\Ý[ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+[[X™\œÐ\™Q\]X[›Ü‘]˜[X][ÛŠ[\™Y˜[YK\™Ù]
+JHÂˆZTÝ]K›Y\ÜØYÙHH•]\È›ÝÛÜœ™XÝˆžHYØZ[‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ™\XÙTÙ[XÝY˜[™ÙJ™]È^“›ÙJ˜[YH‹×K›Ü›X]]˜[X][Û”™\Ý[›Ü‘^™\ÜÚ[ÛŠ\™Ù]
+JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\S[Y\šXØ[\]Z]˜[[˜ÙJ
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+Ù[XÝY›ÙK\HOOH˜[YHŠHÂˆÛÛœÝ\™Ù]H\œÙS›Û“™YØ]]™R[YÙ\ŠÙ[XÝY›ÙK˜[YJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\œÙYH\œÙS[Y\šXØ[\]Z]˜[[˜ÙQ^[œÚ[Û’[œ]
+ZTÝ]Kš[œ]^
+NÂˆYˆ
+\\œÙY›ÚÊHÂˆZTÝ]K›Y\ÜØYÙHH\œÙY™\œ›ÜŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÛÛ\]YH\œÙY›[ÙHOOHœÝ[H‚ˆÈ\œÙY›[\Ëœ™YXÙJ
+KŠHOˆH
+È‹
+Bˆˆ\œÙY›[ÙHOOHœ›ÙXÝ‚ˆÈ\œÙY›[\Ëœ™YXÙJ
+KŠHOˆH
+ˆ‹JBˆˆX]œÝÊ\œÙY›[\ÖÌK\œÙY›[\ÖÌWJNÂ‚ˆYˆ
+ÛÛ\]YOOH\™Ù]
+HÂˆZTÝ]K›Y\ÜØYÙHH\œÙY›[ÙHOOHœÝ[H‚ˆÈÜÙHY[™ÈÝ[HÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜ˆˆ\œÙY›[ÙHOOHœ›ÙXÝ‚ˆÈÜÙH˜XÝÜœÈ][\HÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜ˆˆ]^Û™[]˜[X]\ÈÈ	ØÛÛ\]YK›Ý	Ý\™Ù]K˜Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™\XÙ[Y[H\œÙY›[ÙHOOHœÝ[H‚ˆÈXZÙTÝ[Qœ›ÛU\›\Ê\œÙY›[\Ë›X\
+ˆOˆ™]È^“›ÙJ˜[YH‹×KÝš[™ÊŠJJJBˆˆ\œÙY›[ÙHOOHœ›ÙXÝ‚ˆÈXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊ\œÙY›[\Ë›X\
+ˆOˆ™]È^“›ÙJ˜[YH‹×KÝš[™ÊŠJJJBˆˆXZÙQ^Û™[›ÙJ˜[YS›ÙJ\œÙY›[\ÖÌJK˜[YS›ÙJ\œÙY›[\ÖÌWJJNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆÛÛœÝ\™Ù]H]˜[X]S]™[Û™S›ÙJÙ[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[\™Y˜[YHH\œÙS›Û“™YØ]]™R[YÙ\ŠZTÝ]Kš[œ]^
+NÂˆYˆ
+[\™Y˜[YHOOH[
+HÂˆZTÝ]K›Y\ÜØYÙHH‘[\ˆH\]Z]˜[[ÚÛH[X™\‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+[\™Y˜[YHOOH\™Ù]
+HÂˆZTÝ]K›Y\ÜØYÙHH•]\È›ÝÛÜœ™XÝˆžHYØZ[‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ™\XÙTÙ[XÝY˜[™ÙJ™]È^“›ÙJ˜[YH‹×KÝš[™Ê\™Ù]
+JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q]˜[X]TÝ[SÜ”›ÙXÝ
+^XÝY\JHÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙHÙ[XÝY›ÙK\HOOH^XÝY\JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ\™Ù]H]˜[X]TÝ[SÜ”›ÙXÝ›ÙJÙ[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[\™Y˜[YHH\œÙS[Y\šXÕ˜[YJZTÝ]Kš[œ]^
+NÂˆYˆ
+[\™Y˜[YHOOH[[X™\‹š\Ó˜SŠ[\™Y˜[YJJHÂˆZTÝ]K›Y\ÜØYÙHH‘[\ˆH[X™\ˆ›ÜˆH]˜[X]Y™\Ý[ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+[[X™\œÐ\™Q\]X[›Ü‘]˜[X][ÛŠ[\™Y˜[YK\™Ù]
+JHÂˆZTÝ]K›Y\ÜØYÙHH]\È›ÝÛÜœ™XÝˆžHYØZ[‹˜Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ™\XÙTÙ[XÝY˜[™ÙJ™]È^“›ÙJ˜[YH‹×KÝš[™Ê\™Ù]
+JJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\Q]˜[X]TÝ[J
+HÂˆ™]\›ˆ\Q]˜[X]TÝ[SÜ”›ÙXÝ
+œÝ[HŠNÂˆB‚ˆ[˜Ý[Ûˆ\Q]˜[X]T›ÙXÝ
+
+HÂˆ™]\›ˆ\Q]˜[X]TÝ[SÜ”›ÙXÝ
+œ›ÙŠNÂˆB‚ˆ[˜Ý[Ûˆ\Q]˜[X]TÝ[PÛÛZ[š[™Ô›ÙXÝÊ
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆÛÛœÝ\™Ù]H]˜[X]TÝ[PÛÛZ[š[™Ô›ÙXÝÓ›ÙJÙ[XÝY›ÙJNÂˆYˆ
+\™Ù]OOH[
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ[\™Y˜[YHH\œÙS[Y\šXÕ˜[YJZTÝ]Kš[œ]^
+NÂˆYˆ
+[\™Y˜[YHOOH[[X™\‹š\Ó˜SŠ[\™Y˜[YJJHÂˆZTÝ]K›Y\ÜØYÙHH‘[\ˆH[X™\ˆ›ÜˆH]˜[X]Y™\Ý[ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+[[X™\œÐ\™Q\]X[›Ü‘]˜[X][ÛŠ[\™Y˜[YK\™Ù]
+JHÂˆZTÝ]K›Y\ÜØYÙHH•]\È›ÝÛÜœ™XÝˆžHYØZ[‹ˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+\™Ù]
+HÂˆÛÛœÝÜÚ]]™U˜[YHHX]˜XœÊ\™Ù]
+NÂˆ™\XÙTÙ[XÝY˜[™ÙJˆXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÂˆ™]È^“›ÙJ˜[YH‹×K‹LHŠKˆ™]È^“›ÙJ˜[YH‹×KÝš[™ÊÜÚ]]™U˜[YJJBˆJBˆ
+NÂˆH[ÙHÂˆ™\XÙTÙ[XÝY˜[™ÙJ™]È^“›ÙJ˜[YH‹×KÝš[™Ê\™Ù]
+JJNÂˆBˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\QÝX›S™YØ]]™J
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+Ù[XÝY›ÙH	‰ˆÙ[XÝY›ÙK\HOOH˜[YHˆ	‰ˆÙ[XÝY›ÙK˜[YHOOHŒHŠHÂˆ™\XÙTÙ[XÝY˜[™ÙJXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÝ˜[YS›ÙJ‹LHŠK˜[YS›ÙJ‹LHŠWJJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆÛÛœÝ]HHÙ]ÝX›S™YØ]]™Q]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ]Ô™[[Ý™HHŽÂˆÛÛœÝÙ\H×NÂˆ›Üˆ
+ÛÛœÝÚ[Ùˆ]KÜ˜\\‹˜\™ÜÊHÂˆYˆ
+Ô™[[Ý™Hˆ	‰ˆÚ[\HOOH˜[YHˆ	‰ˆÚ[˜[YHOOH‹LHŠHÂˆÔ™[[Ý™HOHNÂˆH[ÙHÂˆÙ\œ\Ú
+ÛÛ™S›ÙJÚ[
+JNÂˆBˆBˆÛÛœÝ™\XÙ[Y[HXZÙT›ÙXÝœ›ÛQ˜XÝÜœÊÛ™]È^“›ÙJ˜[YH‹×KŒHŠK‹‹šÙ\JNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\V™\›Ô›ÙXÝ
+
+HÂˆÛÛœÝ]HHÙ]™\›Ô›ÙXÝ]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆBˆ™\XÙTÙ[XÝY˜[™ÙJ™]È^“›ÙJ˜[YH‹×KŒŠJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\PØ[˜Ù[ÜÜÚ]\Ê
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+Ù[XÝY›ÙH	‰ˆÙ[XÝY›ÙK\HOOH˜[YHˆ	‰ˆÙ[XÝY›ÙK˜[YHOOHŒŠHÂˆYˆ
+ZTÝ]K™^™\ÜÚ[ÛZ[\ŠHÂˆ™]\›ˆÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆBˆ™]\›ˆ™YÚ[‘^™\ÜÚ[ÛZ[\Š˜Ø[˜Ù[ÜÜÚ]\ÈŠNÂˆB‚ˆÛÛœÝ]HHÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+NÂˆYˆ
+Y]JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™[[Ý™TÙ]H™]ÈÙ]
+
+NÂˆ›Üˆ
+ÛÛœÝZ\ˆÙˆ]KœZ\œÊHÂˆÛÛœÝÜÒ[™XÙ\ÈH\œ˜^Kš\Ð\œ˜^JZ\‹œÜÒ[™XÙ\ÊHÈZ\‹œÜÒ[™XÙ\ÈˆÜZ\‹œÜÒ[™^NÂˆÜÒ[™XÙ\Ë™›Ü‘XXÚ
+[™^Oˆ™[[Ý™TÙ]˜Y
+[™^
+JNÂˆ™[[Ý™TÙ]˜Y
+Z\‹›™YÒ[™^
+NÂˆB‚ˆÛÛœÝÙ\H×NÂˆ›Üˆ
+]HHÈH]KÜ˜\\‹˜\™ÜË›[™ÝÈJÊÊHÂˆYˆ
+\™[[Ý™TÙ]š\ÊJJHÂˆÙ\œ\Ú
+ÛÛ™S›ÙJ]KÜ˜\\‹˜\™ÜÖÚWJJNÂˆBˆBˆÛÛœÝ™\XÙ[Y[HXZÙTÝ[Qœ›ÛU\›\ÊÛ™]È^“›ÙJ˜[YH‹×KŒŠK‹‹šÙ\JNÂˆ™\XÙTÙ[XÝY˜[™ÙJ™\XÙ[Y[
+NÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\PÛÛ[]]T›Ý][Û•Ú]ÜÝšY]Ê\™XÝ[ÛŠHÂˆYˆ
+\Ù[XÝ[Û‹››ÙHXØ[ÛÛ[]]T›Ý]J
+JHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝš\œÝ[™^HÙ[XÝ[Û‹™š\œÝ\ÂˆÛÛœÝ\Ý[™^HÙ[XÝ[Û‹›\Ý\ÂˆÛÛœÝÙ[XÝY[™ÝHÙ]Ù[XÝYÛXÙS[™Ý
+
+NÂˆÛÛœÝÛÛÜœÈH\œ˜^Kš\Ð\œ˜^JZTÝ]Kœ™]šY]ÐÛÛÜœÊH	‰ˆZTÝ]Kœ™]šY]ÐÛÛÜœË›[™ÝHÙ[XÝY[™ÝˆÈZTÝ]Kœ™]šY]ÐÛÛÜœËœÛXÙJÙ[XÝY[™Ý
+BˆˆÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊÙ[XÝY[™Ý
+NÂˆÛÛœÝÚ[™ÛS[Ý™\‘\™XÝ[Û˜[ÛÛ[]]HHÙ[XÝY[™ÝHÈ	‰‚ˆ
+\™XÝ[ÛˆOOH™š\œÝÓ\Ýˆ\™XÝ[ÛˆOOH›\ÝÑš\œÝŠNÂˆÛÛœÝ[Ý™YÛÛÜˆH\™XÝ[ÛˆOOH›\ÝÑš\œÝ‚ˆÈ
+ÛÛÜœÖØÛÛÜœË›[™ÝHWHÑUS‘ÔËœÙ[XÝ[Û›YJBˆˆ
+ÛÛÜœÖÌHÑUS‘ÔËœÙ[XÝ[Û›YJNÂ‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJš\œÝ[™^
+NÂˆÛÛœÝÙ[XÝYHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJš\œÝ[™^\Ý[™^
+ÈJNÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJ\Ý[™^
+ÈJNÂˆÛÛœÝ›Ý]YH\™XÝ[ÛˆOOH›\ÝÑš\œÝ‚ˆÈÜÙ[XÝYÜÙ[XÝY›[™ÝHWK‹‹œÙ[XÝYœÛXÙJLJWBˆˆË‹‹œÙ[XÝYœÛXÙJJKÙ[XÝYÌWNÂ‚ˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K‹‹œ›Ý]Y‹‹˜Y\—NÂ‚ˆYˆ
+Ú[™ÛS[Ý™\‘\™XÝ[Û˜[ÛÛ[]]JHÂˆ™YÚ[”ÜÝšY]ÊÂˆ\Nˆ˜ÛÛ[]]T›Ý]H‹ˆ›ÙNˆÙ[XÝ[Û‹››ÙKˆš\œÝ[™^ˆ\Ý[™^ˆ[Ý™YÛ›NˆYKˆ[Ý™Y[™^ˆ\™XÝ[ÛˆOOH›\ÝÑš\œÝˆÈš\œÝ[™^ˆ\Ý[™^ˆÛÛÜŽˆ[Ý™YÛÛÜ‚ˆJNÂˆ™]\›ˆYNÂˆB‚ˆ™YÚ[”ÜÝšY]ÊÂˆ\Nˆ˜ÛÛ[]]T›Ý]H‹ˆ›ÙNˆÙ[XÝ[Û‹››ÙKˆš\œÝ[™^ˆ\Ý[™^ˆÛÛÜœÎˆ\™XÝ[ÛˆOOH›\ÝÑš\œÝ‚ˆÈØÛÛÜœÖØÛÛÜœË›[™ÝHWK‹‹˜ÛÛÜœËœÛXÙJLJWBˆˆË‹‹˜ÛÛÜœËœÛXÙJJKÛÛÜœÖÌWBˆJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\PÛÛ[]]Qš\œÝÓ\ÝÚ]ÜÝšY]Ê
+HÂˆ™]\›ˆ\PÛÛ[]]T›Ý][Û•Ú]ÜÝšY]Ê™š\œÝÓ\ÝŠNÂˆB‚ˆ[˜Ý[Ûˆ\PÛÛ[]]S\ÝÑš\œÝÚ]ÜÝšY]Ê
+HÂˆ™]\›ˆ\PÛÛ[]]T›Ý][Û•Ú]ÜÝšY]Ê›\ÝÑš\œÝŠNÂˆB‚ˆ[˜Ý[Ûˆ\UÛÒ][PÛÛ[]]UÚ]ÜÝšY]Ê
+HÂˆ™]\›ˆ\PÛÛ[]]Qš\œÝÓ\ÝÚ]ÜÝšY]Ê
+NÂˆB‚ˆ[˜Ý[ÛˆÙ[XÝÛÛ[]]R][JÛXÚÙY[™^
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙHXØ[ÛÛ[]]T›Ý]J
+JHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+ÛXÚÙY[™^Ù[XÝ[Û‹™š\œÝ\ÛXÚÙY[™^ˆÙ[XÝ[Û‹›\Ý\
+HÂˆ™]\›ˆ˜[ÙNÂˆBˆZTÝ]K˜ÛÛ[]]TÙ[XÝY[™^HÛXÚÙY[™^Âˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\PÛÛ[]]T\›]]][Û•Ú]ÜÝšY]Ê
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙHXØ[ÛÛ[]]T›Ý]J
+JHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝš\œÝ[™^HÙ[XÝ[Û‹™š\œÝ\ÂˆÛÛœÝ\Ý[™^HÙ[XÝ[Û‹›\Ý\ÂˆÛÛœÝÙ[XÝY[™ÝH\Ý[™^Hš\œÝ[™^
+ÈNÂˆYˆ
+P\œ˜^Kš\Ð\œ˜^JZTÝ]K˜ÛÛ[]]SÜ™\ŠHZTÝ]K˜ÛÛ[]]SÜ™\‹›[™ÝOOHÙ[XÝY[™Ý
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™Y›Ü™HHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJš\œÝ[™^
+NÂˆÛÛœÝÙ[XÝYHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJš\œÝ[™^\Ý[™^
+ÈJNÂˆÛÛœÝY\ˆHÙ[XÝ[Û‹››ÙK˜\™ÜËœÛXÙJ\Ý[™^
+ÈJNÂˆÛÛœÝÜ™\ˆHZTÝ]K˜ÛÛ[]]SÜ™\‹œÛXÙJ
+NÂˆÛÛœÝ\›]]YHÜ™\‹›X\
+[™^OˆÙ[XÝYÚ[™^Hš\œÝ[™^JNÂˆÛÛœÝÛÛÜœÈH\œ˜^Kš\Ð\œ˜^JZTÝ]Kœ™]šY]ÐÛÛÜœÊH	‰ˆZTÝ]Kœ™]šY]ÐÛÛÜœË›[™ÝHÙ[XÝY[™ÝˆÈZTÝ]Kœ™]šY]ÐÛÛÜœËœÛXÙJÙ[XÝY[™Ý
+BˆˆÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊÙ[XÝY[™Ý
+NÂˆÛÛœÝ\›]]YÛÛÜœÈHÜ™\‹›X\
+[™^OˆÛÛÜœÖÚ[™^Hš\œÝ[™^JNÂ‚ˆÙ[XÝ[Û‹››ÙK˜\™ÜÈHË‹‹˜™Y›Ü™K‹‹œ\›]]Y‹‹˜Y\—NÂˆ™YÚ[”ÜÝšY]ÊÂˆ\Nˆ˜ÛÛ[]]T›Ý]H‹ˆ›ÙNˆÙ[XÝ[Û‹››ÙKˆš\œÝ[™^ˆ\Ý[™^ˆÛÛÜœÎˆ\›]]YÛÛÜœÂˆJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ™XÛÜ™ÛÛ[]]T\›]]][ÛÚÚXÙJÛXÚÙY[™^
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙHXØ[ÛÛ[]]T›Ý]J
+JHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+ÛXÚÙY[™^Ù[XÝ[Û‹™š\œÝ\ÛXÚÙY[™^ˆÙ[XÝ[Û‹›\Ý\
+HÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+P\œ˜^Kš\Ð\œ˜^JZTÝ]K˜ÛÛ[]]SÜ™\ŠJHÂˆZTÝ]K˜ÛÛ[]]SÜ™\ˆH×NÂˆBˆYˆ
+ZTÝ]K˜ÛÛ[]]SÜ™\‹š[˜ÛY\ÊÛXÚÙY[™^
+JHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+Z\Ñ[[ÐÛÛ[]]PÚÚXÙP[ÝÙY
+ÛXÚÙY[™^
+JHÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÚÝ[Y˜[˜ÙQ[[ÈH\Ñ[[Ó[ÙPXÝ]™J
+H	‰ˆÙ]Ý\œ™[[[ÔÝ\
+
+H	‰ˆÙ]Ý\œ™[[[ÔÝ\
+
+K\HOOH˜ÛÛ[]]PÚÚXÙHŽÂˆ™XÛÜ™ÛÛ[]]PÚÚXÙQ›Ü”ÛÛ][ÛŠÛXÚÙY[™^Ù]^™\ÜÚ[Û•^›Ü•˜XÙJ
+JNÂˆZTÝ]K˜ÛÛ[]]SÜ™\‹œ\Ú
+ÛXÚÙY[™^
+NÂˆÛÛœÝÙ[XÝY[™ÝHÙ]Ù[XÝYÛXÙS[™Ý
+
+NÂˆYˆ
+ZTÝ]K˜ÛÛ[]]SÜ™\‹›[™ÝHÙ[XÝY[™Ý
+HÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆÛÛœÝ\YYH\PÛÛ[]]T\›]]][Û•Ú]ÜÝšY]Ê
+NÂˆYˆ
+\YY	‰ˆÚÝ[Y˜[˜ÙQ[[ÊHÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆBˆ™]\›ˆ\YYÂˆB‚ˆYˆ
+ÚÝ[Y˜[˜ÙQ[[ÊHÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆH[ÙHÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆBˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[ÛˆÛÜTÙ[XÝ[Û•Ò[\›˜[Û\›Ø\™
+
+HÂˆÛÛœÝÙ[XÝY›ÙHHÛÛ™TÙ[XÝY˜[™ÙS›ÙJ
+NÂˆYˆ
+\Ù[XÝY›ÙJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ[\›˜[Û\›Ø\™^H^™\ÜÚ[Û•Õ^
+Ù[XÝY›ÙJNÂˆZTÝ]Kš[œ]^H[\›˜[Û\›Ø\™^ÂˆZTÝ]K›Y\ÜØYÙHHÛÜYYÈ[\›˜[Û\›Ø\™ˆŽÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ\TÝXœÝ]]Qœ›ÛU^
+
+HÂˆÛÛœÝ\œÙYHžT\œÙT\™[\Ú^™Y^™\ÜÚ[ÛŠZTÝ]Kš[œ]^
+NÂ‚ˆYˆ
+\\œÙY›ÚÊHÂˆZTÝ]K›Y\ÜØYÙHH\œÙY™\œ›ÜŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ™\XÙTÙ[XÝY˜[™ÙJ\œÙY››ÙJNÂˆš[š\ÚÜ\˜][ÛŠ
+NÂˆ™]\›ˆYNÂˆB‚‚‚ˆ[˜Ý[ÛˆÙ]^™\ÜÚ[ÛZ[\“›ÝJ
+HÂˆÛÛœÝÛÛ˜[YHHZTÝ]K˜XÝ]™UÛÛÂˆYˆ
+ÛÛ˜[YHOOH›[Y\šXØ[\]Z]˜[[˜ÙHŠHÂˆ™]\›ˆZ[[ˆ\]Z]˜[[ÚÛK[[X™\ˆ^™\ÜÚ[Ûˆ\Ú[™ÈH]ÛœËˆ]™[H[ÝÜÈHÚÛH[X™\‹HÝ[HÙˆÚÛH[X™\œËH›ÙXÝÙˆÚÛH[X™\œËÜˆÛ™Hš[˜\žH^Û™[ˆŽÂˆBˆYˆ
+\Ó[Y\šXØ[™]Üš]UÛÛ
+ÛÛ˜[YJJHÂˆ™]\›ˆZ[[ˆ\]Z]˜[[[Y\šXØ[^™\ÜÚ[Û‹ˆÝX›Z]š\œÝÚXÚÜÈÚ]\ˆ]È˜[YHX]Ú\ÈHÜšYÚ[˜[^™\ÜÚ[Û‹[ˆÚXÚÜÈÚ]\ˆH™]Üš]H›ÛÝÜÈ\È^\˜Ú\ÙIÜÈ™\ÝšXÝ[ÛœËˆHšYÚ\ÚYH^™\ÜÚ[ÛˆÝ^\È[˜Ú[™ÙY[[›ÝÚXÚÜÈ\ÜËˆŽÂˆBˆYˆ
+ÛÛ˜[YHOOH™˜XÝÜ“[X™\ˆˆÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\Ô›ÙXÝŠHÂˆ™]\›ˆZ[H›ÙXÝ[ˆHY[™[ˆHšYÚ\ÚYH^™\ÜÚ[ÛˆÝ^\È[˜Ú[™ÙY[[ÝX›Z]ÚXÚÜÈH›ÙXÝˆŽÂˆBˆYˆ
+ÛÛ˜[YHOOHÜš]S[X™\\ÔÝ[HˆÛÛ˜[YHOOH›[UÜš]TÜÚ]]™S[X™\\ÔÝ[HŠHÂˆ™]\›ˆZ[HÝ[H[ˆHY[™[ˆHšYÚ\ÚYH^™\ÜÚ[ÛˆÝ^\È[˜Ú[™ÙY[[ÝX›Z]ÚXÚÜÈHÝ[KˆŽÂˆBˆYˆ
+ÛÛ˜[YHOOH›[Q^™\ÜÓ[X™\\ÑY™™\™[˜ÙHŠHÂˆ™]\›ˆZ[HY™™\™[˜ÙH[ˆHY[™[\ÈHÝ[HÚ]H™YØ]]™H›ÙXÝˆHšYÚ\ÚYH^™\ÜÚ[ÛˆÝ^\È[˜Ú[™ÙY[[ÝX›Z]ÚXÚÜÈ]ˆŽÂˆBˆYˆ
+ÛÛ˜[YHOOH™]˜[X]HŠHÂˆ™]\›ˆ‘[\ˆH]˜[X]YÚÛH[X™\ˆ\Ú[™ÈHYÚ]]ÛœËˆÙY\žZ[™È[[ÛÜœ™XÝÜˆØ[˜Ù[È^]ˆŽÂˆB‚ˆ]›ÝHH•\ÙHÝ[K›ÙXÝÜˆ^Û™[ÈXZÙHÝXÝ\™Hš\œÝÜˆ[\ˆH˜[YHš\œÝ[™[ˆ\ÙHÜÙH]ÛœÈÈÜ˜\]ˆ™[XZ[š[™È]Y\Ý[ÛˆX\šÜÈ\™Hš[YÛˆÝX›Z]ˆŽÂˆYˆ
+ÛÛ˜[YHOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆ›ÝH
+ÏHˆ›Üˆ[™\œÙH›ÙXÝËHÛÛ\]Y^™\ÜÚ[ÛˆX^H›Ý™H[Ø^\È\]X[ÈˆŽÂˆBˆ™]\›ˆ›ÝNÂˆB‚ˆ[˜Ý[ÛˆZ[^™\ÜÚ[ÛZ[\’[
+
+HÂˆÛÛœÝÛÛ˜[YHHZTÝ]K˜XÝ]™UÛÛÂˆÛÛœÝ˜\šXX›\ÈHZ[\[ÝÜÕ˜\šXX›\ÊÛÛ˜[YJHÈÙ]Z[\•˜\šXX›S˜[Y\Ê
+KœÛXÙJ
+Hˆ×NÂˆÛÛœÝ˜\šXX›P]ÛœÈH˜\šXX›\Ë›[™ÝˆÈ]ˆÛ\ÜÏH˜Z[\‹]˜\šXX›K\›ÝÈ‰Ý˜\šXX›\Ë›X\
+ˆOˆ]Ûˆ]KXZ[\‹XXÝ[ÛH˜[YHˆ]K]˜[YOH‰Ù\ØØ\R[
+Š_Hˆ]OH’Ù^X›Ø\™ÚÜÝ]ˆ	Ù\ØØ\R[
+Š_H‰Ù\ØØ\R[
+Š_OØ]Û˜
+Kš›Ú[ŠˆŠ_OÙ]˜ˆˆˆŽÂˆÛÛœÝÜ\˜][Û•\\ÈHÙ]Z[\“Ü\˜][Û•\\ÊÛÛ˜[YJNÂˆÛÛœÝÜ\˜][Û”ÚÜÝ]ÈHÈÝ[NˆŠÈ‹›ÙˆŠˆ‹^ˆ—ˆ‹[Žˆ‹ÈˆNÂˆÛÛœÝÜ\˜][Û”Þ[X›ÛÈHÈ^ˆ—ˆ‹›Ùˆ°­È‹Ý[NˆŠÈ‹[ŽˆŒKÐHˆNÂˆÛÛœÝZ[Ü\˜][Û]ÛˆH\HOˆÂˆÛÛœÝ[˜X›YHÜ\˜][Û•\\Ëš[˜ÛY\Ê\JNÂˆÛÛœÝ]HH[˜X›YÈ]OH’Ù^X›Ø\™ÚÜÝ]ˆ	ÛÜ\˜][Û”ÚÜÝ]ÖÝ\WHˆŸH˜ˆˆŽÂˆÛÛœÝXÝ[Û]œÈH[˜X›YÈ]KXZ[\‹XXÝ[ÛH›Ü\˜][Ûˆˆ]K]˜[YOH‰Ý\_H˜ˆˆ\ØX›YŽÂˆ™]\›ˆ]ÛˆÛ\ÜÏH˜Z[\‹[Ü\˜]Ü‹X]Ûˆ‰ØXÝ[Û]œßIÝ]_O‰ÛÜ\˜][Û”Þ[X›ÛÖÝ\W_OØ]Û˜ÂˆNÂˆÛÛœÝ™YØ]]™SÛ™P]ÛˆHZ[\[ÝÜÓ™YØ]]™SÛ™JÛÛ˜[YJBˆÈ]ÛˆÛ\ÜÏH˜Z[\‹[™YØ]]™K[Û™KX]Ûˆˆ]KXZ[\‹XXÝ[ÛH›™YØ]]™SÛ™Hˆ]OH’Ù^X›Ø\™ÚÜÝ]ˆH‹LOØ]Û˜ˆˆ]ÛˆÛ\ÜÏH˜Z[\‹[™YØ]]™K[Û™KX]Ûˆˆ\ØX›Y‹LOØ]Û˜ÂˆÛÛœÝ[Ý™S™^]ÛˆHÛÛ˜[YHOOH™]˜[X]H‚ˆÈ]ÛˆÛ\ÜÏH˜Z[\‹[™^X]Ûˆˆ\ØX›Y“[Ý™HÛØ]Û˜ˆˆ]ÛˆÛ\ÜÏH˜Z[\‹[™^X]Ûˆˆ]KXZ[\‹XXÝ[ÛH›™^ˆ]OH’Ù^X›Ø\™ÚÜÝ]ˆšYÚ\œ›ÝÈÜˆXˆ“[Ý™HÛØ]Û˜ÂˆÛÛœÝ[™\œÙP]ÛˆHÜ\˜][Û•\\Ëš[˜ÛY\Êš[ˆŠBˆÈ]ˆÛ\ÜÏH˜Z[\‹][˜\žK\›ÝÈ]ÛˆÛ\ÜÏH˜Z[\‹[Ü\˜]Ü‹X]Ûˆˆ]KXZ[\‹XXÝ[ÛH›Ü\˜][Ûˆˆ]K]˜[YOHš[ˆˆ]OH’[›ÙXÙH[ˆ[™\œÙH
+Ù^X›Ø\™ÚÜÝ]ˆÊH‰ÛÜ\˜][Û”Þ[X›ÛËš[ŸOØ]ÛÙ]˜ˆˆˆŽÂˆ™]\›ˆ]ˆÛ\ÜÏH™^™\ÜÚ[Û‹XZ[\‹\[™[‚ˆ	ÙÙ]Z[\”›ÜÜØ[[
+
+_Bˆ]ˆÛ\ÜÏH˜Z[\‹XÛÛ›ÛÈ‚ˆ]ˆÛ\ÜÏH˜Z[\‹ZÙ^\Yˆ\šXK[X™[H‘^™\ÜÚ[ÛˆZ[\ˆÙ^\Y‚ˆ	ÖÈÈ‹Ž‹ŽH—K›X\
+Oˆ]Ûˆ]KXZ[\‹XXÝ[ÛH™YÚ]ˆ]K]˜[YOH‰ÙH‰ÙOØ]Û˜
+Kš›Ú[ŠˆŠ_Bˆ	ØZ[Ü\˜][Û]ÛŠ™^Š_Bˆ	ÖÈ‹H‹ˆ—K›X\
+Oˆ]Ûˆ]KXZ[\‹XXÝ[ÛH™YÚ]ˆ]K]˜[YOH‰ÙH‰ÙOØ]Û˜
+Kš›Ú[ŠˆŠ_Bˆ	ØZ[Ü\˜][Û]ÛŠœ›ÙŠ_Bˆ	ÖÈŒH‹Œˆ‹ŒÈ—K›X\
+Oˆ]Ûˆ]KXZ[\‹XXÝ[ÛH™YÚ]ˆ]K]˜[YOH‰ÙH‰ÙOØ]Û˜
+Kš›Ú[ŠˆŠ_Bˆ	ØZ[Ü\˜][Û]ÛŠœÝ[HŠ_Bˆ]ÛˆÛ\ÜÏH˜Z[\‹^™\›ËX]Ûˆˆ]KXZ[\‹XXÝ[ÛH™YÚ]ˆ]K]˜[YOHŒŒØ]Û‚ˆ	Û™YØ]]™SÛ™P]ÛŸBˆÙ]‚ˆ	Ú[™\œÙP]ÛŸBˆ	Ý˜\šXX›P]ÛœßBˆ]ˆÛ\ÜÏH˜Z[\‹[˜]šYØ][Û‹\›ÝÈ‚ˆ]ÛˆÛ\ÜÏH˜Z[\‹][™ËX]Ûˆˆ]KXZ[\‹XXÝ[ÛH[™Ð˜XÚÜÜXÙHˆ]OH’Ù^X›Ø\™ÚÜÝ]ˆ˜XÚÜÜXÙHÜˆ[]H˜XÚÜÜXÙOØ]Û‚ˆ	Û[Ý™S™^]ÛŸBˆÙ]‚ˆ]ˆÛ\ÜÏH˜Z[\‹XXÝ[Û‹\›ÝÈ‚ˆ]Ûˆ]KXZ[\‹XXÝ[ÛHœÝX›Z]ˆ]OH’Ù^X›Ø\™ÚÜÝ]ˆ[\ˆ”ÝX›Z]Ø]Û‚ˆ]Ûˆ]KXZ[\‹XXÝ[ÛH˜Ø[˜Ù[Ø[˜Ù[Ø]Û‚ˆÙ]‚ˆÙ]‚ˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ^Û™[[ÙR[
+
+HÂˆÛÛœÝ[ÙHHÙ]Ý\œ™[ÛÛ^Û™[[ÙJ
+NÂˆ™]\›ˆ]ˆÛ\ÜÏHÛÛY^Û™[[[ÙHˆ›ÛOHœ˜Y[ÙÜ›Ý\ˆ\šXK[X™[H•ÛÛ\Ý‚ˆÜ[ˆÛ\ÜÏHœ[™[[Y[K]]H•ÛÛ\ÝÜÜ[‚ˆX™[Û\ÜÏHÛÛY^Û™[\˜Y[Ë[X™[ˆ]OH˜\ÚXÈ[ÙXœ˜HÛÛÈ‚ˆ[œ]\OHœ˜Y[Èˆ˜[YOHÛÛ^Û™[[ÙHˆ˜[YOHœZ[ˆ‰Û[ÙHOOHÓÓÑVÓ‘S•ÓSÑTËœZ[ˆÈˆÚXÚÙYˆˆˆŸO‚ˆÜ[ŒOÜÜ[‚ˆÛX™[‚ˆX™[Û\ÜÏHÛÛY^Û™[\˜Y[Ë[X™[ˆ]OH“][\XØ]]™H[™\œÙHÛÛÈ‚ˆ[œ]\OHœ˜Y[Èˆ˜[YOHÛÛ^Û™[[ÙHˆ˜[YOHš[™\œÙH‰Û[ÙHOOHÓÓÑVÓ‘S•ÓSÑTËš[™\œÙHÈˆÚXÚÙYˆˆˆŸO‚ˆÜ[ŒÜÜ[‚ˆÛX™[‚ˆX™[Û\ÜÏHÛÛY^Û™[\˜Y[Ë[X™[ˆ]OH‘^Û™[ÛÛÈ‚ˆ[œ]\OHœ˜Y[Èˆ˜[YOHÛÛ^Û™[[ÙHˆ˜[YOH™^Û™[‰Û[ÙHOOHÓÓÑVÓ‘S•ÓSÑTË™^Û™[ÈˆÚXÚÙYˆˆˆŸO‚ˆÜ[ŒÏÜÜ[‚ˆÛX™[‚ˆÙ]˜ÂˆB‚ˆ[˜Ý[ÛˆZ[]ZXÚÕÛÛ›ÝÜÒ[
+
+HÂˆ][H]ˆÛ\ÜÏHÛÛY›Ü›KYÜšY˜Âˆ›Üˆ
+ÛÛœÝ›ÝÈÙˆÙ]ÛÛ›Ü›T›ÝÜÑ›ÜÝ\œ™[^Û™[[ÙJ
+JHÂˆYˆ
+Z\ÕÛÛ›Ü›T›ÝÐ]˜Z[X›J›ÝÊJHÂˆÛÛ[YNÂˆBˆ[
+ÏHZ[ÛÛ›Ü›T›ÝÒ[
+›ÝÊNÂˆBˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛØ]YÛÜžSY[R[
+
+HÂˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžHH[Âˆ™]\›ˆZ[ÛÛ^Û™[[ÙR[
+
+H
+ÈZ[]ZXÚÕÛÛ›ÝÜÒ[
+
+NÂˆB‚ˆ[˜Ý[ÛˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJÚYKÝ]
+HÂˆYˆ
+ÚYH	‰ˆÚYKÛÛ
+HÂˆÝ]˜Y
+ÚYKÛÛ
+NÂˆBˆB‚ˆ[˜Ý[ÛˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛT›ÝÊ›ÝËÝ]
+HÂˆYˆ
+\›ÝÊHÂˆ™]\›ŽÂˆBˆYˆ
+›ÝË™[
+HÂˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJ›ÝË™[Ý]
+NÂˆBˆYˆ
+›ÝË™\ÝšX][Û”Z\ŠHÂˆÜ›ÝË›Y˜XÝÜ™Y›ÝËÜ\ÝšX]Y›ÝË˜›ÝÛQ\ÝšX]Y›ÝËœšYÚ˜XÝÜ™YBˆ™›Ü‘XXÚ
+ÚYHOˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJÚYKÝ]
+JNÂˆBˆYˆ
+›ÝËš\]
+HÂˆÜ›ÝË›Y›ÝË˜Ù[\‹›ÝËœšYÚK™›Ü‘XXÚ
+ÚYHOˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJÚYKÝ]
+JNÂˆBˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJ›ÝË›YÝ]
+NÂˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJ›ÝËœšYÚÝ]
+NÂˆYˆ
+\œ˜^Kš\Ð\œ˜^J›ÝË›YÜ›Ý\
+JHÂˆ›ÝË›YÜ›Ý\™›Ü‘XXÚ
+ÚYHOˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJÚYKÝ]
+JNÂˆBˆYˆ
+\œ˜^Kš\Ð\œ˜^J›ÝËœšYÚÜ›Ý\
+JHÂˆ›ÝËœšYÚÜ›Ý\™›Ü‘XXÚ
+ÚYHOˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛTÚYJÚYKÝ]
+JNÂˆBˆB‚ˆ[˜Ý[ÛˆÙ]ÛÛ›Ü›S[ÙQ›Ü•ÛÛ
+ÛÛ˜[YJHÂˆÛÛœÝ›Ü›X[^™YÛÛ˜[YHHÛÛ˜[YHOOH˜ÛÛ[]]HˆÈ˜ÛÛ[]]Qš\œÝÓ\ÝˆˆÛÛ˜[YNÂˆ›Üˆ
+ÛÛœÝ[ÙHÙˆØš™XÝšÙ^\ÊÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑJJHÂˆÛÛœÝÛÛÈH™]ÈÙ]
+
+NÂˆ
+ÓÓÑ“Ô“WÓQS•WÔ“ÕÔ×Ð–WÑVÓ‘S•ÓSÑVÛ[ÙWH×JK™›Ü‘XXÚ
+›ÝÈOˆÂˆÛÛXÝÛÛ›Ü›UÛÛÑœ›ÛT›ÝÊ›ÝËÛÛÊNÂˆJNÂˆYˆ
+ÛÛËš\Ê›Ü›X[^™YÛÛ˜[YJJHÂˆ™]\›ˆ[ÙNÂˆBˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆÞ[˜ÕÛÛ\ÝÑ[[ÔÝ\
+
+HÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆYˆ
+\Ý\Ý\\HOOHÛÛŠHÂˆ™]\›ŽÂˆBˆÛÛœÝ[ÙHHÙ]ÛÛ›Ü›S[ÙQ›Ü•ÛÛ
+Ý\ÛÛ
+NÂˆYˆ
+[ÙHOOHÓÓÑVÓ‘S•ÓSÑTËœZ[ˆ[ÙHOOHÓÓÑVÓ‘S•ÓSÑTË™^Û™[[ÙHOOHÓÓÑVÓ‘S•ÓSÑTËš[™\œÙJHÂˆZTÝ]KÛÛ^Û™[[ÙHH[ÙNÂˆBˆB‚ˆ[˜Ý[ÛˆZ[Ù[XÝYÛÛØ]YÛÜžR[
+Ø]YÛÜžKš\ÚX›RÙ^\ÊHÂˆ][HZ[ÛÛ^Û™[[ÙR[
+
+NÂˆ[
+ÏH]ÛˆÛ\ÜÏHœ[™[[Y[KX˜XÚËX]Ûˆˆ]KXXÝ[ÛH˜˜XÚÕÕÛÛØ]YÛÜšY\È¸¡¤˜XÚÈÈÛÛØ]YÛÜšY\ÏØ]Û˜Âˆ[
+ÏH]ˆÛ\ÜÏHœ[™[[Y[K]]H‰Ù\ØØ\R[
+Ø]YÛÜžK›X™[
+_OÙ]˜Â‚ˆYˆ
+š\ÚX›RÙ^\Ë›[™ÝOOH
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH“›È[\È[ˆ\ÈØ]YÛÜžH\™H]˜Z[X›H[ˆHÝ\œ™[]™[Ù]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[
+ÏH]ˆÛ\ÜÏHÛÛYÜšY˜Âˆ›Üˆ
+ÛÛœÝÙ^HÙˆš\ÚX›RÙ^\ÊHÂˆ[
+ÏHZ[ÛÛ]Û’[
+Ù^JNÂˆBˆ[
+ÏHÙ]˜Âˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆZ[ÛÛ\™XR[
+
+HÂˆ][HˆŽÂ‚ˆYˆ
+\Ù[XÝ[Û‹››ÙHZTÝ]KœÝYÙHOOHœÜÝšY]ÈŠHÂˆ™]\›ˆˆŽÂˆB‚ˆYˆ
+]ZTÝ]K˜XÝ]™UÛÛ
+HÂˆYˆ
+\Ð\XØX›SÛ›UÛÛ›Ý][Û“[ÙJ
+JHÂˆ™]\›ˆZ[\XØX›UÛÛ\Ý[
+
+NÂˆBˆYˆ
+\Ò[[Ø]YÛÜžUÛÛ›Ý][Û“[ÙJ
+JHÂˆ™]\›ˆZ[[[Ø]YÛÜžUÛÛ\Ý[
+
+NÂˆBˆ™]\›ˆZ[ÛÛØ]YÛÜžSY[R[
+
+NÂˆB‚ˆYˆ
+ˆÙ]]]Ñ^XÝ]Q[˜Ý[Û‘›Ü•ÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+H	‰‚ˆZTÝ]KœÝYÙHOOHœ™]šY]È‚ˆ
+HÂˆ™]\›ˆˆŽÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\Y[]Hˆ	‰ˆZTÝ]KœÝYÙHOOH˜ÚÛÜÙTÜÚ][ÛˆŠHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝHÚÛÜÙHÚ]Y[]HÈ[›ÙXÙKÙ]˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛYÜšY‚ˆ]Ûˆ]KXXÝ[ÛHš[œÙ\Y[]SÜ[Ûˆˆ]K]˜[YOH˜Y™\›ÎÜ[ˆY]]™HY[]HX^H™H[›ÙXÙYX›Ý™HHÙ[XÝY^™\ÜÚ[Û‹Ø]Û‚ˆ]Ûˆ]KXXÝ[ÛHš[œÙ\Y[]SÜ[Ûˆˆ]K]˜[YOH˜Y™\›Î˜›ÝÛH[ˆY]]™HY[]HX^H™H[›ÙXÙY™[ÝÈHÙ[XÝY^™\ÜÚ[Û‹Ø]Û‚ˆ]Ûˆ]KXXÝ[ÛHš[œÙ\Y[]SÜ[Ûˆˆ]K]˜[YOH›][\PžSÛ™N›YH][\XØ]]™HY[]HX^H™H[›ÙXÙYÛˆHYØ]Û‚ˆ]Ûˆ]KXXÝ[ÛHš[œÙ\Y[]SÜ[Ûˆˆ]K]˜[YOH›][\PžSÛ™NœšYÚH][\XØ]]™HY[]HX^H™H[›ÙXÙYÛˆHšYÚØ]Û‚ˆ	ØØ[‘[[Z[˜]RY[]Y\Ê
+H	‰ˆZ\Ò[[Ø]YÛÜžUÛÛ›Ý][Û“[ÙJ
+HÈ	Ï]Ûˆ]KXXÝ[ÛHœ™]šY]Ñ[[Z[˜]RY[]Y\È[ˆY]]™K][\XØ]]™KÜˆš\œÝ\ÝÙ\ˆY[]HX^H™H™[[Ý™YØ]Û‰Èˆ	ÉßBˆÙ]˜ÂˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOH›[Y\šXØ[\]Z]˜[[˜ÙHˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆÛÛœÝ[Y\šXØ[[ÙHHÙ][Y\šXØ[\]Z]˜[[˜ÙS[ÙQ›Ü”Ù[XÝ[ÛŠ
+NÂˆÛÛœÝX™[H[Y\šXØ[[ÙHOOH™^[™‚ˆÈ‘[\ˆ[ˆ\]Z]˜[[Ý[K›ÙXÝÜˆ^Û™[ÙˆÚÛH[X™\œËÝXÚ\ÈŠÌÊÍŠŒÊÜˆ—ŒËˆ‚ˆˆ‘[\ˆH\]Z]˜[[ÚÛH[X™\ˆ›ÜˆHÙ[XÝYÝ[K›ÙXÝÜˆ^Û™[ˆ]™[H\Ù\È‹X\žHÝ[\ËÜ›ÙXÝÈ[™š[˜\žH^Û™[ÈÙˆÚÛH[X™\œËˆŽÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰ÛX™[OÙ]˜Âˆ[
+ÏH[œ]Û\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ˜[YOH‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_H˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆ\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+H	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+Ù]ÝXÝ\™Y[Y\šXØ[ÛÛ[œ]X™[
+ZTÝ]K˜XÝ]™UÛÛ
+J_OÙ]˜Âˆ[
+ÏH[œ]Û\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ˜[YOH‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_H˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“[X™\ˆˆZTÝ]K˜XÝ]™UÛÛOOHÜš]S[X™\\ÔÝ[HŠH	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆÛÛœÝX™[HZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“[X™\ˆ‚ˆÈ‘[\ˆ˜XÝÜœÈÙ\\˜]YžHÜXÙ\ËÛÛ[X\ËÜˆ
+ˆ‚ˆˆ‘[\ˆY[™ÈÙ\\˜]YžHÜXÙ\ËÛÛ[X\ËÜˆ
+ÈŽÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰ÛX™[OÙ]˜Âˆ[
+ÏH[œ]Û\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ˜[YOH‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_H˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOH™]˜[X]Hˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆÛÛœÝX™[H‘[\ˆH˜[YHÙˆHÙ[XÝYÝ[HÜˆ›ÙXÝˆ]˜[X][Ûˆ]™[H[ÝÜÈÛ›HY][ÛˆÜˆ][\XØ][ÛˆÙˆ›Û‹[™YØ]]™HÚÛH[X™\œË›ÝZ^Y›ÙXÝ\Ý[H^™\ÜÚ[ÛœËˆÙY\žZ[™È[[ÛÜœ™XÝÜˆ^]ˆŽÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰ÛX™[OÙ]˜Âˆ[
+ÏH[œ]Û\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ˜[YOH‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_H˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOH˜Ø[˜Ù[ÜÜÚ]\Èˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‘[\ˆ[ˆ^™\ÜÚ[Ûˆ[ˆ[H\™[\Ú^™Y›Ü›KˆHÙ[XÝYÚ[™XÛÛYH]^™\ÜÚ[Ûˆ\È]ÈY]]™H[™\œÙK›Üˆ^[\H
+
+
+JÊ
+LJJŠ
+JJKÙ]˜Âˆ[
+ÏH^\™XHÛ\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ›ÝÜÏHŒÈ‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_OÝ^\™XO˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆB‚ˆH[ÙHYˆ
+ˆ\Ñ^™\ÜÚ[ÛZ[\•ÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+H	‰‚ˆZTÝ]KœÝYÙHOOH˜Z[\ˆ‚ˆ
+HÂˆ[
+ÏHZ[^™\ÜÚ[ÛZ[\’[
+
+NÂˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\^Û™[™\›Èˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‘[\ˆH˜\ÙH^™\ÜÚ[Ûˆ[ˆ[H\™[\Ú^™Y›Ü›KˆHÙ[XÝYHÚ[™XÛÛYH]^™\ÜÚ[Ûˆ˜Z\ÙYÈHÝÙ\‹›Üˆ^[\H
+
+
+WŠ
+JKÙ]˜Âˆ[
+ÏH^\™XHÛ\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ›ÝÜÏHŒÈ‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_OÝ^\™XO˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\ÝÙ\“Ù“Û™Hˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‘[\ˆ[ˆ^Û™[^™\ÜÚ[Ûˆ[ˆ[H\™[\Ú^™Y›Ü›KˆHÙ[XÝYHÚ[™XÛÛYHH˜Z\ÙYÈ]ÝÙ\‹›Üˆ^[\H
+
+JWŠJJKÙ]˜Âˆ[
+ÏH^\™XHÛ\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ›ÝÜÏHŒÈ‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_OÝ^\™XO˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‘[\ˆ[ˆ[YÙ\ˆÜˆ[H\™[\Ú^™Y^™\ÜÚ[Û‹ˆHÙ[XÝYHÚ[™XÛÛYH]^™\ÜÚ[Ûˆ[Y\ÈHØ[YH^™\ÜÚ[Ûˆ˜Z\ÙYÈLK›Üˆ^[\H
+
+JJŠ
+JWŠLJJJHÜˆ
+
+
+
+JÊŠJJŠ
+
+
+JÊŠJWŠLJJJKÙ]˜Âˆ[
+ÏH^\™XHÛ\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ›ÝÜÏHŒÈ‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_OÝ^\™XO˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\™\›Ô›ÙXÝˆ	‰‚ˆZTÝ]KœÝYÙHOOHš[œ]‚ˆ
+HÂˆÛÛœÝÜšY[][Û“X™[HZTÝ]Kž™\›Ô›ÙXÝÜšY[][ÛˆOOHœšYÚ‚ˆÈ•HÙ[XÝYÚ[™XÛÛYH]^™\ÜÚ[Ûˆ[Y\È›Üˆ^[\H
+
+
+JŠ
+JHÜˆ
+
+
+
+JÊŠJJŠ
+JKˆ‚ˆˆ•HÙ[XÝYÚ[™XÛÛYH[Y\È]^™\ÜÚ[Û‹›Üˆ^[\H
+
+
+JŠ
+JHÜˆ
+
+
+JŠ
+
+JÊŠJJKˆŽÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‘[\ˆH^™\ÜÚ[ÛˆÈ][\HžH™\›Ëˆ	ÛÜšY[][Û“X™[OÙ]˜Âˆ[
+ÏH^\™XHÛ\ÜÏH›[X™\‹Z[œ][œ]X›Þˆ›ÝÜÏHŒÈ‰Ù\ØØ\R[
+ZTÝ]Kš[œ]^
+_OÝ^\™XO˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™^XÝ]H‘^XÝ]OØ]Û]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆYˆ
+ZTÝ]K›Y\ÜØYÙJHÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ù\ØØ\R[
+ZTÝ]K›Y\ÜØYÙJ_OÙ]˜ÂˆBˆH[ÙHYˆ
+ˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]HˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]U\›\ÈˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Q˜XÝÜœÈŠH	‰‚ˆZTÝ]KœÝYÙHOOHœ™]šY]È‚ˆ
+HÂˆÛÛœÝÚÜÙ[ÛÝ[H\œ˜^Kš\Ð\œ˜^JZTÝ]K˜ÛÛ[]]SÜ™\ŠHÈZTÝ]K˜ÛÛ[]]SÜ™\‹›[™ÝˆÂˆÛÛœÝÝ[ÛÝ[HÙ]Ù[XÝYÛXÙS[™Ý
+
+NÂˆÛÛœÝ[[ÔÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆÛÛœÝ[œÝXÝ[ÛˆH\Ñ[[Ó[ÙPXÝ]™J
+H	‰ˆ[[ÔÝ\	‰ˆ[[ÔÝ\\HOOH˜ÛÛ[]]PÚÚXÙH‚ˆÈÛXÚÈHY[ÝË[Ý][™Y	ÜÙ[XÝ[Û‹››ÙH	‰ˆÙ[XÝ[Û‹››ÙK\HOOHœÝ[HˆÈ\›Hˆˆ™˜XÝÜˆŸH™^˜ˆˆÛXÚÈHÛÛÜ™Y\›\ÈÜˆ˜XÝÜœÈ[ˆHÜ™\ˆ[ÝHØ[[HÈ\X\‹ˆŽÂˆ[
+ÏH]ˆÛ\ÜÏHœÛX[[›ÝH‰Ú[œÝXÝ[ÛŸH	ØÚÜÙ[ÛÝ[HÙˆ	ÝÝ[ÛÝ[HÚÜÙ[‹Ù]˜Âˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆH[ÙHYˆ
+ˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Qš\œÝÓ\ÝˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]S\ÝÑš\œÝŠH	‰‚ˆZTÝ]KœÝYÙHOOHœ™]šY]È‚ˆ
+HÂˆ[
+ÏH]ˆÛ\ÜÏHÛÛ\›ÝÈ]Ûˆ]KXXÝ[ÛH™Û™H‘^]Ø]ÛÙ]˜ÂˆB‚ˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[ÛˆX\šÕÛÛ]Û“›Ý\XØX›J]ÛŠHÂˆ]Û‹˜Û\ÜÓ\Ý˜Y
+ÛÛ[›ÝX\XØX›HŠNÂˆYˆ
+X]Û‹›X]Ú\Ê–Ù]K\[KXØ]YÛÜžWHŠJHÂˆ]Û‹œÙ]]šX]J]H‹•\È[HÙ\È›Ý\HÈHÙ[XÝY^™\ÜÚ[Û‹ˆŠNÂˆBˆB‚ˆ[˜Ý[Ûˆ\™›Ü›PZ[\XÝ[ÛŠXÝ[Û‹˜[YHHˆŠHÂˆYˆ
+]ZTÝ]K™^™\ÜÚ[ÛZ[\ˆZTÝ]KœÝYÙHOOH˜Z[\ˆŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆYˆ
+Z\Ñ[[ÐZ[\XÝ[Û[ÝÙY
+XÝ[Û‹˜[YJJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝ™Y›Ü™Q^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆZTÝ]K›Y\ÜØYÙHHˆŽÂˆ]™\Ý[HYNÂˆYˆ
+XÝ[ÛˆOOH™YÚ]ŠHÂˆ™\Ý[H\[™Z[\‘YÚ]
+˜[YJNÂˆH[ÙHYˆ
+XÝ[ÛˆOOH›™YØ]]™SÛ™HŠHÂˆ™\Ý[H[\Z[\•˜[YJ‹LH‹YJNÂˆH[ÙHYˆ
+XÝ[ÛˆOOH˜[YHŠHÂˆ™\Ý[H[\Z[\•˜[YJ˜[YKYJNÂˆH[ÙHYˆ
+XÝ[ÛˆOOH›Ü\˜][ÛˆŠHÂˆ™\Ý[H[œÙ\Z[\“Ü\˜][ÛŠ˜[YJNÂˆH[ÙHYˆ
+XÝ[ÛˆOOH›™^ŠHÂˆ™\Ý[H[Ý™PZ[\“™^
+
+NÂˆH[ÙHYˆ
+XÝ[ÛˆOOH[™Ð˜XÚÜÜXÙHŠHÂˆ™\Ý[H[™Ñ^™\ÜÚ[ÛZ[\”Ý\
+
+NÂˆH[ÙHYˆ
+XÝ[ÛˆOOHœÝX›Z]ŠHÂˆ™\Ý[HÝX›Z]^™\ÜÚ[ÛZ[\Š
+NÂˆH[ÙHYˆ
+XÝ[ÛˆOOH˜Ø[˜Ù[ŠHÂˆ™\Ý[HØ[˜Ù[^™\ÜÚ[ÛZ[\Š
+NÂˆH[ÙHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆYˆ
+™\Ý[OOH˜[ÙJHÂˆ™XÛÜ™Z[\‘›Ü”ÛÛ][ÛŠXÝ[Û‹˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠNÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆBˆ™]\›ˆ™\Ý[OOH˜[ÙNÂˆB‚ˆ[˜Ý[Ûˆ[™Q^™\ÜÚ[ÛZ[\’Ù^YÝÛŠ]™[
+HÂˆYˆ
+]ZTÝ]K™^™\ÜÚ[ÛZ[\ˆZTÝ]KœÝYÙHOOH˜Z[\ˆŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ[™[HØÝ[Y[œ]Y\žTÙ[XÝÜŠ‹™^™\ÜÚ[Û‹XZ[\‹\[™[ŠNÂˆYˆ
+\[™[
+HÂˆ™]\›ˆ˜[ÙNÂˆBˆÛÛœÝ\™Ù]H]™[\™Ù]ÂˆYˆ
+\™Ù]	‰ˆ\[Ùˆ\™Ù]›X]Ú\ÈOOH™[˜Ý[Ûˆˆ	‰ˆ
+\™Ù]›X]Ú\Êš[œ]^\™XKÙ[XÝŠH\™Ù]š\ÐÛÛ[Y]X›JJHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ]XÝ[ÛˆHˆŽÂˆ]˜[YHHˆŽÂˆYˆ
+×–ÌNWIË\Ý
+]™[šÙ^JJHÂˆXÝ[ÛˆH™YÚ]ŽÂˆ˜[YHH]™[šÙ^NÂˆH[ÙHYˆ
+]™[šÙ^HOOHŠÈŠHÂˆXÝ[ÛˆH›Ü\˜][ÛˆŽÂˆ˜[YHHœÝ[HŽÂˆH[ÙHYˆ
+]™[šÙ^HOOHŠˆŠHÂˆXÝ[ÛˆH›Ü\˜][ÛˆŽÂˆ˜[YHHœ›ÙŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH—ˆŠHÂˆXÝ[ÛˆH›Ü\˜][ÛˆŽÂˆ˜[YHH™^ŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH‹ÈŠHÂˆXÝ[ÛˆH›Ü\˜][ÛˆŽÂˆ˜[YHHš[ˆŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH‹HŠHÂˆXÝ[ÛˆH›™YØ]]™SÛ™HŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH‘[\ˆŠHÂˆXÝ[ÛˆHœÝX›Z]ŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH\œ›ÝÔšYÚŠHÂˆXÝ[ÛˆH›™^ŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH˜XÚÜÜXÙHˆ]™[šÙ^HOOH‘[]HŠHÂˆXÝ[ÛˆH[™Ð˜XÚÜÜXÙHŽÂˆH[ÙHYˆ
+]™[šÙ^HOOH‘\ØØ\HŠHÂˆXÝ[ÛˆH˜Ø[˜Ù[ŽÂˆH[ÙHYˆ
+×–ØK^KV—IË\Ý
+]™[šÙ^JJHÂˆXÝ[ÛˆH˜[YHŽÂˆ˜[YHH]™[šÙ^KÓÝÙ\Ø\ÙJ
+NÂˆH[ÙHÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆÛÛœÝÙ[XÝÜˆH˜[YBˆÈÙ]KXZ[\‹XXÝ[ÛH‰ØXÝ[ÛŸH—VÙ]K]˜[YOH‰Ý˜[Y_H—XˆˆÙ]KXZ[\‹XXÝ[ÛH‰ØXÝ[ÛŸH—XÂˆÛÛœÝX]Ú[™Ð]ÛˆH[™[œ]Y\žTÙ[XÝÜŠÙ[XÝÜŠNÂˆYˆ
+[X]Ú[™Ð]ÛˆX]Ú[™Ð]Û‹™\ØX›Y
+HÂˆ™]\›ˆ˜[ÙNÂˆB‚ˆ]™[œ™]™[Y˜][
+
+NÂˆ\™›Ü›PZ[\XÝ[ÛŠXÝ[Û‹˜[YJNÂˆ™]\›ˆYNÂˆB‚ˆ[˜Ý[Ûˆ]XÚÛÛ\Ý[™\œÊÛÛZ[™\ŠHÂˆÛÛœÝ[[\ØÜš\[ÛˆHÛÛZ[™\‹œ]Y\žTÙ[XÝÜŠ‹š[[XØ]YÛÜžKY\ØÜš\[ÛˆŠNÂˆÛÛœÝ™\Ù][[\ØÜš\[ÛˆH
+
+HOˆÂˆYˆ
+[[\ØÜš\[ÛŠHÂˆ[[\ØÜš\[Û‹š[›™\’SH’Ý™\ˆÝ™\ˆ[ˆXÝ[ÛˆÈÙYHÚ]]Ù\ËÜˆŽÂˆBˆNÂˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]K\[KXØ]YÛÜžWHŠK™›Ü‘XXÚ
+ˆOˆÂˆÛÛœÝÚÝÒ[[\ØÜš\[ÛˆH
+
+HOˆÂˆYˆ
+[[\ØÜš\[ÛŠHÂˆ[[\ØÜš\[Û‹š[›™\’SHÙ][[Ø]YÛÜžQ\ØÜš\[Û’[
+‹™]\Ù]œ[PØ]YÛÜžJNÂˆBˆNÂˆ‹˜Y]™[\Ý[™\Š›[Ý\ÙY[\ˆ‹ÚÝÒ[[\ØÜš\[ÛŠNÂˆ‹˜Y]™[\Ý[™\Š›[Ý\Ù[X]™H‹
+
+HOˆÂˆYˆ
+ØÝ[Y[˜XÝ]™Q[[Y[OOHŠHÂˆ™\Ù][[\ØÜš\[ÛŠ
+NÂˆBˆJNÂˆ‹˜Y]™[\Ý[™\Š™›ØÝ\È‹ÚÝÒ[[\ØÜš\[ÛŠNÂˆ‹˜Y]™[\Ý[™\Š˜›\ˆ‹
+
+HOˆÂˆYˆ
+X‹›X]Ú\ÊŽšÝ™\ˆŠJHÂˆ™\Ù][[\ØÜš\[ÛŠ
+NÂˆBˆJNÂˆ‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÛÛœÝØ]YÛÜžRYH‹™]\Ù]œ[PØ]YÛÜžNÂˆ]\XØX›UÛÛÈHÙ]\XØX›R[[Ø]YÛÜžUÛÛÊØ]YÛÜžRY
+NÂˆYˆ
+\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ\XØX›UÛÛÈH\XØX›UÛÛË™š[\Š\Ñ[[ÕÛÛ[ÝÙY
+NÂˆBˆYˆ
+\XØX›UÛÛË›[™ÝOOH
+HÂˆX\šÕÛÛ]Û“›Ý\XØX›JŠNÂˆ™]\›ŽÂˆBˆYˆ
+\XØX›UÛÛË›[™ÝOOHJHÂˆÛÛœÝÛÛ˜[YHH\XØX›UÛÛÖÌNÂˆÛÛœÝ™Y›Ü™Q^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆ™XÛÜ™ÛÛ›Ü”ÛÛ][ÛŠÛÛ˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠNÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆ™YÚ[•ÛÛ
+ÛÛ˜[YJNÂˆ™]\›ŽÂˆBˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžHHØ]YÛÜžRYÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆJNÂˆJNÂ‚ˆÛÛœÝ[œÙ\\ØÜš\[ÛˆHÛÛZ[™\‹œ]Y\žTÙ[XÝÜŠ‹š[œÙ\XÚÚXÙKY\ØÜš\[ÛˆŠNÂˆÛÛœÝ™\Ù][œÙ\\ØÜš\[ÛˆH
+
+HOˆÂˆYˆ
+[œÙ\\ØÜš\[ÛŠHÂˆ[œÙ\\ØÜš\[Û‹š[›™\’SH’Ý™\ˆÝ™\ˆ[ˆÜ[ÛˆÈÙYHÚ]]Ù\ËÜˆŽÂˆBˆNÂˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]KZ[œÙ\Y\ØÜš\[Û‹]ÛÛHŠK™›Ü‘XXÚ
+ˆOˆÂˆÛÛœÝÚÝÒ[œÙ\\ØÜš\[ÛˆH
+
+HOˆÂˆÛÛœÝÚÚXÙHHS”ÑT•ÑSSQS•ÐÒÒPÑTÖØ‹™]\Ù]š[œÙ\\ØÜš\[Û•ÛÛNÂˆYˆ
+[œÙ\\ØÜš\[Ûˆ	‰ˆÚÚXÙJHÂˆ[œÙ\\ØÜš\[Û‹š[›™\’SH‰Ù\ØØ\R[
+ÚÚXÙK™\ØÜš\[ÛŠ_OÜ˜ÂˆBˆNÂˆ‹˜Y]™[\Ý[™\Š›[Ý\ÙY[\ˆ‹ÚÝÒ[œÙ\\ØÜš\[ÛŠNÂˆ‹˜Y]™[\Ý[™\Š›[Ý\Ù[X]™H‹
+
+HOˆÂˆYˆ
+ØÝ[Y[˜XÝ]™Q[[Y[OOHŠHÂˆ™\Ù][œÙ\\ØÜš\[ÛŠ
+NÂˆBˆJNÂˆ‹˜Y]™[\Ý[™\Š™›ØÝ\È‹ÚÝÒ[œÙ\\ØÜš\[ÛŠNÂˆ‹˜Y]™[\Ý[™\Š˜›\ˆ‹
+
+HOˆÂˆYˆ
+X‹›X]Ú\ÊŽšÝ™\ˆŠJHÂˆ™\Ù][œÙ\\ØÜš\[ÛŠ
+NÂˆBˆJNÂˆJNÂ‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+–Ù]KXZ[\‹XXÝ[Û—HŠK™›Ü‘XXÚ
+]ÛˆOˆÂˆ]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÛÛœÝXÝ[ÛˆH]Û‹™]\Ù]˜Z[\XÝ[ÛŽÂˆÛÛœÝ˜[YHH]Û‹™]\Ù]˜[YHˆŽÂˆ\™›Ü›PZ[\XÝ[ÛŠXÝ[Û‹˜[YJNÂˆJNÂˆJNÂ‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+š[œ]Û˜[YOIÝÛÛ^Û™[[ÙI×HŠK™›Ü‘XXÚ
+[œ]OˆÂˆ[œ]˜Y]™[\Ý[™\Š˜Ú[™ÙH‹
+
+HOˆÂˆYˆ
+Z[œ]˜ÚXÚÙY
+HÂˆ™]\›ŽÂˆBˆYˆ
+\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™]\›ŽÂˆBˆZTÝ]KÛÛ^Û™[[ÙHH[œ]˜[YHOOHÓÓÑVÓ‘S•ÓSÑTË™^Û™[ˆÈÓÓÑVÓ‘S•ÓSÑTË™^Û™[ˆˆ[œ]˜[YHOOHÓÓÑVÓ‘S•ÓSÑTËš[™\œÙBˆÈÓÓÑVÓ‘S•ÓSÑTËš[™\œÙBˆˆÓÓÑVÓ‘S•ÓSÑTËœZ[ŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆJNÂˆJNÂ‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]K]ÛÛXØ]YÛÜžWHŠK™›Ü‘XXÚ
+ˆOˆÂˆ‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆYˆ
+\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆ™]\›ŽÂˆBˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžHH‹™]\Ù]ÛÛØ]YÛÜžNÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆJNÂˆJNÂ‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]K]ÛÛHŠK™›Ü‘XXÚ
+ˆOˆÂˆ‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÛÛœÝÛÛ˜[YHH‹™]\Ù]ÛÛÂˆYˆ
+Z\Ñ[[ÕÛÛ[ÝÙY
+ÛÛ˜[YJJHÂˆ™]\›ŽÂˆBˆYˆ
+Z\ÕÛÛXÝX[P\XØX›JÛÛ˜[YJJHÂˆYˆ
+Z\Ñ[[Ó[ÙPXÝ]™J
+H	‰ˆZ\Ð\XØX›SÛ›UÛÛ›Ý][Û“[ÙJ
+JHÂˆX\šÕÛÛ]Û“›Ý\XØX›JŠNÂˆBˆ™]\›ŽÂˆBˆÛÛœÝ™Y›Ü™Q^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆ™XÛÜ™ÛÛ›Ü”ÛÛ][ÛŠÛÛ˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠNÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆ™YÚ[•ÛÛ
+ÛÛ˜[YJNÂˆJNÂˆJNÂ‚ˆÛÛZ[™\‹œ]Y\žTÙ[XÝÜ[
+˜]Û–Ù]KXXÝ[Û—HŠK™›Ü‘XXÚ
+ˆOˆÂˆ‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÛÛœÝXÝ[ÛˆH‹™]\Ù]˜XÝ[ÛŽÂˆÛÛœÝ˜[YHH‹™]\Ù]˜[YH[ÂˆYˆ
+Z\Ñ[[ÐXÝ[Û[ÝÙY
+XÝ[Û‹˜[YJJHÂˆ™]\›ŽÂˆBˆÛÛœÝ™Y›Ü™Q^™\ÜÚ[ÛˆHÙ]^™\ÜÚ[Û•^›Ü•˜XÙJ
+NÂˆ™XÛÜ™XÝ[Û‘›Ü”ÛÛ][ÛŠXÝ[Û‹˜[YK™Y›Ü™Q^™\ÜÚ[ÛŠNÂˆY˜[˜ÙQ[[ÔÝ\
+
+NÂˆ[™UÛÛXÝ[ÛŠXÝ[Û‹˜[YJNÂˆJNÂˆJNÂˆB‚ˆ[˜Ý[Ûˆ]XÚ[œ]\Ý[™\œÊ
+HÂˆØÝ[Y[œ]Y\žTÙ[XÝÜ[
+‹›[X™\‹Z[œ]ŠK™›Ü‘XXÚ
+[œ]OˆÂˆ[œ]˜Y]™[\Ý[™\Šš[œ]‹
+
+HOˆÂˆZTÝ]Kš[œ]^H[œ]˜[YNÂˆJNÂ‚ˆ[œ]˜Y]™[\Ý[™\ŠšÙ^YÝÛˆ‹HOˆÂˆYˆ
+KšÙ^HOOH‘[\ˆŠHÂˆKœ™]™[Y˜][
+
+NÂˆ[™UÛÛXÝ[ÛŠ™^XÝ]H‹[
+NÂˆBˆJNÂˆJNÂ‚ˆÛÛœÝš\ÚX›R[œ]H]™[ÛÛ[œ]Y\žTÙ[XÝÜŠ‹›[X™\‹Z[œ]ŠNÂˆYˆ
+š\ÚX›R[œ]
+HÂˆš\ÚX›R[œ]™›ØÝ\Ê
+NÂˆš\ÚX›R[œ]œÙ]Ù[XÝ[Û”˜[™ÙJš\ÚX›R[œ]˜[YK›[™Ýš\ÚX›R[œ]˜[YK›[™Ý
+NÂˆB‚ˆÛÛœÝÛÜU^›ÞH]™[ÛÛ[œ]Y\žTÙ[XÝÜŠ‹˜ÛÜK]^X›ÞŠNÂˆYˆ
+ÛÜU^›Þ
+HÂˆÛÜU^›Þ™›ØÝ\Ê
+NÂˆÛÜU^›ÞœÙ]Ù[XÝ[Û”˜[™ÙJÛÜU^›Þ˜[YK›[™Ý
+NÂˆBˆB‚‚ˆ[˜Ý[ÛˆÙ[XÝ[ÛÛÛZ[œÔ›ÙXÝ\›J
+HÂˆYˆ
+\Ù[XÝ[Û‹››ÙHÙ[XÝ[Û‹››ÙK\HOOHœÝ[HŠHÂˆ™]\›ˆ˜[ÙNÂˆBˆ›Üˆ
+]HHÙ[XÝ[Û‹™š\œÝ\ÈHHÙ[XÝ[Û‹›\Ý\ÈJÊÊHÂˆYˆ
+Ù[XÝ[Û‹››ÙK˜\™ÜÖÚWK\HOOHœ›ÙŠHÂˆ™]\›ˆYNÂˆBˆBˆ™]\›ˆ˜[ÙNÂˆB™[˜Ý[Ûˆ™[™\•ÛÛ\™XJ
+HÂˆËÈHÛ›Ø][™ÈY[H\È[[[Û˜[HÙ\[ˆHØÝ[Y[›Ü‚ˆËÈÜÜÚX›H]\™H™\ÝÜ˜][Û‹]HXÝ]™H[HY[H›ÝÈ]™\ÂˆËÈ[ˆHY[™[ˆÚ[ˆ›ÈÙ[XÝ[Ûˆ\ÈXÝ]™KHY[™[ˆËÈÛÙ\È˜XÚÈÈÚÝÚ[™ÈH]™[Ý\Ë‚ˆYQ›Ø][™ÓY[J
+NÂˆØÝ[Y[˜›ÙK˜Û\ÜÓ\ÝÙÙÛJˆ™^™\ÜÚ[Û‹XZ[\‹XXÝ]™H‹ˆZTÝ]K›[ÙHOOH™Y]ˆ	‰ˆZTÝ]KœÝYÙHOOH˜Z[\ˆˆ	‰ˆH]ZTÝ]K™^™\ÜÚ[ÛZ[\‚ˆ
+NÂ‚ˆYˆ
+ZTÝ]K›[ÙHOOH™Y]ŠHÂˆ™]\›ŽÂˆB‚ˆYˆ
+Ù[XÝ[Û‹œÝ]\ÈOOHš[”›ÙÈŠHÂˆYˆ
+\ÓY[™[ÚÝÚ[™ÕÛÛY[J
+JHÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆBˆ™]\›ŽÂˆB‚ˆ\Q[[Ò[œ]›ÜÝ\œ™[Ý\
+
+NÂˆÞ[˜ÕÛÛ\ÝÑ[[ÔÝ\
+
+NÂˆÛÛœÝ[HZ[ÛÛ\™XR[
+
+NÂˆYˆ
+Z[
+HÂˆYˆ
+\ÓY[™[ÚÝÚ[™ÕÛÛY[J
+H[]™[ÛÛ[š[›™\’Sš[J
+JHÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆBˆ™]\›ŽÂˆB‚ˆ™[™\“[Ý™R\ÝÜžPÛÛ›ÛÊ[
+NÂˆ]™[ÛÛ[š[›™\’SH]ˆÛ\ÜÏHœ[™[]ÛÛ[Y[H‰Ú[OÙ]˜Âˆ]XÚÛÛ\Ý[™\œÊ]™[ÛÛ[
+NÂˆ\Q[[Ð]Û’YÚYÚÊ]™[ÛÛ[
+NÂˆ]XÚ[œ]\Ý[™\œÊ
+NÂˆB‚ˆ[˜Ý[Ûˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J^XÝ]Q›ŠHÂˆYQ›Ø][™ÓY[J
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂ‚ˆYˆ
+ZTÝ]Kœ™]šY]Õ[Y\’YOOH[
+HÂˆÛX\•[Y[Ý]
+ZTÝ]Kœ™]šY]Õ[Y\’Y
+NÂˆB‚ˆZTÝ]Kœ™]šY]Õ[Y\’YHÙ][Y[Ý]
+
+
+HOˆÂˆZTÝ]Kœ™]šY]Õ[Y\’YH[Âˆ^XÝ]Q›Š
+NÂˆKÑUS‘ÔËœ™]šY]Ñ\˜][Û“\ÊNÂˆB‚ˆ[˜Ý[ÛˆÛÛ\Ù\Õ˜[œÙ›Ü›X][Û[š[X][ÛŠÛÛ˜[YJHÂˆ™]\›ˆÛÛ˜[YHOOH˜ÛÛ[]]HˆˆÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝˆˆÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝˆˆÛÛ˜[YHOOH˜ÛÛ[]]U\›\ÈˆˆÛÛ˜[YHOOH˜ÛÛ[]]Q˜XÝÜœÈˆˆÛÛ˜[YHOOH™\ÝšX]SYÔšYÚˆˆÛÛ˜[YHOOH™\ÝšX]TšYÚÓYˆˆÛÛ˜[YHOOH™˜XÝÜ“YˆˆÛÛ˜[YHOOH™˜XÝÜ”šYÚŽÂˆB‚ˆ[˜Ý[ÛˆÙ]]]Ñ^XÝ]Q[˜Ý[Û‘›Ü•ÛÛ
+ÛÛ˜[YJHÂˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝŠHÂˆ™]\›ˆ\PÛÛ[]]Qš\œÝÓ\ÝÚ]ÜÝšY]ÎÂˆBˆYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝŠHÂˆ™]\›ˆ\PÛÛ[]]S\ÝÑš\œÝÚ]ÜÝšY]ÎÂˆBˆYˆ
+ÛÛ˜[YHOOH™[[Z[˜]QÝX›R[™\œÙHŠHÂˆ™]\›ˆ\Q[[Z[˜]QÝX›R[™\œÙNÂˆBˆYˆ
+ÛÛ˜[YHOOHš[œÙ\ÝX›R[™\œÙHŠHÂˆ™]\›ˆ\R[œÙ\ÝX›R[™\œÙNÂˆBˆYˆ
+ÛÛ˜[YHOOH˜Ø[˜Ù[›ÙXÝÚ][™\œÙHŠHÂˆ™]\›ˆ\PØ[˜Ù[›ÙXÝÚ][™\œÙNÂˆBˆYˆ
+ÛÛ˜[YHOOH™[[Z[˜]RY[]Y\ÈŠHÂˆ™]\›ˆ\RY[]Q[[Z[˜][ÛŽÂˆBˆYˆ
+ÛÛ˜[YHOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆ™]\›ˆÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+HÈ\PØ[˜Ù[ÜÜÚ]\Èˆ[ÂˆBˆYˆ
+ÛÛ˜[YHOOH™ÝX›S™YØ]]™HŠHÂˆ™]\›ˆ\QÝX›S™YØ]]™NÂˆBˆYˆ
+ÛÛ˜[YHOOHž™\›Ô›ÙXÝŠHÂˆ™]\›ˆ\V™\›Ô›ÙXÝÂˆBˆYˆ
+\ÔÝÙ\’[™\œÙT™]Üš]UÛÛ
+ÛÛ˜[YJJHÂˆ™]\›ˆ
+
+HOˆ\TÝÙ\’[™\œÙT™]Üš]JÛÛ˜[YJNÂˆBˆ™]\›ˆ[ÂˆB‚ˆ[˜Ý[Ûˆ™YÚ[•ÛÛ
+ÛÛ˜[YJHÂˆYˆ
+ÛÛ˜[YHOOHš[œÙ\Y[]PY™\›ÕÜŠHÂˆYˆ
+XØ[’[œÙ\Y[]J
+JHÂˆ™]\›ŽÂˆBˆ\RY[]R[œÙ\[ÛŠ˜Y™\›È‹ÜŠNÂˆ™]\›ŽÂˆBˆYˆ
+ÛÛ˜[YHOOHš[œÙ\Y[]PY™\›Ð›ÝÛHŠHÂˆYˆ
+XØ[’[œÙ\Y[]J
+JHÂˆ™]\›ŽÂˆBˆ\RY[]R[œÙ\[ÛŠ˜Y™\›È‹˜›ÝÛHŠNÂˆ™]\›ŽÂˆBˆYˆ
+ÛÛ˜[YHOOHš[œÙ\Y[]S][\PžSÛ™SYŠHÂˆYˆ
+XØ[’[œÙ\Y[]J
+JHÂˆ™]\›ŽÂˆBˆ\RY[]R[œÙ\[ÛŠ›][\PžSÛ™H‹›YŠNÂˆ™]\›ŽÂˆBˆYˆ
+ÛÛ˜[YHOOHš[œÙ\Y[]S][\PžSÛ™TšYÚŠHÂˆYˆ
+XØ[’[œÙ\Y[]J
+JHÂˆ™]\›ŽÂˆBˆ\RY[]R[œÙ\[ÛŠ›][\PžSÛ™H‹œšYÚŠNÂˆ™]\›ŽÂˆBˆYˆ
+ÛÛ˜[YHOOHš[œÙ\™\›Ô›ÙXÝYˆÛÛ˜[YHOOHš[œÙ\™\›Ô›ÙXÝšYÚŠHÂˆYˆ
+XØ[’[œÙ\™\›Ô›ÙXÝ
+
+JHÂˆ™]\›ŽÂˆBˆZTÝ]K˜XÝ]™UÛÛHš[œÙ\™\›Ô›ÙXÝŽÂˆZTÝ]Kž™\›Ô›ÙXÝÜšY[][ÛˆHÛÛ˜[YHOOHš[œÙ\™\›Ô›ÙXÝšYÚˆÈœšYÚˆˆ›YŽÂˆZTÝ]K›Y\ÜØYÙHHˆŽÂˆZTÝ]Kš[œ]^HˆŽÂˆZTÝ]KœÝYÙHH˜Z[\ˆŽÂˆ™YÚ[‘^™\ÜÚ[ÛZ[\Šš[œÙ\™\›Ô›ÙXÝŠNÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆBˆYˆ
+ÛÛ˜[YHOOHœ™YXÙUÖ™\›ÈŠHÂˆYˆ
+Ø[–™\›Ô›ÙXÝ
+
+JHÂˆÛÛ˜[YHHž™\›Ô›ÙXÝŽÂˆH[ÙHYˆ
+Ø[Ø[˜Ù[ÜÜÚ]\Ê
+JHÂˆÛÛ˜[YHH˜Ø[˜Ù[ÜÜÚ]\ÈŽÂˆH[ÙHÂˆ™]\›ŽÂˆBˆBˆYˆ
+ÛÛ˜[YHOOHœ™YXÙUÓÛ™HŠHÂˆYˆ
+Ø[Ø[˜Ù[›ÙXÝÚ][™\œÙJ
+JHÂˆÛÛ˜[YHH˜Ø[˜Ù[›ÙXÝÚ][™\œÙHŽÂˆH[ÙHYˆ
+Ø[\TÝÙ\’[™\œÙT™]Üš]J™[[Z[˜]Q^Û™[™\›ÈŠJHÂˆÛÛ˜[YHH™[[Z[˜]Q^Û™[™\›ÈŽÂˆH[ÙHYˆ
+Ø[\TÝÙ\’[™\œÙT™]Üš]J›Û™UÐ[žTÝÙ\ˆŠJHÂˆÛÛ˜[YHH›Û™UÐ[žTÝÙ\ˆŽÂˆH[ÙHÂˆ™]\›ŽÂˆBˆBˆYˆ
+Z\ÕÛÛXÝX[P\XØX›JÛÛ˜[YJJHÂˆ™]\›ŽÂˆB‚ˆZTÝ]K˜XÝ]™UÛÛHÛÛ˜[YNÂˆZTÝ]K›Y\ÜØYÙHHˆŽÂˆZTÝ]Kš[œ]^HˆŽÂˆZTÝ]K˜ÚÜÙ[‘\™XÝ[ÛˆH[ÂˆZTÝ]K˜ÚÜÙ[’Y[]HH[ÂˆZTÝ]Kž™\›Ô›ÙXÝÜšY[][ÛˆH›YŽÂˆZTÝ]K˜ÛÛ[]]TÙ[XÝY[™^HLNÂˆZTÝ]K˜ÛÛ[]]SÜ™\ˆH×NÂˆZTÝ]Kœ™]šY]ÐÛÛÜœÈH[Â‚ˆYˆ
+ˆÛÛ˜[YHOOH˜ÛÛ[]]HˆˆÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝˆˆÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝˆˆÛÛ˜[YHOOH˜ÛÛ[]]U\›\ÈˆˆÛÛ˜[YHOOH˜ÛÛ[]]Q˜XÝÜœÈˆˆÛÛ˜[YHOOH™\ÝšX]SYÔšYÚˆˆÛÛ˜[YHOOH™\ÝšX]TšYÚÓYˆˆÛÛ˜[YHOOH™˜XÝÜ“YˆˆÛÛ˜[YHOOH™˜XÝÜ”šYÚˆˆÛÛ˜[YHOOH™\ÝšX]R[™\œÙSÝ™\”›ÙXÝˆˆÛÛ˜[YHOOH™˜XÝÜ”›ÙXÝÙ’[™\œÙ\Èˆˆ\ÔÝÙ\’[™\œÙT™]Üš]UÛÛ
+ÛÛ˜[YJBˆ
+HÂˆZTÝ]KœÝYÙHHœ™]šY]ÈŽÂˆH[ÙHYˆ
+\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+ÛÛ˜[YJJHÂˆÛÛœÝ[Y\šXØ[[ÙHHÙ]ÝXÝ\™Y[Y\šXØ[ÛÛ[ÙQ›Ü”Ù[XÝ[ÛŠÛÛ˜[YJNÂˆYˆ
+[Y\šXØ[[ÙHOOH™^[™ŠHÂˆZTÝ]KœÝYÙHH˜Z[\ˆŽÂˆ™YÚ[‘^™\ÜÚ[ÛZ[\ŠÛÛ˜[YJNÂˆH[ÙHÂˆZTÝ]KœÝYÙHHš[œ]ŽÂˆBˆH[ÙHYˆ
+ÛÛ˜[YHOOHš[œÙ\Y[]HŠHÂˆZTÝ]KœÝYÙHH˜ÚÛÜÙTÜÚ][ÛˆŽÂˆH[ÙHYˆ
+ˆÛÛ˜[YHOOH™[[Z[˜]RY[]Y\ÈˆˆÛÛ˜[YHOOH™[[Z[˜]QÝX›R[™\œÙHˆˆÛÛ˜[YHOOHš[œÙ\ÝX›R[™\œÙHˆˆÛÛ˜[YHOOH˜Ø[˜Ù[›ÙXÝÚ][™\œÙHˆˆ
+ÛÛ˜[YHOOH˜Ø[˜Ù[ÜÜÚ]\Èˆ	‰ˆÙ]Ø[˜Ù[ÜÜÚ]\Ñ]J
+JHˆÛÛ˜[YHOOH™ÝX›S™YØ]]™HˆˆÛÛ˜[YHOOHž™\›Ô›ÙXÝ‚ˆ
+HÂˆZTÝ]KœÝYÙHHœ™]šY]ÈŽÂˆH[ÙHYˆ
+\Ñ^™\ÜÚ[ÛZ[\•ÛÛ
+ÛÛ˜[YJJHÂˆZTÝ]KœÝYÙHH˜Z[\ˆŽÂˆ™YÚ[‘^™\ÜÚ[ÛZ[\ŠÛÛ˜[YJNÂˆH[ÙHYˆ
+ˆÛÛ˜[YHOOH™˜XÝÜ“[X™\ˆˆˆÛÛ˜[YHOOHÜš]S[X™\\ÔÝ[HˆˆÛÛ˜[YHOOH™]˜[X]HˆˆÛÛ˜[YHOOH›[Y\šXØ[\]Z]˜[[˜ÙH‚ˆ
+HÂˆZTÝ]KœÝYÙHHš[œ]ŽÂˆH[ÙHÂˆZTÝ]KœÝYÙHHšYHŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™\ÝšX]SYÔšYÚˆÛÛ˜[YHOOH™\ÝšX]TšYÚÓYŠHÂˆÛÛœÝ]HHÛÛ˜[YHOOH™\ÝšX]SYÔšYÚ‚ˆÈÙ]\ÝšX][Û‘]J›YŠBˆˆÙ]\ÝšX][Û‘]JœšYÚŠNÂˆZTÝ]Kœ™]šY]ÐÛÛÜœÈH]HÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È]KœÝ[S›ÙK˜\™ÜË›[™Ý
+Hˆ[ÂˆH[ÙHYˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]HˆÛÛ˜[YHOOH˜ÛÛ[]]Qš\œÝÓ\ÝˆÛÛ˜[YHOOH˜ÛÛ[]]S\ÝÑš\œÝˆÛÛ˜[YHOOH˜ÛÛ[]]U\›\ÈˆÛÛ˜[YHOOH˜ÛÛ[]]Q˜XÝÜœÈŠHÂˆÛÛœÝ\ÛÝ[HÙ[XÝ[Û‹›\Ý\HÙ[XÝ[Û‹™š\œÝ\
+ÈNÂˆZTÝ]Kœ™]šY]ÐÛÛÜœÈHÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊ\ÛÝ[
+NÂˆH[ÙHYˆ
+ÛÛ˜[YHOOH™˜XÝÜ“YˆÛÛ˜[YHOOH™˜XÝÜ”šYÚŠHÂˆÛÛœÝ]HHÛÛ˜[YHOOH™˜XÝÜ“Y‚ˆÈÙ]˜XÝÜš[™Ñ]J›YŠBˆˆÙ]˜XÝÜš[™Ñ]JœšYÚŠNÂˆÛÛœÝ\›PÛÝ[HÙ[XÝ[Û‹›\Ý\HÙ[XÝ[Û‹™š\œÝ\
+ÈNÂˆZTÝ]Kœ™]šY]ÐÛÛÜœÈH]BˆÈÙ]\Ý[˜Ý˜[™ÛPÛÛÜœÊH
+È\›PÛÝ[
+Bˆˆ[ÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™\ÝšX]R[™\œÙSÝ™\”›ÙXÝŠHÂˆ\Q\ÝšX]R[™\œÙSÝ™\”›ÙXÝ
+
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™˜XÝÜ”›ÙXÝÙ’[™\œÙ\ÈŠHÂˆ\Q˜XÝÜ”›ÙXÝÙ’[™\œÙ\Ê
+NÂˆ™]\›ŽÂˆB‚ˆÛÛœÝ[[YYX]P]]Ñ^XÝ]Q›ˆHÙ]]]Ñ^XÝ]Q[˜Ý[Û‘›Ü•ÛÛ
+ÛÛ˜[YJNÂˆYˆ
+[[YYX]P]]Ñ^XÝ]Q›ˆ	‰ˆ]ÛÛ\Ù\Õ˜[œÙ›Ü›X][Û[š[X][ÛŠÛÛ˜[YJJHÂˆ[[YYX]P]]Ñ^XÝ]Q›Š
+NÂˆ™]\›ŽÂˆB‚ˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂ‚ˆYˆ
+ˆ
+ÛÛ˜[YHOOH˜ÛÛ[]]HˆÛÛ˜[YHOOH˜ÛÛ[]]U\›\ÈˆÛÛ˜[YHOOH˜ÛÛ[]]Q˜XÝÜœÈŠH	‰‚ˆÙ]Ù[XÝYÛXÙS[™Ý
+
+HOOH‚ˆ
+HÂˆ\UÛÒ][PÛÛ[]]UÚ]ÜÝšY]Ê
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™\ÝšX]SYÔšYÚŠHÂˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J\SY\ÝšX][ÛŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™\ÝšX]TšYÚÓYŠHÂˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J\TšYÚ\ÝšX][ÛŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™˜XÝÜ“YŠHÂˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J\SY˜XÝÜš[™ÊNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ÛÛ˜[YHOOH™˜XÝÜ”šYÚŠHÂˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J\TšYÚ˜XÝÜš[™ÊNÂˆ™]\›ŽÂˆB‚ˆÛÛœÝ]]Ñ^XÝ]Q›ˆHÙ]]]Ñ^XÝ]Q[˜Ý[Û‘›Ü•ÛÛ
+ÛÛ˜[YJNÂˆYˆ
+]]Ñ^XÝ]Q›ŠHÂˆ™YÚ[]]Ô™]šY]Õ[‘^XÝ]J]]Ñ^XÝ]Q›ŠNÂˆ™]\›ŽÂˆB‚ˆ™[™\•ÛÛ\™XJ
+NÂˆB‚ˆ[˜Ý[Ûˆ[™UÛÛXÝ[ÛŠXÝ[Û‹˜[YJHÂˆYˆ
+XÝ[ÛˆOOH˜˜XÚÕÒ[[Ø]YÛÜšY\ÈŠHÂˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžHH[Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOH˜˜XÚÕÕÛÛØ]YÛÜšY\ÈŠHÂˆZTÝ]K˜XÝ]™UÛÛØ]YÛÜžHH[Âˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOH˜ÚÛÜÙRY[]HŠHÂˆZTÝ]K˜ÚÜÙ[’Y[]HH˜[YNÂˆZTÝ]KœÝYÙHH˜ÚÛÜÙTÜÚ][ÛˆŽÂˆ™[™\•ÛÛ\™XJ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOH˜ÚÛÜÙTÜÚ][ÛˆŠHÂˆ\RY[]R[œÙ\[ÛŠZTÝ]K˜ÚÜÙ[’Y[]K˜[YJNÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOHš[œÙ\Y[]SÜ[ÛˆŠHÂˆÛÛœÝ\ÈHÝš[™Ê˜[YHˆŠKœÜ]
+ŽˆŠNÂˆYˆ
+\Ë›[™ÝOOHŠHÂˆZTÝ]K˜ÚÜÙ[’Y[]HH\ÖÌNÂˆ\RY[]R[œÙ\[ÛŠ\ÖÌK\ÖÌWJNÂˆBˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOHœ™]šY]Ñ[[Z[˜]RY[]Y\ÈŠHÂˆZTÝ]K˜XÝ]™UÛÛH™[[Z[˜]RY[]Y\ÈŽÂˆZTÝ]K›Y\ÜØYÙHHˆŽÂˆ\RY[]Q[[Z[˜][ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOH™Û™HŠHÂˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ™[™\“]™[[™›ÊÝ\œ™[]™[[™^
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+XÝ[ÛˆOOH™^XÝ]HŠHÂˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]SYÔšYÚŠHÂˆ\SY\ÝšX][ÛŠ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]TšYÚÓYŠHÂˆ\TšYÚ\ÝšX][ÛŠ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“YŠHÂˆ\SY˜XÝÜš[™Ê
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ”šYÚŠHÂˆ\TšYÚ˜XÝÜš[™Ê
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]R[™\œÙSÝ™\”›ÙXÝŠHÂˆ\Q\ÝšX]R[™\œÙSÝ™\”›ÙXÝ
+
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ”›ÙXÝÙ’[™\œÙ\ÈŠHÂˆ\Q˜XÝÜ”›ÙXÝÙ’[™\œÙ\Ê
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™[[Z[˜]QÝX›R[™\œÙHŠHÂˆ\Q[[Z[˜]QÝX›R[™\œÙJ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜Ø[˜Ù[›ÙXÝÚ][™\œÙHŠHÂˆ\PØ[˜Ù[›ÙXÝÚ][™\œÙJ
+NÂˆH[ÙHYˆ
+\ÔÝÙ\’[™\œÙT™]Üš]UÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+JHÂˆ\TÝÙ\’[™\œÙT™]Üš]JZTÝ]K˜XÝ]™UÛÛ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™[[Z[˜]RY[]Y\ÈŠHÂˆ\RY[]Q[[Z[˜][ÛŠ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“[X™\ˆŠHÂˆ\Q˜XÝÜ“[X™\Š
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHÜš]S[X™\\ÔÝ[HŠHÂˆ\UÜš]S[X™\\ÔÝ[J
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™]˜[X]HŠHÂˆ\Q]˜[X]J
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH›[Y\šXØ[\]Z]˜[[˜ÙHŠHÂˆ\S[Y\šXØ[\]Z]˜[[˜ÙJ
+NÂˆH[ÙHYˆ
+\ÔÝXÝ\™Y[Y\šXØ[ÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+JHÂˆ\TÝXÝ\™Y[Y\šXØ[[œ]ÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆ\PØ[˜Ù[ÜÜÚ]\Ê
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™ÝX›S™YØ]]™HŠHÂˆ\QÝX›S™YØ]]™J
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHž™\›Ô›ÙXÝŠHÂˆ\V™\›Ô›ÙXÝ
+
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\^Û™[™\›ÈŠHÂˆ\R[œÙ\^Û™[™\›Ê
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\ÝÙ\“Ù“Û™HŠHÂˆ\R[œÙ\ÝÙ\“Ù“Û™J
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆ\T™\XÙSÛ™UÚ][™\œÙT›ÙXÝ
+
+NÂˆH[ÙHYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\™\›Ô›ÙXÝŠHÂˆ\R[œÙ\™\›Ô›ÙXÝ
+
+NÂˆBˆBˆB‚ˆ[˜Ý[Ûˆ™Yœ™\ÚÝ]\Ê
+HÂˆYˆ
+ZTÝ]KœÝYÙHOOHœÜÝšY]Èˆ	‰ˆZTÝ]KœÜÝšY]Ñ]JHÂˆYˆ
+ZTÝ]KœÜÝšY]Ñ]K\HOOH™\ÝšX][ÛˆŠHÂˆÙ]Ý]\Ê‘\ÝšX][ÛˆÜÝšY]ÎˆH˜[œÙ›Ü›YY^™\ÜÚ[Ûˆ\ÈÚÝÛˆÚ]HØ[YHÛÛÜœÈ\ÈH™]šY]ËˆŠNÂˆH[ÙHYˆ
+ZTÝ]KœÜÝšY]Ñ]K\HOOH™˜XÝÜš[™ÈŠHÂˆÙ]Ý]\Ê‘˜XÝÜš[™ÈÜÝšY]ÎˆH˜[œÙ›Ü›YY^™\ÜÚ[Ûˆ\ÈÚÝÛˆÚ]HØ[YHÛÛÜœÈ\ÈH™]šY]ËˆŠNÂˆH[ÙHÂˆÙ]Ý]\Ê”ÚÝÚ[™È˜[œÙ›Ü›YY^™\ÜÚ[ÛˆœšYY›KˆŠNÂˆBˆ™]\›ŽÂˆB‚ˆYˆ
+\Ù[XÝ[Û‹››ÙJHÂˆÙ]Ý]\ÊˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+]ZTÝ]K˜XÝ]™UÛÛ
+HÂˆÙ]Ý]\ÊÙ[XÝY	ÜÙ[XÝ[Û‹››ÙK\_H\	ÙÙ]Ù[XÝYÛXÙS[™Ý
+
+HOOHHÈˆˆˆœÈŸH	ÜÙ[XÝ[Û‹™š\œÝ\H›ÝYÚ	ÜÙ[XÝ[Û‹›\Ý\K˜
+NÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]HˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]U\›\ÈˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Q˜XÝÜœÈŠHÂˆÛÛœÝÚÜÙ[ÛÝ[H\œ˜^Kš\Ð\œ˜^JZTÝ]K˜ÛÛ[]]SÜ™\ŠHÈZTÝ]K˜ÛÛ[]]SÜ™\‹›[™ÝˆÂˆÛÛœÝÝ[ÛÝ[HÙ]Ù[XÝYÛXÙS[™Ý
+
+NÂˆYˆ
+ÚÜÙ[ÛÝ[OOH
+HÂˆÙ]Ý]\ÊÛÛ[]]NˆÛXÚÈH	ÜÙ[XÝ[Û‹››ÙK\HOOHœÝ[HˆÈ\›\Èˆˆ™˜XÝÜœÈŸH[ˆHÜ™\ˆ[ÝHØ[[HÈ\X\‹˜
+NÂˆH[ÙHÂˆÙ]Ý]\ÊÛÛ[]]Nˆ	ØÚÜÙ[ÛÝ[HÙˆ	ÝÝ[ÛÝ[HÚÜÙ[‹ˆÚÜÙ[ˆ\È\™HÚÝÛˆ[ˆH\šÙ\ˆÚYKˆÛÛ[YHÛXÚÚ[™ÈH™[XZ[š[™È	ÜÙ[XÝ[Û‹››ÙK\HOOHœÝ[HˆÈ\›\Èˆˆ™˜XÝÜœÈŸK˜
+NÂˆBˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Qš\œÝÓ\ÝŠHÂˆÙ]Ý]\ÊÛÛ[]]H™]šY]ÎˆHš\œÝÙ[XÝY\›HÜˆ˜XÝÜˆÚ[[Ý™HÈH[™ÙˆHÙ[XÝYÜ›Ý\ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]S\ÝÑš\œÝŠHÂˆÙ]Ý]\ÊÛÛ[]]H™]šY]ÎˆH\ÝÙ[XÝY\›HÜˆ˜XÝÜˆÚ[[Ý™HÈH™YÚ[›š[™ÈÙˆHÙ[XÝYÜ›Ý\ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]SYÔšYÚŠHÂˆÙ]Ý]\Ê‘\ÝšX][Ûˆ™]šY]ÎˆHÙ[XÝY›YH™YÚ[Ûˆ\È™Y[ˆ\][Û™Y[ÈÛÛÜ™Y™YÚ[ÛœËˆÛ™HÛÛÜˆX\šÜÈH˜XÝÜˆ›ØÚÈÛˆHY[™Û™HÛÛÜˆX\šÜÈXXÚ\›HÛˆHšYÚˆH˜[œÙ›Ü›X][ÛˆÚ[™H\™›Ü›YY]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]TšYÚÓYŠHÂˆÙ]Ý]\Ê‘\ÝšX][Ûˆ™]šY]ÎˆHÙ[XÝY›YH™YÚ[Ûˆ\È™Y[ˆ\][Û™Y[ÈÛÛÜ™Y™YÚ[ÛœËˆÛ™HÛÛÜˆX\šÜÈH˜XÝÜˆ›ØÚÈÛˆHšYÚ[™Û™HÛÛÜˆX\šÜÈXXÚ\›HÛˆHYˆH˜[œÙ›Ü›X][ÛˆÚ[™H\™›Ü›YY]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“YŠHÂˆÙ]Ý]\Ê‘˜XÝÜš[™È™]šY]ÎˆHÙ[XÝY™YÚ[Ûˆ\È™Y[ˆ\][Û™Y[ÈÛÛÜ™Y™YÚ[ÛœËˆHÚ\™YYZ[™˜XÝÜˆ›ØÚÈ\Ù\ÈÛ™HÛÛÜˆXÜ›ÜÜÈHÙ[XÝY\›\Ë[™XXÚ™[XZ[™\ˆ™YÚ[Ûˆ\È]ÈÝÛˆÛÛÜ‹ˆH˜[œÙ›Ü›X][ÛˆÚ[™H\™›Ü›YY]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ”šYÚŠHÂˆÙ]Ý]\Ê‘˜XÝÜš[™È™]šY]ÎˆHÙ[XÝY™YÚ[Ûˆ\È™Y[ˆ\][Û™Y[ÈÛÛÜ™Y™YÚ[ÛœËˆHÚ\™YšYÚZ[™˜XÝÜˆ›ØÚÈ\Ù\ÈÛ™HÛÛÜˆXÜ›ÜÜÈHÙ[XÝY\›\Ë[™XXÚ™[XZ[™\ˆ™YÚ[Ûˆ\È]ÈÝÛˆÛÛÜ‹ˆH˜[œÙ›Ü›X][ÛˆÚ[™H\™›Ü›YY]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™\ÝšX]R[™\œÙSÝ™\”›ÙXÝŠHÂˆÙ]Ý]\Ê”ÝÙ\ˆÙˆH›ÙXÝ[™\È^Û™[LH›ÝÎÈ\ÙHHÙ[™\˜[^Û™[[H›Üˆ\È˜[œÙ›Ü›X][Û‹ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ”›ÙXÝÙ’[™\œÙ\ÈŠHÂˆÙ]Ý]\Ê‘˜XÝÜˆÛÛ[[ÛˆÝÙ\ˆ[™\ÈÛÛ[[Ûˆ^Û™[LH›ÝÎÈ\ÙHHÙ[™\˜[^Û™[[H›Üˆ\È˜[œÙ›Ü›X][Û‹ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™[[Z[˜]QÝX›R[™\œÙHŠHÂˆÙ]Ý]\Ê‘ÝX›H[™\œÙH™]šY]Îˆ[ˆ^™\ÜÚ[Ûˆ˜Z\ÙYÈLH[™[ˆ˜Z\ÙYÈLHYØZ[ˆÚ[™XÛÛYHHÜšYÚ[˜[^™\ÜÚ[Ûˆ]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜Ø[˜Ù[›ÙXÝÚ][™\œÙHŠHÂˆÙ]Ý]\Ê”›ÙXÝZ[™\œÙH™]šY]Îˆ[ˆ^™\ÜÚ[Ûˆ[Y\ÈHØ[YH^™\ÜÚ[Ûˆ˜Z\ÙYÈLHÚ[™XÛÛYHH]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+\ÔÝÙ\’[™\œÙT™]Üš]UÛÛ
+ZTÝ]K˜XÝ]™UÛÛ
+JHÂˆÙ]Ý]\Ê”ÝÙ\‹Ú[™\œÙH™]Üš]H™]šY]ËˆH˜[œÙ›Ü›X][ÛˆÚ[™H\™›Ü›YY]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\Y[]HŠHÂˆÙ]Ý]\ÊÚÛÜÙHH^XÝY[]HÈ[›ÙXÙNˆYX›Ý™KØ™[ÝË][\HžHHYÜšYÚÜˆ[›ÙXÙHHÝX›H[™\œÙH\›Ý[™HÙ[XÝ[Û‹ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHœ™\XÙSÛ™UÚ][™\œÙT›ÙXÝŠHÂˆÙ]Ý]\Ê•\ÙHHÛ‹\ØÜ™Y[ˆ]ÛœÈÈZ[H^™\ÜÚ[Û‹ˆ]Ú[™HZ\œ›Ü™Y[œÚYHH[™\œÙKˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™[[Z[˜]RY[]Y\ÈŠHÂˆÙ]Ý]\Ê’Y[]H[[Z[˜][Ûˆ™]šY]Îˆ›ÛÜ™Y[ˆÚÝÜÈ[Ü[]™[™[[Ý˜X›HY[]Y\È[ˆHÙ[XÝYÝ[HÜˆ›ÙXÝˆ^HÚ[™H™[[Ý™Y]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™˜XÝÜ“[X™\ˆŠHÂˆÙ]Ý]\Ê‘[\ˆ˜XÝÜœÈ›ÜˆHÙ[XÝY[X™\‹[ˆÛXÚÈ^XÝ]KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHÜš]S[X™\\ÔÝ[HŠHÂˆÙ]Ý]\Ê‘[\ˆY[™È›ÜˆHÙ[XÝY[X™\‹[ˆÛXÚÈ^XÝ]KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™]˜[X]HŠHÂˆÙ]Ý]\Ê‘[\ˆH˜[YHÙˆHÙ[XÝY^™\ÜÚ[Û‹ˆ]˜[X][Ûˆ]™[H[ÝÜÈ[Y\šXÈÝ[\Ë[Y\šXÈ›ÙXÝË[™[Y\šXÈÝÙ\œËˆYˆ]\ÈÜ›Û™ËÙY\žZ[™ËÜˆÛXÚÈ^]ˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜Ø[˜Ù[ÜÜÚ]\ÈŠHÂˆÙ]Ý]\ÊØ[˜Ù[[ÜÜÚ]\È™]šY]Îˆ›ÛÜ™Y[ˆÚÝÜÈ[Ü[]™[ÜÜÚ]HZ\œÈ[™
+LJ^ˆ^HÚ[™H™\XÙYžH[™›Ü›X[^™Y]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOH™ÝX›S™YØ]]™HŠHÂˆÙ]Ý]\Ê‘ÝX›K[™YØ]]™H™]šY]Îˆ›ÛÜ™Y[ˆÚÝÜÈÛÈÜ[]™[LH˜XÝÜœËˆ^HÚ[™H™\XÙYžHH[™›Ü›X[^™Y]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHž™\›Ô›ÙXÝŠHÂˆÙ]Ý]\Ê–™\›Ë\›ÙXÝ™]šY]Îˆ›ÛÜ™Y[ˆÚÝÜÈHÜ[]™[˜XÝÜ‹ˆHÙ[XÝY›ÙXÝÚ[™XÛÛYH]]ÛX]XØ[KˆŠNÂˆ™]\›ŽÂˆB‚ˆYˆ
+ZTÝ]K˜XÝ]™UÛÛOOHš[œÙ\™\›Ô›ÙXÝŠHÂˆÙ]Ý]\Ê‘[\ˆ[ˆ^™\ÜÚ[ÛˆKˆHÙ[XÝYÚ[™XÛÛYH0­ÈKˆŠNÂˆ™]\›ŽÂˆB‚ˆÙ]Ý]\ÊˆŠNÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛXÚÙY[™^Ú][”Ù[XÝ[ÛŠJHÂˆYˆ
+\Ù[XÝ[Û‹››ÙH\Ù[XÝ[Û‹››ÙK˜\™ÜÊHÂˆ™]\›ˆLNÂˆB‚ˆ›Üˆ
+]HHÙ[XÝ[Û‹™š\œÝ\ÈHHÙ[XÝ[Û‹›\Ý\ÈJÊÊHÂˆYˆ
+Ù[XÝ[Û‹››ÙK\HOOHœÝ[HŠHÂˆÛÛœÝ\›HHÙ[XÝ[Û‹››ÙK˜\™ÜÖÚWNÂˆÛÛœÝLHH\›KÜ
+
+HHÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÛÛœÝLˆH\›K˜›ÝÛJ
+H
+ÈÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂ‚ˆYˆ
+ˆHÙ[XÝ[Û‹››ÙK›Y
+
+H	‰‚ˆHÙ[XÝ[Û‹››ÙKœšYÚ
+
+H	‰‚ˆHHLH	‰‚ˆHHL‚ˆ
+HÂˆ™]\›ˆNÂˆBˆB‚ˆYˆ
+Ù[XÝ[Û‹››ÙK\HOOHœ›ÙŠHÂˆÛÛœÝ˜XÝÜˆHÙ[XÝ[Û‹››ÙK˜\™ÜÖÚWNÂˆÛÛœÝHH˜XÝÜ‹›Y
+
+HHÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂˆÛÛœÝˆH˜XÝÜ‹œšYÚ
+
+H
+ÈÙ]Ù[XÝ[Û“X\™Ú[Š
+NÂ‚ˆYˆ
+ˆHH	‰‚ˆHˆ	‰‚ˆHHÙ[XÝ[Û‹››ÙKÜ
+
+H	‰‚ˆHHÙ[XÝ[Û‹››ÙK˜›ÝÛJ
+Bˆ
+HÂˆ™]\›ˆNÂˆBˆBˆB‚ˆ™]\›ˆLNÂˆB‚ˆ[˜Ý[Ûˆ™[X\ÙUÛÜšÜÜXÙTÚ[\ŠJHÂˆÛÛœÝÚ[\’YHXÝ]™UÛÜšÜÜXÙTÚ[\’YÂˆXÝ]™UÛÜšÜÜXÙTÚ[\’YH[ÂˆÙ[XÝ[Û’]Y[™ÈHÂˆYˆ
+ˆÚ[\’YOOH[	‰‚ˆÛÜšÜÜXÙTÝ™Ëš\ÔÚ[\Ø\\™H	‰‚ˆÛÜšÜÜXÙTÝ™Ëš\ÔÚ[\Ø\\™JÚ[\’Y
+Bˆ
+HÂˆžHÂˆÛÜšÜÜXÙTÝ™Ëœ™[X\ÙTÚ[\Ø\\™JÚ[\’Y
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆËÈHœ›ÝÜÙ\ˆX^H[™XYH]™H™[X\ÙYØ\\™K‚ˆBˆBˆB‚ˆ[˜Ý[Ûˆš[š\ÚÛÜšÜÜXÙTÙ[XÝ[ÛŠJHÂˆYˆ
+KœÚ[\’YOOHXÝ]™UÛÜšÜÜXÙTÚ[\’Y
+HÂˆ™]\›ŽÂˆBˆYˆ
+K˜Ø[˜Ù[X›JHÂˆKœ™]™[Y˜][
+
+NÂˆBˆ\]TÙ[XÝ[Û‘œ›ÛQ]™[
+JNÂˆYˆ
+Ù[XÝ[Û‹œÝ]\ÈOOHš[”›ÙÈŠHÂˆÙ[XÝ[Û‹œÝ]\ÈHÙ[XÝ[Û‹››ÙHÈžY\Èˆˆ››ÈŽÂˆYˆ
+]˜[Y]Q[[ÔÙ[XÝ[ÛY\”Ú[\•\
+
+JHÂˆ™[X\ÙUÛÜšÜÜXÙTÚ[\ŠJNÂˆ™]\›ŽÂˆBˆ™XÛÜ™Ý\œ™[Ù[XÝ[Û‘›Ü”ÛÛ][ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆBˆ™[X\ÙUÛÜšÜÜXÙTÚ[\ŠJNÂˆB‚ˆ[˜Ý[ÛˆØ[˜Ù[ÛÜšÜÜXÙTÙ[XÝ[ÛŠJHÂˆYˆ
+KœÚ[\’YOOHXÝ]™UÛÜšÜÜXÙTÚ[\’Y
+HÂˆ™]\›ŽÂˆBˆYˆ
+Ù[XÝ[Û‹œÝ]\ÈOOHš[”›ÙÈŠHÂˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™[™\•ÛÛ\™XJ
+NÂˆBˆ™[X\ÙUÛÜšÜÜXÙTÚ[\ŠJNÂˆB‚ˆÛÜšÜÜXÙTÝ™Ë˜Y]™[\Ý[™\ŠœÚ[\™ÝÛˆ‹HOˆÂˆYˆ
+KœÚ[\•\HOOH›[Ý\ÙHˆ	‰ˆK˜]ÛˆOOH
+HÂˆ™]\›ŽÂˆBˆYˆ
+XÝ]™UÛÜšÜÜXÙTÚ[\’YOOH[
+HÂˆ™]\›ŽÂˆBˆYˆ
+ZTÝ]K›[ÙHOOH™Y]ŠHÂˆ™]\›ŽÂˆBˆYˆ
+ZTÝ]KœÝYÙHOOHœÜÝšY]ÈŠHÂˆ™]\›ŽÂˆBˆYˆ
+\Ñ[[Ó[ÙPXÝ]™J
+JHÂˆÛÛœÝÝ\HÙ]Ý\œ™[[[ÔÝ\
+
+NÂˆÛÛœÝÙ[XÝ[™Ñ^™\ÜÚ[ÛˆHH\Ý\	‰ˆÝ\\HOOHœÙ[XÝˆ	‰ˆZTÝ]KœÝYÙHOOHšYHŽÂˆÛÛœÝÚÛÜÚ[™ÐÛÛ[]]SÜ™\ˆHH\Ý\	‰‚ˆZTÝ]KœÝYÙHOOHœ™]šY]Èˆ	‰‚ˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]HˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]U\›\ÈˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Q˜XÝÜœÈŠH	‰‚ˆ
+Ý\\HOOH˜ÛÛ[]]PÚÚXÙHˆÝ\\HOOHÛÛŠNÂˆYˆ
+\Ù[XÝ[™Ñ^™\ÜÚ[Ûˆ	‰ˆXÚÛÜÚ[™ÐÛÛ[]]SÜ™\ŠHÂˆ™]\›ŽÂˆBˆB‚ˆYˆ
+K˜Ø[˜Ù[X›JHÂˆKœ™]™[Y˜][
+
+NÂˆBˆXÝ]™UÛÜšÜÜXÙTÚ[\’YHKœÚ[\’YÂˆÙ[XÝ[Û’]Y[™ÈHKœÚ[\•\HOOHÝXÚˆKœÚ[\•\HOOHœ[ˆ‚ˆÈX]›X^
+LX]›Z[ŠNX]›X^
+KÚYKšZYÚ
+HÈŠJBˆˆÂˆYˆ
+ÛÜšÜÜXÙTÝ™ËœÙ]Ú[\Ø\\™JHÂˆžHÂˆÛÜšÜÜXÙTÝ™ËœÙ]Ú[\Ø\\™JKœÚ[\’Y
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆËÈÛÛ[YHÚ]Ý]Ø\\™HÛˆÛ\ˆ[\[Y[][ÛœË‚ˆBˆB‚ˆÛÛœÝ™XÝHÛÜšÜÜXÙTÝ™Ë™Ù]›Ý[™[™ÐÛY[™XÝ
+
+NÂˆÛÛœÝHK˜ÛY[H™XÝ›YÂˆÛÛœÝHHK˜ÛY[HH™XÝÜÂ‚ˆYˆ
+Ù[XÝ[Û‹œÝ]\ÈOOHžY\ÈŠHÂˆYˆ
+Ú[\Ò[Ý\œ™[Ù[XÝ[ÛŠJJHÂˆYˆ
+ˆ
+ZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]HˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]U\›\ÈˆZTÝ]K˜XÝ]™UÛÛOOH˜ÛÛ[]]Q˜XÝÜœÈŠH	‰‚ˆZTÝ]KœÝYÙHOOHœ™]šY]È‚ˆ
+HÂˆÛÛœÝÛXÚÙY[™^HÙ]ÛXÚÙY[™^Ú][”Ù[XÝ[ÛŠJNÂˆYˆ
+ÛXÚÙY[™^H
+HÂˆ™XÛÜ™ÛÛ[]]T\›]]][ÛÚÚXÙJÛXÚÙY[™^
+NÂˆBˆ™]\›ŽÂˆBˆ™]\›ŽÂˆH[ÙHÂˆYˆ
+\Ñ[[Ó[ÙPXÝ]™J
+H	‰ˆÙ]Ý\œ™[[[ÔÝ\
+
+H	‰ˆÙ]Ý\œ™[[[ÔÝ\
+
+K\HOOH˜ÛÛ[]]PÚÚXÙHŠHÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆ™]\›ŽÂˆBˆÛX\”Ù[XÝ[ÛŠ
+NÂˆÛX\’[\˜XÝ[ÛŠ
+NÂˆÙ[XÝ[Û‹œÝ]\ÈHš[”›ÙÈŽÂˆÙ[XÝ[Û\™XVÌHHÂˆÙ[XÝ[Û\™XVÌWHHNÂˆÙ[XÝ[Û\™XVÌ—HHÂˆÙ[XÝ[Û\™XVÌ×HHNÂˆ\]TÙ[XÝ[Û‘œ›ÛQ]™[
+JNÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆ™]\›ŽÂˆBˆB‚ˆÙ[XÝ[Û‹œÝ]\ÈHš[”›ÙÈŽÂˆÙ[XÝ[Û\™XVÌHHÂˆÙ[XÝ[Û\™XVÌWHHNÂˆÙ[XÝ[Û\™XVÌ—HHÂˆÙ[XÝ[Û\™XVÌ×HHNÂˆ\]TÙ[XÝ[Û‘œ›ÛQ]™[
+JNÂˆ™Yœ™\ÚÝ]\Ê
+NÂˆJNÂ‚ˆÛÜšÜÜXÙTÝ™Ë˜Y]™[\Ý[™\ŠœÚ[\›[Ý™H‹HOˆÂˆYˆ
+KœÚ[\’YOOHXÝ]™UÛÜšÜÜXÙTÚ[\’YZTÝ]K›[ÙHOOH™Y]ŠHÂˆ™]\›ŽÂˆBˆYˆ
+K˜Ø[˜Ù[X›JHÂˆKœ™]™[Y˜][
+
+NÂˆBˆ\]TÙ[XÝ[Û‘œ›ÛQ]™[
+JNÂˆJNÂ‚ˆÛÜšÜÜXÙTÝ™Ë˜Y]™[\Ý[™\ŠœÚ[\\‹HOˆÂˆš[š\ÚÛÜšÜÜXÙTÙ[XÝ[ÛŠJNÂˆJNÂ‚ˆÛÜšÜÜXÙTÝ™Ë˜Y]™[\Ý[™\ŠœÚ[\˜Ø[˜Ù[‹HOˆÂˆØ[˜Ù[ÛÜšÜÜXÙTÙ[XÝ[ÛŠJNÂˆJNÂ‚ˆÛÜšÜÜXÙTÝ™Ë˜Y]™[\Ý[™\Š›ÜÝÚ[\˜Ø\\™H‹HOˆÂˆØ[˜Ù[ÛÜšÜÜXÙTÙ[XÝ[ÛŠJNÂˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\ŠœÚ[\™ÝÛˆ‹HOˆÂˆYˆ
+›Ø][™ÕÛÛY[K˜Û\ÜÓ\Ý˜ÛÛZ[œÊšY[ˆŠJHÂˆ™]\›ŽÂˆB‚ˆYˆ
+›Ø][™ÕÛÛY[K˜ÛÛZ[œÊK\™Ù]
+JHÂˆ™]\›ŽÂˆB‚ˆYˆ
+\Ù[XÝ[Û‹››ÙH	‰ˆÙ[XÝ[Û‹œÝ]\ÈOOHš[”›ÙÈŠHÂˆYQ›Ø][™ÓY[J
+NÂˆBˆJNÂˆ]^™\ÜÚ[Û”›ÛÝH[ÂˆÝ\œ™[^™\ÜÚ[Û”›ÛÝH[ÂˆÚ[™ÝË˜Y]™[\Ý[™\Šœ™\Ú^™H‹
+
+HOˆÂˆYˆ
+^™\ÜÚ[Û”›ÛÝ
+HÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆBˆJNÂˆÚ[™ÝË˜Y]™[\Ý[™\Š›ØY‹
+
+HOˆÂˆYˆ
+^™\ÜÚ[Û”›ÛÝ
+HÂˆ˜]Ñ^™\ÜÚ[ÛŠ
+NÂˆBˆJNÂŸJK˜Ø]Ú
+\œ›ÜˆOˆÂˆÛÛœÛÛK™\œ›ÜŠ‘^ÙY[ÙXœ˜HÛÝ[›ÝÝ\ˆ‹\œ›ÜŠNÂˆÛÛœÝ\™Ù]HØÝ[Y[™Ù][[Y[žRY
+›]™[ÛÛ[ŠHØÝ[Y[˜›ÙNÂˆ\™Ù]š[›™\’SHˆŽÂˆÛÛœÝY\ÜØYÙHHØÝ[Y[˜Ü™X]Q[[Y[
+™]ˆŠNÂˆY\ÜØYÙK˜Û\ÜÓ˜[YHH›]™[Z[›ÈŽÂˆY\ÜØYÙK^ÛÛ[H^ÙY[ÙXœ˜HÛÝ[›ÝÝ\ˆ	Ù\œ›Üˆ	‰ˆ\œ›Ü‹›Y\ÜØYÙHÈ\œ›Ü‹›Y\ÜØYÙHˆÝš[™Ê\œ›ÜŠ_XÂˆ\™Ù]˜\[™Ú[
+Y\ÜØYÙJNÂŸJNÂ
