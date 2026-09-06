@@ -1307,6 +1307,7 @@ Promise.resolve().then(() => {
         const workspaceSvg = document.getElementById("expressionWorkspaceSvg");
         const ctx = createSvgContext(workspaceSvg);
         const floatingToolMenu = document.getElementById("floatingToolMenu");
+        const builderRewritePreview = document.getElementById("builderRewritePreview");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1935,7 +1936,7 @@ Promise.resolve().then(() => {
 
         function recordCurrentSelectionForSolution() {
             const selectedExpression = cloneSelectedRangeNode();
-            if (!selectedExpression || !selection.node || selection.status !== "yes") {
+            if (!selectedExpression || !selection.node || selection.status !== "yes" || uiState.selectionRecorded) {
                 return;
             }
             const expression = expressionToFullyParenthesizedText(selectedExpression);
@@ -1950,6 +1951,7 @@ Promise.resolve().then(() => {
                 type: "select",
                 expression
             });
+            uiState.selectionRecorded = true;
         }
 
         function recordToolForSolution(toolName, beforeExpression) {
@@ -2773,29 +2775,6 @@ Promise.resolve().then(() => {
             refreshDemoPromptAfterAdvance();
         }
 
-        function validateDemoSelectionAfterPointerUp() {
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            const step = getCurrentDemoStep();
-            if (!step || step.type !== "select") {
-                clearSelection();
-                clearInteraction();
-                drawExpression();
-                return false;
-            }
-            if (currentSelectionMatchesDemoStep()) {
-                advanceDemoStep();
-                return true;
-            }
-            clearSelection();
-            clearInteraction();
-            refreshStatus();
-            drawExpression();
-            renderToolArea();
-            return false;
-        }
-
         function getDemoTargetToolCandidates(toolName) {
             if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
                 return uniqueToolKeys([
@@ -2910,7 +2889,9 @@ Promise.resolve().then(() => {
             }
 
             container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
-                if (button === targetButton) {
+                if (button.dataset.action === "cancelSelection") {
+                    button.classList.remove("demo-target-button", "demo-blocked-button");
+                } else if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
                     button.classList.add("demo-blocked-button");
@@ -3265,19 +3246,6 @@ Promise.resolve().then(() => {
             };
         }
 
-        function getSelectionAreaBounds() {
-            if (selection.status !== "inProg") {
-                return null;
-            }
-
-            return {
-                left: Math.min(selectionArea[0], selectionArea[2]),
-                top: Math.min(selectionArea[1], selectionArea[3]),
-                right: Math.max(selectionArea[0], selectionArea[2]),
-                bottom: Math.max(selectionArea[1], selectionArea[3])
-            };
-        }
-
         function getFloatingMenuBounds() {
             if (floatingToolMenu.classList.contains("hidden")) {
                 return null;
@@ -3307,12 +3275,6 @@ Promise.resolve().then(() => {
             let maxRight = expressionBounds.right;
             let maxBottom = expressionBounds.bottom;
 
-            const selectionBounds = getSelectionAreaBounds();
-            if (selectionBounds) {
-                maxRight = Math.max(maxRight, selectionBounds.right);
-                maxBottom = Math.max(maxBottom, selectionBounds.bottom);
-            }
-
             const menuBounds = getFloatingMenuBounds();
             if (menuBounds) {
                 maxRight = Math.max(maxRight, menuBounds.right);
@@ -3337,9 +3299,8 @@ ctx.font = SETTINGS.textFont;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        const selectionArea = [-1, -1, -1, -1];
         let activeWorkspacePointerId = null;
-        let selectionHitPadding = 0;
+        let workspacePointerStart = null;
         const selection = {
             status: "no",
             node: null,
@@ -3368,6 +3329,7 @@ ctx.font = SETTINGS.textFont;
             zeroProductOrientation: "left",
             floatingMenuX: 0,
             floatingMenuY: 0,
+            selectionRecorded: false,
             mode: "edit",
             inspectStepIndex: -1
         };
@@ -3753,28 +3715,23 @@ ctx.font = SETTINGS.textFont;
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
             drawNodeRecursive(expressionRoot);
-            drawExpressionBuilderHighlights();
+
+            if (uiState.expressionBuilder && uiState.stage === "builder") {
+                drawExpressionBuilderContext();
+                renderBuilderRewritePreview();
+            } else {
+                hideBuilderRewritePreview();
+                drawExpressionBuilderHighlights();
+            }
 
             if (uiState.stage === "postview" && uiState.postviewData) {
                 drawPostview();
-            } else if (selection.node) {
+            } else if (selection.node && uiState.stage !== "builder") {
                 drawSelectionAndPreview();
             }
 
             drawDemoSelectionPrompt();
 
-            if (selection.status === "inProg") {
-                ctx.beginPath();
-                ctx.strokeStyle = "blue";
-                ctx.rect(
-                    selectionArea[0],
-                    selectionArea[1],
-                    selectionArea[2] - selectionArea[0],
-                    selectionArea[3] - selectionArea[1]
-                );
-                ctx.stroke();
-                ctx.strokeStyle = SETTINGS.expressionStrokeFill;
-            }
         }
 
         function drawSelectionAndPreview() {
@@ -4423,6 +4380,7 @@ ctx.font = SETTINGS.textFont;
             selection.node = null;
             selection.firstPart = -1;
             selection.lastPart = -1;
+            uiState.selectionRecorded = false;
         }
 
         function clearInteraction() {
@@ -4447,6 +4405,7 @@ ctx.font = SETTINGS.textFont;
             uiState.commuteSelectedIndex = -1;
             uiState.commuteOrder = [];
             uiState.previewColors = null;
+            hideBuilderRewritePreview();
             renderToolArea();
         }
 
@@ -4456,116 +4415,249 @@ ctx.font = SETTINGS.textFont;
             drawExpression();
         }
 
-        function boxFromSelectionArea() {
-            const left = Math.min(selectionArea[0], selectionArea[2]) - selectionHitPadding;
-            const top = Math.min(selectionArea[1], selectionArea[3]) - selectionHitPadding;
-            const right = Math.max(selectionArea[0], selectionArea[2]) + selectionHitPadding;
-            const bottom = Math.max(selectionArea[1], selectionArea[3]) + selectionHitPadding;
-            return [left, top, right, bottom];
+        function distanceFromPointToRect(x, y, left, top, right, bottom) {
+            const dx = x < left ? left - x : x > right ? x - right : 0;
+            const dy = y < top ? top - y : y > bottom ? y - bottom : 0;
+            return Math.hypot(dx, dy);
         }
 
-        function boxesIntersect(box1, box2) {
-            if (
-                Math.max(box2[0], box2[2]) <= Math.min(box1[0], box1[2]) ||
-                Math.max(box1[0], box1[2]) <= Math.min(box2[0], box2[2]) ||
-                Math.max(box2[1], box2[3]) <= Math.min(box1[1], box1[3]) ||
-                Math.max(box1[1], box1[3]) <= Math.min(box2[1], box2[3])
-            ) {
-                return false;
+        function distanceFromPointToSegment(x, y, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lengthSquared = dx * dx + dy * dy;
+            if (lengthSquared === 0) {
+                return Math.hypot(x - x1, y - y1);
             }
-            return true;
+            const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / lengthSquared));
+            return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
         }
 
-        function intersectionOfSelectionAreaWith(node) {
-            const intersection = [];
-            const box = boxFromSelectionArea();
+        function distanceFromPointToSegments(x, y, segments) {
+            return segments.reduce(
+                (nearest, segment) => Math.min(nearest, distanceFromPointToSegment(x, y, ...segment)),
+                Number.POSITIVE_INFINITY
+            );
+        }
+
+        function getSelectionTargetArea(target) {
+            if (!target || !target.node) {
+                return Number.POSITIVE_INFINITY;
+            }
+            const node = target.node;
+            if (node.type === "prod") {
+                return Math.max(1, node.args[target.lastPart].right() - node.args[target.firstPart].left()) *
+                    Math.max(1, node.bottom() - node.top());
+            }
+            if (node.type === "sum") {
+                return Math.max(1, node.right() - node.left()) *
+                    Math.max(1, node.args[target.lastPart].bottom() - node.args[target.firstPart].top());
+            }
+            return Math.max(1, node.right() - node.left()) * Math.max(1, node.bottom() - node.top());
+        }
+
+        function collectVisibleObjectCandidates(node, x, y, candidates) {
+            if (!node) {
+                return;
+            }
+
+            if (node.type === "value") {
+                candidates.push({
+                    node,
+                    firstPart: 0,
+                    lastPart: 0,
+                    distance: distanceFromPointToRect(x, y, node.left(), node.top(), node.right(), node.bottom())
+                });
+                return;
+            }
+
+            (node.args || []).forEach(child => collectVisibleObjectCandidates(child, x, y, candidates));
 
             if (node.type === "prod") {
+                const centerY = (node.top() + node.bottom()) / 2;
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
-                    const x = relVLine(node, j);
-                    if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
-                        intersection.push(j - 1);
-                    }
+                    const separatorX = relVLine(node, j);
+                    const distance = hasConnectorFlares
+                        ? distanceFromPointToSegment(x, y, separatorX, node.top(), separatorX, node.bottom())
+                        : Math.max(0, Math.hypot(x - separatorX, y - centerY) - SETTINGS.flare);
+                    candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
                 }
-                if (intersection.length > 0) {
-                    intersection.push(intersection[intersection.length - 1] + 1);
-                }
-            } else if (node.type === "sum") {
+                return;
+            }
+
+            if (node.type === "sum") {
+                const centerX = (node.left() + node.right()) / 2;
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
-                    const y = relHLine(node, j);
-                    if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
-                        intersection.push(j - 1);
-                    }
+                    const separatorY = relHLine(node, j);
+                    const distance = hasConnectorFlares
+                        ? distanceFromPointToSegment(x, y, node.left(), separatorY, node.right(), separatorY)
+                        : Math.max(0, Math.hypot(x - centerX, y - separatorY) - SETTINGS.flare);
+                    candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
                 }
-                if (intersection.length > 0) {
-                    intersection.push(intersection[intersection.length - 1] + 1);
-                }
-            } else if (node.type === "exp") {
-                const x = relVLine(node, 1);
-                const y = relHLine(node, 1);
-                if (boxesIntersect(box, [x, node.top(), x, node.bottom()])) {
-                    return [0, 1];
-                }
-                if (boxesIntersect(box, [node.left(), y, node.right(), y])) {
-                    return [0, 1];
-                }
-            } else if (node.type === "inv") {
+                return;
+            }
+
+            if (node.type === "exp") {
+                const xLeft = node.left();
+                const xMid = relVLine(node, 1);
+                const xRight = node.right();
+                const yTop = node.top();
+                const yMid = relHLine(node, 1);
+                const yBottom = node.bottom();
+                candidates.push({
+                    node,
+                    firstPart: 0,
+                    lastPart: 1,
+                    distance: distanceFromPointToSegments(x, y, [
+                        [xLeft, yMid, xMid, yMid],
+                        [xMid, yTop, xMid, yBottom],
+                        [xMid, yTop, xRight, yTop],
+                        [xRight, yTop, xRight, yMid],
+                        [xLeft, yMid, xLeft, yMid + SETTINGS.flare],
+                        [xMid, yBottom, xMid - SETTINGS.flare, yBottom]
+                    ])
+                });
+                return;
+            }
+
+            if (node.type === "inv") {
                 const borderThickness = node.layout.inverseBorderThickness || SETTINGS.operatorThickness || 14;
                 const borderHalf = borderThickness / 2;
                 const left = node.left() + borderHalf;
                 const top = node.top() + borderHalf;
                 const right = node.right() - borderHalf;
                 const bottom = node.bottom() - borderHalf;
-                const borderHit =
-                    boxesIntersect(box, [left, top, right, top]) ||
-                    boxesIntersect(box, [right, top, right, bottom]) ||
-                    boxesIntersect(box, [left, bottom, right, bottom]) ||
-                    boxesIntersect(box, [left, top, left, bottom]);
-                if (borderHit) {
-                    return [0];
-                }
-            } else if (node.type === "value") {
-                if (boxesIntersect(box, [node.left(), node.top(), node.right(), node.bottom()])) {
-                    return [0];
-                }
+                candidates.push({
+                    node,
+                    firstPart: 0,
+                    lastPart: 0,
+                    distance: distanceFromPointToSegments(x, y, [
+                        [left, top, right, top],
+                        [right, top, right, bottom],
+                        [right, bottom, left, bottom],
+                        [left, bottom, left, top]
+                    ])
+                });
             }
-
-            return intersection;
         }
 
-        function chooseSelectedOp() {
-            selection.node = null;
-            selection.firstPart = -1;
-            selection.lastPart = -1;
-
-            let found = false;
-            traversePreOrder(expressionRoot, node => {
-                if (found) {
-                    return;
+        function findNearestVisibleObject(x, y, pointerType) {
+            const candidates = [];
+            collectVisibleObjectCandidates(expressionRoot, x, y, candidates);
+            candidates.sort((a, b) => {
+                const distanceDifference = a.distance - b.distance;
+                if (Math.abs(distanceDifference) > 0.5) {
+                    return distanceDifference;
                 }
-                const intersection = intersectionOfSelectionAreaWith(node);
-                if (intersection.length > 0) {
-                    selection.node = node;
-                    selection.firstPart = intersection[0];
-                    selection.lastPart = intersection[intersection.length - 1];
-                    found = true;
-                }
+                return getSelectionTargetArea(a) - getSelectionTargetArea(b);
             });
+            const nearest = candidates[0] || null;
+            const maximumDistance = pointerType === "touch" || pointerType === "pen" ? 64 : 48;
+            return nearest && nearest.distance <= maximumDistance ? nearest : null;
         }
 
-        function updateSelectionFromEvent(e) {
-            if (uiState.mode !== "edit") {
-                return;
+        function findPathToNode(node, targetId, path = []) {
+            if (!node) {
+                return null;
             }
-            if (selection.status === "inProg") {
-                const rect = workspaceSvg.getBoundingClientRect();
-                selectionArea[2] = e.clientX - rect.left;
-                selectionArea[3] = e.clientY - rect.top;
-                chooseSelectedOp();
-                hideFloatingMenu();
-                refreshStatus();
-                drawExpression();
+            if (node.id === targetId) {
+                return path;
             }
+            for (let i = 0; i < (node.args || []).length; i++) {
+                const childPath = findPathToNode(node.args[i], targetId, path.concat(i));
+                if (childPath) {
+                    return childPath;
+                }
+            }
+            return null;
+        }
+
+        function getCoveragePathsForSelectionTarget(target) {
+            if (!target || !target.node) {
+                return [];
+            }
+            const nodePath = findPathToNode(expressionRoot, target.node.id);
+            if (!nodePath) {
+                return [];
+            }
+            if (target.node.type === "sum" || target.node.type === "prod") {
+                return [
+                    nodePath.concat(target.firstPart),
+                    nodePath.concat(target.lastPart)
+                ];
+            }
+            return [nodePath];
+        }
+
+        function getCommonPath(paths) {
+            if (!paths.length) {
+                return [];
+            }
+            const common = [];
+            const shortestLength = Math.min(...paths.map(path => path.length));
+            for (let i = 0; i < shortestLength; i++) {
+                const value = paths[0][i];
+                if (!paths.every(path => path[i] === value)) {
+                    break;
+                }
+                common.push(value);
+            }
+            return common;
+        }
+
+        function selectionTargetContainingPaths(paths) {
+            if (!paths.length) {
+                return null;
+            }
+            const commonPath = getCommonPath(paths);
+            const commonNode = nodeAtPath(expressionRoot, commonPath);
+            if (!commonNode) {
+                return null;
+            }
+            if (commonNode.type === "sum" || commonNode.type === "prod") {
+                if (paths.some(path => path.length === commonPath.length)) {
+                    return {
+                        node: commonNode,
+                        firstPart: 0,
+                        lastPart: Math.max(0, commonNode.args.length - 1)
+                    };
+                }
+                const childIndices = paths.map(path => path[commonPath.length]);
+                return {
+                    node: commonNode,
+                    firstPart: Math.min(...childIndices),
+                    lastPart: Math.max(...childIndices)
+                };
+            }
+            return {
+                node: commonNode,
+                firstPart: 0,
+                lastPart: commonNode.type === "exp" ? 1 : 0
+            };
+        }
+
+        function applySelectionTarget(target) {
+            if (!target || !target.node) {
+                return false;
+            }
+            selection.status = "yes";
+            selection.node = target.node;
+            selection.firstPart = target.firstPart;
+            selection.lastPart = target.lastPart;
+            uiState.selectionRecorded = false;
+            return true;
+        }
+
+        function growSelectionToInclude(target) {
+            if (!selection.node) {
+                return applySelectionTarget(target);
+            }
+            const containingTarget = selectionTargetContainingPaths([
+                ...getCoveragePathsForSelectionTarget(selection),
+                ...getCoveragePathsForSelectionTarget(target)
+            ]);
+            return applySelectionTarget(containingTarget);
         }
 
         function getSelectionBox() {
@@ -4602,13 +4694,6 @@ ctx.font = SETTINGS.textFont;
             };
         }
 
-        function pointIsInCurrentSelection(x, y) {
-            const box = getSelectionBox();
-            if (!box) {
-                return false;
-            }
-            return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
-        }
         function positionFloatingMenu() {
             if (!selection.node) {
                 hideFloatingMenu();
@@ -7224,18 +7309,106 @@ ctx.font = SETTINGS.textFont;
             });
         }
 
-        function getBuilderProposalHtml() {
-            const builder = uiState.expressionBuilder;
-            if (!builder) {
-                return "";
+        function hideBuilderRewritePreview() {
+            if (!builderRewritePreview) {
+                return;
             }
+            builderRewritePreview.classList.add("hidden");
+            builderRewritePreview.replaceChildren();
+        }
+
+        function clampPreviewPosition(value, minimum, maximum) {
+            return Math.max(minimum, Math.min(value, Math.max(minimum, maximum)));
+        }
+
+        function renderBuilderRewritePreview() {
+            const builder = uiState.expressionBuilder;
+            const selectionBox = getSelectionBox();
+            if (!builderRewritePreview || !builder || uiState.stage !== "builder" || !selectionBox) {
+                hideBuilderRewritePreview();
+                return;
+            }
+
             const proposal = makeBuilderInsertionRoot(builder);
-            const preview = renderBuilderProposalSvg(proposal);
-            return `<div class="proposal-preview-panel">
-                <div class="proposal-preview-title">Proposed entry</div>
-                <div class="proposal-preview-oops">${preview}</div>
-                ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
-            </div>`;
+            builderRewritePreview.innerHTML = `
+                <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
+                <div class="builder-rewrite-proposal">${renderBuilderProposalSvg(proposal)}</div>
+            `;
+            builderRewritePreview.classList.remove("hidden", "vertical");
+
+            const gap = 14;
+            const viewportPadding = 8;
+            const visibleLeft = svgContainer.scrollLeft;
+            const visibleTop = svgContainer.scrollTop;
+            const visibleRight = visibleLeft + svgContainer.clientWidth;
+            const horizontalWidth = builderRewritePreview.offsetWidth;
+            const horizontalHeight = builderRewritePreview.offsetHeight;
+            const fitsToRight = selectionBox.right + gap + horizontalWidth <= visibleRight - viewportPadding;
+
+            let left;
+            let top;
+            if (fitsToRight) {
+                left = selectionBox.right + gap;
+                top = clampPreviewPosition(
+                    selectionBox.centerY - horizontalHeight / 2,
+                    visibleTop + viewportPadding,
+                    visibleTop + svgContainer.clientHeight - horizontalHeight - viewportPadding
+                );
+            } else {
+                builderRewritePreview.classList.add("vertical");
+                const arrow = builderRewritePreview.querySelector(".builder-rewrite-arrow");
+                if (arrow) {
+                    arrow.textContent = "↓";
+                }
+                const verticalWidth = builderRewritePreview.offsetWidth;
+                left = clampPreviewPosition(
+                    selectionBox.centerX - verticalWidth / 2,
+                    visibleLeft + viewportPadding,
+                    visibleRight - verticalWidth - viewportPadding
+                );
+                top = selectionBox.bottom + gap;
+            }
+
+            builderRewritePreview.style.left = `${Math.round(left)}px`;
+            builderRewritePreview.style.top = `${Math.round(top)}px`;
+
+            const neededWidth = Math.ceil(left + builderRewritePreview.offsetWidth + 32);
+            const neededHeight = Math.ceil(top + builderRewritePreview.offsetHeight + 32);
+            if (neededWidth > getSvgWidth(workspaceSvg) || neededHeight > getSvgHeight(workspaceSvg)) {
+                setSvgSize(
+                    workspaceSvg,
+                    Math.max(getSvgWidth(workspaceSvg), neededWidth),
+                    Math.max(getSvgHeight(workspaceSvg), neededHeight)
+                );
+            }
+        }
+
+        function drawExpressionBuilderContext() {
+            if (!uiState.expressionBuilder || uiState.stage !== "builder") {
+                return;
+            }
+            const box = getSelectionBox();
+            if (!box) {
+                return;
+            }
+
+            const width = getSvgWidth(workspaceSvg);
+            const height = getSvgHeight(workspaceSvg);
+            const left = Math.max(0, box.left);
+            const right = Math.min(width, box.right);
+            const top = Math.max(0, box.top);
+            const bottom = Math.min(height, box.bottom);
+
+            ctx.save();
+            ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
+            ctx.fillRect(0, 0, width, top);
+            ctx.fillRect(0, bottom, width, Math.max(0, height - bottom));
+            ctx.fillRect(0, top, left, Math.max(0, bottom - top));
+            ctx.fillRect(right, top, Math.max(0, width - right), Math.max(0, bottom - top));
+            ctx.strokeStyle = "rgba(112, 64, 160, 0.8)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
+            ctx.restore();
         }
 
         function refreshExpressionBuilderPreview() {
@@ -7243,8 +7416,9 @@ ctx.font = SETTINGS.textFont;
             if (!builder) {
                 return;
             }
-            // The expression builder is now a left-panel proposal builder.
-            // The right-side/current expression is not edited until Submit passes validation.
+            // Keep the original expression unchanged until Submit passes validation.
+            // Its selected part and the proposed replacement are previewed together
+            // in the expression workspace while the multipurpose panel holds the keypad.
             layoutExpression(expressionRoot);
             if (uiState.stage === "builder" && uiState.expressionBuilder) {
                 renderToolArea();
@@ -8310,16 +8484,16 @@ ctx.font = SETTINGS.textFont;
                 return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, a product of whole numbers, or one binary exponent.";
             }
             if (isNumericalRewriteTool(toolName)) {
-                return "Build an equivalent numerical expression. Submit first checks whether its value matches the original expression, then checks whether the rewrite follows this exercise's restrictions. The right-side expression stays unchanged until both checks pass.";
+                return "Build the proposed replacement shown beside the selected expression. Submit first checks its value, then this exercise's restrictions.";
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct") {
-                return "Build a product in the left panel. The right-side expression stays unchanged until Submit checks the product.";
+                return "Build the proposed product shown beside the selected number.";
             }
             if (toolName === "writeNumberAsSum" || toolName === "numWritePositiveNumberAsSum") {
-                return "Build a sum in the left panel. The right-side expression stays unchanged until Submit checks the sum.";
+                return "Build the proposed sum shown beside the selected number.";
             }
             if (toolName === "numExpressNumberAsDifference") {
-                return "Build a difference in the left panel as a sum with a negative product. The right-side expression stays unchanged until Submit checks it.";
+                return "Build the proposed difference as a sum with a negative product.";
             }
             if (toolName === "evaluate") {
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
@@ -8354,7 +8528,8 @@ ctx.font = SETTINGS.textFont;
                 ? `<button class="builder-next-button" disabled>Move on</button>`
                 : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">Move on</button>`;
             return `<div class="expression-builder-panel">
-                ${getBuilderProposalHtml()}
+                <div class="builder-instruction">${escapeHtml(getExpressionBuilderNote())}</div>
+                ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                 <div class="builder-controls">
                     <div class="builder-keypad" aria-label="Expression builder keypad">
                         ${negativeOneButton}
@@ -8492,13 +8667,15 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (!uiState.activeTool) {
+                let menuHtml;
                 if (isApplicableOnlyToolNotationMode()) {
-                    return buildApplicableToolListHtml();
+                    menuHtml = buildApplicableToolListHtml();
+                } else if (isIntentCategoryToolNotationMode()) {
+                    menuHtml = buildIntentCategoryToolListHtml();
+                } else {
+                    menuHtml = buildToolCategoryMenuHtml();
                 }
-                if (isIntentCategoryToolNotationMode()) {
-                    return buildIntentCategoryToolListHtml();
-                }
-                return buildToolCategoryMenuHtml();
+                return `${menuHtml}<button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>`;
             }
 
             if (
@@ -8787,6 +8964,7 @@ ctx.font = SETTINGS.textFont;
                     if (applicableTools.length === 1) {
                         const toolName = applicableTools[0];
                         const beforeExpression = getExpressionTextForTrace();
+                        recordCurrentSelectionForSolution();
                         recordToolForSolution(toolName, beforeExpression);
                         advanceDemoStep();
                         beginTool(toolName);
@@ -8879,6 +9057,7 @@ ctx.font = SETTINGS.textFont;
                         return;
                     }
                     const beforeExpression = getExpressionTextForTrace();
+                    recordCurrentSelectionForSolution();
                     recordToolForSolution(toolName, beforeExpression);
                     advanceDemoStep();
                     beginTool(toolName);
@@ -8889,6 +9068,10 @@ ctx.font = SETTINGS.textFont;
                 btn.addEventListener("click", () => {
                     const action = btn.dataset.action;
                     const value = btn.dataset.value || null;
+                    if (action === "cancelSelection") {
+                        handleToolAction(action, value);
+                        return;
+                    }
                     if (!isDemoActionAllowed(action, value)) {
                         return;
                     }
@@ -8951,13 +9134,6 @@ function renderToolArea() {
             );
 
             if (uiState.mode !== "edit") {
-                return;
-            }
-
-            if (selection.status === "inProg") {
-                if (isLeftPanelShowingToolMenu()) {
-                    renderLevelInfo(currentLevelIndex);
-                }
                 return;
             }
 
@@ -9240,6 +9416,15 @@ function renderToolArea() {
         }
 
         function handleToolAction(action, value) {
+            if (action === "cancelSelection") {
+                clearSelection();
+                clearInteraction();
+                renderLevelInfo(currentLevelIndex);
+                refreshStatus();
+                drawExpression();
+                return;
+            }
+
             if (action === "backToIntentCategories") {
                 uiState.activeToolCategory = null;
                 renderToolArea();
@@ -9525,58 +9710,61 @@ function renderToolArea() {
             return -1;
         }
 
-        function releaseWorkspacePointer(e) {
-            const pointerId = activeWorkspacePointerId;
+        function releaseWorkspacePointer() {
             activeWorkspacePointerId = null;
-            selectionHitPadding = 0;
-            if (
-                pointerId !== null &&
-                workspaceSvg.hasPointerCapture &&
-                workspaceSvg.hasPointerCapture(pointerId)
-            ) {
-                try {
-                    workspaceSvg.releasePointerCapture(pointerId);
-                } catch (error) {
-                    // The browser may already have released capture.
-                }
-            }
+            workspacePointerStart = null;
         }
 
-        function finishWorkspaceSelection(e) {
-            if (e.pointerId !== activeWorkspacePointerId) {
-                return;
+        function selectFromWorkspaceTap(x, y, pointerType) {
+            const target = findNearestVisibleObject(x, y, pointerType);
+            if (!target) {
+                return false;
             }
-            if (e.cancelable) {
-                e.preventDefault();
+
+            if (!growSelectionToInclude(target)) {
+                return false;
             }
-            updateSelectionFromEvent(e);
-            if (selection.status === "inProg") {
-                selection.status = selection.node ? "yes" : "no";
-                if (!validateDemoSelectionAfterPointerUp()) {
-                    releaseWorkspacePointer(e);
-                    return;
-                }
-                recordCurrentSelectionForSolution();
-                clearInteraction();
+
+            clearInteraction();
+            if (isDemoModeActive() && currentSelectionMatchesDemoStep()) {
+                advanceDemoStep();
+            } else {
                 refreshStatus();
                 drawExpression();
                 renderToolArea();
             }
-            releaseWorkspacePointer(e);
+            return true;
         }
 
-        function cancelWorkspaceSelection(e) {
+        function finishWorkspaceTap(e) {
+            if (e.pointerId !== activeWorkspacePointerId || !workspacePointerStart) {
+                return;
+            }
+
+            const pointerStart = workspacePointerStart;
+            const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
+            const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
+            if (movement <= tapTolerance) {
+                const rect = workspaceSvg.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (pointerStart.mode === "commute") {
+                    const clickedIndex = getClickedIndexWithinSelection(x, y);
+                    if (clickedIndex >= 0) {
+                        recordCommutePermutationChoice(clickedIndex);
+                    }
+                } else {
+                    selectFromWorkspaceTap(x, y, pointerStart.pointerType);
+                }
+            }
+            releaseWorkspacePointer();
+        }
+
+        function cancelWorkspaceTap(e) {
             if (e.pointerId !== activeWorkspacePointerId) {
                 return;
             }
-            if (selection.status === "inProg") {
-                clearSelection();
-                clearInteraction();
-                refreshStatus();
-                drawExpression();
-                renderToolArea();
-            }
-            releaseWorkspacePointer(e);
+            releaseWorkspacePointer();
         }
 
         workspaceSvg.addEventListener("pointerdown", e => {
@@ -9592,97 +9780,56 @@ function renderToolArea() {
             if (uiState.stage === "postview") {
                 return;
             }
+
+            const choosingCommuteOrder = selection.status === "yes" &&
+                uiState.stage === "preview" &&
+                (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
+
             if (isDemoModeActive()) {
                 const step = getCurrentDemoStep();
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
-                const choosingCommuteOrder = !!step &&
-                    uiState.stage === "preview" &&
-                    (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
+                const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (!selectingExpression && !choosingCommuteOrder) {
+                if (!selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            activeWorkspacePointerId = e.pointerId;
-            selectionHitPadding = e.pointerType === "touch" || e.pointerType === "pen"
-                ? Math.max(18, Math.min(26, Math.max(e.width || 0, e.height || 0) / 2))
-                : 0;
-            if (workspaceSvg.setPointerCapture) {
-                try {
-                    workspaceSvg.setPointerCapture(e.pointerId);
-                } catch (error) {
-                    // Continue without capture on older implementations.
-                }
-            }
-
-            const rect = workspaceSvg.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            if (selection.status === "yes") {
-                if (pointIsInCurrentSelection(x, y)) {
-                    if (
-                        (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
-                        uiState.stage === "preview"
-                    ) {
-                        const clickedIndex = getClickedIndexWithinSelection(x, y);
-                        if (clickedIndex >= 0) {
-                            recordCommutePermutationChoice(clickedIndex);
-                        }
-                        return;
-                    }
-                    return;
-                } else {
-                    if (isDemoModeActive() && getCurrentDemoStep() && getCurrentDemoStep().type === "commuteChoice") {
-                        drawExpression();
-                        return;
-                    }
-                    clearSelection();
-                    clearInteraction();
-                    selection.status = "inProg";
-                    selectionArea[0] = x;
-                    selectionArea[1] = y;
-                    selectionArea[2] = x;
-                    selectionArea[3] = y;
-                    updateSelectionFromEvent(e);
-                    refreshStatus();
-                    return;
-                }
-            }
-
-            selection.status = "inProg";
-            selectionArea[0] = x;
-            selectionArea[1] = y;
-            selectionArea[2] = x;
-            selectionArea[3] = y;
-            updateSelectionFromEvent(e);
-            refreshStatus();
-        });
-
-        workspaceSvg.addEventListener("pointermove", e => {
-            if (e.pointerId !== activeWorkspacePointerId || uiState.mode !== "edit") {
+            if (!choosingCommuteOrder && (uiState.activeTool || uiState.stage === "builder")) {
                 return;
             }
-            if (e.cancelable) {
-                e.preventDefault();
-            }
-            updateSelectionFromEvent(e);
+
+            activeWorkspacePointerId = e.pointerId;
+            workspacePointerStart = {
+                clientX: e.clientX,
+                clientY: e.clientY,
+                pointerType: e.pointerType || "mouse",
+                mode: choosingCommuteOrder ? "commute" : "selection"
+            };
         });
 
         workspaceSvg.addEventListener("pointerup", e => {
-            finishWorkspaceSelection(e);
+            finishWorkspaceTap(e);
         });
 
         workspaceSvg.addEventListener("pointercancel", e => {
-            cancelWorkspaceSelection(e);
+            cancelWorkspaceTap(e);
         });
 
         workspaceSvg.addEventListener("lostpointercapture", e => {
-            cancelWorkspaceSelection(e);
+            cancelWorkspaceTap(e);
+        });
+
+        document.addEventListener("pointerup", e => {
+            if (activeWorkspacePointerId !== null) {
+                finishWorkspaceTap(e);
+            }
+        });
+
+        document.addEventListener("pointercancel", e => {
+            if (activeWorkspacePointerId !== null) {
+                cancelWorkspaceTap(e);
+            }
         });
 
         document.addEventListener("pointerdown", e => {
@@ -9694,7 +9841,7 @@ function renderToolArea() {
                 return;
             }
 
-            if (!selection.node && selection.status !== "inProg") {
+            if (!selection.node) {
                 hideFloatingMenu();
             }
         });
