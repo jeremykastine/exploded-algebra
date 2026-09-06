@@ -8916,6 +8916,11 @@ ctx.font = SETTINGS.textFont;
             const selector = value
                 ? `[data-builder-action="${action}"][data-value="${value}"]`
                 : `[data-builder-action="${action}"]`;
+            if (action === "cancel") {
+                event.preventDefault();
+                cancelExpressionBuilder();
+                return true;
+            }
             const matchingButton = panel.querySelector(selector);
             if (!matchingButton || matchingButton.disabled) {
                 return false;
@@ -9753,6 +9758,8 @@ function renderToolArea() {
                     if (clickedIndex >= 0) {
                         recordCommutePermutationChoice(clickedIndex);
                     }
+                } else if (pointerStart.mode === "cancelBuilder") {
+                    cancelExpressionBuilder();
                 } else {
                     selectFromWorkspaceTap(x, y, pointerStart.pointerType);
                 }
@@ -9781,6 +9788,8 @@ function renderToolArea() {
                 return;
             }
 
+            const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
+
             const choosingCommuteOrder = selection.status === "yes" &&
                 uiState.stage === "preview" &&
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
@@ -9790,12 +9799,12 @@ function renderToolArea() {
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (!selectingExpression && !choosingDemoCommuteOrder) {
+                if (!cancelingBuilder && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!choosingCommuteOrder && (uiState.activeTool || uiState.stage === "builder")) {
+            if (!cancelingBuilder && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -9804,7 +9813,7 @@ function renderToolArea() {
                 clientX: e.clientX,
                 clientY: e.clientY,
                 pointerType: e.pointerType || "mouse",
-                mode: choosingCommuteOrder ? "commute" : "selection"
+                mode: cancelingBuilder ? "cancelBuilder" : choosingCommuteOrder ? "commute" : "selection"
             };
         });
 
