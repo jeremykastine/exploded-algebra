@@ -833,22 +833,17 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            const changeFormButtonHtml = levelUsesExplodedExponentNode(getCurrentLevel())
-                ? `<div class="intent-category-row single">${buildIntentCategoryButtonHtml("translateNotation")}</div>`
-                : "";
+            const categoryIds = ["commute", "insert", "delete", "separate", "consolidate"];
+            if (levelUsesExplodedExponentNode(getCurrentLevel())) {
+                categoryIds.push("translateNotation");
+            }
+            categoryIds.push("numericalRewrite");
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
-                    <div class="intent-category-row single">${buildIntentCategoryButtonHtml("commute")}</div>
-                    <div class="intent-category-row">
-                        ${buildIntentCategoryButtonHtml("insert")}
-                        ${buildIntentCategoryButtonHtml("delete")}
+                    <div class="intent-category-actions">
+                        ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
+                        <button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>
                     </div>
-                    <div class="intent-category-row">
-                        ${buildIntentCategoryButtonHtml("separate")}
-                        ${buildIntentCategoryButtonHtml("consolidate")}
-                    </div>
-                    ${changeFormButtonHtml}
-                    <div class="intent-category-row single numerical-rewrite-row">${buildIntentCategoryButtonHtml("numericalRewrite")}</div>
                     <div id="intentCategoryDescription" class="intent-category-description" aria-live="polite"><p>Hover over an action to see what it does.</p></div>
                 </div>`;
         }
@@ -1308,6 +1303,8 @@ Promise.resolve().then(() => {
         const ctx = createSvgContext(workspaceSvg);
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const builderRewritePreview = document.getElementById("builderRewritePreview");
+        const builderDigitRail = document.getElementById("builderDigitRail");
+        const workspaceToolbar = document.getElementById("workspaceToolbar");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1357,40 +1354,26 @@ Promise.resolve().then(() => {
         let completionExportCompletedAtDate = null;
 
         let internalClipboardText = "";
-        const portraitLayoutQuery = window.matchMedia("(orientation: portrait)");
-        const panelSplit = {
-            landscape: 33.333,
-            portrait: 50
-        };
+        let workspacePanelSplit = window.innerWidth <= 650 ? 74 : 78;
         let activeDividerPointerId = null;
 
-        function isPortraitPanelLayout() {
-            return portraitLayoutQuery.matches;
-        }
-
         function getCurrentPanelSplitLimits() {
-            return isPortraitPanelLayout()
-                ? { min: 20, max: 80 }
-                : { min: 10, max: 50 };
+            return { min: 45, max: 90 };
         }
 
         function updateDividerAccessibility() {
-            const portrait = isPortraitPanelLayout();
             const limits = getCurrentPanelSplitLimits();
-            const value = portrait ? panelSplit.portrait : panelSplit.landscape;
-            divider.setAttribute("aria-orientation", portrait ? "horizontal" : "vertical");
+            divider.setAttribute("aria-orientation", "horizontal");
             divider.setAttribute("aria-valuemin", String(limits.min));
             divider.setAttribute("aria-valuemax", String(limits.max));
-            divider.setAttribute("aria-valuenow", String(Math.round(value)));
+            divider.setAttribute("aria-valuenow", String(Math.round(workspacePanelSplit)));
         }
 
         function setPanelSplit(percent) {
-            const portrait = isPortraitPanelLayout();
             const limits = getCurrentPanelSplitLimits();
             const boundedPercent = Math.max(limits.min, Math.min(limits.max, percent));
-            const propertyName = portrait ? "--portrait-panel-split" : "--landscape-panel-split";
-            panelSplit[portrait ? "portrait" : "landscape"] = boundedPercent;
-            appContainer.style.setProperty(propertyName, `${boundedPercent}%`);
+            workspacePanelSplit = boundedPercent;
+            appContainer.style.setProperty("--workspace-panel-split", `${boundedPercent}%`);
             updateDividerAccessibility();
             if (expressionRoot) {
                 drawExpression();
@@ -1399,11 +1382,8 @@ Promise.resolve().then(() => {
 
         function setPanelSplitFromPointer(event) {
             const bounds = appContainer.getBoundingClientRect();
-            const portrait = isPortraitPanelLayout();
-            const position = portrait
-                ? event.clientY - bounds.top
-                : event.clientX - bounds.left;
-            const total = portrait ? bounds.height : bounds.width;
+            const position = event.clientY - bounds.top;
+            const total = bounds.height;
             if (total > 0) {
                 setPanelSplit((position / total) * 100);
             }
@@ -1434,7 +1414,7 @@ Promise.resolve().then(() => {
             }
             event.preventDefault();
             activeDividerPointerId = event.pointerId;
-            document.body.style.cursor = isPortraitPanelLayout() ? "row-resize" : "col-resize";
+            document.body.style.cursor = "row-resize";
             if (divider.setPointerCapture) {
                 try {
                     divider.setPointerCapture(event.pointerId);
@@ -1458,21 +1438,17 @@ Promise.resolve().then(() => {
         divider.addEventListener("lostpointercapture", finishDividerDrag);
 
         divider.addEventListener("keydown", event => {
-            const portrait = isPortraitPanelLayout();
-            const activeKey = portrait
-                ? (event.key === "ArrowUp" || event.key === "ArrowDown")
-                : (event.key === "ArrowLeft" || event.key === "ArrowRight");
+            const activeKey = event.key === "ArrowUp" || event.key === "ArrowDown";
             if (!activeKey && event.key !== "Home") {
                 return;
             }
             event.preventDefault();
             if (event.key === "Home") {
-                setPanelSplit(portrait ? 50 : 33.333);
+                setPanelSplit(window.innerWidth <= 650 ? 74 : 78);
                 return;
             }
-            const direction = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
-            const current = portrait ? panelSplit.portrait : panelSplit.landscape;
-            setPanelSplit(current + direction * 2);
+            const direction = event.key === "ArrowDown" ? 1 : -1;
+            setPanelSplit(workspacePanelSplit + direction * 2);
         });
 
         const handlePanelOrientationChange = () => {
@@ -1482,11 +1458,7 @@ Promise.resolve().then(() => {
                 drawExpression();
             }
         };
-        if (portraitLayoutQuery.addEventListener) {
-            portraitLayoutQuery.addEventListener("change", handlePanelOrientationChange);
-        } else if (portraitLayoutQuery.addListener) {
-            portraitLayoutQuery.addListener(handlePanelOrientationChange);
-        }
+        window.addEventListener("orientationchange", handlePanelOrientationChange);
         updateDividerAccessibility();
 
 
@@ -3099,10 +3071,12 @@ Promise.resolve().then(() => {
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
                 return `
-                    ${stepGuidanceHtml}
-                    <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
-                        <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
-                        ${completedCheckHtml}
+                    <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}">
+                        ${stepGuidanceHtml}
+                        <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                            <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
+                            ${completedCheckHtml}
+                        </div>
                     </div>
                 `;
             }).join("");
@@ -3123,18 +3097,16 @@ Promise.resolve().then(() => {
 
             levelContent.innerHTML = `
                 <div class="textbook-solution">
-                    <section class="solution-section problem-statement" aria-label="Problem statement">
+                    <section class="solution-section solution-column problem-statement" aria-label="Problem statement">
                         ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
                         <div class="problem-expression" aria-label="Initial conventional expression">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
                         </div>
                     </section>
-                    <hr class="solution-separator">
                     <section class="solution-section running-solution" aria-label="Running solution">
                         ${stepsHtml}
                     </section>
-                    <hr class="solution-separator">
-                    <section class="solution-section exercise-footer exercise-guidance ${isExerciseComplete ? "exercise-conclusion" : "exercise-information"}" aria-label="${escapeHtml(footerTitle)}">
+                    <section class="solution-section solution-column exercise-footer exercise-guidance ${isExerciseComplete ? "exercise-conclusion" : "exercise-information"}" aria-label="${escapeHtml(footerTitle)}">
                         <h3>${escapeHtml(footerTitle)}</h3>
                         ${renderParagraphs(footerBlocks)}
                     </section>
@@ -3167,6 +3139,16 @@ Promise.resolve().then(() => {
                     event.stopPropagation();
                 });
             });
+
+            const currentColumn = levelContent.querySelector(".current-step-column");
+            if (currentColumn) {
+                requestAnimationFrame(() => {
+                    const panelBounds = leftPanel.getBoundingClientRect();
+                    const columnBounds = currentColumn.getBoundingClientRect();
+                    const desiredLeft = leftPanel.scrollLeft + columnBounds.right - panelBounds.right + 12;
+                    leftPanel.scrollTo({ left: Math.max(0, desiredLeft), behavior: "smooth" });
+                });
+            }
 
         }
         function loadLevel(levelIndex) {
@@ -3201,6 +3183,29 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
+            if (workspaceToolbar) {
+                workspaceToolbar.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-workspace-mode]");
+                    if (!button) {
+                        return;
+                    }
+                    const mode = button.dataset.workspaceMode;
+                    setWorkspaceMode(mode);
+                    if (mode === "zoomOut") {
+                        zoomWorkspaceOut();
+                    }
+                });
+            }
+            if (builderDigitRail) {
+                builderDigitRail.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-builder-action]");
+                    if (!button || button.disabled) {
+                        return;
+                    }
+                    performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
+                });
+            }
+            updateWorkspaceToolbar();
             loadInitialLevelFromNavigation();
 
             document.addEventListener("click", event => {
@@ -3232,6 +3237,7 @@ Promise.resolve().then(() => {
         window.addEventListener("resize", () => {
             if (expressionRoot) {
                 renderCurrentExpressionDisplay();
+                drawExpression();
             }
         });
 
@@ -3268,31 +3274,31 @@ Promise.resolve().then(() => {
             layoutExpression(expressionRoot);
 
             const padding = 40;
-            const expressionBounds = getExpressionBounds();
             const mainWidth = svgContainer.clientWidth;
             const mainHeight = svgContainer.clientHeight;
+            const expressionWidth = expressionRoot.layout.width;
+            const expressionHeight = expressionRoot.layout.height;
 
-            let maxRight = expressionBounds.right;
-            let maxBottom = expressionBounds.bottom;
+            let neededWidth = Math.max(mainWidth, Math.ceil(expressionWidth + padding * 2));
+            let neededHeight = Math.max(mainHeight, Math.ceil(expressionHeight + padding * 2));
 
             const menuBounds = getFloatingMenuBounds();
             if (menuBounds) {
-                maxRight = Math.max(maxRight, menuBounds.right);
-                maxBottom = Math.max(maxBottom, menuBounds.bottom);
+                neededWidth = Math.max(neededWidth, Math.ceil(menuBounds.right + padding));
+                neededHeight = Math.max(neededHeight, Math.ceil(menuBounds.bottom + padding));
             }
-
-            const neededWidth = Math.max(mainWidth, Math.ceil(maxRight + padding));
-            const neededHeight = Math.max(mainHeight, Math.ceil(maxBottom + padding));
 
             if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
                 setSvgSize(workspaceSvg, neededWidth, neededHeight);
-
-                ctx.font = SETTINGS.textFont;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-
-                layoutExpression(expressionRoot);
             }
+
+            ctx.font = SETTINGS.textFont;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const centeredX = Math.max(SETTINGS.marginX, (neededWidth - expressionWidth) / 2);
+            const centeredY = Math.max(SETTINGS.marginY, (neededHeight - expressionHeight) / 2);
+            layoutExpressionWithSettings(expressionRoot, ctx, SETTINGS, centeredX, centeredY);
+            applyWorkspaceZoomSizing();
         }
 
 ctx.font = SETTINGS.textFont;
@@ -3331,8 +3337,75 @@ ctx.font = SETTINGS.textFont;
             floatingMenuY: 0,
             selectionRecorded: false,
             mode: "edit",
-            inspectStepIndex: -1
+            inspectStepIndex: -1,
+            workspaceMode: "select"
         };
+
+        const WORKSPACE_ZOOM_MIN = 0.5;
+        const WORKSPACE_ZOOM_MAX = 3;
+        const WORKSPACE_ZOOM_STEP = 1.25;
+        let workspaceZoom = 1;
+
+        function applyWorkspaceZoomSizing() {
+            const width = getSvgWidth(workspaceSvg);
+            const height = getSvgHeight(workspaceSvg);
+            const scaledWidth = Math.ceil(width * workspaceZoom);
+            const scaledHeight = Math.ceil(height * workspaceZoom);
+            workspaceSvg.style.width = `${scaledWidth}px`;
+            workspaceSvg.style.height = `${scaledHeight}px`;
+            workspaceSvg.style.marginLeft = `${Math.max(0, (svgContainer.clientWidth - scaledWidth) / 2)}px`;
+            workspaceSvg.style.marginTop = `${Math.max(0, (svgContainer.clientHeight - scaledHeight) / 2)}px`;
+        }
+
+        function updateWorkspaceToolbar() {
+            if (!workspaceToolbar) {
+                return;
+            }
+            workspaceToolbar.querySelectorAll("button[data-workspace-mode]").forEach(button => {
+                const active = button.dataset.workspaceMode === uiState.workspaceMode;
+                button.classList.toggle("is-active", active);
+                button.setAttribute("aria-pressed", String(active));
+            });
+        }
+
+        function setWorkspaceMode(mode) {
+            uiState.workspaceMode = mode === "zoomIn" || mode === "zoomOut" ? mode : "select";
+            updateWorkspaceToolbar();
+        }
+
+        function setWorkspaceZoom(nextZoom, clientX = null, clientY = null) {
+            const boundedZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, nextZoom));
+            if (Math.abs(boundedZoom - workspaceZoom) < 0.001) {
+                return;
+            }
+
+            const bounds = svgContainer.getBoundingClientRect();
+            const focalX = clientX === null ? bounds.width / 2 : clientX - bounds.left;
+            const focalY = clientY === null ? bounds.height / 2 : clientY - bounds.top;
+            const oldMarginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
+            const oldMarginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
+            const unscaledX = (svgContainer.scrollLeft + focalX - oldMarginLeft) / workspaceZoom;
+            const unscaledY = (svgContainer.scrollTop + focalY - oldMarginTop) / workspaceZoom;
+
+            workspaceZoom = boundedZoom;
+            if (expressionRoot) {
+                drawExpression();
+            } else {
+                applyWorkspaceZoomSizing();
+            }
+            const newMarginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
+            const newMarginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
+            svgContainer.scrollLeft = Math.max(0, unscaledX * workspaceZoom + newMarginLeft - focalX);
+            svgContainer.scrollTop = Math.max(0, unscaledY * workspaceZoom + newMarginTop - focalY);
+        }
+
+        function zoomWorkspaceInAt(clientX, clientY) {
+            setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP, clientX, clientY);
+        }
+
+        function zoomWorkspaceOut() {
+            setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
+        }
 
         function setStatus(message) {
         }
@@ -7274,19 +7347,30 @@ ctx.font = SETTINGS.textFont;
                     return;
                 }
                 if (current.isBuilderPlaceholder) {
+                    if (current.isBuilderActive) {
+                        shading.push({
+                            path,
+                            color: "#68717d",
+                            padding: 9
+                        });
+                    }
                     shading.push({
                         path,
-                        color: "#eadcff",
-                        foregroundColor: "#eadcff",
-                        padding: 6
+                        color: "#e4e7eb",
+                        foregroundColor: "#e4e7eb",
+                        padding: current.isBuilderActive ? 6 : 7
                     });
-                }
-                if (current.isBuilderActive) {
+                } else if (current.isBuilderActive) {
                     shading.push({
                         path,
-                        color: "#b77bea",
-                        foregroundColor: current.isBuilderPlaceholder ? "#b77bea" : undefined,
-                        padding: 7
+                        color: "#68717d",
+                        padding: 8
+                    });
+                    shading.push({
+                        path,
+                        color: "#f7f8fa",
+                        foregroundColor: "rgb(65,65,65)",
+                        padding: 5
                     });
                 }
                 current.args.forEach((child, index) => collectShading(child, path.concat(index)));
@@ -7323,64 +7407,22 @@ ctx.font = SETTINGS.textFont;
 
         function renderBuilderRewritePreview() {
             const builder = uiState.expressionBuilder;
-            const selectionBox = getSelectionBox();
-            if (!builderRewritePreview || !builder || uiState.stage !== "builder" || !selectionBox) {
+            if (!builderRewritePreview || !builder || uiState.stage !== "builder") {
                 hideBuilderRewritePreview();
                 return;
             }
 
             const proposal = makeBuilderInsertionRoot(builder);
             builderRewritePreview.innerHTML = `
-                <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
-                <div class="builder-rewrite-proposal">${renderBuilderProposalSvg(proposal)}</div>
+                <div class="builder-rewrite-content">
+                    <div class="builder-rewrite-original" aria-label="Selected expression">${renderBuilderProposalSvg(cloneBuilderRootForDisplay(builder.originalSelectedNode))}</div>
+                    <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
+                    <div class="builder-rewrite-proposal" aria-label="Proposed expression">${renderBuilderProposalSvg(proposal)}</div>
+                </div>
             `;
             builderRewritePreview.classList.remove("hidden", "vertical");
-
-            const gap = 14;
-            const viewportPadding = 8;
-            const visibleLeft = svgContainer.scrollLeft;
-            const visibleTop = svgContainer.scrollTop;
-            const visibleRight = visibleLeft + svgContainer.clientWidth;
-            const horizontalWidth = builderRewritePreview.offsetWidth;
-            const horizontalHeight = builderRewritePreview.offsetHeight;
-            const fitsToRight = selectionBox.right + gap + horizontalWidth <= visibleRight - viewportPadding;
-
-            let left;
-            let top;
-            if (fitsToRight) {
-                left = selectionBox.right + gap;
-                top = clampPreviewPosition(
-                    selectionBox.centerY - horizontalHeight / 2,
-                    visibleTop + viewportPadding,
-                    visibleTop + svgContainer.clientHeight - horizontalHeight - viewportPadding
-                );
-            } else {
-                builderRewritePreview.classList.add("vertical");
-                const arrow = builderRewritePreview.querySelector(".builder-rewrite-arrow");
-                if (arrow) {
-                    arrow.textContent = "↓";
-                }
-                const verticalWidth = builderRewritePreview.offsetWidth;
-                left = clampPreviewPosition(
-                    selectionBox.centerX - verticalWidth / 2,
-                    visibleLeft + viewportPadding,
-                    visibleRight - verticalWidth - viewportPadding
-                );
-                top = selectionBox.bottom + gap;
-            }
-
-            builderRewritePreview.style.left = `${Math.round(left)}px`;
-            builderRewritePreview.style.top = `${Math.round(top)}px`;
-
-            const neededWidth = Math.ceil(left + builderRewritePreview.offsetWidth + 32);
-            const neededHeight = Math.ceil(top + builderRewritePreview.offsetHeight + 32);
-            if (neededWidth > getSvgWidth(workspaceSvg) || neededHeight > getSvgHeight(workspaceSvg)) {
-                setSvgSize(
-                    workspaceSvg,
-                    Math.max(getSvgWidth(workspaceSvg), neededWidth),
-                    Math.max(getSvgHeight(workspaceSvg), neededHeight)
-                );
-            }
+            svgContainer.scrollLeft = 0;
+            svgContainer.scrollTop = 0;
         }
 
         function drawExpressionBuilderContext() {
@@ -8499,7 +8541,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Use Sum, Product, or Exponent to make structure first, or enter a value first and then use those buttons to wrap it. Remaining question marks are filled on Submit.";
+            let note = "Use Sum, Product, or Exponent to make structure first, or enter a value first and then use those buttons to wrap it. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }
@@ -8510,7 +8552,7 @@ ctx.font = SETTINGS.textFont;
             const toolName = uiState.activeTool;
             const variables = builderAllowsVariables(toolName) ? getBuilderVariableNames().slice(0, 4) : [];
             const variableButtons = variables.length
-                ? `<div class="builder-variable-row">${variables.map(v => `<button data-builder-action="value" data-value="${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")}</div>`
+                ? variables.map(v => `<button data-builder-action="value" data-value="${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")
                 : "";
             const operationTypes = getBuilderOperationTypes(toolName);
             const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
@@ -8531,17 +8573,13 @@ ctx.font = SETTINGS.textFont;
                 <div class="builder-instruction">${escapeHtml(getExpressionBuilderNote())}</div>
                 ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                 <div class="builder-controls">
-                    <div class="builder-keypad" aria-label="Expression builder keypad">
+                    <div class="builder-action-row" aria-label="Expression builder actions">
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("inv")}
                         ${buildOperationButton("exp")}
-                        ${["0","1","2","3","4"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                        ${["5","6","7","8","9"].map(d => `<button data-builder-action="digit" data-value="${d}">${d}</button>`).join("")}
-                    </div>
-                    ${variableButtons}
-                    <div class="builder-command-row">
+                        ${variableButtons}
                         <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
                         ${moveNextButton}
                         <button data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
@@ -8675,7 +8713,9 @@ ctx.font = SETTINGS.textFont;
                 } else {
                     menuHtml = buildToolCategoryMenuHtml();
                 }
-                return `${menuHtml}<button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>`;
+                return isIntentCategoryToolNotationMode()
+                    ? menuHtml
+                    : `${menuHtml}<button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>`;
             }
 
             if (
@@ -9133,10 +9173,11 @@ function renderToolArea() {
             // in the left panel. When no selection is active, the left panel
             // goes back to showing the level steps.
             hideFloatingMenu();
-            document.body.classList.toggle(
-                "expression-builder-active",
-                uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder
-            );
+            const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
+            document.body.classList.toggle("expression-builder-active", builderActive);
+            if (builderDigitRail) {
+                builderDigitRail.classList.toggle("hidden", !builderActive);
+            }
 
             if (uiState.mode !== "edit") {
                 return;
@@ -9751,9 +9792,11 @@ function renderToolArea() {
             const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
             if (movement <= tapTolerance) {
                 const rect = workspaceSvg.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                if (pointerStart.mode === "commute") {
+                const x = (e.clientX - rect.left) * (getSvgWidth(workspaceSvg) / Math.max(1, rect.width));
+                const y = (e.clientY - rect.top) * (getSvgHeight(workspaceSvg) / Math.max(1, rect.height));
+                if (pointerStart.mode === "zoomIn") {
+                    zoomWorkspaceInAt(e.clientX, e.clientY);
+                } else if (pointerStart.mode === "commute") {
                     const clickedIndex = getClickedIndexWithinSelection(x, y);
                     if (clickedIndex >= 0) {
                         recordCommutePermutationChoice(clickedIndex);
@@ -9789,6 +9832,9 @@ function renderToolArea() {
             }
 
             const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
+            if (!cancelingBuilder && uiState.workspaceMode === "zoomOut") {
+                return;
+            }
 
             const choosingCommuteOrder = selection.status === "yes" &&
                 uiState.stage === "preview" &&
@@ -9799,12 +9845,12 @@ function renderToolArea() {
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (!cancelingBuilder && !selectingExpression && !choosingDemoCommuteOrder) {
+                if (!cancelingBuilder && uiState.workspaceMode !== "zoomIn" && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!cancelingBuilder && !choosingCommuteOrder && uiState.activeTool) {
+            if (!cancelingBuilder && uiState.workspaceMode !== "zoomIn" && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -9813,7 +9859,13 @@ function renderToolArea() {
                 clientX: e.clientX,
                 clientY: e.clientY,
                 pointerType: e.pointerType || "mouse",
-                mode: cancelingBuilder ? "cancelBuilder" : choosingCommuteOrder ? "commute" : "selection"
+                mode: cancelingBuilder
+                    ? "cancelBuilder"
+                    : uiState.workspaceMode === "zoomIn"
+                        ? "zoomIn"
+                        : choosingCommuteOrder
+                            ? "commute"
+                            : "selection"
             };
         });
 
