@@ -1392,6 +1392,401 @@
                 min-height: 100%;
             }
         }
+
+        /* Primary workspace above a compact, horizontal multipurpose panel. */
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        .app-container {
+            --workspace-panel-split: 78%;
+            --divider-size: 8px;
+            --divider-half-size: 4px;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .main {
+            flex: 0 0 calc(var(--workspace-panel-split) - var(--divider-half-size));
+            width: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .workspace-toolbar {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-bottom: 1px solid #d7d7d7;
+            background: #f8f8f8;
+            box-sizing: border-box;
+        }
+
+        .workspace-toolbar button {
+            min-width: 88px;
+            padding: 7px 12px;
+            border: 1px solid #9a9a9a;
+            border-radius: 5px;
+            background: white;
+            color: #222;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .workspace-toolbar button.is-active {
+            border-color: #2f67b2;
+            background: #dcecff;
+            box-shadow: inset 0 0 0 1px #2f67b2;
+        }
+
+        .workspace-toolbar button:disabled {
+            cursor: default;
+            opacity: 0.45;
+        }
+
+        .right-svg-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .divider {
+            width: 100%;
+            height: var(--divider-size);
+            flex: 0 0 var(--divider-size);
+            cursor: row-resize;
+            background: #e5e5e5;
+        }
+
+        .divider::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 48px;
+            height: 3px;
+            border-radius: 999px;
+            background: #999;
+            transform: translate(-50%, -50%);
+        }
+
+        .left-panel {
+            flex: 1 1 0;
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            min-width: 0;
+            max-width: none;
+            min-height: 0;
+            padding: 8px 10px max(8px, env(safe-area-inset-bottom));
+            overflow-x: auto;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            border: 0;
+            border-top: 1px solid #ccc;
+            background: #fafafa;
+        }
+
+        #levelContent {
+            flex: 0 0 auto;
+        }
+
+        .textbook-solution {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            width: max-content;
+            min-width: 100%;
+            min-height: 100%;
+        }
+
+        .solution-column {
+            flex: 0 0 auto;
+            width: clamp(180px, 24vw, 320px);
+            min-width: 180px;
+            padding: 4px 14px;
+            border-right: 1px solid #cfcfcf;
+            box-sizing: border-box;
+        }
+
+        .solution-column:first-child {
+            padding-left: 6px;
+        }
+
+        .running-solution {
+            display: flex;
+            gap: 0;
+        }
+
+        .step-column {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .solution-step {
+            flex: 0 0 auto;
+        }
+
+        .solution-separator {
+            display: none;
+        }
+
+        #moveHistoryControls:not(:empty) {
+            position: static;
+            min-width: 190px;
+            padding: 0 8px;
+            background: transparent;
+        }
+
+        body.expression-builder-active .left-panel {
+            position: static;
+            align-self: stretch;
+            display: block;
+            height: auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        body.expression-builder-active #levelContent,
+        body.expression-builder-active .panel-tool-menu {
+            width: 100%;
+            height: auto;
+            min-height: 0;
+        }
+
+        .panel-tool-menu {
+            min-width: max-content;
+            margin: 0;
+        }
+
+        .panel-menu-title,
+        .builder-instruction,
+        .builder-message,
+        .small-note {
+            margin-top: 0;
+        }
+
+        .intent-category-list,
+        .intent-category-row,
+        .panel-tool-menu .tool-grid,
+        .panel-tool-menu .tool-form-grid,
+        .panel-tool-menu .insert-choice-list {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            gap: 8px;
+            margin: 4px 0;
+        }
+
+        .intent-category-row {
+            flex: 1 1 0;
+            display: contents;
+        }
+
+        .panel-tool-menu .intent-category-button,
+        .panel-tool-menu .tool-grid > button,
+        .panel-tool-menu .insert-choice-button {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 118px;
+            min-height: 56px;
+            padding: 5px 8px;
+        }
+
+        .intent-category-icon {
+            width: 68px;
+            height: 38px;
+        }
+
+        .intent-category-math,
+        .intent-category-math.translate-notation-math {
+            font-size: 20px;
+        }
+
+        .intent-category-description,
+        .insert-choice-description {
+            flex: 0 0 210px;
+            min-height: 0;
+            margin: 0 4px;
+        }
+
+        .intent-category-list {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .intent-category-actions {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .intent-category-actions .intent-category-button,
+        .intent-category-actions .cancel-selection-button {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 112px;
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .intent-category-list .intent-category-description {
+            flex: 0 0 auto;
+            width: auto;
+        }
+
+        .builder-controls {
+            width: 100%;
+        }
+
+        .builder-action-row {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .builder-action-row button {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 82px;
+            padding: 9px 8px;
+            text-align: center;
+        }
+
+        .builder-digit-rail {
+            position: absolute;
+            z-index: 35;
+            top: 50%;
+            right: max(8px, env(safe-area-inset-right));
+            display: grid;
+            grid-template-columns: minmax(44px, 1fr);
+            gap: 6px;
+            padding: 7px;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            background: rgba(250, 250, 250, 0.96);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+            transform: translateY(-50%);
+        }
+
+        .builder-digit-rail.hidden {
+            display: none;
+        }
+
+        .builder-digit-rail button {
+            min-width: 44px;
+            min-height: 40px;
+            padding: 7px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        body.expression-builder-active #expressionWorkspaceSvg {
+            opacity: 0;
+        }
+
+        .builder-rewrite-preview {
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 78px 28px 28px;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .builder-rewrite-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(14px, 3vw, 34px);
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .builder-rewrite-original,
+        .builder-rewrite-proposal {
+            flex: 0 1 auto;
+            min-width: 24px;
+            min-height: 24px;
+        }
+
+        .builder-rewrite-original svg,
+        .builder-rewrite-proposal svg {
+            display: block;
+            max-width: min(38vw, 520px);
+            height: auto;
+        }
+
+        .builder-rewrite-arrow {
+            color: #555;
+        }
+
+        @media (max-width: 650px) {
+            .app-container {
+                --workspace-panel-split: 74%;
+            }
+
+            .workspace-toolbar {
+                justify-content: stretch;
+            }
+
+            .workspace-toolbar button {
+                flex: 1 1 0;
+                min-width: 0;
+            }
+
+            .solution-column {
+                width: min(78vw, 280px);
+            }
+
+            .builder-rewrite-preview {
+                padding: 18px 78px 18px 18px;
+            }
+
+            .builder-rewrite-content {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .builder-rewrite-arrow {
+                transform: rotate(90deg);
+            }
+
+            .builder-rewrite-original svg,
+            .builder-rewrite-proposal svg {
+                max-width: calc(100vw - 150px);
+                max-height: 28vh;
+            }
+        }
+
+        @media (max-height: 550px) {
+            .builder-digit-rail {
+                grid-template-columns: repeat(2, minmax(40px, 1fr));
+            }
+
+            .builder-rewrite-preview {
+                padding-right: 122px;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -1399,12 +1794,12 @@
 </head>
 <body class="no-level-loaded">
     <div class="app-container">
-        <div id="leftPanel" class="left-panel">
-            <div id="levelContent"></div>
-            <div id="moveHistoryControls"></div>
-        </div>
-        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the two expression panels" aria-orientation="vertical" aria-valuemin="10" aria-valuemax="50" aria-valuenow="33"></div>
         <div class="main" id="mainArea">
+            <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
+                <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true">Select</button>
+                <button type="button" data-workspace-mode="zoomIn" aria-pressed="false">Zoom in</button>
+                <button type="button" data-workspace-mode="zoomOut" aria-pressed="false">Zoom out</button>
+            </div>
             <div id="rightTopBar" class="right-top-bar">
                 <div class="right-top-row">
                     <div class="right-expression-wrap">
@@ -1421,10 +1816,27 @@
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
+            <div id="builderDigitRail" class="builder-digit-rail hidden" aria-label="Expression builder digits">
+                <button type="button" data-builder-action="digit" data-value="0">0</button>
+                <button type="button" data-builder-action="digit" data-value="1">1</button>
+                <button type="button" data-builder-action="digit" data-value="2">2</button>
+                <button type="button" data-builder-action="digit" data-value="3">3</button>
+                <button type="button" data-builder-action="digit" data-value="4">4</button>
+                <button type="button" data-builder-action="digit" data-value="5">5</button>
+                <button type="button" data-builder-action="digit" data-value="6">6</button>
+                <button type="button" data-builder-action="digit" data-value="7">7</button>
+                <button type="button" data-builder-action="digit" data-value="8">8</button>
+                <button type="button" data-builder-action="digit" data-value="9">9</button>
+            </div>
+        </div>
+        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
+        <div id="leftPanel" class="left-panel">
+            <div id="levelContent"></div>
+            <div id="moveHistoryControls"></div>
         </div>
     </div>
     <script src="exploded-algebra-renderer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20260906-tap-selection-inline-builder"></script>
+    <script src="exploded-algebra-tool.js?v=20260907-horizontal-workspace-builder"></script>
 
 </body>
 </html>
