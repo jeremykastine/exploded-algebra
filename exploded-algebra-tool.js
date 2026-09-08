@@ -1389,9 +1389,12 @@ Promise.resolve().then(() => {
         const ctx = createSvgContext(workspaceSvg);
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const builderRewritePreview = document.getElementById("builderRewritePreview");
+        const builderInputRail = document.getElementById("builderInputRail");
+        const builderVariableRail = document.getElementById("builderVariableRail");
         const builderDigitRail = document.getElementById("builderDigitRail");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
+        const handednessToggleButton = document.getElementById("handednessToggleButton");
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
@@ -1994,10 +1997,6 @@ Promise.resolve().then(() => {
                 <button class="builder-prod-button">·</button>
                 <button class="builder-inv-button">1/A</button>
                 <button class="builder-exp-button">^</button>
-                <button class="builder-variable-button">x</button>
-                <button class="builder-variable-button">y</button>
-                <button class="builder-variable-button">a</button>
-                <button class="builder-variable-button">b</button>
             </div></div></div>`;
             probe.appendChild(builderProbe);
             return probe;
@@ -3676,6 +3675,12 @@ Promise.resolve().then(() => {
                     }
                 });
             }
+            if (handednessToggleButton) {
+                setLeftHandedLayout(loadSavedHandedness());
+                handednessToggleButton.addEventListener("click", () => {
+                    setLeftHandedLayout(!document.body.classList.contains("left-handed"), true);
+                });
+            }
             if (hamburgerButton && levelMenuPanel) {
                 const setMenuOpen = open => {
                     levelMenuPanel.classList.toggle("hidden", !open);
@@ -3697,6 +3702,15 @@ Promise.resolve().then(() => {
             }
             if (builderDigitRail) {
                 builderDigitRail.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-builder-action]");
+                    if (!button || button.disabled) {
+                        return;
+                    }
+                    performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
+                });
+            }
+            if (builderVariableRail) {
+                builderVariableRail.addEventListener("click", event => {
                     const button = event.target.closest("button[data-builder-action]");
                     if (!button || button.disabled) {
                         return;
@@ -3848,6 +3862,33 @@ ctx.font = SETTINGS.textFont;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
+        const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
+
+        function setLeftHandedLayout(enabled, persist = false) {
+            const isLeftHanded = !!enabled;
+            document.body.classList.toggle("left-handed", isLeftHanded);
+            if (handednessToggleButton) {
+                handednessToggleButton.setAttribute("aria-pressed", String(isLeftHanded));
+                handednessToggleButton.setAttribute(
+                    "aria-label",
+                    isLeftHanded ? "Switch to right-handed layout" : "Switch to left-handed layout"
+                );
+            }
+            if (persist) {
+                try {
+                    window.localStorage.setItem(HANDEDNESS_STORAGE_KEY, isLeftHanded ? "1" : "0");
+                } catch (error) {}
+            }
+            scheduleResponsiveLayoutRecalculation();
+        }
+
+        function loadSavedHandedness() {
+            try {
+                return window.localStorage.getItem(HANDEDNESS_STORAGE_KEY) === "1";
+            } catch (error) {
+                return false;
+            }
+        }
 
         function applyWorkspaceZoomSizing() {
             const width = getSvgWidth(workspaceSvg);
@@ -7814,6 +7855,9 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
                 return ["sum", "prod"];
             }
+            if (toolName === "replaceOneWithInverseProduct") {
+                return ["sum", "prod", "exp", "inv"];
+            }
             return ["sum", "prod", "exp"];
         }
 
@@ -7955,47 +7999,37 @@ ctx.font = SETTINGS.textFont;
         }
 
         function renderBuilderProposalSvg(node) {
-            const shading = [];
-            const collectShading = (current, path = []) => {
+            const outlines = [];
+            const collectOutlines = (current, path = []) => {
                 if (!current) {
                     return;
                 }
                 if (current.isBuilderPlaceholder) {
-                    if (current.isBuilderActive) {
-                        shading.push({
-                            path,
-                            color: "#68717d",
-                            padding: 9
-                        });
-                    }
-                    shading.push({
+                    outlines.push({
                         path,
-                        color: "#e4e7eb",
-                        foregroundColor: "#e4e7eb",
-                        padding: current.isBuilderActive ? 6 : 7
+                        color: current.isBuilderActive ? "#111" : "#92979d",
+                        padding: 4,
+                        lineWidth: current.isBuilderActive ? 1.8 : 1.5,
+                        dash: [1.5, 3]
                     });
                 } else if (current.isBuilderActive) {
-                    shading.push({
+                    outlines.push({
                         path,
-                        color: "#68717d",
-                        padding: 8
-                    });
-                    shading.push({
-                        path,
-                        color: "#f7f8fa",
-                        foregroundColor: "rgb(65,65,65)",
-                        padding: 5
+                        color: "#111",
+                        padding: 4,
+                        lineWidth: 1.8,
+                        dash: [1.5, 3]
                     });
                 }
-                current.args.forEach((child, index) => collectShading(child, path.concat(index)));
+                current.args.forEach((child, index) => collectOutlines(child, path.concat(index)));
             };
-            collectShading(node);
+            collectOutlines(node);
             return renderExpressionSvgMarkup(node, {
                 className: "builder-proposed-oops-svg",
                 role: "img",
                 ariaHidden: true,
                 focusable: false,
-                shading,
+                outlines,
                 settings: {
                     padding: 10,
                     flare: 6,
@@ -9169,30 +9203,66 @@ ctx.font = SETTINGS.textFont;
             return note;
         }
 
+        function makeBuilderIconPlaceholder() {
+            const node = new ExprNode("value", [], "");
+            node.isBuilderPlaceholder = true;
+            return node;
+        }
+
         function getBuilderSymbolIcon(type, value = "") {
-            const commonStart = `<svg class="builder-symbol-icon" viewBox="0 0 80 48" aria-hidden="true" focusable="false">`;
+            const blank = () => makeBuilderIconPlaceholder();
+            let node;
             if (type === "sum") {
-                return `${commonStart}<circle class="symbol-stroke" cx="40" cy="24" r="18"/><path class="symbol-stroke" d="M31 24h18M40 15v18"/></svg>`;
+                node = new ExprNode("sum", [blank(), blank()], null);
+            } else if (type === "prod") {
+                node = new ExprNode("prod", [blank(), blank()], null);
+            } else if (type === "inv") {
+                node = new ExprNode("inv", [blank()], null);
+            } else if (type === "exp") {
+                node = new ExprNode("exp", [blank(), blank()], null);
+            } else {
+                node = valueNode(value === "−1" ? "-1" : value || "-1");
             }
-            if (type === "prod") {
-                return `${commonStart}<circle class="symbol-stroke" cx="40" cy="24" r="18"/><circle class="symbol-fill" cx="40" cy="24" r="3.5"/></svg>`;
+            return renderExpressionSvgMarkup(node, {
+                className: "builder-symbol-icon",
+                ariaHidden: true,
+                focusable: false,
+                settings: {
+                    padding: 4,
+                    flare: 4,
+                    marginX: 2,
+                    marginY: 2,
+                    bufferSize: 3,
+                    operatorThickness: 6,
+                    builderPlaceholderWidth: 8,
+                    builderPlaceholderHeight: 8,
+                    textFont: "bold 15px Verdana, Arial, Helvetica, sans-serif",
+                    expressionStrokeFill: "currentColor"
+                }
+            });
+        }
+
+        function renderBuilderVariableRail(builderActive) {
+            if (!builderVariableRail) {
+                return;
             }
-            if (type === "inv") {
-                return `${commonStart}<rect class="symbol-stroke" x="21" y="7" width="38" height="34" rx="2"/></svg>`;
+            if (!builderActive) {
+                builderVariableRail.replaceChildren();
+                return;
             }
-            if (type === "exp") {
-                return `${commonStart}<path class="symbol-stroke" d="M12 20v21h35V20M47 20V7h21v21H47"/></svg>`;
+            const disabled = !builderAllowsVariables(uiState.activeTool);
+            const variableNames = getBuilderVariableNames().slice(0, 4);
+            if (!variableNames.length) {
+                variableNames.push("x");
             }
-            const displayedValue = value || "−1";
-            return `${commonStart}<rect class="symbol-stroke" x="18" y="7" width="44" height="34" rx="2"/><text x="40" y="30" text-anchor="middle">${escapeHtml(displayedValue)}</text></svg>`;
+            builderVariableRail.innerHTML = variableNames.map(variable => {
+                const escapedVariable = escapeHtml(variable);
+                return `<button type="button" class="builder-variable-button" data-builder-action="value" data-value="${escapedVariable}" aria-label="Insert ${escapedVariable}" title="Keyboard shortcut: ${escapedVariable}"${disabled ? " disabled" : ""}>${getBuilderSymbolIcon("value", variable)}</button>`;
+            }).join("");
         }
 
         function buildExpressionBuilderHtml() {
             const toolName = uiState.activeTool;
-            const variables = builderAllowsVariables(toolName) ? getBuilderVariableNames().slice(0, 4) : [];
-            const variableButtons = variables.length
-                ? variables.map(v => `<button class="builder-variable-button" data-builder-action="value" data-value="${escapeHtml(v)}" aria-label="Insert ${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${getBuilderSymbolIcon("value", v)}</button>`).join("")
-                : "";
             const operationTypes = getBuilderOperationTypes(toolName);
             const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
             const operationNames = { exp: "Insert exponent structure", prod: "Insert product structure", sum: "Insert sum structure", inv: "Insert inverse structure" };
@@ -9222,7 +9292,6 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("inv")}
                         ${buildOperationButton("exp")}
-                        ${variableButtons}
                     </div>
                 </div>
             </div>`;
@@ -9770,9 +9839,10 @@ function renderToolArea() {
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
             syncBuilderWorkspaceView(builderActive);
             document.body.classList.toggle("expression-builder-active", builderActive);
-            if (builderDigitRail) {
-                builderDigitRail.classList.toggle("hidden", !builderActive);
+            if (builderInputRail) {
+                builderInputRail.classList.toggle("hidden", !builderActive);
             }
+            renderBuilderVariableRail(builderActive);
 
             if (uiState.mode !== "edit") {
                 return;

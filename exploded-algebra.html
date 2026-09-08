@@ -1912,11 +1912,22 @@
             background: #f3f3f3;
         }
 
+        .quadrant-tool-actions {
+            position: relative;
+            z-index: 4;
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 6px 0;
+        }
+
         .workspace-toolbar {
             flex: 1 1 auto;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
+            justify-content: flex-end;
             gap: 14px;
             padding: 9px 6px;
             border: 0;
@@ -1937,21 +1948,17 @@
             padding: 8px;
             border-radius: 6px;
         }
-        .reset-exercise-button {
-            position: absolute;
-            z-index: 4;
-            left: 50%;
-            bottom: 7px;
+        .reset-exercise-button,
+        .handedness-toggle-button {
             width: 44px;
             height: 44px;
             min-width: 44px;
             min-height: 44px;
             padding: 8px;
             border-radius: 6px;
-            transform: translateX(-50%);
         }
-        .reset-exercise-button svg { width: 100%; height: 100%; pointer-events: none; }
-        body.expression-builder-active .reset-exercise-button { display: none; }
+        .reset-exercise-button svg,
+        .handedness-toggle-button svg { width: 100%; height: 100%; pointer-events: none; }
 
         .main {
             grid-column: 1;
@@ -2091,6 +2098,27 @@
             box-shadow: none;
             transform: none;
         }
+        .builder-input-rail {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .builder-input-rail.hidden { display: none; }
+        .builder-variable-rail {
+            flex: 0 1 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3px;
+            padding: 6px 6px 0;
+        }
+        .builder-variable-rail:empty { display: none; }
+        .builder-variable-rail button {
+            width: 100%;
+            min-width: 0;
+            min-height: 32px;
+            padding: 2px;
+        }
         .builder-digit-rail button {
             width: 100%;
             min-width: 0;
@@ -2109,23 +2137,13 @@
 
         .builder-symbol-icon {
             display: block;
-            width: min(58px, 100%);
-            height: 34px;
             margin: auto;
             overflow: visible;
         }
-        .builder-symbol-icon .symbol-stroke {
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 3.5;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-        .builder-symbol-icon .symbol-fill { fill: currentColor; }
-        .builder-symbol-icon text {
-            fill: currentColor;
-            font-family: Verdana, Arial, Helvetica, sans-serif;
-            font-size: 17px;
+        .builder-next-button,
+        .builder-undo-button,
+        .builder-cancel-button,
+        .builder-submit-button {
             font-weight: 700;
         }
 
@@ -2157,7 +2175,6 @@
             .builder-prod-button { grid-column: 3; grid-row: 2; }
             .builder-inv-button { grid-column: 4; grid-row: 2; }
             .builder-exp-button { grid-column: 5; grid-row: 2; }
-            .builder-variable-button { grid-row: 3; }
             .panel-tool-menu .tool-row,
             .panel-tool-menu .tool-form-row { display: contents; }
             .panel-tool-menu button, .builder-action-row button { width: 100%; height: 100%; }
@@ -2235,6 +2252,26 @@
             height: auto;
             min-height: 0;
         }
+
+        body.left-handed .app-container {
+            grid-template-columns: var(--control-rail-width) minmax(0, 1fr);
+        }
+        body.left-handed .quadrant-tools {
+            grid-column: 1;
+            border-right: 1px solid #cfcfcf;
+            border-left: 0;
+        }
+        body.left-handed .main { grid-column: 2; }
+        body.left-handed .quadrant-menu {
+            grid-column: 1;
+            border-right: 1px solid #cfcfcf;
+            border-left: 0;
+        }
+        body.left-handed .left-panel { grid-column: 2; }
+        body.left-handed .level-menu-panel {
+            right: auto;
+            left: max(6px, env(safe-area-inset-left));
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -2256,6 +2293,14 @@
             <div id="levelContent"></div>
         </div>
         <div class="quadrant-tools">
+            <div class="quadrant-tool-actions" aria-label="Exercise and layout controls">
+                <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </button>
+                <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the tool quadrants to the other side of the screen.">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
                     <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional selections expand to the smallest expression containing everything selected.">
@@ -2277,20 +2322,20 @@
                     </button>
                 </div>
             </div>
-            <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-            </button>
-            <div id="builderDigitRail" class="builder-digit-rail hidden" aria-label="Expression builder digits">
-                <button type="button" data-builder-action="digit" data-value="9">9</button>
-                <button type="button" data-builder-action="digit" data-value="8">8</button>
-                <button type="button" data-builder-action="digit" data-value="7">7</button>
-                <button type="button" data-builder-action="digit" data-value="6">6</button>
-                <button type="button" data-builder-action="digit" data-value="5">5</button>
-                <button type="button" data-builder-action="digit" data-value="4">4</button>
-                <button type="button" data-builder-action="digit" data-value="3">3</button>
-                <button type="button" data-builder-action="digit" data-value="2">2</button>
-                <button type="button" data-builder-action="digit" data-value="1">1</button>
-                <button type="button" data-builder-action="digit" data-value="0">0</button>
+            <div id="builderInputRail" class="builder-input-rail hidden">
+                <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>
+                <div id="builderDigitRail" class="builder-digit-rail" aria-label="Expression builder digits">
+                    <button type="button" data-builder-action="digit" data-value="9">9</button>
+                    <button type="button" data-builder-action="digit" data-value="8">8</button>
+                    <button type="button" data-builder-action="digit" data-value="7">7</button>
+                    <button type="button" data-builder-action="digit" data-value="6">6</button>
+                    <button type="button" data-builder-action="digit" data-value="5">5</button>
+                    <button type="button" data-builder-action="digit" data-value="4">4</button>
+                    <button type="button" data-builder-action="digit" data-value="3">3</button>
+                    <button type="button" data-builder-action="digit" data-value="2">2</button>
+                    <button type="button" data-builder-action="digit" data-value="1">1</button>
+                    <button type="button" data-builder-action="digit" data-value="0">0</button>
+                </div>
             </div>
         </div>
         <div class="main" id="mainArea">

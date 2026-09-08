@@ -49,6 +49,8 @@ const SETTINGS = {
     inverseBorderColor: "rgb(170,170,170)",
     bufferSize: 16,
     operatorThickness: 12,
+    builderPlaceholderWidth: 24,
+    builderPlaceholderHeight: 20,
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -478,6 +480,16 @@ function measureNodeWithContext(node, drawingContext, settings) {
     const operatorHalf = getOperatorHalfSize(settings);
 
     if (node.type === "value") {
+        if (node.isBuilderPlaceholder) {
+            node.layout.textWidth = Math.max(1, Number(settings.builderPlaceholderWidth) || 24);
+            node.layout.textHeight = Math.max(1, Number(settings.builderPlaceholderHeight) || 20);
+            node.layout.width = node.layout.textWidth;
+            node.layout.height = node.layout.textHeight;
+            node.layout.childBoxes = [];
+            node.layout.vLines = [0, node.layout.width];
+            node.layout.hLines = [0, node.layout.height];
+            return;
+        }
         const metrics = drawingContext.measureText(node.value);
         const textWidth = Math.abs(metrics.actualBoundingBoxLeft || 0) + Math.abs(metrics.actualBoundingBoxRight || 0);
         const textHeight = Math.abs(metrics.actualBoundingBoxAscent || 0) + Math.abs(metrics.actualBoundingBoxDescent || 0);
@@ -1186,7 +1198,63 @@ function drawShadingToContext(compiledShading, drawingContext) {
     }
 }
 
+function outlineEntries(outlines) {
+    if (Array.isArray(outlines)) {
+        return outlines;
+    }
+    if (outlines && Array.isArray(outlines.regions)) {
+        return outlines.regions;
+    }
+    return [];
+}
+
+// Static outlines use the same child-index paths as shading regions. They are
+// useful for editable blanks because they preserve the expression's geometry
+// without placing a colored fill behind it.
+function compileOutlines(root, outlines) {
+    const rectangles = [];
+    for (const entry of outlineEntries(outlines)) {
+        if (!entry || !entry.color) {
+            continue;
+        }
+        const node = nodeAtPath(root, Array.isArray(entry.path) ? entry.path : []);
+        if (!node) {
+            continue;
+        }
+        const padding = Math.max(0, Number(entry.padding) || 0);
+        rectangles.push({
+            left: node.left() - padding,
+            top: node.top() - padding,
+            right: node.right() + padding,
+            bottom: node.bottom() + padding,
+            color: entry.color,
+            lineWidth: Math.max(0.5, Number(entry.lineWidth) || 1.5),
+            dash: Array.isArray(entry.dash) ? entry.dash : [1.5, 3]
+        });
+    }
+    return rectangles;
+}
+
+function drawOutlinesToContext(compiledOutlines, drawingContext) {
+    for (const rectangle of compiledOutlines || []) {
+        drawingContext.save();
+        drawingContext.strokeStyle = rectangle.color;
+        drawingContext.lineWidth = rectangle.lineWidth;
+        drawingContext.setLineDash(rectangle.dash);
+        drawingContext.strokeRect(
+            rectangle.left,
+            rectangle.top,
+            Math.max(0, rectangle.right - rectangle.left),
+            Math.max(0, rectangle.bottom - rectangle.top)
+        );
+        drawingContext.restore();
+    }
+}
+
 function drawValueNodeToContext(node, drawingContext, settings, foregroundColor = settings.expressionStrokeFill) {
+    if (node.isBuilderPlaceholder) {
+        return;
+    }
     const cx = (node.left() + node.right()) / 2;
     const cy = (node.top() + node.bottom()) / 2;
     const metrics = drawingContext.measureText(node.value);
@@ -1271,6 +1339,7 @@ function renderExpressionSvgMarkup(root, options = {}) {
     setSvgSize(svg, width, height);
     drawingContext.clearRect(0, 0, width, height);
     const compiledShading = compileShading(root, options.shading);
+    const compiledOutlines = compileOutlines(root, options.outlines);
     drawShadingToContext(compiledShading, drawingContext);
     drawNodeRecursiveToContext(
         root,
@@ -1281,6 +1350,7 @@ function renderExpressionSvgMarkup(root, options = {}) {
         node => compiledShading.nodeForegrounds.get(node.id) || null,
         (node, separatorIndex) => compiledShading.separatorForegrounds.get(`${node.id}:${separatorIndex}`) || null
     );
+    drawOutlinesToContext(compiledOutlines, drawingContext);
     return svg.outerHTML;
 }
 
@@ -1401,6 +1471,8 @@ window.ExplodedAlgebraRenderer = {
     nodeAtPath,
     compileShading,
     drawShadingToContext,
+    compileOutlines,
+    drawOutlinesToContext,
     drawNodeRecursiveToContext,
     drawNodeToContext,
     drawValueNodeToContext,
