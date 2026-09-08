@@ -1988,10 +1988,9 @@ Promise.resolve().then(() => {
             const builderProbe = document.createElement("div");
             builderProbe.className = "panel-tool-menu";
             builderProbe.innerHTML = `<div class="expression-builder-panel"><div class="builder-controls"><div class="builder-action-row">
-                <button class="builder-next-button">Move on</button>
+                <button class="builder-next-submit-button">Next / Submit</button>
                 <button class="builder-undo-button">Backspace</button>
                 <button class="builder-cancel-button">Cancel</button>
-                <button class="builder-submit-button">Submit</button>
                 <button class="builder-negative-one-button">−1</button>
                 <button class="builder-sum-button">+</button>
                 <button class="builder-prod-button">·</button>
@@ -9275,18 +9274,21 @@ ctx.font = SETTINGS.textFont;
             const negativeOneButton = builderAllowsNegativeOne(toolName)
                 ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`
                 : `<button class="builder-negative-one-button" aria-label="Insert negative one" disabled>${getBuilderSymbolIcon("value", "−1")}</button>`;
-            const moveNextButton = toolName === "evaluate"
-                ? `<button class="builder-next-button" disabled>Move on</button>`
-                : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">Move on</button>`;
+            const builder = uiState.expressionBuilder;
+            const hasNextPlaceholder = !!(builder && findNextPlaceholderPath(builder.root, builder.currentPath));
+            const nextOrSubmitAction = hasNextPlaceholder ? "next" : "submit";
+            const nextOrSubmitTitle = hasNextPlaceholder
+                ? "Move to the next blank. Keyboard shortcut: Right Arrow or Tab"
+                : "Submit the completed expression. Keyboard shortcut: Enter";
+            const nextOrSubmitButton = `<button class="builder-next-submit-button" data-builder-action="${nextOrSubmitAction}" title="${nextOrSubmitTitle}">Next / Submit</button>`;
             return `<div class="expression-builder-panel">
                 <div class="builder-instruction">${escapeHtml(getExpressionBuilderNote())}</div>
                 ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                 <div class="builder-controls">
                     <div class="builder-action-row" aria-label="Expression builder actions">
-                        ${moveNextButton}
+                        ${nextOrSubmitButton}
                         <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
                         <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
-                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}

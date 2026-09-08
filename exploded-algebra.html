@@ -1180,7 +1180,7 @@
             line-height: 1.2;
         }
 
-        .builder-next-button {
+        .builder-next-submit-button {
             font-size: 15px;
             font-weight: bold;
             line-height: 1.2;
@@ -2140,11 +2140,14 @@
             margin: auto;
             overflow: visible;
         }
-        .builder-next-button,
+        .builder-next-submit-button,
         .builder-undo-button,
-        .builder-cancel-button,
-        .builder-submit-button {
+        .builder-cancel-button {
             font-weight: 700;
+        }
+        .builder-action-row button.builder-next-submit-button,
+        .builder-action-row button.builder-undo-button {
+            flex: 2 1 0;
         }
 
         @media (orientation: portrait) {
@@ -2166,10 +2169,9 @@
                 grid-auto-flow: row;
                 align-content: center;
             }
-            .builder-next-button { grid-column: 1; grid-row: 1; }
-            .builder-undo-button { grid-column: 2; grid-row: 1; }
-            .builder-cancel-button { grid-column: 3; grid-row: 1; }
-            .builder-submit-button { grid-column: 4 / span 2; grid-row: 1; }
+            .builder-next-submit-button { grid-column: 1 / span 2; grid-row: 1; }
+            .builder-undo-button { grid-column: 3 / span 2; grid-row: 1; }
+            .builder-cancel-button { grid-column: 5; grid-row: 1; }
             .builder-negative-one-button { grid-column: 1; grid-row: 2; }
             .builder-sum-button { grid-column: 2; grid-row: 2; }
             .builder-prod-button { grid-column: 3; grid-row: 2; }
@@ -2361,7 +2363,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20260908-flipped-quadrants"></script>
+    <script src="exploded-algebra-tool.js?v=20260908-builder-controls"></script>
 
 </body>
 </html>
