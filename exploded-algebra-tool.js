@@ -830,7 +830,7 @@ Promise.resolve().then(() => {
         function buildIntentCategoryButtonHtml(categoryId) {
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
             const label = category ? category.label : categoryId;
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}">
+            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" aria-haspopup="menu" aria-expanded="false">
                 ${getIntentCategoryIconHtml(categoryId)}
                 <span class="intent-category-label">${escapeHtml(label)}</span>
             </button>`;
@@ -928,10 +928,94 @@ Promise.resolve().then(() => {
             return html;
         }
 
+        let activeToolOptionAnchor = null;
+
+        function getPlainEnglishToolOptionLabel(toolName, categoryId) {
+            if (categoryId === "insert" && INSERT_ELEMENT_CHOICES[toolName]) {
+                return INSERT_ELEMENT_CHOICES[toolName].label;
+            }
+            const categorySpecificLabels = {
+                "insert:cancelOpposites": "Sum of opposites",
+                "delete:doubleNegative": "Remove a double negative"
+            };
+            const categorySpecificLabel = categorySpecificLabels[`${categoryId}:${toolName}`];
+            if (categorySpecificLabel) {
+                return categorySpecificLabel;
+            }
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = TOOL_INFO[toolName] || "";
+            const ruleName = wrapper.querySelector(".rule-name");
+            const label = ruleName ? ruleName.textContent.trim() : toolName;
+            return label.replace(/[⇔↔→]/g, " to ").replace(/\s+/g, " ").trim();
+        }
+
+        function positionToolOptionMenu() {
+            if (!toolOptionMenu || toolOptionMenu.classList.contains("hidden") || !activeToolOptionAnchor) {
+                return;
+            }
+            const anchorBounds = activeToolOptionAnchor.getBoundingClientRect();
+            const menuBounds = toolOptionMenu.getBoundingClientRect();
+            const viewportMargin = 8;
+            const centeredLeft = anchorBounds.left + (anchorBounds.width - menuBounds.width) / 2;
+            const left = Math.max(
+                viewportMargin,
+                Math.min(centeredLeft, window.innerWidth - menuBounds.width - viewportMargin)
+            );
+            let top = anchorBounds.top - menuBounds.height - 8;
+            if (top < viewportMargin) {
+                top = anchorBounds.bottom + 8;
+            }
+            top = Math.max(
+                viewportMargin,
+                Math.min(top, window.innerHeight - menuBounds.height - viewportMargin)
+            );
+            toolOptionMenu.style.left = `${Math.round(left)}px`;
+            toolOptionMenu.style.top = `${Math.round(top)}px`;
+        }
+
+        function hideToolOptionMenu() {
+            if (!toolOptionMenu) {
+                return;
+            }
+            if (activeToolOptionAnchor) {
+                activeToolOptionAnchor.classList.remove("has-open-options");
+                activeToolOptionAnchor.setAttribute("aria-expanded", "false");
+            }
+            activeToolOptionAnchor = null;
+            toolOptionMenu.classList.add("hidden");
+            toolOptionMenu.replaceChildren();
+        }
+
+        function showToolOptionMenu(anchor, categoryId, tools) {
+            if (!toolOptionMenu || !anchor || !tools.length) {
+                return;
+            }
+            const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
+            const title = category ? `${category.label} options` : "Application options";
+            toolOptionMenu.innerHTML = `
+                <div class="tool-option-menu-title">${escapeHtml(title)}</div>
+                ${tools.map(toolName => {
+                    const label = getPlainEnglishToolOptionLabel(toolName, categoryId);
+                    return `<button type="button" role="menuitem" data-tool-option="${escapeHtml(toolName)}" data-option-category="${escapeHtml(categoryId)}" aria-label="${escapeHtml(label)}" data-hold-description="Apply this option to the selected expression.">${escapeHtml(label)}</button>`;
+                }).join("")}
+            `;
+            if (activeToolOptionAnchor && activeToolOptionAnchor !== anchor) {
+                activeToolOptionAnchor.classList.remove("has-open-options");
+                activeToolOptionAnchor.setAttribute("aria-expanded", "false");
+            }
+            activeToolOptionAnchor = anchor;
+            anchor.classList.add("has-open-options");
+            anchor.setAttribute("aria-expanded", "true");
+            toolOptionMenu.classList.remove("hidden");
+            positionToolOptionMenu();
+            const firstOption = toolOptionMenu.querySelector("button[data-tool-option]");
+            if (firstOption) {
+                firstOption.focus({ preventScroll: true });
+            }
+        }
+
         function buildIntentCategoryToolListHtml() {
-            return uiState.activeToolCategory
-                ? buildIntentCategoryChoicesHtml(uiState.activeToolCategory)
-                : buildIntentCategoryMenuHtml();
+            return buildIntentCategoryMenuHtml();
         }
 
         function isToolFormSideAvailable(side) {
@@ -1308,6 +1392,7 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
+        const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
@@ -3548,6 +3633,31 @@ Promise.resolve().then(() => {
                 });
             }
             installPressHoldDescriptions();
+            if (toolOptionMenu) {
+                toolOptionMenu.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-tool-option]");
+                    if (!button) {
+                        return;
+                    }
+                    event.stopPropagation();
+                    const toolName = button.dataset.toolOption;
+                    if (!isDemoToolAllowed(toolName) || !isToolActuallyApplicable(toolName)) {
+                        return;
+                    }
+                    const beforeExpression = getExpressionTextForTrace();
+                    recordCurrentSelectionForSolution();
+                    recordToolForSolution(toolName, beforeExpression);
+                    hideToolOptionMenu();
+                    advanceDemoStep();
+                    beginTool(toolName);
+                });
+                document.addEventListener("click", event => {
+                    const categoryButton = event.target.closest && event.target.closest("button[data-rule-category]");
+                    if (!toolOptionMenu.classList.contains("hidden") && !toolOptionMenu.contains(event.target) && !categoryButton) {
+                        hideToolOptionMenu();
+                    }
+                });
+            }
             window.addEventListener("resize", scheduleResponsiveLayoutRecalculation);
             window.addEventListener("orientationchange", handlePanelOrientationChange);
             if (window.visualViewport) {
@@ -3607,6 +3717,14 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
+                if (event.key === "Escape" && toolOptionMenu && !toolOptionMenu.classList.contains("hidden")) {
+                    const anchor = activeToolOptionAnchor;
+                    hideToolOptionMenu();
+                    if (anchor) {
+                        anchor.focus();
+                    }
+                    return;
+                }
                 if (handleExpressionBuilderKeydown(event)) {
                     return;
                 }
@@ -3863,6 +3981,7 @@ ctx.font = SETTINGS.textFont;
                 if (!builderWorkspaceViewActive && pendingResponsiveWorkspaceView) {
                     restoreWorkspaceView(pendingResponsiveWorkspaceView);
                 }
+                positionToolOptionMenu();
                 pendingResponsiveWorkspaceView = null;
             });
         }
@@ -9498,11 +9617,15 @@ ctx.font = SETTINGS.textFont;
                     if (isDemoModeActive()) {
                         applicableTools = applicableTools.filter(isDemoToolAllowed);
                     }
+                    if (activeToolOptionAnchor && activeToolOptionAnchor !== btn) {
+                        hideToolOptionMenu();
+                    }
                     if (applicableTools.length === 0) {
                         markToolButtonNotApplicable(btn);
                         return;
                     }
                     if (applicableTools.length === 1) {
+                        hideToolOptionMenu();
                         const toolName = applicableTools[0];
                         const beforeExpression = getExpressionTextForTrace();
                         recordCurrentSelectionForSolution();
@@ -9511,10 +9634,11 @@ ctx.font = SETTINGS.textFont;
                         beginTool(toolName);
                         return;
                     }
-                    uiState.activeToolCategory = categoryId;
-                    renderToolArea();
-                    refreshStatus();
-                    drawExpression();
+                    if (activeToolOptionAnchor === btn && !toolOptionMenu.classList.contains("hidden")) {
+                        hideToolOptionMenu();
+                        return;
+                    }
+                    showToolOptionMenu(btn, categoryId, applicableTools);
                 });
             });
 
@@ -9642,6 +9766,7 @@ function renderToolArea() {
             // in the left panel. When no selection is active, the left panel
             // goes back to showing the level steps.
             hideFloatingMenu();
+            hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
             syncBuilderWorkspaceView(builderActive);
             document.body.classList.toggle("expression-builder-active", builderActive);
