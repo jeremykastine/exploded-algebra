@@ -1305,6 +1305,9 @@ Promise.resolve().then(() => {
         const builderRewritePreview = document.getElementById("builderRewritePreview");
         const builderDigitRail = document.getElementById("builderDigitRail");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
+        const hamburgerButton = document.getElementById("hamburgerButton");
+        const levelMenuPanel = document.getElementById("levelMenuPanel");
+        const levelMenuContent = document.getElementById("levelMenuContent");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -3010,10 +3013,37 @@ Promise.resolve().then(() => {
             });
         }
 
+        function renderLevelMenuInfo(level, isExerciseComplete = false) {
+            if (!levelMenuContent) {
+                return;
+            }
+            if (!level) {
+                levelMenuContent.innerHTML = "<p>No exercise is loaded.</p>";
+                return;
+            }
+
+            const exerciseInfo = normalizeTextBlocks(level.exerciseInfo).length
+                ? normalizeTextBlocks(level.exerciseInfo)
+                : [
+                    ...normalizeTextBlocks(level.description),
+                    ...normalizeTextBlocks(level.instructions)
+                ];
+            const completionMessage = normalizeTextBlocks(level.completionMessage).length
+                ? normalizeTextBlocks(level.completionMessage)
+                : normalizeTextBlocks(level.conclusion);
+            const blocks = isExerciseComplete && completionMessage.length
+                ? [...exerciseInfo, ...completionMessage]
+                : exerciseInfo;
+            levelMenuContent.innerHTML = blocks.length
+                ? blocks.map(text => `<p>${escapeHtml(text)}</p>`).join("")
+                : "<p>No additional exercise instructions.</p>";
+        }
+
         function renderLevelInfo(levelIndex) {
             const level = LEVELS[levelIndex];
             if (!level) {
                 levelContent.innerHTML = "";
+                renderLevelMenuInfo(null);
                 renderMoveHistoryControls(null);
                 return;
             }
@@ -3081,37 +3111,22 @@ Promise.resolve().then(() => {
                 `;
             }).join("");
 
-            const exerciseInfo = normalizeTextBlocks(level.exerciseInfo).length
-                ? normalizeTextBlocks(level.exerciseInfo)
-                : [
-                    ...normalizeTextBlocks(level.description),
-                    ...normalizeTextBlocks(level.instructions)
-                ];
-            const completionMessage = normalizeTextBlocks(level.completionMessage).length
-                ? normalizeTextBlocks(level.completionMessage)
-                : normalizeTextBlocks(level.conclusion);
-            const footerTitle = isExerciseComplete ? "Conclusion" : "Exercise information";
-            const footerBlocks = isExerciseComplete
-                ? (completionMessage.length ? completionMessage : ["Exercise complete."])
-                : exerciseInfo;
-
             levelContent.innerHTML = `
                 <div class="textbook-solution">
                     <section class="solution-section solution-column problem-statement" aria-label="Problem statement">
-                        ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
-                        <div class="problem-expression" aria-label="Initial conventional expression">
-                            <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
+                        <div class="solution-step problem-step-card">
+                            ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
+                            <div class="problem-expression" aria-label="Initial conventional expression">
+                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
+                            </div>
                         </div>
                     </section>
                     <section class="solution-section running-solution" aria-label="Running solution">
                         ${stepsHtml}
                     </section>
-                    <section class="solution-section solution-column exercise-footer exercise-guidance ${isExerciseComplete ? "exercise-conclusion" : "exercise-information"}" aria-label="${escapeHtml(footerTitle)}">
-                        <h3>${escapeHtml(footerTitle)}</h3>
-                        ${renderParagraphs(footerBlocks)}
-                    </section>
                 </div>
             `;
+            renderLevelMenuInfo(level, isExerciseComplete);
             renderMoveHistoryControls(level);
 
             renderLeftPanelMath();
@@ -3185,14 +3200,40 @@ Promise.resolve().then(() => {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-workspace-mode]");
+                    const button = event.target.closest("button");
                     if (!button) {
                         return;
                     }
+                    if (button.dataset.workspaceAction === "resetZoom") {
+                        resetWorkspaceZoom();
+                        return;
+                    }
                     const mode = button.dataset.workspaceMode;
+                    if (!mode) {
+                        return;
+                    }
                     setWorkspaceMode(mode);
                     if (mode === "zoomOut") {
                         zoomWorkspaceOut();
+                    }
+                });
+            }
+            if (hamburgerButton && levelMenuPanel) {
+                const setMenuOpen = open => {
+                    levelMenuPanel.classList.toggle("hidden", !open);
+                    hamburgerButton.setAttribute("aria-expanded", String(open));
+                    hamburgerButton.setAttribute("aria-label", open ? "Close exercise menu" : "Open exercise menu");
+                };
+                hamburgerButton.addEventListener("click", event => {
+                    event.stopPropagation();
+                    setMenuOpen(levelMenuPanel.classList.contains("hidden"));
+                });
+                levelMenuPanel.addEventListener("click", event => event.stopPropagation());
+                document.addEventListener("click", () => setMenuOpen(false));
+                document.addEventListener("keydown", event => {
+                    if (event.key === "Escape" && !levelMenuPanel.classList.contains("hidden")) {
+                        setMenuOpen(false);
+                        hamburgerButton.focus();
                     }
                 });
             }
@@ -3345,6 +3386,8 @@ ctx.font = SETTINGS.textFont;
         const WORKSPACE_ZOOM_MAX = 3;
         const WORKSPACE_ZOOM_STEP = 1.25;
         let workspaceZoom = 1;
+        let builderWorkspaceViewActive = false;
+        let savedMainWorkspaceView = null;
 
         function applyWorkspaceZoomSizing() {
             const width = getSvgWidth(workspaceSvg);
@@ -3405,6 +3448,58 @@ ctx.font = SETTINGS.textFont;
 
         function zoomWorkspaceOut() {
             setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
+        }
+
+        function resetWorkspaceZoom() {
+            workspaceZoom = 1;
+            if (expressionRoot) {
+                drawExpression();
+            } else {
+                applyWorkspaceZoomSizing();
+            }
+            requestAnimationFrame(() => {
+                svgContainer.scrollLeft = Math.max(0, (svgContainer.scrollWidth - svgContainer.clientWidth) / 2);
+                svgContainer.scrollTop = Math.max(0, (svgContainer.scrollHeight - svgContainer.clientHeight) / 2);
+            });
+        }
+
+        function syncBuilderWorkspaceView(builderActive) {
+            if (builderActive === builderWorkspaceViewActive) {
+                return;
+            }
+
+            if (builderActive) {
+                savedMainWorkspaceView = {
+                    zoom: workspaceZoom,
+                    scrollLeft: svgContainer.scrollLeft,
+                    scrollTop: svgContainer.scrollTop
+                };
+                builderWorkspaceViewActive = true;
+                workspaceZoom = 1;
+                applyWorkspaceZoomSizing();
+                requestAnimationFrame(() => {
+                    svgContainer.scrollLeft = Math.max(0, (svgContainer.scrollWidth - svgContainer.clientWidth) / 2);
+                    svgContainer.scrollTop = Math.max(0, (svgContainer.scrollHeight - svgContainer.clientHeight) / 2);
+                });
+                return;
+            }
+
+            builderWorkspaceViewActive = false;
+            if (!savedMainWorkspaceView) {
+                return;
+            }
+            const view = savedMainWorkspaceView;
+            savedMainWorkspaceView = null;
+            workspaceZoom = view.zoom;
+            if (expressionRoot) {
+                drawExpression();
+            } else {
+                applyWorkspaceZoomSizing();
+            }
+            requestAnimationFrame(() => {
+                svgContainer.scrollLeft = view.scrollLeft;
+                svgContainer.scrollTop = view.scrollTop;
+            });
         }
 
         function setStatus(message) {
@@ -9174,6 +9269,7 @@ function renderToolArea() {
             // goes back to showing the level steps.
             hideFloatingMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
+            syncBuilderWorkspaceView(builderActive);
             document.body.classList.toggle("expression-builder-active", builderActive);
             if (builderDigitRail) {
                 builderDigitRail.classList.toggle("hidden", !builderActive);
@@ -9186,6 +9282,7 @@ function renderToolArea() {
             applyDemoInputForCurrentStep();
             syncToolListToDemoStep();
             const html = buildToolAreaHtml();
+            document.body.classList.toggle("tool-area-active", !!html);
             if (!html) {
                 if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
                     renderLevelInfo(currentLevelIndex);
@@ -9193,7 +9290,6 @@ function renderToolArea() {
                 return;
             }
 
-            renderMoveHistoryControls(null);
             levelContent.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
             attachToolListeners(levelContent);
             applyDemoButtonHighlights(levelContent);
