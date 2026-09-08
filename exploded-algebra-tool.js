@@ -9,8 +9,12 @@ Promise.resolve().then(() => {
         // by changing this value to false.
         const STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW = true;
 
+        function getSelectionBufferWidth() {
+            return (SETTINGS && SETTINGS.bufferSize) || (SETTINGS && SETTINGS.debugComponentBuffer) || SETTINGS.padding || 16;
+        }
+
         function getSelectionMargin() {
-            return ((SETTINGS && SETTINGS.bufferSize) || (SETTINGS && SETTINGS.debugComponentBuffer) || SETTINGS.padding || 16) / 2;
+            return getSelectionBufferWidth() / 2;
         }
 
 
@@ -1303,6 +1307,7 @@ Promise.resolve().then(() => {
         const builderRewritePreview = document.getElementById("builderRewritePreview");
         const builderDigitRail = document.getElementById("builderDigitRail");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
+        const resetExerciseButton = document.getElementById("resetExerciseButton");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
@@ -1456,11 +1461,8 @@ Promise.resolve().then(() => {
         const handlePanelOrientationChange = () => {
             finishDividerDrag();
             updateDividerAccessibility();
-            if (expressionRoot) {
-                drawExpression();
-            }
+            scheduleResponsiveLayoutRecalculation();
         };
-        window.addEventListener("orientationchange", handlePanelOrientationChange);
         updateDividerAccessibility();
 
 
@@ -1858,9 +1860,6 @@ Promise.resolve().then(() => {
             const probe = document.createElement("div");
             probe.className = "top-panel-height-probe";
 
-            const exerciseInstruction = normalizeTextBlocks(level.instruction).length
-                ? normalizeTextBlocks(level.instruction)
-                : normalizeTextBlocks(level.introduction);
             const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
             const initialKatex = level.initialKatex || (
                 firstStep
@@ -1869,15 +1868,14 @@ Promise.resolve().then(() => {
             );
             probe.insertAdjacentHTML("beforeend", `
                 <section class="solution-column problem-statement">
-                    <div class="solution-step problem-step-card">
-                        ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
+                    <div class="solution-step problem-step-card completed-step">
                         <div class="problem-expression"><div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div></div>
+                        <span class="completed-step-check">✓</span>
                     </div>
                 </section>
             `);
 
             (level.steps || []).forEach(step => {
-                const guidance = getStepGuidanceForDisplay(step);
                 const expressions = uniqueToolKeys([
                     step.beforeKatex || "",
                     step.afterKatex || step.katex || step.expression || ""
@@ -1885,8 +1883,10 @@ Promise.resolve().then(() => {
                 expressions.forEach(expression => {
                     probe.insertAdjacentHTML("beforeend", `
                         <div class="solution-column step-column">
-                            ${guidance.length ? `<div class="step-guidance">${guidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>` : ""}
-                            <div class="solution-step"><div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(expression)}"></span></div></div>
+                            <div class="solution-step completed-step">
+                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(expression)}"></span></div>
+                                <span class="completed-step-check">✓</span>
+                            </div>
                         </div>
                     `);
                 });
@@ -1900,8 +1900,19 @@ Promise.resolve().then(() => {
             const builderProbe = document.createElement("div");
             builderProbe.className = "panel-tool-menu";
             builderProbe.innerHTML = `<div class="expression-builder-panel"><div class="builder-controls"><div class="builder-action-row">
-                <button>−1</button><button>+</button><button>·</button><button>1/A</button><button>^</button>
-                <button>x</button><button>y</button><button>Backspace</button><button>Move on</button><button>Submit</button>
+                <button class="builder-next-button">Move on</button>
+                <button class="builder-undo-button">Backspace</button>
+                <button class="builder-cancel-button">Cancel</button>
+                <button class="builder-submit-button">Submit</button>
+                <button class="builder-negative-one-button">−1</button>
+                <button class="builder-sum-button">+</button>
+                <button class="builder-prod-button">·</button>
+                <button class="builder-inv-button">1/A</button>
+                <button class="builder-exp-button">^</button>
+                <button class="builder-variable-button">x</button>
+                <button class="builder-variable-button">y</button>
+                <button class="builder-variable-button">a</button>
+                <button class="builder-variable-button">b</button>
             </div></div></div>`;
             probe.appendChild(builderProbe);
             return probe;
@@ -1945,15 +1956,21 @@ Promise.resolve().then(() => {
         let pressHoldState = null;
         let suppressedPressHoldClick = null;
 
-        function isExpressionBuilderButton(button) {
-            return !!button.closest(".expression-builder-panel, #builderDigitRail");
+        function isExpressionBuilderButton(target) {
+            return !!target.closest(".expression-builder-panel, #builderDigitRail");
         }
 
-        function isPressHoldButtonEligible(button) {
-            return !!button &&
-                !button.disabled &&
+        function getPressHoldTarget(eventTarget) {
+            return eventTarget && eventTarget.closest
+                ? eventTarget.closest("button, .step-hold-target")
+                : null;
+        }
+
+        function isPressHoldTargetEligible(target) {
+            return !!target &&
+                (!(target instanceof HTMLButtonElement) || !target.disabled) &&
                 !document.body.classList.contains("expression-builder-active") &&
-                !isExpressionBuilderButton(button);
+                !isExpressionBuilderButton(target);
         }
 
         function getButtonVisibleName(button) {
@@ -1974,6 +1991,20 @@ Promise.resolve().then(() => {
         }
 
         function getPressHoldDescriptionHtml(button) {
+            if (button.classList.contains("step-hold-target")) {
+                const level = getCurrentLevel();
+                const stepIndex = Number(button.dataset.stepIndex);
+                const descriptions = stepIndex < 0
+                    ? (normalizeTextBlocks(level && level.instruction).length
+                        ? normalizeTextBlocks(level.instruction)
+                        : normalizeTextBlocks(level && level.introduction))
+                    : getStepGuidanceForDisplay(level && level.steps ? level.steps[stepIndex] : null);
+                const title = stepIndex < 0 ? "Original expression" : "Step guidance";
+                const paragraphs = descriptions.length
+                    ? descriptions.map(text => `<p>${escapeHtml(text)}</p>`).join("")
+                    : "<p>No additional instruction is provided for this step.</p>";
+                return `<span class="press-hold-popover-title">${title}</span>${paragraphs}`;
+            }
             const name = getButtonVisibleName(button);
             const titleHtml = `<span class="press-hold-popover-title">${escapeHtml(name)}</span>`;
 
@@ -2019,30 +2050,11 @@ Promise.resolve().then(() => {
         }
 
         function showPressHoldPopover(button) {
-            if (!pressHoldPopover || !isPressHoldButtonEligible(button)) {
+            if (!pressHoldPopover || !isPressHoldTargetEligible(button)) {
                 return;
             }
             pressHoldPopover.innerHTML = getPressHoldDescriptionHtml(button);
             pressHoldPopover.classList.remove("hidden");
-
-            const buttonBounds = button.getBoundingClientRect();
-            const popoverBounds = pressHoldPopover.getBoundingClientRect();
-            const viewportMargin = 8;
-            const centeredLeft = buttonBounds.left + (buttonBounds.width - popoverBounds.width) / 2;
-            const left = Math.max(
-                viewportMargin,
-                Math.min(centeredLeft, window.innerWidth - popoverBounds.width - viewportMargin)
-            );
-            let top = buttonBounds.top - popoverBounds.height - viewportMargin;
-            if (top < viewportMargin) {
-                top = buttonBounds.bottom + viewportMargin;
-            }
-            top = Math.max(
-                viewportMargin,
-                Math.min(top, window.innerHeight - popoverBounds.height - viewportMargin)
-            );
-            pressHoldPopover.style.left = `${Math.round(left)}px`;
-            pressHoldPopover.style.top = `${Math.round(top)}px`;
         }
 
         function preserveNonBuilderButtonTitle(button) {
@@ -2090,8 +2102,8 @@ Promise.resolve().then(() => {
             titleObserver.observe(document.body, { childList: true, subtree: true });
 
             document.addEventListener("pointerdown", event => {
-                const button = event.target.closest && event.target.closest("button");
-                if (!isPressHoldButtonEligible(button) || (event.pointerType === "mouse" && event.button !== 0)) {
+                const button = getPressHoldTarget(event.target);
+                if (!isPressHoldTargetEligible(button) || (event.pointerType === "mouse" && event.button !== 0)) {
                     return;
                 }
                 clearPendingPressHold();
@@ -2141,7 +2153,7 @@ Promise.resolve().then(() => {
                     suppressedPressHoldClick = null;
                     return;
                 }
-                const button = event.target.closest && event.target.closest("button");
+                const button = getPressHoldTarget(event.target);
                 if (button === suppressedPressHoldClick.button) {
                     event.preventDefault();
                     event.stopImmediatePropagation();
@@ -2149,8 +2161,8 @@ Promise.resolve().then(() => {
                 }
             }, true);
             document.addEventListener("contextmenu", event => {
-                const button = event.target.closest && event.target.closest("button");
-                if (isPressHoldButtonEligible(button)) {
+                const button = getPressHoldTarget(event.target);
+                if (isPressHoldTargetEligible(button)) {
                     event.preventDefault();
                 }
             }, true);
@@ -3385,13 +3397,6 @@ Promise.resolve().then(() => {
             }
 
             const completion = getStepCompletionStates(level);
-            const renderParagraphs = value => normalizeTextBlocks(value)
-                .map(text => `<p>${escapeHtml(text)}</p>`)
-                .join("");
-
-            const exerciseInstruction = normalizeTextBlocks(level.instruction).length
-                ? normalizeTextBlocks(level.instruction)
-                : normalizeTextBlocks(level.introduction);
             const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
             const firstStepIsInitialExpression = !!firstStep && expressionTextsMatch(
                 level.startExpression,
@@ -3417,17 +3422,12 @@ Promise.resolve().then(() => {
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
                 const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
-                const stepGuidance = getStepGuidanceForDisplay(step);
-                const stepGuidanceHtml = isCurrent && stepGuidance.length
-                    ? `<div class="step-guidance" aria-label="Current-step guidance">${stepGuidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
-                    : "";
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
                 return `
                     <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}">
-                        ${stepGuidanceHtml}
-                        <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                        <div class="solution-step step-card step-hold-target ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
                             ${completedCheckHtml}
                         </div>
@@ -3438,11 +3438,11 @@ Promise.resolve().then(() => {
             levelContent.innerHTML = `
                 <div class="textbook-solution">
                     <section class="solution-section solution-column problem-statement" aria-label="Problem statement">
-                        <div class="solution-step problem-step-card">
-                            ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
+                        <div class="solution-step problem-step-card completed-step step-hold-target" data-step-index="-1">
                             <div class="problem-expression" aria-label="Initial conventional expression">
                                 <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
                             </div>
+                            <span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>
                         </div>
                     </section>
                     <section class="solution-section running-solution" aria-label="Running solution">
@@ -3548,9 +3548,23 @@ Promise.resolve().then(() => {
                 });
             }
             installPressHoldDescriptions();
-            window.addEventListener("resize", () => scheduleTopPanelHeightUpdate());
+            window.addEventListener("resize", scheduleResponsiveLayoutRecalculation);
+            window.addEventListener("orientationchange", handlePanelOrientationChange);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener("resize", scheduleResponsiveLayoutRecalculation);
+            }
+            if (screen.orientation && screen.orientation.addEventListener) {
+                screen.orientation.addEventListener("change", handlePanelOrientationChange);
+            }
             if (document.fonts && document.fonts.ready) {
-                document.fonts.ready.then(() => scheduleTopPanelHeightUpdate());
+                document.fonts.ready.then(scheduleResponsiveLayoutRecalculation);
+            }
+            if (resetExerciseButton) {
+                resetExerciseButton.addEventListener("click", () => {
+                    if (window.confirm("Are you sure you want to reset the exercise?")) {
+                        window.location.reload();
+                    }
+                });
             }
             if (hamburgerButton && levelMenuPanel) {
                 const setMenuOpen = open => {
@@ -3582,6 +3596,7 @@ Promise.resolve().then(() => {
             }
             updateWorkspaceToolbar();
             loadInitialLevelFromNavigation();
+            scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
                 if (uiState.mode !== "inspect") {
@@ -3608,15 +3623,6 @@ Promise.resolve().then(() => {
             // this file's remaining declarations are initialized first.
             queueMicrotask(initializeExplodedAlgebra);
         }
-
-        window.addEventListener("resize", () => {
-            if (expressionRoot) {
-                renderCurrentExpressionDisplay();
-                drawExpression();
-            }
-        });
-
-
 
         function getExpressionBounds() {
             return {
@@ -3722,6 +3728,8 @@ ctx.font = SETTINGS.textFont;
         let workspaceZoom = 1;
         let builderWorkspaceViewActive = false;
         let savedMainWorkspaceView = null;
+        let responsiveLayoutFrame = null;
+        let pendingResponsiveWorkspaceView = null;
 
         function applyWorkspaceZoomSizing() {
             const width = getSvgWidth(workspaceSvg);
@@ -3801,17 +3809,71 @@ ctx.font = SETTINGS.textFont;
             });
         }
 
+        function captureWorkspaceView() {
+            if (!expressionRoot || !svgContainer.clientWidth || !svgContainer.clientHeight) {
+                return null;
+            }
+            const bounds = getExpressionBounds();
+            const expressionWidth = Math.max(1, bounds.right - bounds.left);
+            const expressionHeight = Math.max(1, bounds.bottom - bounds.top);
+            const marginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
+            const marginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
+            const centerX = (svgContainer.scrollLeft + svgContainer.clientWidth / 2 - marginLeft) / workspaceZoom;
+            const centerY = (svgContainer.scrollTop + svgContainer.clientHeight / 2 - marginTop) / workspaceZoom;
+            return {
+                zoom: workspaceZoom,
+                expressionXRatio: (centerX - bounds.left) / expressionWidth,
+                expressionYRatio: (centerY - bounds.top) / expressionHeight
+            };
+        }
+
+        function restoreWorkspaceView(view) {
+            if (!view || !expressionRoot) {
+                return;
+            }
+            workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, view.zoom));
+            applyWorkspaceZoomSizing();
+            const bounds = getExpressionBounds();
+            const expressionWidth = Math.max(1, bounds.right - bounds.left);
+            const expressionHeight = Math.max(1, bounds.bottom - bounds.top);
+            const centerX = bounds.left + view.expressionXRatio * expressionWidth;
+            const centerY = bounds.top + view.expressionYRatio * expressionHeight;
+            const marginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
+            const marginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
+            svgContainer.scrollLeft = Math.max(0, centerX * workspaceZoom + marginLeft - svgContainer.clientWidth / 2);
+            svgContainer.scrollTop = Math.max(0, centerY * workspaceZoom + marginTop - svgContainer.clientHeight / 2);
+        }
+
+        function scheduleResponsiveLayoutRecalculation() {
+            finishDividerDrag();
+            updateDividerAccessibility();
+            if (!builderWorkspaceViewActive) {
+                pendingResponsiveWorkspaceView = captureWorkspaceView();
+            }
+            if (responsiveLayoutFrame !== null) {
+                cancelAnimationFrame(responsiveLayoutFrame);
+            }
+            responsiveLayoutFrame = requestAnimationFrame(() => {
+                responsiveLayoutFrame = null;
+                updateTopPanelHeight();
+                renderCurrentExpressionDisplay();
+                if (expressionRoot) {
+                    drawExpression();
+                }
+                if (!builderWorkspaceViewActive && pendingResponsiveWorkspaceView) {
+                    restoreWorkspaceView(pendingResponsiveWorkspaceView);
+                }
+                pendingResponsiveWorkspaceView = null;
+            });
+        }
+
         function syncBuilderWorkspaceView(builderActive) {
             if (builderActive === builderWorkspaceViewActive) {
                 return;
             }
 
             if (builderActive) {
-                savedMainWorkspaceView = {
-                    zoom: workspaceZoom,
-                    scrollLeft: svgContainer.scrollLeft,
-                    scrollTop: svgContainer.scrollTop
-                };
+                savedMainWorkspaceView = captureWorkspaceView();
                 builderWorkspaceViewActive = true;
                 workspaceZoom = 1;
                 applyWorkspaceZoomSizing();
@@ -3828,15 +3890,13 @@ ctx.font = SETTINGS.textFont;
             }
             const view = savedMainWorkspaceView;
             savedMainWorkspaceView = null;
-            workspaceZoom = view.zoom;
             if (expressionRoot) {
                 drawExpression();
             } else {
                 applyWorkspaceZoomSizing();
             }
             requestAnimationFrame(() => {
-                svgContainer.scrollLeft = view.scrollLeft;
-                svgContainer.scrollTop = view.scrollTop;
+                restoreWorkspaceView(view);
             });
         }
 
@@ -5061,7 +5121,7 @@ ctx.font = SETTINGS.textFont;
                 return getSelectionTargetArea(a) - getSelectionTargetArea(b);
             });
             const nearest = candidates[0] || null;
-            const maximumDistance = pointerType === "touch" || pointerType === "pen" ? 64 : 48;
+            const maximumDistance = getSelectionBufferWidth() * 3;
             return nearest && nearest.distance <= maximumDistance ? nearest : null;
         }
 
@@ -7848,14 +7908,21 @@ ctx.font = SETTINGS.textFont;
             }
 
             const proposal = makeBuilderInsertionRoot(builder);
+            const originalDisplay = cloneBuilderRootForDisplay(builder.originalSelectedNode);
+            const originalMarkup = renderBuilderProposalSvg(originalDisplay);
+            const selectedWidth = originalDisplay.layout && originalDisplay.layout.width || 0;
+            const selectedHeight = originalDisplay.layout && originalDisplay.layout.height || 0;
+            const selectedIsPortrait = selectedHeight >= selectedWidth;
+            const arrow = selectedIsPortrait ? "→" : "↓";
             builderRewritePreview.innerHTML = `
                 <div class="builder-rewrite-content">
-                    <div class="builder-rewrite-original" aria-label="Selected expression">${renderBuilderProposalSvg(cloneBuilderRootForDisplay(builder.originalSelectedNode))}</div>
-                    <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
+                    <div class="builder-rewrite-original" aria-label="Selected expression">${originalMarkup}</div>
+                    <span class="builder-rewrite-arrow" aria-hidden="true">${arrow}</span>
                     <div class="builder-rewrite-proposal" aria-label="Proposed expression">${renderBuilderProposalSvg(proposal)}</div>
                 </div>
             `;
-            builderRewritePreview.classList.remove("hidden", "vertical");
+            builderRewritePreview.classList.remove("hidden");
+            builderRewritePreview.classList.toggle("vertical", !selectedIsPortrait);
             svgContainer.scrollLeft = 0;
             svgContainer.scrollTop = 0;
         }
@@ -8983,24 +9050,42 @@ ctx.font = SETTINGS.textFont;
             return note;
         }
 
+        function getBuilderSymbolIcon(type, value = "") {
+            const commonStart = `<svg class="builder-symbol-icon" viewBox="0 0 80 48" aria-hidden="true" focusable="false">`;
+            if (type === "sum") {
+                return `${commonStart}<circle class="symbol-stroke" cx="40" cy="24" r="18"/><path class="symbol-stroke" d="M31 24h18M40 15v18"/></svg>`;
+            }
+            if (type === "prod") {
+                return `${commonStart}<circle class="symbol-stroke" cx="40" cy="24" r="18"/><circle class="symbol-fill" cx="40" cy="24" r="3.5"/></svg>`;
+            }
+            if (type === "inv") {
+                return `${commonStart}<rect class="symbol-stroke" x="21" y="7" width="38" height="34" rx="2"/></svg>`;
+            }
+            if (type === "exp") {
+                return `${commonStart}<path class="symbol-stroke" d="M12 20v21h35V20M47 20V7h21v21H47"/></svg>`;
+            }
+            const displayedValue = value || "−1";
+            return `${commonStart}<rect class="symbol-stroke" x="18" y="7" width="44" height="34" rx="2"/><text x="40" y="30" text-anchor="middle">${escapeHtml(displayedValue)}</text></svg>`;
+        }
+
         function buildExpressionBuilderHtml() {
             const toolName = uiState.activeTool;
             const variables = builderAllowsVariables(toolName) ? getBuilderVariableNames().slice(0, 4) : [];
             const variableButtons = variables.length
-                ? variables.map(v => `<button data-builder-action="value" data-value="${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${escapeHtml(v)}</button>`).join("")
+                ? variables.map(v => `<button class="builder-variable-button" data-builder-action="value" data-value="${escapeHtml(v)}" aria-label="Insert ${escapeHtml(v)}" title="Keyboard shortcut: ${escapeHtml(v)}">${getBuilderSymbolIcon("value", v)}</button>`).join("")
                 : "";
             const operationTypes = getBuilderOperationTypes(toolName);
             const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
-            const operationSymbols = { exp: "^", prod: "·", sum: "+", inv: "1/A" };
+            const operationNames = { exp: "Insert exponent structure", prod: "Insert product structure", sum: "Insert sum structure", inv: "Insert inverse structure" };
             const buildOperationButton = type => {
                 const enabled = operationTypes.includes(type);
                 const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
                 const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
-                return `<button class="builder-operator-button"${actionAttrs}${title}>${operationSymbols[type]}</button>`;
+                return `<button class="builder-operator-button builder-${type}-button" aria-label="${operationNames[type]}"${actionAttrs}${title}>${getBuilderSymbolIcon(type)}</button>`;
             };
             const negativeOneButton = builderAllowsNegativeOne(toolName)
-                ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" title="Keyboard shortcut: -">-1</button>`
-                : `<button class="builder-negative-one-button" disabled>-1</button>`;
+                ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`
+                : `<button class="builder-negative-one-button" aria-label="Insert negative one" disabled>${getBuilderSymbolIcon("value", "−1")}</button>`;
             const moveNextButton = toolName === "evaluate"
                 ? `<button class="builder-next-button" disabled>Move on</button>`
                 : `<button class="builder-next-button" data-builder-action="next" title="Keyboard shortcut: Right Arrow or Tab">Move on</button>`;
@@ -9009,15 +9094,16 @@ ctx.font = SETTINGS.textFont;
                 ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                 <div class="builder-controls">
                     <div class="builder-action-row" aria-label="Expression builder actions">
+                        ${moveNextButton}
+                        <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
+                        <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
+                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("inv")}
                         ${buildOperationButton("exp")}
                         ${variableButtons}
-                        <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
-                        ${moveNextButton}
-                        <button data-builder-action="submit" title="Keyboard shortcut: Enter">Submit</button>
                     </div>
                 </div>
             </div>`;
@@ -10148,6 +10234,13 @@ function renderToolArea() {
         function selectFromWorkspaceTap(x, y, pointerType) {
             const target = findNearestVisibleObject(x, y, pointerType);
             if (!target) {
+                if (selection.node) {
+                    clearSelection();
+                    clearInteraction();
+                    refreshStatus();
+                    drawExpression();
+                    return true;
+                }
                 return false;
             }
 
@@ -10217,7 +10310,12 @@ function renderToolArea() {
             }
 
             const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
-            if (!cancelingBuilder && uiState.workspaceMode === "zoomOut") {
+            const workspaceBounds = workspaceSvg.getBoundingClientRect();
+            const pointerX = (e.clientX - workspaceBounds.left) * (getSvgWidth(workspaceSvg) / Math.max(1, workspaceBounds.width));
+            const pointerY = (e.clientY - workspaceBounds.top) * (getSvgHeight(workspaceSvg) / Math.max(1, workspaceBounds.height));
+            const clearingSelectionFromEmptySpace = !cancelingBuilder && !!selection.node &&
+                !findNearestVisibleObject(pointerX, pointerY, e.pointerType || "mouse");
+            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode === "zoomOut") {
                 return;
             }
 
@@ -10230,12 +10328,12 @@ function renderToolArea() {
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (!cancelingBuilder && uiState.workspaceMode !== "zoomIn" && !selectingExpression && !choosingDemoCommuteOrder) {
+                if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode !== "zoomIn" && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!cancelingBuilder && uiState.workspaceMode !== "zoomIn" && !choosingCommuteOrder && uiState.activeTool) {
+            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode !== "zoomIn" && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -10246,6 +10344,8 @@ function renderToolArea() {
                 pointerType: e.pointerType || "mouse",
                 mode: cancelingBuilder
                     ? "cancelBuilder"
+                    : clearingSelectionFromEmptySpace
+                        ? "selection"
                     : uiState.workspaceMode === "zoomIn"
                         ? "zoomIn"
                         : choosingCommuteOrder
@@ -10293,16 +10393,7 @@ function renderToolArea() {
         });
         let expressionRoot = null;
         currentExpressionRoot = null;
-        window.addEventListener("resize", () => {
-            if (expressionRoot) {
-                drawExpression();
-            }
-        });
-        window.addEventListener("load", () => {
-            if (expressionRoot) {
-                drawExpression();
-            }
-        });
+        window.addEventListener("load", scheduleResponsiveLayoutRecalculation);
 }).catch(error => {
     console.error("Exploded Algebra could not start.", error);
     const target = document.getElementById("levelContent") || document.body;

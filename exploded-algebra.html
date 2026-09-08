@@ -1900,6 +1900,7 @@
         }
 
         .quadrant-tools {
+            position: relative;
             grid-column: 1;
             grid-row: 2;
             display: flex;
@@ -1936,6 +1937,20 @@
             padding: 8px;
             border-radius: 6px;
         }
+        .reset-exercise-button {
+            position: absolute;
+            z-index: 4;
+            right: 6px;
+            bottom: 7px;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .reset-exercise-button svg { width: 100%; height: 100%; pointer-events: none; }
+        body.expression-builder-active .reset-exercise-button { display: none; }
 
         .main {
             grid-column: 2;
@@ -2012,19 +2027,25 @@
         .intent-category-math.translate-notation-math { font-size: clamp(12px, 2.7vw, 17px); }
 
         .press-hold-popover {
-            position: fixed;
-            z-index: 1000;
-            width: max-content;
-            max-width: min(330px, calc(100vw - 24px));
-            padding: 9px 11px;
-            border: 1px solid #777;
-            border-radius: 7px;
+            position: absolute;
+            z-index: 50;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            max-width: none;
+            padding: clamp(18px, 5vw, 56px);
+            border: 0;
+            border-radius: 0;
             box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.98);
+            background: rgba(255, 255, 255, 0.93);
             color: #222;
-            box-shadow: 0 5px 18px rgba(0, 0, 0, 0.24);
-            font-size: 12px;
-            line-height: 1.4;
+            box-shadow: none;
+            font-size: clamp(14px, 2.2vw, 19px);
+            line-height: 1.5;
+            text-align: center;
             pointer-events: none;
         }
         .press-hold-popover.hidden { display: none; }
@@ -2035,9 +2056,10 @@
             font-weight: 700;
         }
         .press-hold-popover .rule-notation { display: block; }
-        .press-hold-popover p { margin: 3px 0; }
-        .press-hold-popover ul { margin: 5px 0 0; padding-left: 18px; }
-        body:not(.expression-builder-active) button {
+        .press-hold-popover p { max-width: 720px; margin: 4px 0; }
+        .press-hold-popover ul { max-width: 720px; margin: 7px 0 0; padding-left: 22px; text-align: left; }
+        body:not(.expression-builder-active) button,
+        body:not(.expression-builder-active) .step-hold-target {
             -webkit-touch-callout: none;
             user-select: none;
         }
@@ -2080,13 +2102,37 @@
         body.expression-builder-active #levelContent,
         body.expression-builder-active .panel-tool-menu { width: 100%; height: 100%; }
         .builder-rewrite-preview { padding: 20px; }
+        .builder-rewrite-content { flex-direction: row; }
+        .builder-rewrite-preview.vertical .builder-rewrite-content { flex-direction: column; }
+        .builder-rewrite-arrow { transform: none; }
+
+        .builder-symbol-icon {
+            display: block;
+            width: min(58px, 100%);
+            height: 34px;
+            margin: auto;
+            overflow: visible;
+        }
+        .builder-symbol-icon .symbol-stroke {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .builder-symbol-icon .symbol-fill { fill: currentColor; }
+        .builder-symbol-icon text {
+            fill: currentColor;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+        }
 
         @media (orientation: portrait) {
             .panel-tool-menu .intent-category-actions,
             .panel-tool-menu .tool-grid,
             .panel-tool-menu .tool-form-grid,
-            .panel-tool-menu .insert-choice-list,
-            .builder-action-row {
+            .panel-tool-menu .insert-choice-list {
                 display: grid;
                 grid-template-columns: none;
                 grid-template-rows: repeat(2, minmax(36px, auto));
@@ -2094,6 +2140,23 @@
                 grid-auto-flow: column;
                 align-content: center;
             }
+            .builder-action-row {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                grid-template-rows: repeat(2, minmax(40px, auto));
+                grid-auto-flow: row;
+                align-content: center;
+            }
+            .builder-next-button { grid-column: 1; grid-row: 1; }
+            .builder-undo-button { grid-column: 2; grid-row: 1; }
+            .builder-cancel-button { grid-column: 3; grid-row: 1; }
+            .builder-submit-button { grid-column: 4 / span 2; grid-row: 1; }
+            .builder-negative-one-button { grid-column: 1; grid-row: 2; }
+            .builder-sum-button { grid-column: 2; grid-row: 2; }
+            .builder-prod-button { grid-column: 3; grid-row: 2; }
+            .builder-inv-button { grid-column: 4; grid-row: 2; }
+            .builder-exp-button { grid-column: 5; grid-row: 2; }
+            .builder-variable-button { grid-row: 3; }
             .panel-tool-menu .tool-row,
             .panel-tool-menu .tool-form-row { display: contents; }
             .panel-tool-menu button, .builder-action-row button { width: 100%; height: 100%; }
@@ -2179,6 +2242,9 @@
                     </button>
                 </div>
             </div>
+            <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
             <div id="builderDigitRail" class="builder-digit-rail hidden" aria-label="Expression builder digits">
                 <button type="button" data-builder-action="digit" data-value="9">9</button>
                 <button type="button" data-builder-action="digit" data-value="8">8</button>
@@ -2209,12 +2275,12 @@
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
+            <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
-    <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip"></div>
     <script src="exploded-algebra-renderer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20260908-feedback-round"></script>
+    <script src="exploded-algebra-tool.js?v=20260908-responsive-builder"></script>
 
 </body>
 </html>
