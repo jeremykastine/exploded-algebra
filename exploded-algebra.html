@@ -1792,7 +1792,7 @@
         /* Four-quadrant application layout: menu/actions above, tools/expression below. */
         .app-container {
             --control-rail-width: clamp(54px, 5.5vw, 68px);
-            --top-panel-height: clamp(104px, 18dvh, 154px);
+            --top-panel-height: 108px;
             display: grid;
             grid-template-columns: var(--control-rail-width) minmax(0, 1fr);
             grid-template-rows: var(--top-panel-height) minmax(0, 1fr);
@@ -1871,19 +1871,30 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            width: clamp(190px, 23vw, 330px);
-            min-width: 190px;
-            padding: 5px 14px;
+            flex: 0 0 auto;
+            width: fit-content;
+            min-width: 0;
+            padding: 4px 8px;
         }
         .problem-statement, .step-column { font-size: 15px; line-height: 1.4; }
-        .problem-instruction { margin: 0 0 7px; font-size: inherit; line-height: inherit; }
-        .problem-expression .math-block, .solution-step .math-block { font-size: 1.08em; }
-        .solution-step { padding: 5px 7px; font-size: inherit; }
+        .problem-instruction {
+            margin: 0 0 7px;
+            font-size: inherit;
+            font-weight: 400;
+            line-height: inherit;
+        }
+        .solution-column .math-block,
+        .solution-column .katex {
+            font-size: 1em;
+            font-weight: 400;
+        }
+        .solution-step { min-height: 0; padding: 3px 4px; font-size: inherit; }
         .problem-step-card { margin: 0; }
         .step-guidance {
-            max-height: 2.9em;
+            width: fit-content;
+            max-width: min(260px, 65vw);
+            max-height: none;
             margin: 0 2px 5px;
-            overflow: hidden;
             font-size: 12px;
             line-height: 1.35;
         }
@@ -1905,10 +1916,16 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
-            gap: 8px;
+            gap: 14px;
             padding: 9px 6px;
             border: 0;
             background: transparent;
+        }
+        .workspace-tool-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
         .workspace-toolbar button {
             flex: 0 0 auto;
@@ -1952,13 +1969,7 @@
         .panel-tool-menu .panel-menu-title,
         .panel-tool-menu .builder-instruction { display: none; }
         .panel-tool-menu .intent-category-description {
-            flex: 0 0 auto;
-            width: 100%;
-            min-height: 0;
-            max-height: 2.8em;
-            margin: 3px 0 0;
-            overflow: hidden;
-            font-size: 11px;
+            display: none;
         }
         .panel-tool-menu .insert-choice-description { display: none; }
         .intent-category-list,
@@ -1990,7 +2001,46 @@
             font-size: clamp(10px, 1.15vw, 13px);
             text-align: center;
         }
-        .intent-category-icon { width: min(62px, 100%); height: 34px; }
+        .intent-category-actions .intent-category-button {
+            min-height: 36px;
+            max-height: 40px;
+            padding: 2px 3px;
+        }
+        .intent-category-actions .intent-category-label { display: none; }
+        .intent-category-icon { width: min(44px, 100%); height: 28px; }
+        .intent-category-math,
+        .intent-category-math.translate-notation-math { font-size: clamp(12px, 2.7vw, 17px); }
+
+        .press-hold-popover {
+            position: fixed;
+            z-index: 1000;
+            width: max-content;
+            max-width: min(330px, calc(100vw - 24px));
+            padding: 9px 11px;
+            border: 1px solid #777;
+            border-radius: 7px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.98);
+            color: #222;
+            box-shadow: 0 5px 18px rgba(0, 0, 0, 0.24);
+            font-size: 12px;
+            line-height: 1.4;
+            pointer-events: none;
+        }
+        .press-hold-popover.hidden { display: none; }
+        .press-hold-popover-title,
+        .press-hold-popover .rule-name {
+            display: block;
+            margin-bottom: 3px;
+            font-weight: 700;
+        }
+        .press-hold-popover .rule-notation { display: block; }
+        .press-hold-popover p { margin: 3px 0; }
+        .press-hold-popover ul { margin: 5px 0 0; padding-left: 18px; }
+        body:not(.expression-builder-active) button {
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
 
         .expression-builder-panel, .builder-controls { width: 100%; height: 100%; min-height: 0; }
         .expression-builder-panel { justify-content: center; }
@@ -2032,7 +2082,6 @@
         .builder-rewrite-preview { padding: 20px; }
 
         @media (orientation: portrait) {
-            .app-container { --top-panel-height: clamp(142px, 23dvh, 190px); }
             .panel-tool-menu .intent-category-actions,
             .panel-tool-menu .tool-grid,
             .panel-tool-menu .tool-form-grid,
@@ -2040,7 +2089,7 @@
             .builder-action-row {
                 display: grid;
                 grid-template-columns: none;
-                grid-template-rows: repeat(2, minmax(44px, 1fr));
+                grid-template-rows: repeat(2, minmax(36px, auto));
                 grid-auto-columns: minmax(0, 1fr);
                 grid-auto-flow: column;
                 align-content: center;
@@ -2048,7 +2097,7 @@
             .panel-tool-menu .tool-row,
             .panel-tool-menu .tool-form-row { display: contents; }
             .panel-tool-menu button, .builder-action-row button { width: 100%; height: 100%; }
-            .solution-column { width: min(78vw, 300px); }
+            .solution-column { width: fit-content; }
             .builder-rewrite-preview { padding: 16px; }
         }
 
@@ -2062,6 +2111,31 @@
                 flex-flow: row nowrap;
                 align-items: stretch;
             }
+        }
+
+        .top-panel-height-probe {
+            position: fixed;
+            z-index: -1;
+            top: 0;
+            left: var(--control-rail-width);
+            display: flex;
+            align-items: flex-start;
+            width: calc(100vw - var(--control-rail-width));
+            height: auto;
+            padding: 7px 10px;
+            overflow: visible;
+            box-sizing: border-box;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .top-panel-height-probe .solution-column {
+            align-self: flex-start;
+            justify-content: flex-start;
+            height: auto;
+        }
+        .top-panel-height-probe .panel-tool-menu {
+            height: auto;
+            min-height: 0;
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
@@ -2085,18 +2159,25 @@
         </div>
         <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
-                <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" title="Select">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                </button>
-                <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" title="Zoom in">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                </button>
-                <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" title="Zoom out">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                </button>
-                <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and recenter" title="Reset zoom to 100% and recenter">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><text x="12" y="15" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor">100</text></svg>
-                </button>
+                <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
+                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional selections expand to the smallest expression containing everything selected.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    </button>
+                    <button type="button" data-workspace-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression." disabled>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+                <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
+                    <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" data-hold-description="Make the expression larger. Click the expression to zoom toward that point.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" data-hold-description="Make the expression smaller.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and recenter" data-hold-description="Return the expression to 100% zoom and center it in the workspace.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><text x="12" y="15" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor">100</text></svg>
+                    </button>
+                </div>
             </div>
             <div id="builderDigitRail" class="builder-digit-rail hidden" aria-label="Expression builder digits">
                 <button type="button" data-builder-action="digit" data-value="9">9</button>
@@ -2131,8 +2212,9 @@
         </div>
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
+    <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip"></div>
     <script src="exploded-algebra-renderer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20260908-quadrant-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260908-feedback-round"></script>
 
 </body>
 </html>

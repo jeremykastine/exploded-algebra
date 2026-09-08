@@ -826,25 +826,24 @@ Promise.resolve().then(() => {
         function buildIntentCategoryButtonHtml(categoryId) {
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
             const label = category ? category.label : categoryId;
-            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}" aria-describedby="intentCategoryDescription">
+            return `<button class="intent-category-button" data-rule-category="${categoryId}" aria-label="${escapeHtml(label)}">
                 ${getIntentCategoryIconHtml(categoryId)}
                 <span class="intent-category-label">${escapeHtml(label)}</span>
             </button>`;
         }
 
         function buildIntentCategoryMenuHtml() {
-            const categoryIds = ["commute", "insert", "delete", "separate", "consolidate"];
+            // In portrait, grid-auto-flow places each consecutive pair in one
+            // column. Keep inverse actions together in those columns.
+            const categoryIds = ["consolidate", "separate", "commute", "numericalRewrite", "delete", "insert"];
             if (levelUsesExplodedExponentNode(getCurrentLevel())) {
                 categoryIds.push("translateNotation");
             }
-            categoryIds.push("numericalRewrite");
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
-                        <button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>
                     </div>
-                    <div id="intentCategoryDescription" class="intent-category-description" aria-live="polite"><p>Hover over an action to see what it does.</p></div>
                 </div>`;
         }
 
@@ -907,11 +906,10 @@ Promise.resolve().then(() => {
                 tools.forEach(toolName => {
                     const choice = INSERT_ELEMENT_CHOICES[toolName];
                     if (choice) {
-                        html += `<button class="tool-form-button insert-choice-button" data-tool="${toolName}" data-insert-description-tool="${toolName}" aria-describedby="insertChoiceDescription">${escapeHtml(choice.label)}</button>`;
+                        html += `<button class="tool-form-button insert-choice-button" data-tool="${toolName}" data-insert-description-tool="${toolName}">${escapeHtml(choice.label)}</button>`;
                     }
                 });
                 html += `</div>`;
-                html += `<div id="insertChoiceDescription" class="insert-choice-description" aria-live="polite"><p>Hover over an option to see what it does.</p></div>`;
                 return html;
             }
             html += `<div class="small-note">More than one rule applies. Choose the one you intend.</div>`;
@@ -1305,6 +1303,7 @@ Promise.resolve().then(() => {
         const builderRewritePreview = document.getElementById("builderRewritePreview");
         const builderDigitRail = document.getElementById("builderDigitRail");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
+        const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const levelMenuContent = document.getElementById("levelMenuContent");
@@ -1823,6 +1822,343 @@ Promise.resolve().then(() => {
                     throwOnError: false,
                     displayMode: false
                 });
+            });
+        }
+
+        let topPanelHeightFrame = null;
+
+        function getStepGuidanceForDisplay(step) {
+            const explicitGuidance = normalizeTextBlocks(step && step.guidance);
+            const legacyGuidance = [
+                ...normalizeTextBlocks(step && step.introduction),
+                ...normalizeTextBlocks(step && step.conclusion)
+            ];
+            const labelGuidance = step && typeof step.label === "string" && step.label.trim() && step.label.trim().toLowerCase() !== "start"
+                ? [step.label.trim()]
+                : [];
+            return explicitGuidance.length
+                ? explicitGuidance
+                : legacyGuidance.length
+                    ? legacyGuidance
+                    : labelGuidance;
+        }
+
+        function renderProbeMath(probe) {
+            probe.querySelectorAll(".katex-placeholder").forEach(node => {
+                const expr = node.getAttribute("data-expr") || "";
+                if (!window.katex) {
+                    node.textContent = expr;
+                    return;
+                }
+                katex.render(expr, node, { throwOnError: false, displayMode: false });
+            });
+        }
+
+        function buildTopPanelHeightProbe(level) {
+            const probe = document.createElement("div");
+            probe.className = "top-panel-height-probe";
+
+            const exerciseInstruction = normalizeTextBlocks(level.instruction).length
+                ? normalizeTextBlocks(level.instruction)
+                : normalizeTextBlocks(level.introduction);
+            const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
+            const initialKatex = level.initialKatex || (
+                firstStep
+                    ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
+                    : level.startExpression
+            );
+            probe.insertAdjacentHTML("beforeend", `
+                <section class="solution-column problem-statement">
+                    <div class="solution-step problem-step-card">
+                        ${exerciseInstruction.map(text => `<p class="problem-instruction">${escapeHtml(text)}</p>`).join("")}
+                        <div class="problem-expression"><div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div></div>
+                    </div>
+                </section>
+            `);
+
+            (level.steps || []).forEach(step => {
+                const guidance = getStepGuidanceForDisplay(step);
+                const expressions = uniqueToolKeys([
+                    step.beforeKatex || "",
+                    step.afterKatex || step.katex || step.expression || ""
+                ].filter(Boolean));
+                expressions.forEach(expression => {
+                    probe.insertAdjacentHTML("beforeend", `
+                        <div class="solution-column step-column">
+                            ${guidance.length ? `<div class="step-guidance">${guidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>` : ""}
+                            <div class="solution-step"><div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(expression)}"></span></div></div>
+                        </div>
+                    `);
+                });
+            });
+
+            const actionProbe = document.createElement("div");
+            actionProbe.className = "panel-tool-menu";
+            actionProbe.innerHTML = buildIntentCategoryMenuHtml();
+            probe.appendChild(actionProbe);
+
+            const builderProbe = document.createElement("div");
+            builderProbe.className = "panel-tool-menu";
+            builderProbe.innerHTML = `<div class="expression-builder-panel"><div class="builder-controls"><div class="builder-action-row">
+                <button>−1</button><button>+</button><button>·</button><button>1/A</button><button>^</button>
+                <button>x</button><button>y</button><button>Backspace</button><button>Move on</button><button>Submit</button>
+            </div></div></div>`;
+            probe.appendChild(builderProbe);
+            return probe;
+        }
+
+        function updateTopPanelHeight(level = getCurrentLevel()) {
+            if (!appContainer || !level) {
+                return;
+            }
+            const probe = buildTopPanelHeightProbe(level);
+            appContainer.appendChild(probe);
+            renderProbeMath(probe);
+            const measuredHeight = Math.ceil(probe.scrollHeight + 1);
+            probe.remove();
+
+            const minimumForMenu = 62;
+            const maximumThatLeavesWorkspace = Math.max(minimumForMenu, window.innerHeight - 120);
+            const fittedHeight = Math.max(minimumForMenu, Math.min(measuredHeight, maximumThatLeavesWorkspace));
+            appContainer.style.setProperty("--top-panel-height", `${fittedHeight}px`);
+        }
+
+        function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
+            if (topPanelHeightFrame !== null) {
+                cancelAnimationFrame(topPanelHeightFrame);
+            }
+            topPanelHeightFrame = requestAnimationFrame(() => {
+                topPanelHeightFrame = null;
+                updateTopPanelHeight(level);
+            });
+        }
+
+        const PRESS_HOLD_DELAY_MS = 500;
+        const PRESS_HOLD_ACTION_DESCRIPTIONS = {
+            execute: "Apply the choices currently shown.",
+            done: "Leave the current rule without making another change.",
+            backToIntentCategories: "Return to the main action buttons.",
+            backToToolCategories: "Return to the main tool categories.",
+            insertIdentityOption: "Choose this identity and where it should be introduced.",
+            previewEliminateIdentities: "Preview removal of identity elements in the selection."
+        };
+        let pressHoldState = null;
+        let suppressedPressHoldClick = null;
+
+        function isExpressionBuilderButton(button) {
+            return !!button.closest(".expression-builder-panel, #builderDigitRail");
+        }
+
+        function isPressHoldButtonEligible(button) {
+            return !!button &&
+                !button.disabled &&
+                !document.body.classList.contains("expression-builder-active") &&
+                !isExpressionBuilderButton(button);
+        }
+
+        function getButtonVisibleName(button) {
+            if (button.dataset.ruleCategory) {
+                const category = INTENT_RULE_CATEGORIES.find(item => item.id === button.dataset.ruleCategory);
+                return category ? category.label : button.dataset.ruleCategory;
+            }
+            if (button.dataset.insertDescriptionTool) {
+                const choice = INSERT_ELEMENT_CHOICES[button.dataset.insertDescriptionTool];
+                if (choice) {
+                    return choice.label;
+                }
+            }
+            return button.getAttribute("aria-label") ||
+                button.dataset.holdTitle ||
+                button.textContent.trim() ||
+                "Button";
+        }
+
+        function getPressHoldDescriptionHtml(button) {
+            const name = getButtonVisibleName(button);
+            const titleHtml = `<span class="press-hold-popover-title">${escapeHtml(name)}</span>`;
+
+            if (button.dataset.ruleCategory) {
+                return `${titleHtml}${getIntentCategoryDescriptionHtml(button.dataset.ruleCategory)}`;
+            }
+            if (button.dataset.insertDescriptionTool) {
+                const choice = INSERT_ELEMENT_CHOICES[button.dataset.insertDescriptionTool];
+                return choice
+                    ? `${titleHtml}<p>${escapeHtml(choice.description)}</p>`
+                    : titleHtml;
+            }
+            if (button.dataset.tool && TOOL_INFO[button.dataset.tool]) {
+                return TOOL_INFO[button.dataset.tool];
+            }
+            if (button.dataset.holdDescription) {
+                return `${titleHtml}<p>${escapeHtml(button.dataset.holdDescription)}</p>`;
+            }
+            if (button.dataset.action && PRESS_HOLD_ACTION_DESCRIPTIONS[button.dataset.action]) {
+                return `${titleHtml}<p>${escapeHtml(PRESS_HOLD_ACTION_DESCRIPTIONS[button.dataset.action])}</p>`;
+            }
+            if (button.dataset.toolCategory) {
+                return `${titleHtml}<p>Show the algebra rules in this category.</p>`;
+            }
+            if (button.id === "hamburgerButton") {
+                return `${titleHtml}<p>Open the exercise information and move-history controls.</p>`;
+            }
+            if (button.classList.contains("completion-export-button")) {
+                return `${titleHtml}<p>Download the complete move history for this exercise.</p>`;
+            }
+            if (button.dataset.holdTitle) {
+                return `${titleHtml}<p>${escapeHtml(button.dataset.holdTitle)}</p>`;
+            }
+            return `${titleHtml}<p>Activate this button.</p>`;
+        }
+
+        function hidePressHoldPopover() {
+            if (!pressHoldPopover) {
+                return;
+            }
+            pressHoldPopover.classList.add("hidden");
+            pressHoldPopover.replaceChildren();
+        }
+
+        function showPressHoldPopover(button) {
+            if (!pressHoldPopover || !isPressHoldButtonEligible(button)) {
+                return;
+            }
+            pressHoldPopover.innerHTML = getPressHoldDescriptionHtml(button);
+            pressHoldPopover.classList.remove("hidden");
+
+            const buttonBounds = button.getBoundingClientRect();
+            const popoverBounds = pressHoldPopover.getBoundingClientRect();
+            const viewportMargin = 8;
+            const centeredLeft = buttonBounds.left + (buttonBounds.width - popoverBounds.width) / 2;
+            const left = Math.max(
+                viewportMargin,
+                Math.min(centeredLeft, window.innerWidth - popoverBounds.width - viewportMargin)
+            );
+            let top = buttonBounds.top - popoverBounds.height - viewportMargin;
+            if (top < viewportMargin) {
+                top = buttonBounds.bottom + viewportMargin;
+            }
+            top = Math.max(
+                viewportMargin,
+                Math.min(top, window.innerHeight - popoverBounds.height - viewportMargin)
+            );
+            pressHoldPopover.style.left = `${Math.round(left)}px`;
+            pressHoldPopover.style.top = `${Math.round(top)}px`;
+        }
+
+        function preserveNonBuilderButtonTitle(button) {
+            if (!button || isExpressionBuilderButton(button) || !button.hasAttribute("title")) {
+                return;
+            }
+            if (!button.dataset.holdTitle) {
+                button.dataset.holdTitle = button.getAttribute("title") || "";
+            }
+            button.removeAttribute("title");
+        }
+
+        function preserveNonBuilderButtonTitles(root) {
+            if (root instanceof HTMLButtonElement) {
+                preserveNonBuilderButtonTitle(root);
+            }
+            if (root.querySelectorAll) {
+                root.querySelectorAll("button[title]").forEach(preserveNonBuilderButtonTitle);
+            }
+        }
+
+        function clearPendingPressHold() {
+            if (!pressHoldState) {
+                return;
+            }
+            clearTimeout(pressHoldState.timerId);
+            pressHoldState = null;
+            hidePressHoldPopover();
+        }
+
+        function installPressHoldDescriptions() {
+            if (!pressHoldPopover) {
+                return;
+            }
+            preserveNonBuilderButtonTitles(document);
+            const titleObserver = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node instanceof Element) {
+                            preserveNonBuilderButtonTitles(node);
+                        }
+                    });
+                });
+            });
+            titleObserver.observe(document.body, { childList: true, subtree: true });
+
+            document.addEventListener("pointerdown", event => {
+                const button = event.target.closest && event.target.closest("button");
+                if (!isPressHoldButtonEligible(button) || (event.pointerType === "mouse" && event.button !== 0)) {
+                    return;
+                }
+                clearPendingPressHold();
+                const state = {
+                    button,
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    shown: false,
+                    timerId: null
+                };
+                state.timerId = setTimeout(() => {
+                    if (pressHoldState !== state) {
+                        return;
+                    }
+                    state.shown = true;
+                    showPressHoldPopover(button);
+                }, PRESS_HOLD_DELAY_MS);
+                pressHoldState = state;
+            }, true);
+
+            document.addEventListener("pointermove", event => {
+                if (!pressHoldState || pressHoldState.pointerId !== event.pointerId || pressHoldState.shown) {
+                    return;
+                }
+                if (Math.hypot(event.clientX - pressHoldState.startX, event.clientY - pressHoldState.startY) > 10) {
+                    clearPendingPressHold();
+                }
+            }, true);
+
+            const finishPressHold = event => {
+                if (!pressHoldState || pressHoldState.pointerId !== event.pointerId) {
+                    return;
+                }
+                const heldButton = pressHoldState.button;
+                const wasShown = pressHoldState.shown;
+                clearPendingPressHold();
+                if (wasShown) {
+                    suppressedPressHoldClick = { button: heldButton, expiresAt: Date.now() + 800 };
+                    event.preventDefault();
+                }
+            };
+            document.addEventListener("pointerup", finishPressHold, true);
+            document.addEventListener("pointercancel", finishPressHold, true);
+            document.addEventListener("click", event => {
+                if (!suppressedPressHoldClick || Date.now() > suppressedPressHoldClick.expiresAt) {
+                    suppressedPressHoldClick = null;
+                    return;
+                }
+                const button = event.target.closest && event.target.closest("button");
+                if (button === suppressedPressHoldClick.button) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    suppressedPressHoldClick = null;
+                }
+            }, true);
+            document.addEventListener("contextmenu", event => {
+                const button = event.target.closest && event.target.closest("button");
+                if (isPressHoldButtonEligible(button)) {
+                    event.preventDefault();
+                }
+            }, true);
+            window.addEventListener("blur", clearPendingPressHold);
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) {
+                    clearPendingPressHold();
+                }
             });
         }
 
@@ -3081,19 +3417,7 @@ Promise.resolve().then(() => {
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
                 const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
-                const explicitGuidance = normalizeTextBlocks(step.guidance);
-                const legacyGuidance = [
-                    ...normalizeTextBlocks(step.introduction),
-                    ...normalizeTextBlocks(step.conclusion)
-                ];
-                const labelGuidance = typeof step.label === "string" && step.label.trim() && step.label.trim().toLowerCase() !== "start"
-                    ? [step.label.trim()]
-                    : [];
-                const stepGuidance = explicitGuidance.length
-                    ? explicitGuidance
-                    : legacyGuidance.length
-                        ? legacyGuidance
-                        : labelGuidance;
+                const stepGuidance = getStepGuidanceForDisplay(step);
                 const stepGuidanceHtml = isCurrent && stepGuidance.length
                     ? `<div class="step-guidance" aria-label="Current-step guidance">${stepGuidance.map(text => `<p>${escapeHtml(text)}</p>`).join("")}</div>`
                     : "";
@@ -3130,6 +3454,7 @@ Promise.resolve().then(() => {
             renderMoveHistoryControls(level);
 
             renderLeftPanelMath();
+            scheduleTopPanelHeightUpdate(level);
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
@@ -3204,6 +3529,10 @@ Promise.resolve().then(() => {
                     if (!button) {
                         return;
                     }
+                    if (button.dataset.workspaceAction === "cancelSelection") {
+                        handleToolAction("cancelSelection", null);
+                        return;
+                    }
                     if (button.dataset.workspaceAction === "resetZoom") {
                         resetWorkspaceZoom();
                         return;
@@ -3217,6 +3546,11 @@ Promise.resolve().then(() => {
                         zoomWorkspaceOut();
                     }
                 });
+            }
+            installPressHoldDescriptions();
+            window.addEventListener("resize", () => scheduleTopPanelHeightUpdate());
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => scheduleTopPanelHeightUpdate());
             }
             if (hamburgerButton && levelMenuPanel) {
                 const setMenuOpen = open => {
@@ -3409,6 +3743,10 @@ ctx.font = SETTINGS.textFont;
                 button.classList.toggle("is-active", active);
                 button.setAttribute("aria-pressed", String(active));
             });
+            const cancelSelectionButton = workspaceToolbar.querySelector('button[data-workspace-action="cancelSelection"]');
+            if (cancelSelectionButton) {
+                cancelSelectionButton.disabled = !selection.node;
+            }
         }
 
         function setWorkspaceMode(mode) {
@@ -3868,6 +4206,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function drawExpression() {
+            updateWorkspaceToolbar();
             renderCurrentExpressionDisplay();
 
             if (!expressionRoot) {
@@ -4549,6 +4888,7 @@ ctx.font = SETTINGS.textFont;
             selection.firstPart = -1;
             selection.lastPart = -1;
             uiState.selectionRecorded = false;
+            updateWorkspaceToolbar();
         }
 
         function clearInteraction() {
@@ -8808,9 +9148,7 @@ ctx.font = SETTINGS.textFont;
                 } else {
                     menuHtml = buildToolCategoryMenuHtml();
                 }
-                return isIntentCategoryToolNotationMode()
-                    ? menuHtml
-                    : `${menuHtml}<button class="cancel-selection-button" data-action="cancelSelection">Cancel selection</button>`;
+                return menuHtml;
             }
 
             if (
@@ -9067,30 +9405,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function attachToolListeners(container) {
-            const intentDescription = container.querySelector(".intent-category-description");
-            const resetIntentDescription = () => {
-                if (intentDescription) {
-                    intentDescription.innerHTML = "<p>Hover over an action to see what it does.</p>";
-                }
-            };
             container.querySelectorAll("button[data-rule-category]").forEach(btn => {
-                const showIntentDescription = () => {
-                    if (intentDescription) {
-                        intentDescription.innerHTML = getIntentCategoryDescriptionHtml(btn.dataset.ruleCategory);
-                    }
-                };
-                btn.addEventListener("mouseenter", showIntentDescription);
-                btn.addEventListener("mouseleave", () => {
-                    if (document.activeElement !== btn) {
-                        resetIntentDescription();
-                    }
-                });
-                btn.addEventListener("focus", showIntentDescription);
-                btn.addEventListener("blur", () => {
-                    if (!btn.matches(":hover")) {
-                        resetIntentDescription();
-                    }
-                });
                 btn.addEventListener("click", () => {
                     const categoryId = btn.dataset.ruleCategory;
                     let applicableTools = getApplicableIntentCategoryTools(categoryId);
@@ -9114,33 +9429,6 @@ ctx.font = SETTINGS.textFont;
                     renderToolArea();
                     refreshStatus();
                     drawExpression();
-                });
-            });
-
-            const insertDescription = container.querySelector(".insert-choice-description");
-            const resetInsertDescription = () => {
-                if (insertDescription) {
-                    insertDescription.innerHTML = "<p>Hover over an option to see what it does.</p>";
-                }
-            };
-            container.querySelectorAll("button[data-insert-description-tool]").forEach(btn => {
-                const showInsertDescription = () => {
-                    const choice = INSERT_ELEMENT_CHOICES[btn.dataset.insertDescriptionTool];
-                    if (insertDescription && choice) {
-                        insertDescription.innerHTML = `<p>${escapeHtml(choice.description)}</p>`;
-                    }
-                };
-                btn.addEventListener("mouseenter", showInsertDescription);
-                btn.addEventListener("mouseleave", () => {
-                    if (document.activeElement !== btn) {
-                        resetInsertDescription();
-                    }
-                });
-                btn.addEventListener("focus", showInsertDescription);
-                btn.addEventListener("blur", () => {
-                    if (!btn.matches(":hover")) {
-                        resetInsertDescription();
-                    }
                 });
             });
 
@@ -9867,6 +10155,7 @@ function renderToolArea() {
                 return false;
             }
 
+            updateWorkspaceToolbar();
             clearInteraction();
             if (isDemoModeActive() && currentSelectionMatchesDemoStep()) {
                 advanceDemoStep();
