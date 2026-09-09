@@ -10039,6 +10039,14 @@ function renderToolArea() {
                             ? "commute"
                             : "selection"
             };
+            if (workspaceSvg.setPointerCapture) {
+                try {
+                    workspaceSvg.setPointerCapture(e.pointerId);
+                } catch (error) {
+                    // The document-level pointerup fallback still completes
+                    // the gesture when capture is unavailable.
+                }
+            }
         });
 
         workspaceSvg.addEventListener("pointerup", e => {

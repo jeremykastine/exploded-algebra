@@ -1201,7 +1201,10 @@
         }
 
         #expressionWorkspaceSvg {
-            touch-action: pan-x pan-y pinch-zoom;
+            /* A one-pointer swipe is an endpoint-selection gesture. Keep
+               two-pointer pinch zoom available without letting the browser
+               cancel single-pointer swipes to pan the page. */
+            touch-action: pinch-zoom;
             user-select: none;
         }
 
@@ -2413,7 +2416,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260909-gradient-operators-no-circles"></script>
-    <script src="exploded-algebra-tool.js?v=20260909-responsive-builder"></script>
+    <script src="exploded-algebra-tool.js?v=20260909-swipe-endpoint-selection"></script>
 
 </body>
 </html>
