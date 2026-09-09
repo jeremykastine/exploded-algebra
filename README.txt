@@ -59,7 +59,6 @@ Each exercise specifies Numerical Rewrite permissions with this structure:
     "addition": "none" | "no-carry" | "flat" | "expression-terms",
     "multiplication": "none" | "one-significant-figure" | "unrestricted",
     "allowNegativeOne": true | false,
-    "allowExponents": true | false,
     "allowInverses": true | false
   }
 
@@ -69,8 +68,7 @@ without carrying. `expression-terms` permits sums whose terms are any otherwise
 allowed numerical expressions. One-significant-figure multiplication checks the
 exact value of each factor; unrestricted multiplication permits any factors that
 otherwise satisfy the profile. Negative numbers other than the atomic negative
-unit are not accepted. A negative exponent requires negative one, exponents, and
-inverses all to be allowed. Inverse zero and zero to the zero power are rejected.
+unit are not accepted. An inverse of zero is rejected.
 Both the selected expression and its proposed replacement must satisfy the same
 profile, and equivalence is checked with exact integer/fraction arithmetic.
 
@@ -78,19 +76,18 @@ Older custom files that contain `arithmeticLevel` instead of `numericalRewrite`
 are mapped to a compatible profile when loaded. New move-history downloads retain
 the explicit `numericalRewrite` profile.
 
-Introduce Element(s) always offers Add Zero, Multiply by One, Double Inverse, and
-Exponent of One. Selecting a literal 1 adds a fifth Product of Inverses choice
+Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
+Selecting a literal 1 adds a Product of Inverses choice
 that replaces 1 with A times inverse(A). Selecting a literal 0 instead adds a
 fifth Additive Inverses choice that replaces 0 with A plus negative one times A.
 The main Remove Element(s) category retains the existing eraser icon.
 
-Change Form is not enabled by a level flag. It appears only when the structural
-scan of `startExpression` and the exploded expression fields in `steps` finds an
-actual `exp` node. Conventional-only exponents in `initialKatex`, `katex`,
-`beforeKatex`, or `afterKatex` do not affect the result. Optional exploded
-pre/post variants (`beforeExpression`, `afterExpression`,
-`beforeExplodedExpression`, `afterExplodedExpression`, or the expression inside
-`preCompletion` / `postCompletion`) are included in the scan when present.
+Exponents may still appear in conventional-notation KaTeX fields such as
+`initialKatex`, `katex`, `beforeKatex`, and `afterKatex`. The corresponding
+exploded expression must write each positive whole-number power as repeated
+multiplication; for example, conventional `x^2` is exploded as `((x)*(x))`.
+There is no exponent node, exponent tool, or exponent input in the exploded
+representation. See `EXPONENT_IMPLEMENTATION_ARCHIVE.md` for the archived design.
 
 CUSTOM LEVELS
 

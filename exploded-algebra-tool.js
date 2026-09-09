@@ -27,33 +27,6 @@ Promise.resolve().then(() => {
             factorProductOfInverses: `<span class="rule-name">Product of Inverses</span><span class="rule-notation">inverse(A) · inverse(B) = inverse(A · B)</span>`,
             rewriteInvNegOneToNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">inverse(-1) = -1</span>`,
             rewriteNegOneToInvNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">-1 = inverse(-1)</span>`,
-            eliminateExponentOne: `<span class="rule-name">Remove First Power</span><span class="rule-notation">A<sup>1</sup> = A</span>`,
-            eliminateExponentZero: `<span class="rule-name">Remove Zero Power</span><span class="rule-notation">A<sup>0</sup> = 1</span>`,
-            rewriteNegativeOneExponentAsInverse: `<span class="rule-name">Negative Power to Inverse Operator</span><span class="rule-notation">A<sup>-1</sup> = inverse(A)</span>`,
-            rewriteInverseAsNegativeOneExponent: `<span class="rule-name">Inverse Operator to Negative Power</span><span class="rule-notation">inverse(A) = A<sup>-1</sup></span>`,
-            eliminateInverseToNegativeOnePower: `<span class="rule-name">Cancel Double Inverse Power</span><span class="rule-notation">(A<sup>-1</sup>)<sup>-1</sup> = A</span>`,
-            distributePowerOverInverse: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>-1</sup>)<sup>n</sup> = (A<sup>n</sup>)<sup>-1</sup></span>`,
-            factorPowerOutOfInverse: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>n</sup>)<sup>-1</sup> = (A<sup>-1</sup>)<sup>n</sup></span>`,
-            powerOfPower: `<span class="rule-name">Power of a Power</span><span class="rule-notation">(A<sup>m</sup>)<sup>n</sup> = A<sup>m·n</sup></span>`,
-            combineSameBasePowers: `<span class="rule-name">Combine Same-Base Powers</span><span class="rule-notation">A<sup>m</sup> · A<sup>n</sup> = A<sup>m+n</sup></span>`,
-            expandPowerOfSum: `<span class="rule-name">Split Power over Sum</span><span class="rule-notation">A<sup>m+n</sup> = A<sup>m</sup> · A<sup>n</sup></span>`,
-            divideSameBasePowers: `<span class="rule-name">Subtract Same-Base Powers</span><span class="rule-notation">A<sup>m</sup> · (A<sup>n</sup>)<sup>-1</sup> = A<sup>m-n</sup></span>`,
-            distributeExponentOverProduct: `<span class="rule-name">Power of a Product</span><span class="rule-notation">(A · B)<sup>n</sup> = A<sup>n</sup> · B<sup>n</sup></span>`,
-            factorCommonExponent: `<span class="rule-name">Factor Common Power</span><span class="rule-notation">A<sup>n</sup> · B<sup>n</sup> = (A · B)<sup>n</sup></span>`,
-            oneToAnyPower: `<span class="rule-name">Power of One</span><span class="rule-notation">1<sup>n</sup> = 1</span>`,
-            insertExponentOne: `<span class="rule-name">Introduce First Power</span><span class="rule-notation">A = A<sup>1</sup></span>`,
-            insertExponentZero: `<span class="rule-name">Introduce Zero Power</span><span class="rule-notation">1 = A<sup>0</sup></span>`,
-            insertPowerOfOne: `<span class="rule-name">Introduce Power of One</span><span class="rule-notation">1 = 1<sup>n</sup></span>`,
-            expandPowerOfPower: `<span class="rule-name">Split Power of a Power</span><span class="rule-notation">A<sup>m·n</sup> = (A<sup>m</sup>)<sup>n</sup></span>`,
-            negativeOneSquared: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2</sup> = 1</span>`,
-            negativeOneEvenPower: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2n</sup> = 1</span>`,
-            negativeOneOddPower: `<span class="rule-name">Power of Negative One</span><span class="rule-notation">(-1)<sup>2n+1</sup> = -1</span>`,
-            repeatedProductToPower: `<span class="rule-name">Combine Repeated Factors</span><span class="rule-notation">A · A · … · A = A<sup>n</sup></span>`,
-            powerToRepeatedProduct: `<span class="rule-name">Expand Power</span><span class="rule-notation">A<sup>n</sup> = A · A · … · A</span>`,
-            inverseOne: `<span class="rule-name">Power of One</span><span class="rule-notation">1<sup>-1</sup> = 1</span>`,
-            factorProductOfTwoInverses: `<span class="rule-name">Factor Common Power</span><span class="rule-notation">A<sup>-1</sup> · B<sup>-1</sup> = (A · B)<sup>-1</sup></span>`,
-            distributeInverseOverTwoProduct: `<span class="rule-name">Power of a Product</span><span class="rule-notation">(A · B)<sup>-1</sup> = A<sup>-1</sup> · B<sup>-1</sup></span>`,
-            inverseFactorAsNegativeExponent: `<span class="rule-name">Negative Power Notation</span><span class="rule-notation">A · B<sup>-1</sup> = A · B<sup>-1</sup></span>`,
             cancelOpposites: `<span class="rule-name">Cancel Additive Inverses</span><span class="rule-notation">A + (-A) = 0</span>`,
             doubleNegative: `<span class="rule-name">Double Negative</span><span class="rule-notation">(-1) · (-1) = 1</span>`,
             zeroProduct: `<span class="rule-name">Zero Product</span><span class="rule-notation">0 · A = 0</span>`,
@@ -111,20 +84,14 @@ Promise.resolve().then(() => {
             "factorProductOfInverses",
             "rewriteInvNegOneToNegOne",
             "rewriteNegOneToInvNegOne",
-            "rewriteNegativeOneExponentAsInverse",
-            "rewriteInverseAsNegativeOneExponent",
-            "combineSameBasePowers",
             "commute",
             "commuteFirstToLast",
             "commuteLastToFirst",
             "commuteFactors",
             "commuteTerms",
-            "distributeExponentOverProduct",
             "distributeLeftToRight",
             "distributeRightToLeft",
             "doubleNegative",
-            "eliminateExponentOne",
-            "eliminateExponentZero",
             "eliminateIdentities",
             "evaluate",
             "numericalEquivalence",
@@ -137,8 +104,6 @@ Promise.resolve().then(() => {
             "numProductPositive",
             "numProductWithNegatives",
             "numSumWithNegativeProducts",
-            "expandPowerOfSum",
-            "factorCommonExponent",
             "factorLeft",
             "factorNumber",
             "factorRight",
@@ -148,15 +113,7 @@ Promise.resolve().then(() => {
             "insertIdentityMultiplyByOneLeft",
             "insertIdentityMultiplyByOneRight",
             "insertZeroProduct",
-            "oneToAnyPower",
-            "insertExponentOne",
-            "insertExponentZero",
-            "insertPowerOfOne",
-            "expandPowerOfPower",
-            "powerOfPower",
-            "powerToRepeatedProduct",
             "replaceOneWithInverseProduct",
-            "repeatedProductToPower",
             "writeNumberAsSum",
             "zeroProduct"
         ];
@@ -165,27 +122,13 @@ Promise.resolve().then(() => {
         ];
 
 
-        const POWER_INVERSE_REWRITE_TOOLS = [
+        const INVERSE_REWRITE_TOOLS = [
             "rewriteInvNegOneToNegOne",
-            "rewriteNegOneToInvNegOne",
-            "rewriteNegativeOneExponentAsInverse",
-            "rewriteInverseAsNegativeOneExponent",
-            "eliminateExponentOne",
-            "eliminateExponentZero",
-            "insertExponentOne",
-            "powerOfPower",
-            "expandPowerOfPower",
-            "combineSameBasePowers",
-            "expandPowerOfSum",
-            "distributeExponentOverProduct",
-            "factorCommonExponent",
-            "oneToAnyPower",
-            "repeatedProductToPower",
-            "powerToRepeatedProduct"
+            "rewriteNegOneToInvNegOne"
         ];
 
-        function isPowerInverseRewriteTool(toolName) {
-            return POWER_INVERSE_REWRITE_TOOLS.includes(toolName);
+        function isInverseRewriteTool(toolName) {
+            return INVERSE_REWRITE_TOOLS.includes(toolName);
         }
 
         // Type-level menu filtering: these lists are intentionally broader than
@@ -234,9 +177,6 @@ Promise.resolve().then(() => {
                 "distributeRightToLeft",
                 "cancelProductWithInverse",
                 "factorProductOfInverses",
-                "combineSameBasePowers",
-                "factorCommonExponent",
-                "repeatedProductToPower",
                 "doubleNegative",
                 "zeroProduct",
                 "eliminateIdentities",
@@ -247,58 +187,33 @@ Promise.resolve().then(() => {
                 "eliminateDoubleInverse",
                 "insertDoubleInverse",
                 "distributeInverseOverProduct",
-                "rewriteInvNegOneToNegOne",
-                "rewriteInverseAsNegativeOneExponent"
-            ],
-            exp: [
-                "evaluate",
-                "numericalEquivalence",
-                "numericalRewrite",
-                "eliminateExponentOne",
-                "eliminateExponentZero",
-                "insertExponentOne",
-                "insertExponentZero",
-                "insertPowerOfOne",
-                "powerOfPower",
-                "expandPowerOfPower",
-                "expandPowerOfSum",
-                "distributeExponentOverProduct",
-                "oneToAnyPower",
-                "powerToRepeatedProduct",
-                "rewriteNegativeOneExponentAsInverse"
+                "rewriteInvNegOneToNegOne"
             ]
         };
 
-        const TOOL_EXPONENT_MODES = {
+        const TOOL_MODES = {
             plain: "plain",
             numeric: "numeric",
-            exponent: "exponent",
             inverse: "inverse"
         };
 
-        const QUICK_TOOL_ROWS_BY_EXPONENT_MODE = {
+        const QUICK_TOOL_ROWS_BY_MODE = {
             plain: [
                 ["evaluate"],
                 ["commuteTerms", "commuteFactors"],
                 ["distributeLeftToRight", "distributeRightToLeft"],
                 ["factorLeft", "factorRight"]
             ],
-            exponent: [
-                ["evaluate"],
-                ["combineSameBasePowers", "expandPowerOfSum"],
-                ["distributeExponentOverProduct", "factorCommonExponent"],
-                ["powerOfPower"]
-            ],
             inverse: []
         };
 
         const QUICK_TOOL_KEYS = uniqueToolKeys(
-            Object.values(QUICK_TOOL_ROWS_BY_EXPONENT_MODE).flatMap(rows => rows.flat())
+            Object.values(QUICK_TOOL_ROWS_BY_MODE).flatMap(rows => rows.flat())
         );
 
         // Frequently used rearranging tools live above these categories as quick tools.
         // The radio buttons choose whether the quick tools and drill-down categories
-        // should show non-exponent tools or exponent tools.
+        // should show general tools or inverse tools.
         const TOOL_MENU_CATEGORIES = [
             {
                 id: "collapsePlain",
@@ -310,19 +225,6 @@ Promise.resolve().then(() => {
                     "doubleNegative",
                     "eliminateIdentities",
                     "zeroProduct"
-                ]
-            },
-            {
-                id: "collapseExponent",
-                family: "compression",
-                mode: "exponent",
-                label: "Compression tools",
-                keys: [
-                    "cancelProductWithInverse",
-                    "repeatedProductToPower",
-                    "eliminateExponentOne",
-                    "eliminateExponentZero",
-                    "oneToAnyPower"
                 ]
             },
             {
@@ -338,14 +240,18 @@ Promise.resolve().then(() => {
                 ]
             },
             {
-                id: "explodeExponent",
+                id: "collapseInverse",
+                family: "compression",
+                mode: "inverse",
+                label: "Compression tools",
+                keys: ["cancelProductWithInverse", "eliminateDoubleInverse", "factorProductOfInverses"]
+            },
+            {
+                id: "expandInverse",
                 family: "expansion",
-                mode: "exponent",
+                mode: "inverse",
                 label: "Expansion tools",
-                keys: [
-                    "powerToRepeatedProduct",
-                    "replaceOneWithInverseProduct"
-                ]
+                keys: ["insertDoubleInverse", "distributeInverseOverProduct", "replaceOneWithInverseProduct"]
             },
             {
                 id: "other",
@@ -365,7 +271,6 @@ Promise.resolve().then(() => {
             { id: "delete", label: "Remove Element(s)" },
             { id: "separate", label: "Separate" },
             { id: "consolidate", label: "Combine" },
-            { id: "translateNotation", label: "Change Form" },
             { id: "numericalRewrite", label: "Numerical Rewrite" }
         ];
 
@@ -374,8 +279,7 @@ Promise.resolve().then(() => {
             insert: "Introduce identity elements or equivalent structure, such as adding zero, multiplying by one, or introducing inverses.",
             delete: "Remove identity elements or other selected structure that simplifies away.",
             separate: "Rewrite a selected part as separate equivalent terms or factors, such as by distributing.",
-            consolidate: "Combine selected terms or factors into one equivalent structure, such as by factoring.",
-            translateNotation: "Rewrite the selection in an equivalent form, such as changing between inverse and exponent notation."
+            consolidate: "Combine selected terms or factors into one equivalent structure, such as by factoring."
         };
 
         const INSERT_ELEMENT_CHOICES = {
@@ -390,10 +294,6 @@ Promise.resolve().then(() => {
             insertDoubleInverse: {
                 label: "Double inverses",
                 description: "Wraps the selected expression in two inverses, leaving the expression unchanged."
-            },
-            insertExponentOne: {
-                label: "Power of one",
-                description: "Raises the selected expression to the first power without changing its value."
             },
             replaceOneWithInverseProduct: {
                 label: "Product of inverses",
@@ -422,7 +322,7 @@ Promise.resolve().then(() => {
         }
 
         function getToolCategoryById(categoryId) {
-            const mode = getCurrentToolExponentMode();
+            const mode = getCurrentToolMode();
             const matchingCurrentMode = TOOL_MENU_CATEGORIES.find(category =>
                 getToolCategoryKey(category) === categoryId &&
                 (category.mode === mode || category.mode === "both")
@@ -434,19 +334,16 @@ Promise.resolve().then(() => {
             return TOOL_MENU_CATEGORIES.find(category => category.id === categoryId) || null;
         }
 
-        function getCurrentToolExponentMode() {
-            if (uiState.toolExponentMode === TOOL_EXPONENT_MODES.exponent) {
-                return TOOL_EXPONENT_MODES.exponent;
+        function getCurrentToolMode() {
+            if (uiState.toolMode === TOOL_MODES.inverse) {
+                return TOOL_MODES.inverse;
             }
-            if (uiState.toolExponentMode === TOOL_EXPONENT_MODES.inverse) {
-                return TOOL_EXPONENT_MODES.inverse;
-            }
-            return TOOL_EXPONENT_MODES.plain;
+            return TOOL_MODES.plain;
         }
 
-        function getDefaultToolExponentModeForSelection() {
+        function getDefaultToolModeForSelection() {
             if (!selection || !selection.node) {
-                return TOOL_EXPONENT_MODES.plain;
+                return TOOL_MODES.plain;
             }
 
             const selectedExpression = cloneSelectedRangeNode();
@@ -455,20 +352,18 @@ Promise.resolve().then(() => {
                 (Array.isArray(node.args) && node.args.some(containsInverse))
             );
             if (containsInverse(selectedExpression)) {
-                return TOOL_EXPONENT_MODES.inverse;
+                return TOOL_MODES.inverse;
             }
-            return selectedExpression && selectedExpression.type === "exp"
-                ? TOOL_EXPONENT_MODES.exponent
-                : TOOL_EXPONENT_MODES.plain;
+            return TOOL_MODES.plain;
         }
 
-        function getToolCategoriesForCurrentExponentMode() {
-            const mode = getCurrentToolExponentMode();
+        function getToolCategoriesForCurrentMode() {
+            const mode = getCurrentToolMode();
             return TOOL_MENU_CATEGORIES.filter(category => category.mode === mode || category.mode === "both");
         }
 
-        function getQuickToolRowsForCurrentExponentMode() {
-            return QUICK_TOOL_ROWS_BY_EXPONENT_MODE[getCurrentToolExponentMode()] || QUICK_TOOL_ROWS_BY_EXPONENT_MODE.plain;
+        function getQuickToolRowsForCurrentMode() {
+            return QUICK_TOOL_ROWS_BY_MODE[getCurrentToolMode()] || QUICK_TOOL_ROWS_BY_MODE.plain;
         }
 
         function getSelectionTypeCandidateSet() {
@@ -513,8 +408,8 @@ Promise.resolve().then(() => {
             }
 
             return uniqueToolKeys([
-                ...getQuickToolRowsForCurrentExponentMode().flat(),
-                ...getToolCategoriesForCurrentExponentMode().flatMap(category => category.keys)
+                ...getQuickToolRowsForCurrentMode().flat(),
+                ...getToolCategoriesForCurrentMode().flatMap(category => category.keys)
             ]);
         }
 
@@ -545,7 +440,7 @@ Promise.resolve().then(() => {
             return getSelectedCommutePartCountForMenu() >= 3;
         }
 
-        const TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE = {
+        const TOOL_FORM_MENU_ROWS_BY_MODE = {
             plain: [
                 { full: { tool: "numericalRewrite", html: "Numerical Rewrite" } },
                 {
@@ -606,34 +501,6 @@ Promise.resolve().then(() => {
                 { full: { tool: "numExpressNumberAsDifference", html: "Express number as difference" } },
                 { customNumericalEquivalences: true },
             ],
-            exponent: [
-                {
-                    left: { tool: "combineSameBasePowers", mini: miniExp(miniValue("A"), miniSum(miniValue("m"), miniValue("n"))) },
-                    arrow: "⇔",
-                    right: { tool: "expandPowerOfSum", mini: miniProd(miniExp(miniValue("A"), miniValue("m")), miniExp(miniValue("A"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "factorCommonExponent", mini: miniExp(miniProd(miniValue("A"), miniValue("B")), miniValue("n")) },
-                    arrow: "⇔",
-                    right: { tool: "distributeExponentOverProduct", mini: miniProd(miniExp(miniValue("A"), miniValue("n")), miniExp(miniValue("B"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "expandPowerOfPower", mini: miniExp(miniExp(miniValue("A"), miniValue("m")), miniValue("n")) },
-                    arrow: "⇔",
-                    right: { tool: "powerOfPower", mini: miniExp(miniValue("A"), miniProd(miniValue("m"), miniValue("n"))) }
-                },
-                {
-                    left: { tool: "repeatedProductToPower", mini: miniExp(miniValue("A"), miniValue("n")) },
-                    arrow: "⇔",
-                    right: { tool: "powerToRepeatedProduct", mini: miniProd(miniValue("A"), miniValue("A"), miniValue("…"), miniValue("A")) }
-                },
-                {
-                    triplet: true,
-                    left: { tool: "insertExponentZero", mini: miniExp(miniValue("A"), miniValue("0")) },
-                    center: { tool: "reduceToOne", mini: miniValue("1") },
-                    right: { tool: "insertPowerOfOne", mini: miniExp(miniValue("1"), miniValue("n")) }
-                },
-            ],
             inverse: [
                 {
                     left: { tool: "insertDoubleInverse", mini: miniInv(miniInv(miniValue("A"))) },
@@ -654,17 +521,12 @@ Promise.resolve().then(() => {
                     left: { tool: "rewriteNegOneToInvNegOne", mini: miniInv(miniValue("-1")) },
                     arrow: "⇔",
                     right: { tool: "rewriteInvNegOneToNegOne", mini: miniValue("-1") }
-                },
-                {
-                    left: { tool: "rewriteNegativeOneExponentAsInverse", mini: miniInv(miniValue("A")) },
-                    arrow: "⇔",
-                    right: { tool: "rewriteInverseAsNegativeOneExponent", mini: miniExp(miniValue("A"), miniValue("-1")) }
                 }
             ]
         };
 
-        function getToolFormRowsForCurrentExponentMode() {
-            return TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[getCurrentToolExponentMode()] || TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE.plain;
+        function getToolFormRowsForCurrentMode() {
+            return TOOL_FORM_MENU_ROWS_BY_MODE[getCurrentToolMode()] || TOOL_FORM_MENU_ROWS_BY_MODE.plain;
         }
 
         function isApplicableOnlyToolNotationMode() {
@@ -683,20 +545,14 @@ Promise.resolve().then(() => {
                 return [
                     "distributeLeftToRight",
                     "distributeRightToLeft",
-                    "distributeInverseOverProduct",
-                    "expandPowerOfSum",
-                    "distributeExponentOverProduct",
-                    "expandPowerOfPower"
+                    "distributeInverseOverProduct"
                 ];
             }
             if (categoryId === "consolidate") {
                 return [
                     "factorLeft",
                     "factorRight",
-                    "factorProductOfInverses",
-                    "combineSameBasePowers",
-                    "factorCommonExponent",
-                    "powerOfPower"
+                    "factorProductOfInverses"
                 ];
             }
             if (categoryId === "delete") {
@@ -707,9 +563,6 @@ Promise.resolve().then(() => {
                     "eliminateDoubleInverse",
                     ...(getDoubleNegativeData() ? ["doubleNegative"] : []),
                     "zeroProduct",
-                    "eliminateExponentOne",
-                    "eliminateExponentZero",
-                    "oneToAnyPower",
                     "rewriteInvNegOneToNegOne"
                 ];
             }
@@ -717,8 +570,7 @@ Promise.resolve().then(() => {
                 const tools = [
                     "insertIdentityAddZeroBottom",
                     "insertIdentityMultiplyByOneRight",
-                    "insertDoubleInverse",
-                    "insertExponentOne"
+                    "insertDoubleInverse"
                 ];
                 if (canReplaceOneWithInverseProduct()) {
                     tools.push("replaceOneWithInverseProduct");
@@ -727,14 +579,6 @@ Promise.resolve().then(() => {
                     tools.push("cancelOpposites");
                 }
                 return tools;
-            }
-            if (categoryId === "translateNotation") {
-                return [
-                    "powerToRepeatedProduct",
-                    "repeatedProductToPower",
-                    "rewriteNegativeOneExponentAsInverse",
-                    "rewriteInverseAsNegativeOneExponent"
-                ];
             }
             if (categoryId === "numericalRewrite") {
                 return ["numericalRewrite"];
@@ -814,16 +658,6 @@ Promise.resolve().then(() => {
                     <path class="icon-fill" d="M94 34 L80 26 V42 Z"/>
                 </svg>`;
             }
-            if (categoryId === "translateNotation") {
-                return `<span class="intent-category-math translate-notation-math" aria-hidden="true">
-                    <span>(x<sup>2</sup>)<sup>−1</sup></span>
-                    <span class="math-arrow">↔</span>
-                    <span class="math-fraction">
-                        <span class="math-numerator">1</span>
-                        <span class="math-denominator">x · x</span>
-                    </span>
-                </span>`;
-            }
             return "";
         }
 
@@ -840,9 +674,6 @@ Promise.resolve().then(() => {
             // In portrait, grid-auto-flow places each consecutive pair in one
             // column. Keep inverse actions together in those columns.
             const categoryIds = ["consolidate", "separate", "commute", "numericalRewrite", "delete", "insert"];
-            if (levelUsesExplodedExponentNode(getCurrentLevel())) {
-                categoryIds.push("translateNotation");
-            }
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
@@ -890,11 +721,7 @@ Promise.resolve().then(() => {
                 eliminateIdentities: { fromMini: miniSum(A(), zero()), toMini: A() },
                 insertZeroProductLeft: { fromMini: zero(), toMini: miniProd(zero(), A()) },
                 insertZeroProductRight: { fromMini: zero(), toMini: miniProd(A(), zero()) },
-                zeroProduct: { fromMini: miniProd(A(), zero()), toMini: zero() },
-                insertExponentOne: { fromMini: A(), toMini: miniExp(A(), one()) },
-                eliminateExponentOne: { fromMini: miniExp(A(), one()), toMini: A() },
-                eliminateExponentZero: { fromMini: miniExp(A(), zero()), toMini: one() },
-                oneToAnyPower: { fromMini: miniExp(one(), A()), toMini: one() }
+                zeroProduct: { fromMini: miniProd(A(), zero()), toMini: zero() }
             };
             const pair = fallbackPairs[toolName];
             return pair ? { tool: toolName, ...pair } : null;
@@ -1109,17 +936,6 @@ Promise.resolve().then(() => {
                         return render(factor);
                     }).join("·");
                 }
-                if (item.type === "exp") {
-                    const base = item.base || (Array.isArray(item.args) ? item.args[0] : null);
-                    const exponent = item.exponent || (Array.isArray(item.args) ? item.args[1] : null);
-                    const baseText = base && base.type === "value" && !isNegativeValue(base)
-                        ? render(base)
-                        : `(${render(base)})`;
-                    const exponentText = exponent && exponent.type === "value"
-                        ? render(exponent)
-                        : `(${render(exponent)})`;
-                    return `${baseText}^${exponentText}`;
-                }
                 if (item.type === "inv") {
                     const arg = item.arg || (Array.isArray(item.args) ? item.args[0] : null);
                     const argText = arg && arg.type === "value" && !isNegativeValue(arg)
@@ -1302,10 +1118,10 @@ Promise.resolve().then(() => {
 
         function collectApplicableTransformationEntries() {
             const entries = [];
-            const modes = ["plain", "exponent", "inverse"];
+            const modes = ["plain", "inverse"];
 
             for (const mode of modes) {
-                (TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[mode] || []).forEach(row => {
+                (TOOL_FORM_MENU_ROWS_BY_MODE[mode] || []).forEach(row => {
                     if (!row) {
                         return;
                     }
@@ -1995,7 +1811,6 @@ Promise.resolve().then(() => {
                 <button class="builder-sum-button">+</button>
                 <button class="builder-prod-button">·</button>
                 <button class="builder-inv-button">1/A</button>
-                <button class="builder-exp-button">^</button>
             </div></div></div>`;
             probe.appendChild(builderProbe);
             return probe;
@@ -2614,13 +2429,6 @@ Promise.resolve().then(() => {
             );
         }
 
-        function expressionTreeContainsExponent(node) {
-            return !!node && (
-                node.type === "exp" ||
-                (Array.isArray(node.args) && node.args.some(expressionTreeContainsExponent))
-            );
-        }
-
         const EXPLODED_STEP_EXPRESSION_FIELDS = [
             "expression",
             "explodedExpression",
@@ -2630,7 +2438,6 @@ Promise.resolve().then(() => {
             "afterExplodedExpression"
         ];
         const EXPLODED_STEP_VARIANT_FIELDS = ["preCompletion", "postCompletion"];
-        const explodedExponentAvailabilityCache = new WeakMap();
 
         function getExplodedExpressionTextsForStep(step) {
             if (!step || typeof step !== "object") {
@@ -2652,33 +2459,6 @@ Promise.resolve().then(() => {
                 });
             });
             return [...new Set(texts)];
-        }
-
-        function levelUsesExplodedExponentNode(level) {
-            if (!level || typeof level !== "object") {
-                return false;
-            }
-            if (explodedExponentAvailabilityCache.has(level)) {
-                return explodedExponentAvailabilityCache.get(level);
-            }
-
-            const explodedExpressionTexts = [];
-            if (typeof level.startExpression === "string" && level.startExpression.trim()) {
-                explodedExpressionTexts.push(level.startExpression);
-            }
-            (level.steps || []).forEach(step => {
-                explodedExpressionTexts.push(...getExplodedExpressionTextsForStep(step));
-            });
-
-            const containsExponent = [...new Set(explodedExpressionTexts)].some(expressionText => {
-                try {
-                    return expressionTreeContainsExponent(textToExpression(expressionText));
-                } catch (error) {
-                    return false;
-                }
-            });
-            explodedExponentAvailabilityCache.set(level, containsExponent);
-            return containsExponent;
         }
 
         function expressionTextsMatch(firstText, secondText) {
@@ -3842,7 +3622,7 @@ ctx.font = SETTINGS.textFont;
             previewTimerId: null,
             showFloatingMenu: true,
             activeToolCategory: null,
-            toolExponentMode: TOOL_EXPONENT_MODES.plain,
+            toolMode: TOOL_MODES.plain,
             toolNotationMode: "categories",
             zeroProductOrientation: "left",
             floatingMenuX: 0,
@@ -4207,27 +3987,17 @@ ctx.font = SETTINGS.textFont;
                 return normalizeExpressionTree(new ExprNode("prod", [numerator, makeInverseNode(denominator)], null));
             }
 
-            const exponentIndex = findTopLevelOperatorIndex(inside, "^");
-            if (exponentIndex !== -1) {
-                const baseText = inside.slice(0, exponentIndex).trim();
-                const exponentText = inside.slice(exponentIndex + 1).trim();
-                if (!baseText || !exponentText) {
-                    throw new Error("A power needs both a base and an exponent.");
-                }
-                return new ExprNode("exp", [
-                    parseParenthesizedExpressionStrict(baseText),
-                    parseParenthesizedExpressionStrict(exponentText)
-                ], null);
-            }
-
             if (isWrappedBySingleOuterPair(inside)) {
                 return parseParenthesizedExpressionStrict(inside);
             }
 
             if (inside.includes(",")) {
-                throw new Error("Use +, *, /, and ^ instead of commas.");
+                throw new Error("Use +, *, and / instead of commas.");
             }
-            if (/[()+*/^]/.test(inside)) {
+            if (inside.includes("^")) {
+                throw new Error("Write powers as repeated multiplication in exploded expressions.");
+            }
+            if (/[()+*/]/.test(inside)) {
                 throw new Error("Could not parse this fully parenthesized expression.");
             }
 
@@ -4280,10 +4050,6 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 return `(${parts.join("*")})`;
-            }
-
-            if (node.type === "exp") {
-                return `(${parts[0]}^${parts[1]})`;
             }
 
             if (node.type === "inv") {
@@ -5123,7 +4889,7 @@ ctx.font = SETTINGS.textFont;
             uiState.activeTool = null;
             uiState.activeToolCategory = null;
             uiState.expressionBuilder = null;
-            uiState.toolExponentMode = getDefaultToolExponentModeForSelection();
+            uiState.toolMode = getDefaultToolModeForSelection();
             uiState.stage = "idle";
             uiState.chosenDirection = null;
             uiState.chosenIdentity = null;
@@ -5222,29 +4988,6 @@ ctx.font = SETTINGS.textFont;
                         : Math.max(0, Math.hypot(x - centerX, y - separatorY) - SETTINGS.flare);
                     candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
                 }
-                return;
-            }
-
-            if (node.type === "exp") {
-                const xLeft = node.left();
-                const xMid = relVLine(node, 1);
-                const xRight = node.right();
-                const yTop = node.top();
-                const yMid = relHLine(node, 1);
-                const yBottom = node.bottom();
-                candidates.push({
-                    node,
-                    firstPart: 0,
-                    lastPart: 1,
-                    distance: distanceFromPointToSegments(x, y, [
-                        [xLeft, yMid, xMid, yMid],
-                        [xMid, yTop, xMid, yBottom],
-                        [xMid, yTop, xRight, yTop],
-                        [xRight, yTop, xRight, yMid],
-                        [xLeft, yMid, xLeft, yMid + SETTINGS.flare],
-                        [xMid, yBottom, xMid - SETTINGS.flare, yBottom]
-                    ])
-                });
                 return;
             }
 
@@ -5360,7 +5103,7 @@ ctx.font = SETTINGS.textFont;
             return {
                 node: commonNode,
                 firstPart: 0,
-                lastPart: commonNode.type === "exp" ? 1 : 0
+                lastPart: 0
             };
         }
 
@@ -5716,16 +5459,6 @@ ctx.font = SETTINGS.textFont;
             return !!node && node.type === "value" && node.value === "0";
         }
 
-        function canInsertExponentZero() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "1";
-        }
-
-        function canInsertPowerOfOne() {
-            const node = cloneSelectedRangeNode();
-            return !!node && node.type === "value" && node.value === "1";
-        }
-
         function getProductInverseCancellationData() {
             const node = cloneSelectedRangeNode();
             if (!node || node.type !== "prod" || !node.args || node.args.length < 2) {
@@ -5739,8 +5472,8 @@ ctx.font = SETTINGS.textFont;
                 }
 
                 // A may itself be a product. Since products are normalized by
-                // flattening nested products, A · A^-1 can appear as
-                // a · b · c · (a · b · c)^-1. Match the inverse against any
+                // flattening nested products, A times inverse(A) can appear as
+                // a · b · c · inverse(a · b · c). Match the inverse against any
                 // collection of sibling factors, not just a single sibling.
                 const requiredFactors = getProductFactorsForMatching(possibleInverse.args[0]);
                 const expressionIndices = findMatchingNodeIndices(requiredFactors, node.args, new Set(), inverseIndex);
@@ -5810,10 +5543,6 @@ ctx.font = SETTINGS.textFont;
             return !!node && node.type === "inv" && node.args && node.args.length === 1;
         }
 
-        function isExpNode(node) {
-            return !!node && node.type === "exp" && node.args && node.args.length === 2;
-        }
-
         function isProdNode(node) {
             return !!node && node.type === "prod" && node.args && node.args.length >= 1;
         }
@@ -5826,47 +5555,19 @@ ctx.font = SETTINGS.textFont;
             return new ExprNode("inv", [cloneNode(node)], null);
         }
 
-        function makeExponentNode(base, exponent) {
-            return new ExprNode("exp", [cloneNode(base), cloneNode(exponent)], null);
-        }
-
-        function parsePositiveIntegerValue(node) {
-            if (!isValueNode(node, node && node.value)) {
-                return null;
-            }
-            if (!/^\d+$/.test(node.value)) {
-                return null;
-            }
-            const n = Number(node.value);
-            return n > 0 ? n : null;
-        }
-
-        function isProductTwoTimesSomething(node) {
-            return isProdNode(node) && node.args.length === 2 &&
-                (isValueNode(node.args[0], "2") || isValueNode(node.args[1], "2"));
-        }
-
-        function isTwoNPlusOne(node) {
-            if (!isSumNode(node) || node.args.length !== 2) {
-                return false;
-            }
-            return (isProductTwoTimesSomething(node.args[0]) && isValueNode(node.args[1], "1")) ||
-                (isProductTwoTimesSomething(node.args[1]) && isValueNode(node.args[0], "1"));
-        }
-
-        function getPowerInverseRewriteApplicability() {
+        function getInverseRewriteApplicability() {
             const out = {};
-            for (const key of POWER_INVERSE_REWRITE_TOOLS) {
-                out[key] = canApplyPowerInverseRewrite(key);
+            for (const key of INVERSE_REWRITE_TOOLS) {
+                out[key] = canApplyInverseRewrite(key);
             }
             return out;
         }
 
-        function canApplyPowerInverseRewrite(ruleName) {
-            return !!getPowerInverseRewriteReplacement(ruleName);
+        function canApplyInverseRewrite(ruleName) {
+            return !!getInverseRewriteReplacement(ruleName);
         }
 
-        function getPowerInverseRewriteReplacement(ruleName) {
+        function getInverseRewriteReplacement(ruleName) {
             const node = cloneSelectedRangeNode();
             if (!node) {
                 return null;
@@ -5880,193 +5581,11 @@ ctx.font = SETTINGS.textFont;
                 return isValueNode(node, "-1") ? makeInverseNode(valueNode("-1")) : null;
             }
 
-            if (ruleName === "eliminateExponentOne") {
-                return isExpNode(node) && isValueNode(node.args[1], "1") ? cloneNode(node.args[0]) : null;
-            }
-
-            if (ruleName === "insertExponentOne") {
-                return makeExponentNode(node, valueNode("1"));
-            }
-
-            if (ruleName === "eliminateExponentZero") {
-                return isExpNode(node) && isValueNode(node.args[1], "0") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "rewriteNegativeOneExponentAsInverse") {
-                return isExpNode(node) && isValueNode(node.args[1], "-1") ? makeInverseNode(node.args[0]) : null;
-            }
-
-            if (ruleName === "rewriteInverseAsNegativeOneExponent") {
-                return isInvNode(node)
-                    ? new ExprNode("exp", [cloneNode(node.args[0]), valueNode("-1")], null)
-                    : null;
-            }
-
-            if (ruleName === "eliminateInverseToNegativeOnePower") {
-                return isExpNode(node) && isInvNode(node.args[0]) && isValueNode(node.args[1], "-1")
-                    ? cloneNode(node.args[0].args[0])
-                    : null;
-            }
-
-            if (ruleName === "distributePowerOverInverse") {
-                if (!isExpNode(node) || !isInvNode(node.args[0])) {
-                    return null;
-                }
-                return makeInverseNode(new ExprNode("exp", [cloneNode(node.args[0].args[0]), cloneNode(node.args[1])], null));
-            }
-
-            if (ruleName === "factorPowerOutOfInverse") {
-                if (!isInvNode(node) || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [makeInverseNode(node.args[0].args[0]), cloneNode(node.args[0].args[1])], null);
-            }
-
-            if (ruleName === "powerOfPower") {
-                if (!isExpNode(node) || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeProductFromFactors([cloneNode(node.args[0].args[1]), cloneNode(node.args[1])])], null);
-            }
-
-            if (ruleName === "expandPowerOfPower") {
-                if (!isExpNode(node) || !isProdNode(node.args[1]) || node.args[1].args.length < 2) {
-                    return null;
-                }
-                const exponentFactors = node.args[1].args;
-                const innerExponent = cloneNode(exponentFactors[0]);
-                const outerExponent = makeProductFromFactors(exponentFactors.slice(1).map(cloneNode));
-                return new ExprNode("exp", [
-                    new ExprNode("exp", [cloneNode(node.args[0]), innerExponent], null),
-                    outerExponent
-                ], null);
-            }
-
-            if (ruleName === "combineSameBasePowers") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0]) || !isExpNode(node.args[1])) {
-                    return null;
-                }
-                if (!sameExpression(node.args[0].args[0], node.args[1].args[0])) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(node.args[0].args[0]), makeSumFromTerms([cloneNode(node.args[0].args[1]), cloneNode(node.args[1].args[1])])], null);
-            }
-
-            if (ruleName === "expandPowerOfSum") {
-                if (!isExpNode(node) || !isSumNode(node.args[1]) || node.args[1].args.length < 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[1].args.map(term => new ExprNode("exp", [cloneNode(node.args[0]), cloneNode(term)], null)));
-            }
-
-            if (ruleName === "divideSameBasePowers") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isExpNode(node.args[0])) {
-                    return null;
-                }
-                const firstPower = node.args[0];
-                const secondFactor = node.args[1];
-                if (isInvNode(secondFactor) && isExpNode(secondFactor.args[0])) {
-                    const secondPower = secondFactor.args[0];
-                    if (!sameExpression(firstPower.args[0], secondPower.args[0])) {
-                        return null;
-                    }
-                    return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), makeProductFromFactors([valueNode("-1"), cloneNode(secondPower.args[1])])])], null);
-                }
-                if (isExpNode(secondFactor) && sameExpression(firstPower.args[0], secondFactor.args[0]) && isProdNode(secondFactor.args[1])) {
-                    const terms = secondFactor.args[1].args;
-                    if (terms.length === 2 && isValueNode(terms[0], "-1")) {
-                        return new ExprNode("exp", [cloneNode(firstPower.args[0]), makeSumFromTerms([cloneNode(firstPower.args[1]), cloneNode(secondFactor.args[1])])], null);
-                    }
-                }
-                return null;
-            }
-
-            if (ruleName === "distributeExponentOverProduct") {
-                if (!isExpNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length < 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[0].args.map(factor => new ExprNode("exp", [cloneNode(factor), cloneNode(node.args[1])], null)));
-            }
-
-            if (ruleName === "factorCommonExponent") {
-                if (!isProdNode(node) || node.args.length < 2 || !node.args.every(isExpNode)) {
-                    return null;
-                }
-                const commonExponent = node.args[0].args[1];
-                if (!node.args.every(power => sameExpression(power.args[1], commonExponent))) {
-                    return null;
-                }
-                return new ExprNode("exp", [makeProductFromFactors(node.args.map(power => cloneNode(power.args[0]))), cloneNode(commonExponent)], null);
-            }
-
-            if (ruleName === "oneToAnyPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneSquared") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isValueNode(node.args[1], "2") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneEvenPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isProductTwoTimesSomething(node.args[1]) ? valueNode("1") : null;
-            }
-
-            if (ruleName === "negativeOneOddPower") {
-                return isExpNode(node) && isValueNode(node.args[0], "-1") && isTwoNPlusOne(node.args[1]) ? valueNode("-1") : null;
-            }
-
-            if (ruleName === "repeatedProductToPower") {
-                if (!isProdNode(node) || node.args.length < 2) {
-                    return null;
-                }
-                const first = node.args[0];
-                if (!node.args.every(child => sameExpression(child, first))) {
-                    return null;
-                }
-                return new ExprNode("exp", [cloneNode(first), valueNode(node.args.length)], null);
-            }
-
-            if (ruleName === "powerToRepeatedProduct") {
-                if (!isExpNode(node)) {
-                    return null;
-                }
-                const count = parsePositiveIntegerValue(node.args[1]);
-                if (count === null || count < 2 || count > 20) {
-                    return null;
-                }
-                return makeProductFromFactors(Array.from({ length: count }, () => cloneNode(node.args[0])));
-            }
-
-            if (ruleName === "inverseOne") {
-                return isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
-            }
-
-            if (ruleName === "factorProductOfTwoInverses") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[0]) || !isInvNode(node.args[1])) {
-                    return null;
-                }
-                return makeInverseNode(makeProductFromFactors([cloneNode(node.args[0].args[0]), cloneNode(node.args[1].args[0])]));
-            }
-
-            if (ruleName === "distributeInverseOverTwoProduct") {
-                if (!isInvNode(node) || !isProdNode(node.args[0]) || node.args[0].args.length !== 2) {
-                    return null;
-                }
-                return makeProductFromFactors(node.args[0].args.map(factor => makeInverseNode(factor)));
-            }
-
-            if (ruleName === "inverseFactorAsNegativeExponent") {
-                if (!isProdNode(node) || node.args.length !== 2 || !isInvNode(node.args[1])) {
-                    return null;
-                }
-                return makeProductFromFactors([cloneNode(node.args[0]), new ExprNode("exp", [cloneNode(node.args[1].args[0]), valueNode("-1")], null)]);
-            }
-
             return null;
         }
 
-        function applyPowerInverseRewrite(ruleName) {
-            const replacement = getPowerInverseRewriteReplacement(ruleName);
+        function applyInverseRewrite(ruleName) {
+            const replacement = getInverseRewriteReplacement(ruleName);
             if (!replacement) {
                 return false;
             }
@@ -6399,8 +5918,6 @@ ctx.font = SETTINGS.textFont;
                 result = values.reduce((a, b) => a + b, 0);
             } else if (node.type === "prod") {
                 result = values.reduce((a, b) => a * b, 1);
-            } else if (node.type === "exp" && values.length === 2) {
-                result = Math.pow(values[0], values[1]);
             } else {
                 return null;
             }
@@ -6489,12 +6006,6 @@ ctx.font = SETTINGS.textFont;
                 return childLevels.every(level => level <= 2) ? 2 : 3;
             }
 
-            if (node.type === "exp" && node.args.length === 2) {
-                return isWholeNumberLeafNode(node.args[0]) && isWholeNumberLeafNode(node.args[1])
-                    ? 2
-                    : 3;
-            }
-
             return null;
         }
 
@@ -6509,10 +6020,10 @@ ctx.font = SETTINGS.textFont;
                 return "Level 0 allows no-carry addition of two or more nonnegative whole numbers, or multiplication of exactly two one-significant-figure whole numbers.";
             }
             if (clamped === 1) {
-                return "Level 1 allows flat nonnegative sums or flat nonnegative products, with no exponents and no nesting.";
+                return "Level 1 allows flat nonnegative sums or flat nonnegative products, with no nesting.";
             }
             if (clamped === 2) {
-                return "Level 2 allows nested sums and products, the negative unit, and simple nonnegative whole-number exponents.";
+                return "Level 2 allows nested sums and products and the negative unit.";
             }
             return "Level 3 allows any expression made entirely of numbers.";
         }
@@ -6527,7 +6038,6 @@ ctx.font = SETTINGS.textFont;
                     addition: "no-carry",
                     multiplication: "one-significant-figure",
                     allowNegativeOne: false,
-                    allowExponents: false,
                     allowInverses: false
                 };
             }
@@ -6536,7 +6046,6 @@ ctx.font = SETTINGS.textFont;
                     addition: "flat",
                     multiplication: "unrestricted",
                     allowNegativeOne: false,
-                    allowExponents: false,
                     allowInverses: false
                 };
             }
@@ -6544,7 +6053,6 @@ ctx.font = SETTINGS.textFont;
                 addition: "expression-terms",
                 multiplication: "unrestricted",
                 allowNegativeOne: true,
-                allowExponents: true,
                 allowInverses: legacyLevel >= 3
             };
         }
@@ -6555,7 +6063,6 @@ ctx.font = SETTINGS.textFont;
                     addition: level.numericalRewrite.addition,
                     multiplication: level.numericalRewrite.multiplication,
                     allowNegativeOne: level.numericalRewrite.allowNegativeOne === true,
-                    allowExponents: level.numericalRewrite.allowExponents === true,
                     allowInverses: level.numericalRewrite.allowInverses === true
                 };
             }
@@ -6572,7 +6079,7 @@ ctx.font = SETTINGS.textFont;
             if (!NUMERICAL_REWRITE_MULTIPLICATION_MODES.includes(profile.multiplication)) {
                 throw new Error(`${sourceName} has an invalid numericalRewrite.multiplication setting.`);
             }
-            ["allowNegativeOne", "allowExponents", "allowInverses"].forEach(fieldName => {
+            ["allowNegativeOne", "allowInverses"].forEach(fieldName => {
                 if (typeof profile[fieldName] !== "boolean") {
                     throw new Error(`${sourceName} has an invalid numericalRewrite.${fieldName} setting.`);
                 }
@@ -6596,9 +6103,6 @@ ctx.font = SETTINGS.textFont;
                 multiplicationDescriptions[profile.multiplication],
                 `Negative one: ${profile.allowNegativeOne ? "allowed" : "not allowed"}`
             ];
-            if (profile.allowExponents) {
-                items.push("Exponents: allowed");
-            }
             items.push(`Inverses: ${profile.allowInverses ? "allowed" : "not allowed"}`);
             return items;
         }
@@ -6643,34 +6147,6 @@ ctx.font = SETTINGS.textFont;
                 first.numerator * second.numerator,
                 first.denominator * second.denominator
             );
-        }
-
-        function raiseExactRationalToInteger(base, exponent) {
-            if (exponent === 0n) {
-                return base.numerator === 0n ? null : makeExactRational(1n);
-            }
-            if (exponent < 0n && base.numerator === 0n) {
-                return null;
-            }
-            const absoluteExponent = exponent < 0n ? -exponent : exponent;
-            if (absoluteExponent > 10000n) {
-                return null;
-            }
-            let result = makeExactRational(1n);
-            let factor = base;
-            let remaining = absoluteExponent;
-            while (remaining > 0n) {
-                if (remaining % 2n === 1n) {
-                    result = multiplyExactRationals(result, factor);
-                }
-                remaining /= 2n;
-                if (remaining > 0n) {
-                    factor = multiplyExactRationals(factor, factor);
-                }
-            }
-            return exponent < 0n
-                ? makeExactRational(result.denominator, result.numerator)
-                : result;
         }
 
         function getWholeNumberBigIntFromNode(node) {
@@ -6721,14 +6197,6 @@ ctx.font = SETTINGS.textFont;
                 return value && value.numerator !== 0n
                     ? makeExactRational(value.denominator, value.numerator)
                     : null;
-            }
-            if (node.type === "exp" && node.args.length === 2) {
-                const base = evaluateNumericalRewriteNodeExactly(node.args[0]);
-                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
-                if (!base || !exponent || exponent.denominator !== 1n) {
-                    return null;
-                }
-                return raiseExactRationalToInteger(base, exponent.numerator);
             }
             return null;
         }
@@ -6799,13 +6267,10 @@ ctx.font = SETTINGS.textFont;
             if (node.type === "prod" && profile.multiplication === "none") {
                 return { ok: false, error: `Multiplication is not allowed in the ${roleLabel} expression.` };
             }
-            if (node.type === "exp" && !profile.allowExponents) {
-                return { ok: false, error: `Exponents are not allowed in the ${roleLabel} expression.` };
-            }
             if (node.type === "inv" && !profile.allowInverses) {
                 return { ok: false, error: `Inverses are not allowed in the ${roleLabel} expression.` };
             }
-            if (!["sum", "prod", "exp", "inv"].includes(node.type)) {
+            if (!["sum", "prod", "inv"].includes(node.type)) {
                 return { ok: false, error: `The ${roleLabel} expression contains an unsupported numerical operation.` };
             }
 
@@ -6825,16 +6290,6 @@ ctx.font = SETTINGS.textFont;
                         (!isAllowedNegativeUnit && !isOneSignificantFigureBigInt(factorValue.numerator))) {
                         return { ok: false, error: `Every factor in the ${roleLabel} expression must have one significant figure.` };
                     }
-                }
-            }
-
-            if (node.type === "exp") {
-                const exponent = evaluateNumericalRewriteNodeExactly(node.args[1]);
-                if (!exponent || exponent.denominator !== 1n) {
-                    return { ok: false, error: `The exponent in the ${roleLabel} expression must be an integer value.` };
-                }
-                if (exponent.numerator < 0n && !profile.allowInverses) {
-                    return { ok: false, error: `A negative exponent also requires inverses to be allowed.` };
                 }
             }
 
@@ -7455,7 +6910,7 @@ ctx.font = SETTINGS.textFont;
         function getApplicableTools() {
             const leftFactorData = getFactoringData("left");
             const rightFactorData = getFactoringData("right");
-            const powerInverseApplicability = getPowerInverseRewriteApplicability();
+            const inverseRewriteApplicability = getInverseRewriteApplicability();
 
             return {
                 commute: canCommuteRotate(),
@@ -7471,14 +6926,12 @@ ctx.font = SETTINGS.textFont;
                 insertZeroProduct: canInsertZeroProduct(),
                 insertZeroProductLeft: canInsertZeroProduct(),
                 insertZeroProductRight: canInsertZeroProduct(),
-                insertExponentZero: canInsertExponentZero(),
-                insertPowerOfOne: canInsertPowerOfOne(),
                 cancelProductWithInverse: canCancelProductWithInverse(),
                 eliminateDoubleInverse: canEliminateDoubleInverse(),
                 insertDoubleInverse: canInsertDoubleInverse(),
                 distributeInverseOverProduct: canDistributeInverseOverProduct(),
                 factorProductOfInverses: canFactorProductOfInverses(),
-                ...powerInverseApplicability,
+                ...inverseRewriteApplicability,
                 insertIdentity: canInsertIdentity(),
                 insertIdentityAddZeroTop: canInsertIdentity(),
                 insertIdentityAddZeroBottom: canInsertIdentity(),
@@ -7509,7 +6962,7 @@ ctx.font = SETTINGS.textFont;
                 doubleNegative: canDoubleNegative(),
                 zeroProduct: canZeroProduct(),
                 reduceToZero: canZeroProduct() || canCancelOpposites(),
-                reduceToOne: canCancelProductWithInverse() || !!powerInverseApplicability.eliminateExponentZero || !!powerInverseApplicability.oneToAnyPower
+                reduceToOne: canCancelProductWithInverse()
             };
         }
 
@@ -7769,8 +7222,6 @@ ctx.font = SETTINGS.textFont;
             return [
                 "replaceOneWithInverseProduct",
                 "insertZeroProduct",
-                "insertExponentZero",
-                "insertPowerOfOne",
                 "cancelOpposites",
                 "numericalEquivalence",
                 "numericalRewrite",
@@ -7843,7 +7294,7 @@ ctx.font = SETTINGS.textFont;
             if (isNumericalRewriteTool(toolName)) {
                 // Keep all numerical operations available so Submit can explain
                 // any exercise-specific restriction the learner has exceeded.
-                return ["sum", "prod", "exp", "inv"];
+                return ["sum", "prod", "inv"];
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive" || toolName === "numProductWithNegatives") {
                 return ["prod"];
@@ -7855,9 +7306,9 @@ ctx.font = SETTINGS.textFont;
                 return ["sum", "prod"];
             }
             if (toolName === "replaceOneWithInverseProduct") {
-                return ["sum", "prod", "exp", "inv"];
+                return ["sum", "prod", "inv"];
             }
-            return ["sum", "prod", "exp"];
+            return ["sum", "prod"];
         }
 
         function makePlaceholderNode() {
@@ -7966,16 +7417,6 @@ ctx.font = SETTINGS.textFont;
                 const root = builder.zeroProductOrientation === "right"
                     ? new ExprNode("prod", [expressionDisplay, valueNode("0")], null)
                     : new ExprNode("prod", [valueNode("0"), expressionDisplay], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "insertExponentZero") {
-                const root = new ExprNode("exp", [expressionDisplay, valueNode("0")], null);
-                root.isBuilderOuter = true;
-                return root;
-            }
-            if (builder.tool === "insertPowerOfOne") {
-                const root = new ExprNode("exp", [valueNode("1"), expressionDisplay], null);
                 root.isBuilderOuter = true;
                 return root;
             }
@@ -8244,9 +7685,7 @@ ctx.font = SETTINGS.textFont;
                 }
             }
 
-            const replacement = type === "exp"
-                ? new ExprNode("exp", [firstArgument, secondArgument], null)
-                : new ExprNode(type, [firstArgument, secondArgument], null);
+            const replacement = new ExprNode(type, [firstArgument, secondArgument], null);
             pushExpressionBuilderUndoState();
             builder.root = setNodeAtPath(builder.root, builder.currentPath, replacement);
             builder.currentPath = currentIsPlaceholder
@@ -8277,7 +7716,7 @@ ctx.font = SETTINGS.textFont;
             if (parentType === "sum") {
                 return "0";
             }
-            if (parentType === "prod" || parentType === "exp") {
+            if (parentType === "prod") {
                 return "1";
             }
             return toolName === "cancelOpposites" ? "0" : "1";
@@ -8354,10 +7793,6 @@ ctx.font = SETTINGS.textFont;
                 replacement = builder.zeroProductOrientation === "right"
                     ? new ExprNode("prod", [cloneNode(completed), valueNode("0")], null)
                     : new ExprNode("prod", [valueNode("0"), cloneNode(completed)], null);
-            } else if (builder.tool === "insertExponentZero") {
-                replacement = makeExponentNode(completed, valueNode("0"));
-            } else if (builder.tool === "insertPowerOfOne") {
-                replacement = makeExponentNode(valueNode("1"), completed);
             } else if (builder.tool === "cancelOpposites") {
                 replacement = makeSumFromTerms([cloneNode(completed), makeProductFromFactors([valueNode("-1"), cloneNode(completed)])]);
             } else if (isNumericalRewriteTool(builder.tool)) {
@@ -8392,7 +7827,7 @@ ctx.font = SETTINGS.textFont;
                 const target = getOriginalBuilderTargetValue(builder);
                 const computed = evaluateBuilderWholeNumberExpression(completed);
                 if (target === null || computed === null) {
-                    return builderValidationFailed("Build a whole number, a sum of whole numbers, a product of whole numbers, or one whole-number exponent.");
+                    return builderValidationFailed("Build a whole number, a sum of whole numbers, or a product of whole numbers.");
                 }
                 if (computed !== target) {
                     return builderValidationFailed(`That expression evaluates to ${computed}, not ${target}.`);
@@ -8473,20 +7908,6 @@ ctx.font = SETTINGS.textFont;
                 return submitExpressionBuilder();
             }
             return beginExpressionBuilder("insertZeroProduct");
-        }
-
-        function applyInsertExponentZero() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("insertExponentZero");
-        }
-
-        function applyInsertPowerOfOne() {
-            if (uiState.expressionBuilder) {
-                return submitExpressionBuilder();
-            }
-            return beginExpressionBuilder("insertPowerOfOne");
         }
 
         function applyCancelProductWithInverse() {
@@ -8590,31 +8011,17 @@ ctx.font = SETTINGS.textFont;
         function parseNumericalEquivalenceExpansionInput(text) {
             const raw = String(text || "").trim();
             if (!raw) {
-                return { ok: false, error: "Enter an equivalent sum, product, or exponent." };
+                return { ok: false, error: "Enter an equivalent sum or product." };
             }
 
             const hasPlus = /[+]/.test(raw);
             const hasProduct = /[xX*]/.test(raw);
-            const hasExponent = /\^/.test(raw);
-            const formCount = [hasPlus, hasProduct, hasExponent].filter(Boolean).length;
+            const formCount = [hasPlus, hasProduct].filter(Boolean).length;
             if (formCount > 1) {
-                return { ok: false, error: "Level 1 numerical equivalence uses one sum, one product, or one exponent, not a mixed expression." };
+                return { ok: false, error: "Level 1 numerical equivalence uses one sum or one product, not a mixed expression." };
             }
             if (formCount === 0) {
-                return { ok: false, error: "Use + for a sum, * for a product, or ^ for an exponent, such as 2+3+4, 2*3*4, or 2^3." };
-            }
-
-            if (hasExponent) {
-                const pieces = raw.split("^").map(piece => piece.trim()).filter(piece => piece.length > 0);
-                if (pieces.length !== 2) {
-                    return { ok: false, error: "Use one binary exponent, such as 2^3." };
-                }
-                const base = parseNonNegativeInteger(pieces[0]);
-                const exponent = parseNonNegativeInteger(pieces[1]);
-                if (base === null || exponent === null) {
-                    return { ok: false, error: "Level 1 exponents use whole-number base and exponent values." };
-                }
-                return { ok: true, mode: "exponent", nums: [base, exponent] };
+                return { ok: false, error: "Use + for a sum or * for a product, such as 2+3+4 or 2*3*4." };
             }
 
             const mode = hasProduct ? "product" : "sum";
@@ -8798,16 +8205,12 @@ ctx.font = SETTINGS.textFont;
 
                 const computed = parsed.mode === "sum"
                     ? parsed.nums.reduce((a, b) => a + b, 0)
-                    : parsed.mode === "product"
-                        ? parsed.nums.reduce((a, b) => a * b, 1)
-                        : Math.pow(parsed.nums[0], parsed.nums[1]);
+                    : parsed.nums.reduce((a, b) => a * b, 1);
 
                 if (computed !== target) {
                     uiState.message = parsed.mode === "sum"
                         ? `Those addends sum to ${computed}, not ${target}.`
-                        : parsed.mode === "product"
-                            ? `Those factors multiply to ${computed}, not ${target}.`
-                            : `That exponent evaluates to ${computed}, not ${target}.`;
+                        : `Those factors multiply to ${computed}, not ${target}.`;
                     renderToolArea();
                     refreshStatus();
                     return false;
@@ -8815,9 +8218,7 @@ ctx.font = SETTINGS.textFont;
 
                 const replacement = parsed.mode === "sum"
                     ? makeSumFromTerms(parsed.nums.map(n => new ExprNode("value", [], String(n))))
-                    : parsed.mode === "product"
-                        ? makeProductFromFactors(parsed.nums.map(n => new ExprNode("value", [], String(n))))
-                        : makeExponentNode(valueNode(parsed.nums[0]), valueNode(parsed.nums[1]));
+                    : makeProductFromFactors(parsed.nums.map(n => new ExprNode("value", [], String(n))));
                 replaceSelectedRange(replacement);
                 finishOperation();
                 return true;
@@ -9177,7 +8578,7 @@ ctx.font = SETTINGS.textFont;
         function getExpressionBuilderNote() {
             const toolName = uiState.activeTool;
             if (toolName === "numericalEquivalence") {
-                return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, a product of whole numbers, or one binary exponent.";
+                return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, or a product of whole numbers.";
             }
             if (isNumericalRewriteTool(toolName)) {
                 return "Build the proposed replacement shown beside the selected expression. Submit first checks its value, then this exercise's restrictions.";
@@ -9195,7 +8596,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Use Sum, Product, or Exponent to make structure first, or enter a value first and then use those buttons to wrap it. Any remaining empty boxes are filled on Submit.";
+            let note = "Use Sum or Product to make structure first, or enter a value first and then use those buttons to wrap it. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }
@@ -9217,8 +8618,6 @@ ctx.font = SETTINGS.textFont;
                 node = new ExprNode("prod", [blank(), blank()], null);
             } else if (type === "inv") {
                 node = new ExprNode("inv", [blank()], null);
-            } else if (type === "exp") {
-                node = new ExprNode("exp", [blank(), blank()], null);
             } else {
                 node = valueNode(value === "−1" ? "-1" : value || "-1");
             }
@@ -9263,8 +8662,8 @@ ctx.font = SETTINGS.textFont;
         function buildExpressionBuilderHtml() {
             const toolName = uiState.activeTool;
             const operationTypes = getBuilderOperationTypes(toolName);
-            const operationShortcuts = { sum: "+", prod: "*", exp: "^", inv: "/" };
-            const operationNames = { exp: "Insert exponent structure", prod: "Insert product structure", sum: "Insert sum structure", inv: "Insert inverse structure" };
+            const operationShortcuts = { sum: "+", prod: "*", inv: "/" };
+            const operationNames = { prod: "Insert product structure", sum: "Insert sum structure", inv: "Insert inverse structure" };
             const buildOperationButton = type => {
                 const enabled = operationTypes.includes(type);
                 const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
@@ -9293,34 +8692,29 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("inv")}
-                        ${buildOperationButton("exp")}
                     </div>
                 </div>
             </div>`;
         }
 
-        function buildToolExponentModeHtml() {
-            const mode = getCurrentToolExponentMode();
-            return `<div class="tool-exponent-mode" role="radiogroup" aria-label="Tool list">
+        function buildToolModeHtml() {
+            const mode = getCurrentToolMode();
+            return `<div class="tool-mode" role="radiogroup" aria-label="Tool list">
                 <span class="panel-menu-title">Tool list</span>
-                <label class="tool-exponent-radio-label" title="Basic algebra tools">
-                    <input type="radio" name="toolExponentMode" value="plain"${mode === TOOL_EXPONENT_MODES.plain ? " checked" : ""}>
+                <label class="tool-mode-radio-label" title="Basic algebra tools">
+                    <input type="radio" name="toolMode" value="plain"${mode === TOOL_MODES.plain ? " checked" : ""}>
                     <span>1</span>
                 </label>
-                <label class="tool-exponent-radio-label" title="Multiplicative inverse tools">
-                    <input type="radio" name="toolExponentMode" value="inverse"${mode === TOOL_EXPONENT_MODES.inverse ? " checked" : ""}>
+                <label class="tool-mode-radio-label" title="Multiplicative inverse tools">
+                    <input type="radio" name="toolMode" value="inverse"${mode === TOOL_MODES.inverse ? " checked" : ""}>
                     <span>2</span>
-                </label>
-                <label class="tool-exponent-radio-label" title="Exponent tools">
-                    <input type="radio" name="toolExponentMode" value="exponent"${mode === TOOL_EXPONENT_MODES.exponent ? " checked" : ""}>
-                    <span>3</span>
                 </label>
             </div>`;
         }
 
         function buildQuickToolRowsHtml() {
             let html = `<div class="tool-form-grid">`;
-            for (const row of getToolFormRowsForCurrentExponentMode()) {
+            for (const row of getToolFormRowsForCurrentMode()) {
                 if (!isToolFormRowAvailable(row)) {
                     continue;
                 }
@@ -9332,7 +8726,7 @@ ctx.font = SETTINGS.textFont;
 
         function buildToolCategoryMenuHtml() {
             uiState.activeToolCategory = null;
-            return buildToolExponentModeHtml() + buildQuickToolRowsHtml();
+            return buildToolModeHtml() + buildQuickToolRowsHtml();
         }
 
         function collectToolFormToolsFromSide(side, out) {
@@ -9367,9 +8761,9 @@ ctx.font = SETTINGS.textFont;
 
         function getToolFormModeForTool(toolName) {
             const normalizedToolName = toolName === "commute" ? "commuteFirstToLast" : toolName;
-            for (const mode of Object.keys(TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE)) {
+            for (const mode of Object.keys(TOOL_FORM_MENU_ROWS_BY_MODE)) {
                 const tools = new Set();
-                (TOOL_FORM_MENU_ROWS_BY_EXPONENT_MODE[mode] || []).forEach(row => {
+                (TOOL_FORM_MENU_ROWS_BY_MODE[mode] || []).forEach(row => {
                     collectToolFormToolsFromRow(row, tools);
                 });
                 if (tools.has(normalizedToolName)) {
@@ -9385,13 +8779,13 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             const mode = getToolFormModeForTool(step.tool);
-            if (mode === TOOL_EXPONENT_MODES.plain || mode === TOOL_EXPONENT_MODES.exponent || mode === TOOL_EXPONENT_MODES.inverse) {
-                uiState.toolExponentMode = mode;
+            if (mode === TOOL_MODES.plain || mode === TOOL_MODES.inverse) {
+                uiState.toolMode = mode;
             }
         }
 
         function buildSelectedToolCategoryHtml(category, visibleKeys) {
-            let html = buildToolExponentModeHtml();
+            let html = buildToolModeHtml();
             html += `<button class="panel-menu-back-button" data-action="backToToolCategories">← Back to tool categories</button>`;
             html += `<div class="panel-menu-title">${escapeHtml(category.label)}</div>`;
 
@@ -9439,7 +8833,7 @@ ctx.font = SETTINGS.textFont;
                     <button data-action="insertIdentityOption" data-value="addZero:bottom">An additive identity may be introduced below the selected expression.</button>
                     <button data-action="insertIdentityOption" data-value="multiplyByOne:left">A multiplicative identity may be introduced on the left.</button>
                     <button data-action="insertIdentityOption" data-value="multiplyByOne:right">A multiplicative identity may be introduced on the right.</button>
-                    ${canEliminateIdentities() && !isIntentCategoryToolNotationMode() ? '<button data-action="previewEliminateIdentities">An additive, multiplicative, or first-power identity may be removed.</button>' : ''}
+                    ${canEliminateIdentities() && !isIntentCategoryToolNotationMode() ? '<button data-action="previewEliminateIdentities">An additive or multiplicative identity may be removed.</button>' : ''}
                 </div>`;
             } else if (
                 uiState.activeTool === "numericalEquivalence" &&
@@ -9447,8 +8841,8 @@ ctx.font = SETTINGS.textFont;
             ) {
                 const numericalMode = getNumericalEquivalenceModeForSelection();
                 const label = numericalMode === "expand"
-                    ? "Enter an equivalent sum, product, or exponent of whole numbers, such as 2+3+4, 2*3*4, or 2^3."
-                    : "Enter the equivalent whole number for the selected sum, product, or exponent. Level 1 uses n-ary sums/products and binary exponents of whole numbers.";
+                    ? "Enter an equivalent sum or product of whole numbers, such as 2+3+4 or 2*3*4."
+                    : "Enter the equivalent whole number for the selected sum or product. Level 1 uses n-ary sums and products of whole numbers.";
                 html += `<div class="small-note">${label}</div>`;
                 html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
@@ -9506,30 +8900,10 @@ ctx.font = SETTINGS.textFont;
             ) {
                 html += buildExpressionBuilderHtml();
             } else if (
-                uiState.activeTool === "insertExponentZero" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter a base expression in fully parenthesized form. The selected 1 will become that expression raised to the 0 power, for example ((x)^(0)).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
-                uiState.activeTool === "insertPowerOfOne" &&
-                uiState.stage === "input"
-            ) {
-                html += `<div class="small-note">Enter an exponent expression in fully parenthesized form. The selected 1 will become 1 raised to that power, for example ((1)^(5)).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
-                html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
-            } else if (
                 uiState.activeTool === "replaceOneWithInverseProduct" &&
                 uiState.stage === "input"
             ) {
-                html += `<div class="small-note">Enter an integer or fully parenthesized expression. The selected 1 will become that expression times the same expression raised to -1, for example ((5)*((5)^(-1))) or (((x)+(2))*(((x)+(2))^(-1))).</div>`;
+                html += `<div class="small-note">Enter an integer or fully parenthesized expression. The selected 1 will become that expression times its inverse, for example ((5)*((1)/(5))) or (((x)+(2))*((1)/((x)+(2)))).</div>`;
                 html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
                 if (uiState.message) {
@@ -9639,9 +9013,6 @@ ctx.font = SETTINGS.textFont;
             } else if (event.key === "*") {
                 action = "operation";
                 value = "prod";
-            } else if (event.key === "^") {
-                action = "operation";
-                value = "exp";
             } else if (event.key === "/") {
                 action = "operation";
                 value = "inv";
@@ -9721,7 +9092,7 @@ ctx.font = SETTINGS.textFont;
                 });
             });
 
-            container.querySelectorAll("input[name='toolExponentMode']").forEach(input => {
+            container.querySelectorAll("input[name='toolMode']").forEach(input => {
                 input.addEventListener("change", () => {
                     if (!input.checked) {
                         return;
@@ -9730,11 +9101,9 @@ ctx.font = SETTINGS.textFont;
                         renderToolArea();
                         return;
                     }
-                    uiState.toolExponentMode = input.value === TOOL_EXPONENT_MODES.exponent
-                        ? TOOL_EXPONENT_MODES.exponent
-                        : input.value === TOOL_EXPONENT_MODES.inverse
-                            ? TOOL_EXPONENT_MODES.inverse
-                            : TOOL_EXPONENT_MODES.plain;
+                    uiState.toolMode = input.value === TOOL_MODES.inverse
+                        ? TOOL_MODES.inverse
+                        : TOOL_MODES.plain;
                     renderToolArea();
                     refreshStatus();
                     drawExpression();
@@ -9921,8 +9290,8 @@ function renderToolArea() {
             if (toolName === "zeroProduct") {
                 return applyZeroProduct;
             }
-            if (isPowerInverseRewriteTool(toolName)) {
-                return () => applyPowerInverseRewrite(toolName);
+            if (isInverseRewriteTool(toolName)) {
+                return () => applyInverseRewrite(toolName);
             }
             return null;
         }
@@ -9983,10 +9352,6 @@ function renderToolArea() {
             if (toolName === "reduceToOne") {
                 if (canCancelProductWithInverse()) {
                     toolName = "cancelProductWithInverse";
-                } else if (canApplyPowerInverseRewrite("eliminateExponentZero")) {
-                    toolName = "eliminateExponentZero";
-                } else if (canApplyPowerInverseRewrite("oneToAnyPower")) {
-                    toolName = "oneToAnyPower";
                 } else {
                     return;
                 }
@@ -10017,7 +9382,7 @@ function renderToolArea() {
                 toolName === "factorRight" ||
                 toolName === "distributeInverseOverProduct" ||
                 toolName === "factorProductOfInverses" ||
-                isPowerInverseRewriteTool(toolName)
+                isInverseRewriteTool(toolName)
             ) {
                 uiState.stage = "preview";
             } else if (isStructuredNumericalTool(toolName)) {
@@ -10210,8 +9575,8 @@ function renderToolArea() {
                     applyEliminateDoubleInverse();
                 } else if (uiState.activeTool === "cancelProductWithInverse") {
                     applyCancelProductWithInverse();
-                } else if (isPowerInverseRewriteTool(uiState.activeTool)) {
-                    applyPowerInverseRewrite(uiState.activeTool);
+                } else if (isInverseRewriteTool(uiState.activeTool)) {
+                    applyInverseRewrite(uiState.activeTool);
                 } else if (uiState.activeTool === "eliminateIdentities") {
                     applyIdentityElimination();
                 } else if (uiState.activeTool === "factorNumber") {
@@ -10230,10 +9595,6 @@ function renderToolArea() {
                     applyDoubleNegative();
                 } else if (uiState.activeTool === "zeroProduct") {
                     applyZeroProduct();
-                } else if (uiState.activeTool === "insertExponentZero") {
-                    applyInsertExponentZero();
-                } else if (uiState.activeTool === "insertPowerOfOne") {
-                    applyInsertPowerOfOne();
                 } else if (uiState.activeTool === "replaceOneWithInverseProduct") {
                     applyReplaceOneWithInverseProduct();
                 } else if (uiState.activeTool === "insertZeroProduct") {
@@ -10306,27 +9667,27 @@ function renderToolArea() {
             }
 
             if (uiState.activeTool === "distributeInverseOverProduct") {
-                setStatus("Power of a product handles exponent -1 now; use the general exponent rule for this transformation.");
+                setStatus("Inverse-distribution preview: the inverse of a product will become the product of the individual inverses.");
                 return;
             }
 
             if (uiState.activeTool === "factorProductOfInverses") {
-                setStatus("Factor Common Power handles common exponent -1 now; use the general exponent rule for this transformation.");
+                setStatus("Inverse-factoring preview: a product of inverses will become the inverse of the product.");
                 return;
             }
 
             if (uiState.activeTool === "eliminateDoubleInverse") {
-                setStatus("Double inverse preview: an expression raised to -1 and then raised to -1 again will become the original expression automatically.");
+                setStatus("Double-inverse preview: the inverse of an inverse will become the original expression automatically.");
                 return;
             }
 
             if (uiState.activeTool === "cancelProductWithInverse") {
-                setStatus("Product-inverse preview: an expression times the same expression raised to -1 will become 1 automatically.");
+                setStatus("Product-inverse preview: an expression times its inverse will become 1 automatically.");
                 return;
             }
 
-            if (isPowerInverseRewriteTool(uiState.activeTool)) {
-                setStatus("Power/inverse rewrite preview. The transformation will be performed automatically.");
+            if (isInverseRewriteTool(uiState.activeTool)) {
+                setStatus("Inverse rewrite preview. The transformation will be performed automatically.");
                 return;
             }
 
@@ -10356,7 +9717,7 @@ function renderToolArea() {
             }
 
             if (uiState.activeTool === "evaluate") {
-                setStatus("Enter the value of the selected expression. Evaluation level 1 allows numeric sums, numeric products, and numeric powers. If it is wrong, keep trying, or click Exit.");
+                setStatus("Enter the value of the selected expression. Evaluation level 1 allows numeric sums and numeric products. If it is wrong, keep trying, or click Exit.");
                 return;
             }
 
@@ -10457,6 +9818,14 @@ function renderToolArea() {
             return true;
         }
 
+        function workspaceClientPointToSvg(clientX, clientY) {
+            const rect = workspaceSvg.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * (getSvgWidth(workspaceSvg) / Math.max(1, rect.width)),
+                y: (clientY - rect.top) * (getSvgHeight(workspaceSvg) / Math.max(1, rect.height))
+            };
+        }
+
         function finishWorkspaceTap(e) {
             if (e.pointerId !== activeWorkspacePointerId || !workspacePointerStart) {
                 return;
@@ -10466,21 +9835,24 @@ function renderToolArea() {
             const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
             const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
             if (movement <= tapTolerance) {
-                const rect = workspaceSvg.getBoundingClientRect();
-                const x = (e.clientX - rect.left) * (getSvgWidth(workspaceSvg) / Math.max(1, rect.width));
-                const y = (e.clientY - rect.top) * (getSvgHeight(workspaceSvg) / Math.max(1, rect.height));
+                const point = workspaceClientPointToSvg(e.clientX, e.clientY);
                 if (pointerStart.mode === "zoomIn") {
                     zoomWorkspaceInAt(e.clientX, e.clientY);
                 } else if (pointerStart.mode === "commute") {
-                    const clickedIndex = getClickedIndexWithinSelection(x, y);
+                    const clickedIndex = getClickedIndexWithinSelection(point.x, point.y);
                     if (clickedIndex >= 0) {
                         recordCommutePermutationChoice(clickedIndex);
                     }
                 } else if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
                 } else {
-                    selectFromWorkspaceTap(x, y, pointerStart.pointerType);
+                    selectFromWorkspaceTap(point.x, point.y, pointerStart.pointerType);
                 }
+            } else if (pointerStart.mode === "selection") {
+                const startPoint = workspaceClientPointToSvg(pointerStart.clientX, pointerStart.clientY);
+                const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
+                selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType);
+                selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType);
             }
             releaseWorkspacePointer();
         }

@@ -962,38 +962,9 @@
             white-space: nowrap;
         }
 
-        .intent-category-math.translate-notation-math {
-            font-size: 25px;
-            gap: 0.55em;
-        }
-
-        .intent-category-math sup {
-            font-size: 0.58em;
-            line-height: 0;
-            vertical-align: 0.75em;
-        }
-
         .intent-category-math .math-arrow {
             font-size: 1.15em;
             line-height: 1;
-        }
-
-        .intent-category-math .math-fraction {
-            display: inline-grid;
-            grid-template-rows: auto auto;
-            justify-items: center;
-            align-items: center;
-            line-height: 1;
-        }
-
-        .intent-category-math .math-numerator {
-            min-width: 2.6em;
-            padding: 0 0.22em 0.12em;
-            border-bottom: 0.07em solid currentColor;
-        }
-
-        .intent-category-math .math-denominator {
-            padding-top: 0.13em;
         }
 
         .intent-category-icon .icon-stroke {
@@ -1078,7 +1049,7 @@
             margin-bottom: 10px;
         }
 
-        .tool-exponent-mode {
+        .tool-mode {
             margin: 0 0 10px 0;
             display: flex;
             align-items: center;
@@ -1087,12 +1058,12 @@
             white-space: nowrap;
         }
 
-        .tool-exponent-mode .panel-menu-title {
+        .tool-mode .panel-menu-title {
             margin: 0;
             flex: 0 0 auto;
         }
 
-        .tool-exponent-radio-label {
+        .tool-mode-radio-label {
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -1101,7 +1072,7 @@
             flex: 0 0 auto;
         }
 
-        .tool-exponent-radio-label input {
+        .tool-mode-radio-label input {
             margin: 0;
         }
 
@@ -1268,7 +1239,7 @@
                 box-sizing: border-box;
             }
 
-            .tool-exponent-radio-label input {
+            .tool-mode-radio-label input {
                 width: 22px;
                 height: 22px;
             }
@@ -1613,8 +1584,7 @@
             height: 38px;
         }
 
-        .intent-category-math,
-        .intent-category-math.translate-notation-math {
+        .intent-category-math {
             font-size: 20px;
         }
 
@@ -2031,8 +2001,7 @@
         }
         .intent-category-actions .intent-category-label { display: none; }
         .intent-category-icon { width: min(44px, 100%); height: 28px; }
-        .intent-category-math,
-        .intent-category-math.translate-notation-math { font-size: clamp(12px, 2.7vw, 17px); }
+        .intent-category-math { font-size: clamp(12px, 2.7vw, 17px); }
 
         .press-hold-popover {
             position: absolute;
@@ -2164,19 +2133,18 @@
             }
             .builder-action-row {
                 display: grid;
-                grid-template-columns: repeat(5, minmax(0, 1fr));
+                grid-template-columns: repeat(20, minmax(0, 1fr));
                 grid-template-rows: repeat(2, minmax(40px, auto));
                 grid-auto-flow: row;
                 align-content: center;
             }
-            .builder-next-submit-button { grid-column: 1 / span 2; grid-row: 1; }
-            .builder-undo-button { grid-column: 3 / span 2; grid-row: 1; }
-            .builder-cancel-button { grid-column: 5; grid-row: 1; }
-            .builder-negative-one-button { grid-column: 1; grid-row: 2; }
-            .builder-sum-button { grid-column: 2; grid-row: 2; }
-            .builder-prod-button { grid-column: 3; grid-row: 2; }
-            .builder-inv-button { grid-column: 4; grid-row: 2; }
-            .builder-exp-button { grid-column: 5; grid-row: 2; }
+            .builder-next-submit-button { grid-column: 1 / span 8; grid-row: 1; }
+            .builder-undo-button { grid-column: 9 / span 8; grid-row: 1; }
+            .builder-cancel-button { grid-column: 17 / span 4; grid-row: 1; }
+            .builder-negative-one-button { grid-column: 1 / span 5; grid-row: 2; }
+            .builder-sum-button { grid-column: 6 / span 5; grid-row: 2; }
+            .builder-prod-button { grid-column: 11 / span 5; grid-row: 2; }
+            .builder-inv-button { grid-column: 16 / span 5; grid-row: 2; }
             .panel-tool-menu .tool-row,
             .panel-tool-menu .tool-form-row { display: contents; }
             .panel-tool-menu button, .builder-action-row button { width: 100%; height: 100%; }
@@ -2305,7 +2273,7 @@
             </div>
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
-                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional selections expand to the smallest expression containing everything selected.">
+                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                     </button>
                     <button type="button" data-workspace-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression." disabled>

@@ -16,7 +16,6 @@
     "addition": "none",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": true
   },
   "variables": [
@@ -376,7 +375,6 @@
       "addition": "none",
       "multiplication": "one-significant-figure",
       "allowNegativeOne": false,
-      "allowExponents": false,
       "allowInverses": true
     },
     "variables": [

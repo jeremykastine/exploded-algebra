@@ -20,7 +20,6 @@
     "addition": "no-carry",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": false
   },
   "variables": [
@@ -428,7 +427,6 @@
       "addition": "no-carry",
       "multiplication": "one-significant-figure",
       "allowNegativeOne": false,
-      "allowExponents": false,
       "allowInverses": false
     },
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",

@@ -89,7 +89,6 @@
     "addition": "no-carry",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": false
   },
   "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -140,7 +139,6 @@
     "addition": "no-carry",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": false
   },
   "variables": [
@@ -548,7 +546,6 @@
       "addition": "no-carry",
       "multiplication": "one-significant-figure",
       "allowNegativeOne": false,
-      "allowExponents": false,
       "allowInverses": false
     },
     "startExpression": "(((3)*((x)+(7)))+((2)*(((2)*(x))+(3))))",
@@ -598,7 +595,6 @@
     "addition": "no-carry",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": true
   },
   "startExpression": "(((2)/(3))+((5)/(6)))",
@@ -652,7 +648,7 @@
   "initialKatex": "(x+3)(2x+5)",
   "exerciseInfo": [
     "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
+    "Keep x squared visible as the repeated product x times x in the exploded expression, then factor the common x from 5x + 6x before evaluating 5 + 6."
   ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
@@ -660,7 +656,6 @@
     "addition": "flat",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": true,
     "allowInverses": false
   },
   "variables": [
@@ -681,19 +676,19 @@
       "guidance": "Distribute one binomial."
     },
     {
-      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
       "katex": "2x^2+5x+6x+15",
       "label": "Distribute and simplify the products",
       "guidance": "Distribute and simplify the products."
     },
     {
-      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "katex": "2x^2+(5+6)x+15",
       "label": "Group the like terms",
       "guidance": "Group the like terms."
     },
     {
-      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+((11)*(x))+(15))",
       "katex": "2x^2+11x+15",
       "label": "Combine like terms",
       "guidance": "Combine like terms."
@@ -722,7 +717,6 @@
     "addition": "none",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": true
   },
   "variables": [
@@ -774,7 +768,7 @@
   "initialKatex": "(x+3)(2x+5)",
   "exerciseInfo": [
     "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6.",
+    "Keep x squared visible as the repeated product x times x in the exploded expression, then factor the common x from 5x + 6x before evaluating 5 + 6.",
     "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
   ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
@@ -783,7 +777,6 @@
     "addition": "flat",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": true,
     "allowInverses": false
   },
   "variables": [
@@ -875,14 +868,6 @@
       {
         "type": "builder",
         "action": "submit"
-      },
-      {
-        "type": "select",
-        "expression": "((x)*(x))"
-      },
-      {
-        "type": "tool",
-        "tool": "repeatedProductToPower"
       },
       {
         "type": "select",
@@ -1069,34 +1054,18 @@
     },
     {
       "type": "select",
-      "expression": "((x)*(x))",
-      "selectedType": "prod",
-      "firstPart": 1,
-      "lastPart": 2,
-      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
-      "index": 19
-    },
-    {
-      "type": "tool",
-      "tool": "repeatedProductToPower",
-      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
-      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
-      "index": 20
-    },
-    {
-      "type": "select",
       "expression": "(((5)*(x))+((6)*(x)))",
       "selectedType": "sum",
       "firstPart": 1,
       "lastPart": 2,
-      "beforeExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
       "index": 21
     },
     {
       "type": "tool",
       "tool": "factorRight",
-      "beforeExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
-      "afterExpression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
       "index": 22
     },
     {
@@ -1105,37 +1074,37 @@
       "selectedType": "sum",
       "firstPart": 0,
       "lastPart": 1,
-      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "index": 23
     },
     {
       "type": "tool",
       "tool": "arithmeticLevel2",
-      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "index": 24
     },
     {
       "type": "builder",
       "action": "digit",
       "value": "1",
-      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "index": 25
     },
     {
       "type": "builder",
       "action": "digit",
       "value": "1",
-      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-      "afterExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "index": 26
     },
     {
       "type": "builder",
       "action": "submit",
-      "beforeExpression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
-      "afterExpression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "beforeExpression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
+      "afterExpression": "(((2)*(x)*(x))+((11)*(x))+(15))",
       "index": 27
     }
   ],
@@ -1152,19 +1121,19 @@
       "guidance": "Distribute one binomial."
     },
     {
-      "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
       "katex": "2x^2+5x+6x+15",
       "label": "Distribute and simplify the products",
       "guidance": "Distribute and simplify the products."
     },
     {
-      "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
       "katex": "2x^2+(5+6)x+15",
       "label": "Group the like terms",
       "guidance": "Group the like terms."
     },
     {
-      "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+      "expression": "(((2)*(x)*(x))+((11)*(x))+(15))",
       "katex": "2x^2+11x+15",
       "label": "Combine like terms",
       "guidance": "Combine like terms."
@@ -1177,7 +1146,7 @@
     "initialKatex": "(x+3)(2x+5)",
     "exerciseInfo": [
       "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-      "Use Change Form to rewrite the repeated product x times x as x squared, then factor the common x from 5x + 6x before evaluating 5 + 6."
+      "Keep x squared visible as the repeated product x times x in the exploded expression, then factor the common x from 5x + 6x before evaluating 5 + 6."
     ],
     "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
     "evaluationLevel": 2,
@@ -1185,7 +1154,6 @@
       "addition": "flat",
       "multiplication": "one-significant-figure",
       "allowNegativeOne": false,
-      "allowExponents": true,
       "allowInverses": false
     },
     "variables": [
@@ -1206,19 +1174,19 @@
         "guidance": "Distribute one binomial."
       },
       {
-        "expression": "(((2)*((x)^(2)))+((5)*(x))+((6)*(x))+(15))",
+        "expression": "(((2)*(x)*(x))+((5)*(x))+((6)*(x))+(15))",
         "katex": "2x^2+5x+6x+15",
         "label": "Distribute and simplify the products",
         "guidance": "Distribute and simplify the products."
       },
       {
-        "expression": "(((2)*((x)^(2)))+(((5)+(6))*(x))+(15))",
+        "expression": "(((2)*(x)*(x))+(((5)+(6))*(x))+(15))",
         "katex": "2x^2+(5+6)x+15",
         "label": "Group the like terms",
         "guidance": "Group the like terms."
       },
       {
-        "expression": "(((2)*((x)^(2)))+((11)*(x))+(15))",
+        "expression": "(((2)*(x)*(x))+((11)*(x))+(15))",
         "katex": "2x^2+11x+15",
         "label": "Combine like terms",
         "guidance": "Combine like terms."
@@ -1249,7 +1217,6 @@
     "addition": "none",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": true
   },
   "variables": [
@@ -1609,7 +1576,6 @@
       "addition": "none",
       "multiplication": "one-significant-figure",
       "allowNegativeOne": false,
-      "allowExponents": false,
       "allowInverses": true
     },
     "variables": [

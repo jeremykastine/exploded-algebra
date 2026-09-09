@@ -453,16 +453,12 @@ function miniProd(...args) {
     return { type: "prod", args };
 }
 
-function miniExp(base, exponent) {
-    return { type: "exp", base, exponent };
-}
-
 function miniInv(arg) {
     return { type: "inv", arg };
 }
 
 // The button diagrams use the same shared SVG renderer as the main workspace.
-// The miniValue/miniSum/miniProd/miniExp/miniInv helpers above are only small data builders;
+// The miniValue/miniSum/miniProd/miniInv helpers above are only small data builders;
 // they are converted to ExprNode trees and passed through renderExpressionSvgMarkup.
 
 function layoutExpressionWithSettings(root, drawingContext, settings, x, y) {
@@ -550,12 +546,6 @@ function measureNodeWithContext(node, drawingContext, settings) {
         hLines.push(node.layout.height);
         node.layout.hLines = hLines;
         node.layout.vLines = [0, node.layout.width];
-    } else if (node.type === "exp") {
-        const [base, exponent] = node.args;
-        node.layout.width = base.layout.width + p * 2 + exponent.layout.width;
-        node.layout.height = exponent.layout.height + p * 2 + base.layout.height;
-        node.layout.vLines = [0, base.layout.width + p, node.layout.width + 2 * p];
-        node.layout.hLines = [0, exponent.layout.height + p, node.layout.height + 2 * p];
     } else if (node.type === "inv") {
         const [arg] = node.args;
         const operatorRadius = getInverseOperatorRadius(settings);
@@ -613,11 +603,6 @@ function placeNodeWithSettings(node, x, y, settings) {
                 cursorY += operatorThickness + 2 * gap;
             }
         }
-    } else if (node.type === "exp") {
-        const [base, exponent] = node.args;
-        placeNodeWithSettings(base, x + p / 2, y + node.layout.hLines[1] + p / 2, settings);
-        placeNodeWithSettings(exponent, x + node.layout.vLines[1] + p / 2, y + p / 2, settings);
-        node.layout.childBoxes.push(childBox(base), childBox(exponent));
     } else if (node.type === "inv") {
         const [arg] = node.args;
         const contentOffset = node.layout.inverseContentOffset || (getInverseBorderThickness(settings) + getInverseInnerGap(settings));
@@ -804,41 +789,6 @@ function drawNodeToContext(
                 drawDebugComponentBounds(drawingContext, x1, y - flare, x2, y + flare, settings);
             }
         }
-    } else if (node.type === "exp") {
-        const xLeft = node.left();
-        const xMid = relVLine(node, 1);
-        const xRight = node.right();
-        const yTop = node.top();
-        const yMid = relHLine(node, 1);
-        const yBottom = node.bottom();
-
-        drawingContext.beginPath();
-        drawingContext.moveTo(xLeft, yMid);
-        drawingContext.quadraticCurveTo(xMid, yMid, xMid, yTop);
-        drawingContext.lineTo(xMid, yMid);
-        drawingContext.fill();
-        drawingContext.stroke();
-
-        drawingContext.beginPath();
-        drawingContext.moveTo(xRight, yMid);
-        drawingContext.quadraticCurveTo(xMid, yMid, xMid, yBottom);
-        drawingContext.lineTo(xMid, yMid);
-        drawingContext.fill();
-        drawingContext.stroke();
-
-        drawingContext.beginPath();
-        drawingContext.moveTo(xRight, yMid);
-        drawingContext.lineTo(xRight, yTop);
-        drawingContext.lineTo(xMid, yTop);
-        drawingContext.stroke();
-
-        drawingContext.beginPath();
-        drawingContext.moveTo(xLeft, yMid);
-        drawingContext.lineTo(xLeft, yMid + flare);
-        drawingContext.moveTo(xMid, yBottom);
-        drawingContext.lineTo(xMid - flare, yBottom);
-        drawingContext.stroke();
-        drawDebugComponentBounds(drawingContext, xLeft, yTop, xRight, yBottom, settings);
     } else if (node.type === "inv") {
         const borderThickness = node.layout.inverseBorderThickness || getInverseBorderThickness(settings);
         const borderHalf = borderThickness / 2;
@@ -1297,12 +1247,6 @@ function miniOopsToExprNode(node) {
     if (node.type === "value") {
         return new ExprNode("value", [], String(node.text || ""));
     }
-    if (node.type === "exp") {
-        return new ExprNode("exp", [
-            miniOopsToExprNode(node.base || miniValue("")),
-            miniOopsToExprNode(node.exponent || miniValue(""))
-        ], null);
-    }
     if (node.type === "inv") {
         return new ExprNode("inv", [miniOopsToExprNode(node.arg || miniValue(""))], null);
     }
@@ -1382,13 +1326,6 @@ function exprFromData(data) {
         return new ExprNode("value", [], String(text));
     }
 
-    if (type === "exp") {
-        const args = Array.isArray(data.args) && data.args.length >= 2
-            ? data.args
-            : [data.base || { type: "value", value: "" }, data.exponent || { type: "value", value: "" }];
-        return new ExprNode("exp", [exprFromData(args[0]), exprFromData(args[1])], null);
-    }
-
     if (type === "inv") {
         const arg = Array.isArray(data.args) && data.args.length
             ? data.args[0]
@@ -1459,7 +1396,6 @@ window.ExplodedAlgebraRenderer = {
     miniValue,
     miniSum,
     miniProd,
-    miniExp,
     miniInv,
     miniOopsToExprNode,
     exprFromData,

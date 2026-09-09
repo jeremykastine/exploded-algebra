@@ -14,7 +14,6 @@
     "addition": "no-carry",
     "multiplication": "one-significant-figure",
     "allowNegativeOne": false,
-    "allowExponents": false,
     "allowInverses": true
   },
   "startExpression": "(((2)/(3))+((5)/(6)))",
