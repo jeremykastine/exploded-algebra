@@ -53,6 +53,9 @@ const SETTINGS = {
     // full-thickness gradient beam is being evaluated.
     sumBeamStyle: "gradient",
     sumBeamEdgeColor: "black",
+    // Keep the previous flared multiplication beam available as "flared".
+    productBeamStyle: "gradient",
+    productBeamEdgeColor: "black",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     debugComponentBounds: false,
@@ -186,6 +189,40 @@ function drawOperatorCircle(drawingContext, centerX, centerY, diameter, fillStyl
 }
 
 let nextSumBeamGradientId = 1;
+let nextProductBeamGradientId = 1;
+
+function drawGradientProductBeam(drawingContext, x, y1, y2, halfThickness, edgeColor) {
+    const gradientId = `oops-product-beam-gradient-${nextProductBeamGradientId++}`;
+    const defs = document.createElementNS(SVG_NS, "defs");
+    const gradient = document.createElementNS(SVG_NS, "linearGradient");
+    gradient.setAttribute("id", gradientId);
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+    gradient.setAttribute("x1", String(x));
+    gradient.setAttribute("y1", String(y1));
+    gradient.setAttribute("x2", String(x));
+    gradient.setAttribute("y2", String(y2));
+
+    [
+        ["0%", edgeColor],
+        ["50%", "white"],
+        ["100%", edgeColor]
+    ].forEach(([offset, color]) => {
+        const stop = document.createElementNS(SVG_NS, "stop");
+        stop.setAttribute("offset", offset);
+        stop.setAttribute("stop-color", color);
+        gradient.appendChild(stop);
+    });
+
+    defs.appendChild(gradient);
+    drawingContext.appendSvgElement(defs);
+
+    drawingContext.save();
+    drawingContext.fillStyle = `url(#${gradientId})`;
+    drawingContext.beginPath();
+    drawingContext.rect(x - halfThickness, y1, halfThickness * 2, Math.max(0, y2 - y1));
+    drawingContext.fill();
+    drawingContext.restore();
+}
 
 function drawGradientSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
     const gradientId = `oops-sum-beam-gradient-${nextSumBeamGradientId++}`;
@@ -736,8 +773,15 @@ function drawNodeToContext(
             const operatorColor = separatorForeground(node, j - 1) || nodeColor;
             drawingContext.strokeStyle = operatorColor;
             drawingContext.fillStyle = operatorColor;
+            const needsBeam = nodeNeedsSeparatorFlares(node);
+            const useGradientBeam = needsBeam && settings.productBeamStyle === "gradient";
+            const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
-            if (nodeNeedsSeparatorFlares(node)) {
+            if (useGradientBeam) {
+                drawGradientProductBeam(drawingContext, x, y1, y2, flare, gradientBeamColor);
+            } else if (needsBeam) {
+                // Previous multiplication-beam renderer. Keep this path
+                // available by setting productBeamStyle to "flared".
                 drawingContext.beginPath();
                 drawingContext.moveTo(x, circleTop);
                 drawingContext.quadraticCurveTo(x, y1, x + flare, y1);
@@ -755,20 +799,23 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            drawOperatorCircle(
-                drawingContext,
-                x,
-                centerY,
-                operatorDiameter,
-                separatorFill(node, j - 1) || "white",
-                operatorColor,
-                getOperatorCircleStrokeWidth(settings)
-            );
+            if (needsBeam && !useGradientBeam) {
+                drawOperatorCircle(
+                    drawingContext,
+                    x,
+                    centerY,
+                    operatorDiameter,
+                    separatorFill(node, j - 1) || "white",
+                    operatorColor,
+                    getOperatorCircleStrokeWidth(settings)
+                );
+            }
 
-            if (nodeNeedsSeparatorFlares(node)) {
+            if (needsBeam) {
                 drawDebugComponentBounds(drawingContext, x - flare, y1, x + flare, y2, settings);
             }
 
+            drawingContext.fillStyle = useGradientBeam ? gradientBeamColor : operatorColor;
             drawingContext.beginPath();
             drawingContext.arc(x, centerY, getOperatorDotRadius(settings), 0, Math.PI * 2);
             drawingContext.fill();
@@ -814,7 +861,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            if (!useGradientBeam) {
+            if (needsBeam && !useGradientBeam) {
                 drawOperatorCircle(
                     drawingContext,
                     centerX,
