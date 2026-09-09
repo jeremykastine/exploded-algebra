@@ -49,6 +49,10 @@ const SETTINGS = {
     inverseBorderColor: "rgb(170,170,170)",
     bufferSize: 16,
     operatorThickness: 12,
+    // Keep the previous flared addition beam available as "flared" while the
+    // full-thickness gradient beam is being evaluated.
+    sumBeamStyle: "gradient",
+    sumBeamEdgeColor: "black",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     debugComponentBounds: false,
@@ -178,6 +182,41 @@ function drawOperatorCircle(drawingContext, centerX, centerY, diameter, fillStyl
     drawingContext.arc(centerX, centerY, radius, 0, Math.PI * 2);
     drawingContext.fill();
     drawingContext.stroke();
+    drawingContext.restore();
+}
+
+let nextSumBeamGradientId = 1;
+
+function drawGradientSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
+    const gradientId = `oops-sum-beam-gradient-${nextSumBeamGradientId++}`;
+    const defs = document.createElementNS(SVG_NS, "defs");
+    const gradient = document.createElementNS(SVG_NS, "linearGradient");
+    gradient.setAttribute("id", gradientId);
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
+    gradient.setAttribute("x1", String(x1));
+    gradient.setAttribute("y1", String(y));
+    gradient.setAttribute("x2", String(x2));
+    gradient.setAttribute("y2", String(y));
+
+    [
+        ["0%", edgeColor],
+        ["50%", "white"],
+        ["100%", edgeColor]
+    ].forEach(([offset, color]) => {
+        const stop = document.createElementNS(SVG_NS, "stop");
+        stop.setAttribute("offset", offset);
+        stop.setAttribute("stop-color", color);
+        gradient.appendChild(stop);
+    });
+
+    defs.appendChild(gradient);
+    drawingContext.appendSvgElement(defs);
+
+    drawingContext.save();
+    drawingContext.fillStyle = `url(#${gradientId})`;
+    drawingContext.beginPath();
+    drawingContext.rect(x1, y - halfThickness, Math.max(0, x2 - x1), halfThickness * 2);
+    drawingContext.fill();
     drawingContext.restore();
 }
 
@@ -749,7 +788,15 @@ function drawNodeToContext(
             const operatorColor = separatorForeground(node, j - 1) || nodeColor;
             drawingContext.strokeStyle = operatorColor;
             drawingContext.fillStyle = operatorColor;
-            if (nodeNeedsSeparatorFlares(node)) {
+            const needsBeam = nodeNeedsSeparatorFlares(node);
+            const useGradientBeam = needsBeam && settings.sumBeamStyle === "gradient";
+            const gradientBeamColor = settings.sumBeamEdgeColor || "black";
+
+            if (useGradientBeam) {
+                drawGradientSumBeam(drawingContext, x1, x2, y, flare, gradientBeamColor);
+            } else if (needsBeam) {
+                // Previous addition-beam renderer. Keep this path available by
+                // setting sumBeamStyle to "flared".
                 drawingContext.beginPath();
                 drawingContext.moveTo(circleLeft, y);
                 drawingContext.quadraticCurveTo(x1, y, x1, y + flare);
@@ -767,16 +814,19 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            drawOperatorCircle(
-                drawingContext,
-                centerX,
-                y,
-                operatorDiameter,
-                separatorFill(node, j - 1) || "white",
-                operatorColor,
-                getOperatorCircleStrokeWidth(settings)
-            );
+            if (!useGradientBeam) {
+                drawOperatorCircle(
+                    drawingContext,
+                    centerX,
+                    y,
+                    operatorDiameter,
+                    separatorFill(node, j - 1) || "white",
+                    operatorColor,
+                    getOperatorCircleStrokeWidth(settings)
+                );
+            }
 
+            drawingContext.strokeStyle = useGradientBeam ? gradientBeamColor : operatorColor;
             drawingContext.beginPath();
             drawingContext.moveTo(centerX - flare / 2, y);
             drawingContext.lineTo(centerX + flare / 2, y);
@@ -785,7 +835,7 @@ function drawNodeToContext(
             drawingContext.lineWidth = getOperatorIconStrokeWidth(settings);
             drawingContext.stroke();
             drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-            if (nodeNeedsSeparatorFlares(node)) {
+            if (needsBeam) {
                 drawDebugComponentBounds(drawingContext, x1, y - flare, x2, y + flare, settings);
             }
         }
