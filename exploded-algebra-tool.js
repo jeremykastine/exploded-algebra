@@ -1208,6 +1208,7 @@ Promise.resolve().then(() => {
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
         const builderDigitRail = document.getElementById("builderDigitRail");
+        const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
         const handednessToggleButton = document.getElementById("handednessToggleButton");
@@ -3695,6 +3696,42 @@ ctx.font = SETTINGS.textFont;
             }
         }
 
+        function updateSidePanelColumns() {
+            const sidePanel = document.querySelector(".quadrant-tools");
+            if (!sidePanel || !appContainer) {
+                return;
+            }
+
+            const builderActive = document.body.classList.contains("expression-builder-active");
+            sidePanel.classList.remove("two-column-tools");
+            if (builderInputRail) {
+                builderInputRail.classList.remove("two-columns");
+            }
+            appContainer.classList.remove("side-panel-two-columns");
+
+            const availableHeight = sidePanel.clientHeight;
+            if (!availableHeight) {
+                return;
+            }
+
+            if (builderActive && builderInputRail) {
+                const buttonCount = builderInputRail.querySelectorAll("button").length;
+                const requiredHeight = buttonCount * 40 + Math.max(0, buttonCount - 1) * 3 + 12;
+                if (requiredHeight > availableHeight) {
+                    builderInputRail.classList.add("two-columns");
+                    appContainer.classList.add("side-panel-two-columns");
+                }
+                return;
+            }
+
+            const visibleButtons = Array.from(sidePanel.querySelectorAll("button")).filter(button => button.offsetParent !== null);
+            const requiredHeight = visibleButtons.length * 44 + Math.max(0, visibleButtons.length - 1) * 5 + 16;
+            if (requiredHeight > availableHeight) {
+                sidePanel.classList.add("two-column-tools");
+                appContainer.classList.add("side-panel-two-columns");
+            }
+        }
+
         function setWorkspaceMode(mode) {
             uiState.workspaceMode = mode === "zoomIn" || mode === "zoomOut" ? mode : "select";
             updateWorkspaceToolbar();
@@ -3732,6 +3769,7 @@ ctx.font = SETTINGS.textFont;
 
         function zoomWorkspaceOut() {
             setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
+            setWorkspaceMode("select");
         }
 
         function resetWorkspaceZoom() {
@@ -3745,6 +3783,7 @@ ctx.font = SETTINGS.textFont;
                 svgContainer.scrollLeft = Math.max(0, (svgContainer.scrollWidth - svgContainer.clientWidth) / 2);
                 svgContainer.scrollTop = Math.max(0, (svgContainer.scrollHeight - svgContainer.clientHeight) / 2);
             });
+            setWorkspaceMode("select");
         }
 
         function captureWorkspaceView() {
@@ -3802,6 +3841,7 @@ ctx.font = SETTINGS.textFont;
                     restoreWorkspaceView(pendingResponsiveWorkspaceView);
                 }
                 positionToolOptionMenu();
+                updateSidePanelColumns();
                 pendingResponsiveWorkspaceView = null;
             });
         }
@@ -7503,21 +7543,76 @@ ctx.font = SETTINGS.textFont;
             const proposal = makeBuilderInsertionRoot(builder);
             const originalDisplay = cloneBuilderRootForDisplay(builder.originalSelectedNode);
             const originalMarkup = renderBuilderProposalSvg(originalDisplay);
-            const selectedWidth = originalDisplay.layout && originalDisplay.layout.width || 0;
-            const selectedHeight = originalDisplay.layout && originalDisplay.layout.height || 0;
-            const selectedIsPortrait = selectedHeight >= selectedWidth;
-            const arrow = selectedIsPortrait ? "→" : "↓";
             builderRewritePreview.innerHTML = `
                 <div class="builder-rewrite-content">
                     <div class="builder-rewrite-original" aria-label="Selected expression">${originalMarkup}</div>
-                    <span class="builder-rewrite-arrow" aria-hidden="true">${arrow}</span>
+                    <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
                     <div class="builder-rewrite-proposal" aria-label="Proposed expression">${renderBuilderProposalSvg(proposal)}</div>
                 </div>
             `;
             builderRewritePreview.classList.remove("hidden");
-            builderRewritePreview.classList.toggle("vertical", !selectedIsPortrait);
+            fitBuilderRewritePreview(builder);
             svgContainer.scrollLeft = 0;
             svgContainer.scrollTop = 0;
+        }
+
+        function getBuilderPreviewSvgSize(container) {
+            const svg = container && container.querySelector("svg");
+            return {
+                svg,
+                width: svg ? Number.parseFloat(svg.getAttribute("width")) || 1 : 1,
+                height: svg ? Number.parseFloat(svg.getAttribute("height")) || 1 : 1
+            };
+        }
+
+        function fitBuilderRewritePreview(builder) {
+            const content = builderRewritePreview.querySelector(".builder-rewrite-content");
+            const originalContainer = builderRewritePreview.querySelector(".builder-rewrite-original");
+            const proposalContainer = builderRewritePreview.querySelector(".builder-rewrite-proposal");
+            const arrowElement = builderRewritePreview.querySelector(".builder-rewrite-arrow");
+            if (!content || !originalContainer || !proposalContainer || !arrowElement) {
+                return;
+            }
+
+            const original = getBuilderPreviewSvgSize(originalContainer);
+            const proposalSize = getBuilderPreviewSvgSize(proposalContainer);
+            const previewStyle = window.getComputedStyle(builderRewritePreview);
+            const availableWidth = Math.max(1, builderRewritePreview.clientWidth - (Number.parseFloat(previewStyle.paddingLeft) || 0) - (Number.parseFloat(previewStyle.paddingRight) || 0));
+            const availableHeight = Math.max(1, builderRewritePreview.clientHeight - (Number.parseFloat(previewStyle.paddingTop) || 0) - (Number.parseFloat(previewStyle.paddingBottom) || 0));
+            const baseGap = Math.max(8, Number.parseFloat(window.getComputedStyle(content).gap) || 20);
+            const arrowSize = 30;
+            const horizontal = {
+                width: original.width + proposalSize.width + arrowSize + baseGap * 2,
+                height: Math.max(original.height, proposalSize.height, arrowSize)
+            };
+            const vertical = {
+                width: Math.max(original.width, proposalSize.width, arrowSize),
+                height: original.height + proposalSize.height + arrowSize + baseGap * 2
+            };
+            const quadrantRatio = availableWidth / availableHeight;
+            const aspectDistance = candidate => Math.abs(Math.log((candidate.width / candidate.height) / quadrantRatio));
+            const horizontalDistance = aspectDistance(horizontal);
+            const verticalDistance = aspectDistance(vertical);
+            const selectedWidth = builder.originalSelectedNode.layout && builder.originalSelectedNode.layout.width || original.width;
+            const selectedHeight = builder.originalSelectedNode.layout && builder.originalSelectedNode.layout.height || original.height;
+            const defaultVertical = builder.tool === "replaceOneWithInverseProduct" || selectedWidth > selectedHeight;
+            const distancesAreEffectivelyTied = Math.abs(horizontalDistance - verticalDistance) < 0.05;
+            const useVertical = distancesAreEffectivelyTied ? defaultVertical : verticalDistance < horizontalDistance;
+            const chosen = useVertical ? vertical : horizontal;
+            const scale = Math.min(1, availableWidth / chosen.width, availableHeight / chosen.height) * 0.98;
+            const safeScale = Math.max(0.01, scale);
+
+            builderRewritePreview.classList.toggle("vertical", useVertical);
+            arrowElement.textContent = useVertical ? "↓" : "→";
+            content.style.gap = `${baseGap * safeScale}px`;
+            arrowElement.style.fontSize = `${arrowSize * safeScale}px`;
+            [original, proposalSize].forEach(item => {
+                if (!item.svg) {
+                    return;
+                }
+                item.svg.style.width = `${item.width * safeScale}px`;
+                item.svg.style.height = `${item.height * safeScale}px`;
+            });
         }
 
         function drawExpressionBuilderContext() {
@@ -7764,10 +7859,32 @@ ctx.font = SETTINGS.textFont;
         }
 
         function builderValidationFailed(message) {
-            uiState.message = message;
+            if (uiState.expressionBuilder && isNumericalRewriteTool(uiState.expressionBuilder.tool)) {
+                showNumericalRewriteError(message);
+                uiState.message = "";
+            } else {
+                uiState.message = message;
+            }
             renderToolArea();
             refreshExpressionBuilderPreview();
             return false;
+        }
+
+        function showNumericalRewriteError(message) {
+            if (!numericalRewriteError) {
+                return;
+            }
+            numericalRewriteError.textContent = message;
+            numericalRewriteError.classList.remove("hidden");
+        }
+
+        function dismissNumericalRewriteError() {
+            if (!numericalRewriteError || numericalRewriteError.classList.contains("hidden")) {
+                return false;
+            }
+            numericalRewriteError.classList.add("hidden");
+            numericalRewriteError.textContent = "";
+            return true;
         }
 
         function getOriginalBuilderTargetValue(builder) {
@@ -7810,7 +7927,7 @@ ctx.font = SETTINGS.textFont;
                     return builderValidationFailed("The proposed entry could not be evaluated exactly.");
                 }
                 if (!exactRationalsAreEqual(replacementValue, originalValue)) {
-                    return builderValidationFailed("The proposed entry does not have the same numerical value as the original expression.");
+                    return builderValidationFailed("The proposed entry does not have the same numerical value.");
                 }
 
                 const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "original");
@@ -7819,8 +7936,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 const replacementCheck = validateNumericalRewriteExpression(completed, profile, "proposed");
                 if (!replacementCheck.ok) {
-                    const explanation = replacementCheck.error.charAt(0).toLowerCase() + replacementCheck.error.slice(1);
-                    return builderValidationFailed(`The proposed entry has the correct numerical value, but ${explanation}`);
+                    return builderValidationFailed("That structure is not permitted on this exercise.");
                 }
                 replacement = completed;
             } else if (builder.tool === "numericalEquivalence") {
@@ -9214,6 +9330,7 @@ function renderToolArea() {
                 builderInputRail.classList.toggle("hidden", !builderActive);
             }
             renderBuilderVariableRail(builderActive);
+            requestAnimationFrame(updateSidePanelColumns);
 
             if (uiState.mode !== "edit") {
                 return;
@@ -9495,6 +9612,7 @@ function renderToolArea() {
 
         function handleToolAction(action, value) {
             if (action === "cancelSelection") {
+                setWorkspaceMode("select");
                 clearSelection();
                 clearInteraction();
                 renderLevelInfo(currentLevelIndex);
@@ -9946,6 +10064,13 @@ function renderToolArea() {
                 cancelWorkspaceTap(e);
             }
         });
+
+        document.addEventListener("pointerdown", e => {
+            if (dismissNumericalRewriteError()) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }
+        }, true);
 
         document.addEventListener("pointerdown", e => {
             if (floatingToolMenu.classList.contains("hidden")) {
