@@ -51,15 +51,21 @@ actions and is blocked in guided demonstrations, where off-target selections
 and empty-workspace clicks are ignored. The conventional steps remain visible
 above a draggable horizontal divider and scroll vertically when their chosen
 height is too small.
-The exercise menu also provides plus/minus controls for button size and
-conventional-steps font size. The steps panel automatically refits its height
-to the rendered expressions when the font size changes.
-Undo returns through completed expression states as far as the starting
-expression; Ctrl/Cmd+Z provides the same behavior when focus is not in a text
-field. Numerical Rewrite shows its exercise-specific permissions as a bulleted
-list. Operation display settings, handedness, Reset, and Download Move History
-appear in the hamburger options menu rather than in the action or
-expression-builder panels.
+The settings screen replaces the exploded-expression workspace while open. It
+provides plus/minus controls for button size and conventional-steps font size.
+The steps panel automatically refits its height to the rendered expressions
+when the font size changes.
+Undo returns through completed expression and workspace-zoom states as far as
+the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
+in a text field. Numerical Rewrite shows its exercise-specific permissions as a
+bulleted list. Operation display settings, handedness, Reset, and Download Move History
+appear on the settings screen rather than in the action or expression-builder
+panels. Handedness reflects each button layout, while the numeric Expression
+Builder keypad moves as a single block so its internal order remains familiar.
+
+Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
+downloaded move histories. In Expression Builder, the original and proposed
+expressions use the same blue shading as an initial selection.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

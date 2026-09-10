@@ -1786,7 +1786,8 @@
             background: #f3f3f3;
         }
 
-        .hamburger-button {
+        .hamburger-button,
+        .settings-button {
             width: 44px;
             height: 44px;
             min-height: 44px;
@@ -1795,6 +1796,7 @@
         }
 
         .hamburger-button svg,
+        .settings-button svg,
         .workspace-toolbar svg {
             width: 100%;
             height: 100%;
@@ -2719,7 +2721,7 @@
             --main-key-gap: 6px;
             --main-icon-size: 28px;
             --steps-font-size: 15px;
-            --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
+            --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
             --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-gap));
             --builder-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --builder-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
@@ -2793,7 +2795,7 @@
         .quadrant-tools .workspace-toolbar,
         .quadrant-tools.two-column-tools .workspace-toolbar {
             display: grid;
-            grid-template-columns: repeat(4, var(--main-key-size));
+            grid-template-columns: repeat(3, var(--main-key-size));
             grid-template-rows: repeat(2, var(--main-key-size));
             gap: var(--main-key-gap);
             width: var(--main-keypad-width);
@@ -2816,11 +2818,26 @@
             background: #fff;
             pointer-events: auto;
         }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
-        .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 3; grid-row: 2; }
-        .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 4; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 1; grid-row: 2; }
+        .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 2; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 3; grid-row: 1; }
+
+        body.left-handed .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 3; }
+        body.left-handed .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 2; }
+        body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 1; }
+        body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; }
+        body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
+
+        .workspace-undo-label {
+            display: block;
+            font-size: clamp(10px, calc(var(--main-key-size) * 0.27), 14px);
+            font-weight: 800;
+            line-height: 0.9;
+            text-align: center;
+            pointer-events: none;
+        }
 
         .quadrant-menu,
         body.left-handed .quadrant-menu {
@@ -2838,7 +2855,7 @@
             background: transparent;
             pointer-events: none;
         }
-        .quadrant-menu .hamburger-button {
+        .quadrant-menu .settings-button {
             width: var(--main-key-size);
             height: var(--main-key-size);
             min-width: var(--main-key-size);
@@ -2848,10 +2865,26 @@
             pointer-events: auto;
         }
         .level-menu-panel {
-            bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--main-keypad-height) + var(--main-key-gap) + var(--main-key-size) + 6px);
-            max-height: calc(var(--workspace-panel-split) - 24px);
+            position: absolute;
+            z-index: 60;
+            inset: 0;
+            width: auto;
+            max-height: none;
+            padding: clamp(16px, 4vw, 38px);
+            padding-right: calc(clamp(16px, 4vw, 38px) + var(--main-key-size));
+            overflow: auto;
+            border: 0;
+            border-radius: 0;
+            background: #fff;
+            box-shadow: none;
             pointer-events: auto;
         }
+        body.settings-active .right-top-bar,
+        body.settings-active #svgContainer,
+        body.settings-active .main-action-panel,
+        body.settings-active .builder-keypad-panel,
+        body.settings-active .numerical-rewrite-error { display: none; }
+        body.settings-active .quadrant-menu { z-index: 130; }
 
         .main-action-panel {
             position: absolute;
@@ -2937,6 +2970,13 @@
         .main-action-panel .intent-category-button:nth-child(5) { grid-column: 3; grid-row: 3; }
         .main-action-panel .intent-category-button:nth-child(6) { grid-column: 3; grid-row: 2; }
         .main-action-panel .cancel-selection-button { grid-column: 3; grid-row: 1; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(1) { grid-column: 3; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(3) { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(5) { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(6) { grid-column: 1; }
+        body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
         .main-action-panel .tool-grid {
             display: flex;
             flex-flow: row wrap;
@@ -3021,6 +3061,15 @@
             align-items: flex-start;
             justify-content: flex-start;
         }
+        body.left-handed .main-action-panel .tool-row,
+        body.left-handed .main-action-panel .tool-form-row,
+        body.left-handed .main-action-panel .builder-action-row {
+            flex-direction: row-reverse;
+        }
+        body.left-handed .main-action-panel .tool-grid { flex-flow: row-reverse wrap; }
+        body.left-handed .level-menu-actions .reset-exercise-button { grid-column: 2; grid-row: 1; }
+        body.left-handed .level-menu-actions .handedness-toggle-button { grid-column: 1; grid-row: 1; }
+        body.left-handed .layout-size-buttons { flex-direction: row-reverse; }
         body.expression-builder-active .quadrant-menu,
         body.expression-builder-active.left-handed .quadrant-menu,
         body.expression-builder-active .quadrant-tools,
@@ -3055,6 +3104,47 @@
         .builder-keypad-panel .panel-tool-menu button,
         .builder-keypad-panel .builder-action-row button {
             font-size: 13px;
+        }
+
+        body.left-handed .builder-keypad-panel {
+            right: auto;
+            left: max(12px, env(safe-area-inset-left));
+        }
+        /* Mirror the builder controls, but translate the numeric keypad as one
+           unit so its internal calculator ordering remains unchanged. */
+        body.left-handed .builder-keypad-panel .builder-variable-button:nth-child(1) { grid-column: 5; }
+        body.left-handed .builder-keypad-panel .builder-variable-button:nth-child(2) { grid-column: 5; }
+        body.left-handed .builder-keypad-panel .builder-variable-button:nth-child(3) { grid-column: 5; }
+        body.left-handed .builder-keypad-panel .builder-variable-button:nth-child(4) { grid-column: 5; }
+        body.left-handed .builder-keypad-panel .builder-inv-button,
+        body.left-handed .builder-keypad-panel .builder-prod-button,
+        body.left-handed .builder-keypad-panel .builder-sum-button { grid-column: 4; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 1; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 2; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="9"] { grid-column: 3; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="4"] { grid-column: 1; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="5"] { grid-column: 2; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="6"] { grid-column: 3; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="1"] { grid-column: 1; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="2"] { grid-column: 2; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="3"] { grid-column: 3; }
+        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 2; }
+        body.left-handed .builder-keypad-panel .builder-negative-one-button { grid-column: 1; }
+        body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 3; }
+        body.left-handed .builder-keypad-panel .builder-cancel-button { grid-column: 1; }
+        body.left-handed .builder-keypad-panel .builder-next-submit-button { grid-column: 1 / span 2; }
+
+        .builder-rewrite-original,
+        .builder-rewrite-proposal {
+            position: relative;
+        }
+        .builder-rewrite-original::after,
+        .builder-rewrite-proposal::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(80, 140, 255, 0.25);
+            pointer-events: none;
         }
 
         @media (max-width: 520px) {
@@ -3093,16 +3183,44 @@
 <body class="no-level-loaded">
     <div class="app-container">
         <div class="quadrant-menu">
-            <button id="hamburgerButton" class="hamburger-button" type="button" aria-label="Open exercise menu" aria-expanded="false" aria-controls="levelMenuPanel" title="Exercise menu">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <button id="settingsButton" class="settings-button" type="button" aria-label="Open settings" aria-expanded="false" aria-controls="levelMenuPanel" title="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.7 2.8h4.6l.7 2.4c.5.2 1 .5 1.4.8l2.4-.6 2.3 4-1.7 1.8v1.6l1.7 1.8-2.3 4-2.4-.6c-.4.3-.9.6-1.4.8l-.7 2.4H9.7L9 18.8c-.5-.2-1-.5-1.4-.8l-2.4.6-2.3-4 1.7-1.8v-1.6L2.9 9.4l2.3-4 2.4.6c.4-.3.9-.6 1.4-.8l.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
             </button>
-            <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Exercise options">
-                <h2 class="level-menu-title">Options</h2>
+        </div>
+        <div id="leftPanel" class="left-panel">
+            <div id="levelContent"></div>
+        </div>
+        <div class="quadrant-tools">
+            <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
+                <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
+                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
+                <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
+                    <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" data-hold-description="Make the expression larger. Click the expression to zoom toward that point.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" data-hold-description="Make the expression smaller.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and return to top left" data-hold-description="Return the expression to 100% zoom at the upper-left of the workspace.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="15" text-anchor="middle" font-size="7.5" font-weight="800" fill="currentColor">100%</text></svg>
+                    </button>
+                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression or zoom step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression or zoom step. Continue undoing to return to the beginning of the exercise." disabled>
+                        <span class="workspace-undo-label" aria-hidden="true">UN-<br>DO</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="main" id="mainArea">
+            <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Settings">
+                <h2 class="level-menu-title">Settings</h2>
                 <div class="level-menu-actions" aria-label="Exercise and layout controls">
                     <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                     </button>
-                    <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the exercise-menu control to the other end of the bottom toolbar.">
+                    <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Reflect every button arrangement for the other hand while keeping the numeric keypad ordered as one block.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
                 </div>
@@ -3140,34 +3258,6 @@
                 </div>
                 <div id="moveHistoryControls"></div>
             </div>
-        </div>
-        <div id="leftPanel" class="left-panel">
-            <div id="levelContent"></div>
-        </div>
-        <div class="quadrant-tools">
-            <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
-                <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
-                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
-                <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
-                    <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" data-hold-description="Make the expression larger. Click the expression to zoom toward that point.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </button>
-                    <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" data-hold-description="Make the expression smaller.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </button>
-                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and return to top left" data-hold-description="Return the expression to 100% zoom at the upper-left of the workspace.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><text x="12" y="15" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor">100</text></svg>
-                    </button>
-                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Return to the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5M4.5 6.5A9 9 0 1 1 3 15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="main" id="mainArea">
             <div id="rightTopBar" class="right-top-bar">
                 <div class="right-top-row">
                     <div class="right-expression-wrap">
@@ -3209,8 +3299,8 @@
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="6" aria-valuemax="55" aria-valuenow="22"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-guided-selection-lock"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-guided-selection-lock"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-settings-and-view-history"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-settings-and-view-history"></script>
 
 </body>
 </html>

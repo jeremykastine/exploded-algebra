@@ -1221,7 +1221,7 @@ Promise.resolve().then(() => {
         const handednessToggleButton = document.getElementById("handednessToggleButton");
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
-        const hamburgerButton = document.getElementById("hamburgerButton");
+        const settingsButton = document.getElementById("settingsButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
         const productBarStyleSelect = document.getElementById("productBarStyleSelect");
@@ -2018,8 +2018,8 @@ Promise.resolve().then(() => {
             if (button.dataset.toolCategory) {
                 return `${titleHtml}<p>Show the algebra rules in this category.</p>`;
             }
-            if (button.id === "hamburgerButton") {
-                return `${titleHtml}<p>Open exercise options and move-history controls.</p>`;
+            if (button.id === "settingsButton") {
+                return `${titleHtml}<p>Open settings in place of the exploded expression.</p>`;
             }
             if (button.classList.contains("completion-export-button")) {
                 return `${titleHtml}<p>Download the complete move history for this exercise.</p>`;
@@ -2238,6 +2238,7 @@ Promise.resolve().then(() => {
                 root: cloneExpressionTree(expressionRoot),
                 completedSteps: Array.isArray(completedSteps) ? completedSteps.slice() : [],
                 demoStepIndex,
+                workspaceView: captureWorkspaceView(),
                 solutionRecorder: clonePlainData(solutionRecorder),
                 completionExportReadyForRun,
                 completionExportCompletedAt: completionExportCompletedAtDate
@@ -2289,6 +2290,7 @@ Promise.resolve().then(() => {
             completionExportCompletedAtDate = snapshot.completionExportCompletedAt
                 ? new Date(snapshot.completionExportCompletedAt)
                 : null;
+            const workspaceView = snapshot.workspaceView || null;
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
             uiState.inspectStepIndex = -1;
@@ -2304,7 +2306,22 @@ Promise.resolve().then(() => {
             refreshStatus();
             stableExpressionState = captureExpressionUndoState();
             drawExpression();
+            if (workspaceView) {
+                requestAnimationFrame(() => {
+                    restoreWorkspaceView(workspaceView);
+                    stableExpressionState = captureExpressionUndoState();
+                });
+            }
             return true;
+        }
+
+        function rememberWorkspaceViewChangeForUndo(snapshot) {
+            if (!snapshot || !snapshot.root) {
+                return;
+            }
+            expressionUndoHistory.push(snapshot);
+            stableExpressionState = captureExpressionUndoState();
+            updateWorkspaceToolbar();
         }
 
         function recordSolutionAction(action, demoStep) {
@@ -2376,6 +2393,28 @@ Promise.resolve().then(() => {
                 beforeExpression: beforeExpression || getExpressionTextForTrace(),
                 afterExpression: getExpressionTextForTrace()
             }, step);
+        }
+
+        function recordWorkspaceViewForSolution(action, beforeZoom, afterZoom) {
+            const step = {
+                type: "view",
+                action,
+                zoom: Number(afterZoom.toFixed(4))
+            };
+            recordSolutionAction({
+                ...step,
+                beforeZoom: Number(beforeZoom.toFixed(4)),
+                afterZoom: Number(afterZoom.toFixed(4)),
+                expression: getExpressionTextForTrace()
+            }, step);
+        }
+
+        function isDemoWorkspaceViewAllowed(action) {
+            if (!isDemoModeActive()) {
+                return true;
+            }
+            const step = getCurrentDemoStep();
+            return !!step && step.type === "view" && step.action === action;
         }
 
         function recordCommuteChoiceForSolution(clickedIndex, beforeExpression) {
@@ -3586,10 +3625,13 @@ Promise.resolve().then(() => {
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
-                    if (!button) {
+                    if (!button || button.disabled) {
                         return;
                     }
                     if (button.dataset.workspaceAction === "resetZoom") {
+                        if (!isDemoWorkspaceViewAllowed("resetZoom")) {
+                            return;
+                        }
                         resetWorkspaceZoom();
                         return;
                     }
@@ -3599,6 +3641,12 @@ Promise.resolve().then(() => {
                     }
                     const mode = button.dataset.workspaceMode;
                     if (!mode) {
+                        return;
+                    }
+                    if ((mode === "zoomIn" || mode === "zoomOut") && !isDemoWorkspaceViewAllowed(mode)) {
+                        return;
+                    }
+                    if (mode === "select" && isDemoModeActive() && getCurrentDemoStep()?.type === "view") {
                         return;
                     }
                     setWorkspaceMode(mode);
@@ -3657,15 +3705,16 @@ Promise.resolve().then(() => {
                     setLeftHandedLayout(!document.body.classList.contains("left-handed"), true);
                 });
             }
-            if (hamburgerButton && levelMenuPanel) {
-                const setMenuOpen = open => {
+            if (settingsButton && levelMenuPanel) {
+                const setSettingsOpen = open => {
                     levelMenuPanel.classList.toggle("hidden", !open);
-                    hamburgerButton.setAttribute("aria-expanded", String(open));
-                    hamburgerButton.setAttribute("aria-label", open ? "Close exercise menu" : "Open exercise menu");
+                    document.body.classList.toggle("settings-active", open);
+                    settingsButton.setAttribute("aria-expanded", String(open));
+                    settingsButton.setAttribute("aria-label", open ? "Close settings" : "Open settings");
                 };
-                hamburgerButton.addEventListener("click", event => {
+                settingsButton.addEventListener("click", event => {
                     event.stopPropagation();
-                    setMenuOpen(levelMenuPanel.classList.contains("hidden"));
+                    setSettingsOpen(levelMenuPanel.classList.contains("hidden"));
                 });
                 levelMenuPanel.addEventListener("click", event => {
                     const layoutButton = event.target.closest("button[data-layout-action]");
@@ -3683,11 +3732,10 @@ Promise.resolve().then(() => {
                     }
                     event.stopPropagation();
                 });
-                document.addEventListener("click", () => setMenuOpen(false));
                 document.addEventListener("keydown", event => {
                     if (event.key === "Escape" && !levelMenuPanel.classList.contains("hidden")) {
-                        setMenuOpen(false);
-                        hamburgerButton.focus();
+                        setSettingsOpen(false);
+                        settingsButton.focus();
                     }
                 });
             }
@@ -3954,6 +4002,20 @@ ctx.font = SETTINGS.textFont;
             if (undoExpressionButton) {
                 undoExpressionButton.disabled = expressionUndoHistory.length === 0;
             }
+            workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
+                button.classList.remove("demo-target-button", "demo-blocked-button");
+            });
+            if (isDemoModeActive()) {
+                const step = getCurrentDemoStep();
+                const viewButtons = workspaceToolbar.querySelectorAll(
+                    'button[data-workspace-mode="zoomIn"],button[data-workspace-mode="zoomOut"],button[data-workspace-action="resetZoom"]'
+                );
+                viewButtons.forEach(button => {
+                    const action = button.dataset.workspaceMode || button.dataset.workspaceAction;
+                    button.classList.toggle("demo-target-button", !!step && step.type === "view" && step.action === action);
+                    button.classList.toggle("demo-blocked-button", !step || step.type !== "view" || step.action !== action);
+                });
+            }
         }
 
         function updateSidePanelColumns() {
@@ -3977,7 +4039,7 @@ ctx.font = SETTINGS.textFont;
         function setWorkspaceZoom(nextZoom, clientX = null, clientY = null) {
             const boundedZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, nextZoom));
             if (Math.abs(boundedZoom - workspaceZoom) < 0.001) {
-                return;
+                return false;
             }
 
             const bounds = svgContainer.getBoundingClientRect();
@@ -3998,18 +4060,56 @@ ctx.font = SETTINGS.textFont;
             const newMarginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
             svgContainer.scrollLeft = Math.max(0, unscaledX * workspaceZoom + newMarginLeft - focalX);
             svgContainer.scrollTop = Math.max(0, unscaledY * workspaceZoom + newMarginTop - focalY);
+            return true;
         }
 
         function zoomWorkspaceInAt(clientX, clientY) {
-            setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP, clientX, clientY);
+            if (!isDemoWorkspaceViewAllowed("zoomIn")) {
+                return false;
+            }
+            const snapshot = captureExpressionUndoState();
+            const beforeZoom = workspaceZoom;
+            if (!setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP, clientX, clientY)) {
+                return false;
+            }
+            recordWorkspaceViewForSolution("zoomIn", beforeZoom, workspaceZoom);
+            rememberWorkspaceViewChangeForUndo(snapshot);
+            if (isDemoModeActive()) {
+                advanceDemoStep();
+            }
+            return true;
         }
 
         function zoomWorkspaceOut() {
-            setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
+            if (!isDemoWorkspaceViewAllowed("zoomOut")) {
+                return false;
+            }
+            const snapshot = captureExpressionUndoState();
+            const beforeZoom = workspaceZoom;
+            if (!setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP)) {
+                setWorkspaceMode("select");
+                return false;
+            }
+            recordWorkspaceViewForSolution("zoomOut", beforeZoom, workspaceZoom);
+            rememberWorkspaceViewChangeForUndo(snapshot);
             setWorkspaceMode("select");
+            if (isDemoModeActive()) {
+                advanceDemoStep();
+            }
+            return true;
         }
 
         function resetWorkspaceZoom() {
+            if (!isDemoWorkspaceViewAllowed("resetZoom")) {
+                return false;
+            }
+            const snapshot = captureExpressionUndoState();
+            const beforeZoom = workspaceZoom;
+            const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || svgContainer.scrollLeft !== 0 || svgContainer.scrollTop !== 0;
+            if (!viewChanged) {
+                setWorkspaceMode("select");
+                return false;
+            }
             workspaceZoom = 1;
             if (expressionRoot) {
                 drawExpression();
@@ -4019,8 +4119,15 @@ ctx.font = SETTINGS.textFont;
             requestAnimationFrame(() => {
                 svgContainer.scrollLeft = 0;
                 svgContainer.scrollTop = 0;
+                stableExpressionState = captureExpressionUndoState();
             });
+            recordWorkspaceViewForSolution("resetZoom", beforeZoom, workspaceZoom);
+            rememberWorkspaceViewChangeForUndo(snapshot);
             setWorkspaceMode("select");
+            if (isDemoModeActive()) {
+                advanceDemoStep();
+            }
+            return true;
         }
 
         function captureWorkspaceView() {
