@@ -4224,7 +4224,6 @@ ctx.font = SETTINGS.textFont;
         }
 
         function textToExpression(text) {
-            ExprNode.nextId = 1;
             return parseParenthesizedExpressionStrict(text.trim());
         }
 
@@ -4393,7 +4392,6 @@ ctx.font = SETTINGS.textFont;
             }
 
             try {
-                ExprNode.nextId = 1;
                 const node = parseParenthesizedExpressionStrict(s);
                 return { ok: true, node };
             } catch (err) {
@@ -5414,15 +5412,15 @@ ctx.font = SETTINGS.textFont;
             return nearest && nearest.distance <= maximumDistance ? nearest : null;
         }
 
-        function findPathToNode(node, targetId, path = []) {
+        function findPathToNode(node, targetNode, path = []) {
             if (!node) {
                 return null;
             }
-            if (node.id === targetId) {
+            if (node === targetNode) {
                 return path;
             }
             for (let i = 0; i < (node.args || []).length; i++) {
-                const childPath = findPathToNode(node.args[i], targetId, path.concat(i));
+                const childPath = findPathToNode(node.args[i], targetNode, path.concat(i));
                 if (childPath) {
                     return childPath;
                 }
@@ -5434,7 +5432,7 @@ ctx.font = SETTINGS.textFont;
             if (!target || !target.node) {
                 return [];
             }
-            const nodePath = findPathToNode(expressionRoot, target.node.id);
+            const nodePath = findPathToNode(expressionRoot, target.node);
             if (!nodePath) {
                 return [];
             }
@@ -5520,7 +5518,7 @@ ctx.font = SETTINGS.textFont;
             if (!Array.isArray(path) || !target || !target.node) {
                 return false;
             }
-            const targetPath = findPathToNode(expressionRoot, target.node.id);
+            const targetPath = findPathToNode(expressionRoot, target.node);
             if (!targetPath || targetPath.some((part, index) => path[index] !== part)) {
                 return false;
             }
@@ -5704,13 +5702,13 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            if (selection.node.id === expressionRoot.id) {
+            if (selection.node === expressionRoot) {
                 expressionRoot = replacementNode;
                 syncCurrentExpressionRoot();
                 return true;
             }
 
-            return replaceNodeById(expressionRoot, selection.node.id, replacementNode);
+            return replaceNodeByReference(expressionRoot, selection.node, replacementNode);
         }
 
         function replaceSelectedRange(replacementNode) {
@@ -5735,13 +5733,13 @@ ctx.font = SETTINGS.textFont;
             return replaceSelectedNode(replacementNode);
         }
 
-        function replaceNodeById(currentNode, targetId, replacementNode) {
+        function replaceNodeByReference(currentNode, targetNode, replacementNode) {
             for (let i = 0; i < currentNode.args.length; i++) {
-                if (currentNode.args[i].id === targetId) {
+                if (currentNode.args[i] === targetNode) {
                     currentNode.args[i] = replacementNode;
                     return true;
                 }
-                if (replaceNodeById(currentNode.args[i], targetId, replacementNode)) {
+                if (replaceNodeByReference(currentNode.args[i], targetNode, replacementNode)) {
                     return true;
                 }
             }
