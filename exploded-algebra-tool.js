@@ -3651,7 +3651,7 @@ ctx.font = SETTINGS.textFont;
         let pendingResponsiveWorkspaceView = null;
         const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
         const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyle";
-        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2"]);
+        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2", "midline-double-arc-v3"]);
 
         function getSavedOperatorBarStyle() {
             try {
@@ -5042,7 +5042,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.productBeamStyle === "midline-double-arc-v2";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.productBeamStyle === "midline-double-arc-v2" || SETTINGS.productBeamStyle === "midline-double-arc-v3";
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
                     const distance = hasConnectorFlares
@@ -5055,7 +5055,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.sumBeamStyle === "midline-double-arc-v2";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.sumBeamStyle === "midline-double-arc-v2" || SETTINGS.sumBeamStyle === "midline-double-arc-v3";
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
                     const distance = hasConnectorFlares
