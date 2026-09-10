@@ -673,10 +673,15 @@ Promise.resolve().then(() => {
         function buildIntentCategoryMenuHtml() {
             // The fixed keypad is ordered from its full bottom row upward.
             const categoryIds = ["numericalRewrite", "insert", "delete", "separate", "consolidate", "commute"];
+            const cancelDisabled = isDemoModeActive() ? " disabled" : "";
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
+                        <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
+                            <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            <span class="intent-category-label">Clear selection</span>
+                        </button>
                     </div>
                 </div>`;
         }
@@ -3234,9 +3239,7 @@ Promise.resolve().then(() => {
             }
 
             container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
-                if (button.dataset.action === "cancelSelection") {
-                    button.classList.remove("demo-target-button", "demo-blocked-button");
-                } else if (button === targetButton) {
+                if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
                     button.classList.add("demo-blocked-button");
@@ -3584,10 +3587,6 @@ Promise.resolve().then(() => {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
                     if (!button) {
-                        return;
-                    }
-                    if (button.dataset.workspaceAction === "cancelSelection") {
-                        handleToolAction("cancelSelection", null);
                         return;
                     }
                     if (button.dataset.workspaceAction === "resetZoom") {
@@ -3951,10 +3950,6 @@ ctx.font = SETTINGS.textFont;
                 button.classList.toggle("is-active", active);
                 button.setAttribute("aria-pressed", String(active));
             });
-            const cancelSelectionButton = workspaceToolbar.querySelector('button[data-workspace-action="cancelSelection"]');
-            if (cancelSelectionButton) {
-                cancelSelectionButton.disabled = !selection.node;
-            }
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
             if (undoExpressionButton) {
                 undoExpressionButton.disabled = expressionUndoHistory.length === 0;
@@ -5406,15 +5401,61 @@ ctx.font = SETTINGS.textFont;
             return true;
         }
 
-        function growSelectionToInclude(target) {
+        function getSelectionTargetExpandedWith(target) {
             if (!selection.node) {
-                return applySelectionTarget(target);
+                return target;
             }
-            const containingTarget = selectionTargetContainingPaths([
+            return selectionTargetContainingPaths([
                 ...getCoveragePathsForSelectionTarget(selection),
                 ...getCoveragePathsForSelectionTarget(target)
             ]);
-            return applySelectionTarget(containingTarget);
+        }
+
+        function isCoveragePathInsideSelectionTarget(path, target) {
+            if (!Array.isArray(path) || !target || !target.node) {
+                return false;
+            }
+            const targetPath = findPathToNode(expressionRoot, target.node.id);
+            if (!targetPath || targetPath.some((part, index) => path[index] !== part)) {
+                return false;
+            }
+            if (path.length === targetPath.length) {
+                return target.node.type !== "sum" && target.node.type !== "prod" || (
+                    target.firstPart === 0 && target.lastPart === target.node.args.length - 1
+                );
+            }
+            if (target.node.type === "sum" || target.node.type === "prod") {
+                const childIndex = path[targetPath.length];
+                return childIndex >= target.firstPart && childIndex <= target.lastPart;
+            }
+            return true;
+        }
+
+        function isSelectionTargetInside(target, allowedTarget) {
+            const coveragePaths = getCoveragePathsForSelectionTarget(target);
+            return coveragePaths.length > 0 && coveragePaths.every(path => (
+                isCoveragePathInsideSelectionTarget(path, allowedTarget)
+            ));
+        }
+
+        function isDemoSelectionTargetAllowed(target) {
+            if (!isDemoModeActive()) {
+                return true;
+            }
+            const step = getCurrentDemoStep();
+            if (!step || step.type !== "select") {
+                return false;
+            }
+            const allowedTarget = findDemoSelectionTarget(step);
+            return !!allowedTarget && isSelectionTargetInside(target, allowedTarget);
+        }
+
+        function growSelectionToInclude(target) {
+            const expandedTarget = getSelectionTargetExpandedWith(target);
+            if (!isDemoSelectionTargetAllowed(expandedTarget)) {
+                return false;
+            }
+            return applySelectionTarget(expandedTarget);
         }
 
         function getSelectionBox() {
@@ -9501,6 +9542,9 @@ ctx.font = SETTINGS.textFont;
                     const action = btn.dataset.action;
                     const value = btn.dataset.value || null;
                     if (action === "cancelSelection") {
+                        if (isDemoModeActive()) {
+                            return;
+                        }
                         handleToolAction(action, value);
                         return;
                     }
@@ -9883,6 +9927,9 @@ function renderToolArea() {
 
         function handleToolAction(action, value) {
             if (action === "cancelSelection") {
+                if (isDemoModeActive()) {
+                    return;
+                }
                 setWorkspaceMode("select");
                 clearSelection();
                 clearInteraction();
@@ -10182,6 +10229,9 @@ function renderToolArea() {
             const target = findNearestVisibleObject(x, y, pointerType);
             if (!target) {
                 if (selection.node) {
+                    if (isDemoModeActive()) {
+                        return false;
+                    }
                     clearSelection();
                     clearInteraction();
                     refreshStatus();
@@ -10286,6 +10336,9 @@ function renderToolArea() {
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
+                if (clearingSelectionFromEmptySpace) {
+                    return;
+                }
                 if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode !== "zoomIn" && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }

@@ -2817,7 +2817,6 @@
             pointer-events: auto;
         }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="cancelSelection"] { grid-column: 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 3; grid-row: 2; }
         .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 4; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1; }
@@ -2928,15 +2927,16 @@
         .main-action-panel .intent-category-actions {
             display: grid;
             grid-template-columns: repeat(3, var(--main-key-size));
-            grid-template-rows: repeat(3, var(--main-key-size));
+            grid-template-rows: repeat(4, var(--main-key-size));
             grid-auto-flow: row;
         }
-        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; grid-row: 3; }
-        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; grid-row: 3; }
-        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 3; grid-row: 3; }
-        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; grid-row: 2; }
-        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 3; grid-row: 2; }
-        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 3; grid-row: 1; }
+        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 3; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; grid-row: 3; }
+        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 3; grid-row: 3; }
+        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 3; grid-row: 2; }
+        .main-action-panel .cancel-selection-button { grid-column: 3; grid-row: 1; }
         .main-action-panel .tool-grid {
             display: flex;
             flex-flow: row wrap;
@@ -3150,9 +3150,6 @@
                     <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression." disabled>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                    </button>
                 </div>
                 <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
                     <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" data-hold-description="Make the expression larger. Click the expression to zoom toward that point.">
@@ -3212,8 +3209,8 @@
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="6" aria-valuemax="55" aria-valuenow="22"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-steps-font-controls"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-steps-font-controls"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-guided-selection-lock"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-guided-selection-lock"></script>
 
 </body>
 </html>

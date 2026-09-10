@@ -46,8 +46,11 @@ The exploded expression is anchored at the upper-left of its workspace. The
 idle workspace controls, contextual action choices, and Expression Builder each
 use the same compact, bottom-corner keypad footprint; only the controls for the
 current state are visible. Each button is opaque, but the control clusters have
-no panel background. The conventional steps remain visible above a draggable
-horizontal divider and scroll vertically when their chosen height is too small.
+no panel background. Clear Selection appears only with the post-selection
+actions and is blocked in guided demonstrations, where off-target selections
+and empty-workspace clicks are ignored. The conventional steps remain visible
+above a draggable horizontal divider and scroll vertically when their chosen
+height is too small.
 The exercise menu also provides plus/minus controls for button size and
 conventional-steps font size. The steps panel automatically refits its height
 to the rendered expressions when the font size changes.
