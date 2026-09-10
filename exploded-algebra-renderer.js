@@ -366,6 +366,46 @@ function drawSingleArcSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
     drawingContext.restore();
 }
 
+function drawMidlineDoubleArcProductBeam(drawingContext, x, y1, y2, halfThickness, color) {
+    const height = Math.max(0, y2 - y1);
+    const quarterY = height / 4;
+    const centerY = (y1 + y2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // The two rotated arcs share the top and bottom midline endpoints.
+    drawingContext.moveTo(x, y1);
+    drawingContext.quadraticCurveTo(x + halfThickness, y1 + quarterY, x + halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x + halfThickness, y2 - quarterY, x, y2);
+    drawingContext.moveTo(x, y1);
+    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x - halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x, y2);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
+function drawMidlineDoubleArcSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
+    const width = Math.max(0, x2 - x1);
+    const quarterX = width / 4;
+    const centerX = (x1 + x2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // Both arcs begin and end on the horizontal midline.
+    drawingContext.moveTo(x1, y);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y - halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y);
+    drawingContext.moveTo(x1, y);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y + halfThickness, centerX, y + halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y + halfThickness, x2, y);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
 let svgMeasureTextElement = null;
 
 function measureSvgText(text, font) {
@@ -887,6 +927,7 @@ function drawNodeToContext(
             const useSCurveBeam = needsBeam && settings.productBeamStyle === "s-curve";
             const useDoubleArcBeam = needsBeam && settings.productBeamStyle === "double-arc";
             const useSingleArcBeam = needsBeam && settings.productBeamStyle === "single-arc";
+            const useMidlineDoubleArcBeam = needsBeam && settings.productBeamStyle === "midline-double-arc";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -897,6 +938,8 @@ function drawNodeToContext(
                 drawDoubleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (useSingleArcBeam) {
                 drawSingleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
+            } else if (useMidlineDoubleArcBeam) {
+                drawMidlineDoubleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -958,6 +1001,7 @@ function drawNodeToContext(
             const useSCurveBeam = needsBeam && settings.sumBeamStyle === "s-curve";
             const useDoubleArcBeam = needsBeam && settings.sumBeamStyle === "double-arc";
             const useSingleArcBeam = needsBeam && settings.sumBeamStyle === "single-arc";
+            const useMidlineDoubleArcBeam = needsBeam && settings.sumBeamStyle === "midline-double-arc";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -968,6 +1012,8 @@ function drawNodeToContext(
                 drawDoubleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (useSingleArcBeam) {
                 drawSingleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
+            } else if (useMidlineDoubleArcBeam) {
+                drawMidlineDoubleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
