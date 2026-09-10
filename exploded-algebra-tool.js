@@ -1221,7 +1221,7 @@ Promise.resolve().then(() => {
         const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
         const productBarStyleSelect = document.getElementById("productBarStyleSelect");
         const buttonSizeValue = document.getElementById("buttonSizeValue");
-        const stepsPanelSizeValue = document.getElementById("stepsPanelSizeValue");
+        const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1275,33 +1275,36 @@ Promise.resolve().then(() => {
         let internalClipboardText = "";
         let workspacePanelSplit = window.innerWidth <= 650 ? 74 : 78;
         let mainButtonSize = window.innerWidth <= 520 ? 42 : 44;
+        let stepsFontSize = 15;
         let activeDividerPointerId = null;
         const MAIN_BUTTON_SIZE_MIN = 34;
         const MAIN_BUTTON_SIZE_MAX = 62;
         const MAIN_BUTTON_SIZE_STEP = 4;
         const MAIN_BUTTON_SIZE_STORAGE_KEY = "explodedAlgebraMainButtonSizeV1";
+        const STEPS_FONT_SIZE_MIN = 11;
+        const STEPS_FONT_SIZE_MAX = 26;
+        const STEPS_FONT_SIZE_STEP = 1;
+        const STEPS_FONT_SIZE_STORAGE_KEY = "explodedAlgebraStepsFontSizeV1";
 
         function getCurrentPanelSplitLimits() {
             return { min: 45, max: 94 };
         }
 
         function updateLayoutSizeControls() {
-            const limits = getCurrentPanelSplitLimits();
-            const stepsPanelPercent = 100 - workspacePanelSplit;
             if (buttonSizeValue) {
                 buttonSizeValue.textContent = `${Math.round(mainButtonSize)} px`;
             }
-            if (stepsPanelSizeValue) {
-                stepsPanelSizeValue.textContent = `${Math.round(stepsPanelPercent)}%`;
+            if (stepsFontSizeValue) {
+                stepsFontSizeValue.textContent = `${Math.round(stepsFontSize)} px`;
             }
             const buttonSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-smaller"]');
             const buttonLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-larger"]');
-            const stepsSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-smaller"]');
-            const stepsLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-larger"]');
+            const stepsFontSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-smaller"]');
+            const stepsFontLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-larger"]');
             if (buttonSmaller) buttonSmaller.disabled = mainButtonSize <= MAIN_BUTTON_SIZE_MIN;
             if (buttonLarger) buttonLarger.disabled = mainButtonSize >= MAIN_BUTTON_SIZE_MAX;
-            if (stepsSmaller) stepsSmaller.disabled = workspacePanelSplit >= limits.max;
-            if (stepsLarger) stepsLarger.disabled = workspacePanelSplit <= limits.min;
+            if (stepsFontSmaller) stepsFontSmaller.disabled = stepsFontSize <= STEPS_FONT_SIZE_MIN;
+            if (stepsFontLarger) stepsFontLarger.disabled = stepsFontSize >= STEPS_FONT_SIZE_MAX;
         }
 
         function loadSavedMainButtonSize() {
@@ -1326,6 +1329,30 @@ Promise.resolve().then(() => {
                 } catch (error) {}
             }
             updateLayoutSizeControls();
+        }
+
+        function loadSavedStepsFontSize() {
+            try {
+                const savedSize = Number(window.localStorage.getItem(STEPS_FONT_SIZE_STORAGE_KEY));
+                return Number.isFinite(savedSize) && savedSize >= STEPS_FONT_SIZE_MIN && savedSize <= STEPS_FONT_SIZE_MAX
+                    ? savedSize
+                    : stepsFontSize;
+            } catch (error) {
+                return stepsFontSize;
+            }
+        }
+
+        function setStepsFontSize(size, persist = false) {
+            const boundedSize = Math.max(STEPS_FONT_SIZE_MIN, Math.min(STEPS_FONT_SIZE_MAX, Number(size) || stepsFontSize));
+            stepsFontSize = boundedSize;
+            appContainer.style.setProperty("--steps-font-size", `${boundedSize}px`);
+            if (persist) {
+                try {
+                    window.localStorage.setItem(STEPS_FONT_SIZE_STORAGE_KEY, String(boundedSize));
+                } catch (error) {}
+            }
+            updateLayoutSizeControls();
+            scheduleTopPanelHeightUpdate(getCurrentLevel());
         }
 
         function updateDividerAccessibility() {
@@ -3540,6 +3567,7 @@ Promise.resolve().then(() => {
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setMainButtonSize(loadSavedMainButtonSize());
+            setStepsFontSize(loadSavedStepsFontSize());
             setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
             setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
             if (sumBarStyleSelect) {
@@ -3648,10 +3676,10 @@ Promise.resolve().then(() => {
                             setMainButtonSize(mainButtonSize - MAIN_BUTTON_SIZE_STEP, true);
                         } else if (action === "button-larger") {
                             setMainButtonSize(mainButtonSize + MAIN_BUTTON_SIZE_STEP, true);
-                        } else if (action === "steps-smaller") {
-                            setPanelSplit(workspacePanelSplit + 3);
-                        } else if (action === "steps-larger") {
-                            setPanelSplit(workspacePanelSplit - 3);
+                        } else if (action === "steps-font-smaller") {
+                            setStepsFontSize(stepsFontSize - STEPS_FONT_SIZE_STEP, true);
+                        } else if (action === "steps-font-larger") {
+                            setStepsFontSize(stepsFontSize + STEPS_FONT_SIZE_STEP, true);
                         }
                     }
                     event.stopPropagation();
