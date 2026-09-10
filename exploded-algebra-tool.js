@@ -1205,6 +1205,8 @@ Promise.resolve().then(() => {
         const ctx = createSvgContext(workspaceSvg);
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const builderRewritePreview = document.getElementById("builderRewritePreview");
+        const builderKeypadPanel = document.getElementById("builderKeypadPanel");
+        const builderCommandPanel = document.getElementById("builderCommandPanel");
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
         const builderDigitRail = document.getElementById("builderDigitRail");
@@ -1803,18 +1805,6 @@ Promise.resolve().then(() => {
             actionProbe.innerHTML = buildIntentCategoryMenuHtml();
             probe.appendChild(actionProbe);
 
-            const builderProbe = document.createElement("div");
-            builderProbe.className = "panel-tool-menu";
-            builderProbe.innerHTML = `<div class="expression-builder-panel"><div class="builder-controls"><div class="builder-action-row">
-                <button class="builder-next-submit-button">Next / Submit</button>
-                <button class="builder-undo-button">Backspace</button>
-                <button class="builder-cancel-button">Cancel</button>
-                <button class="builder-negative-one-button">−1</button>
-                <button class="builder-sum-button">+</button>
-                <button class="builder-prod-button">·</button>
-                <button class="builder-inv-button">1/A</button>
-            </div></div></div>`;
-            probe.appendChild(builderProbe);
             return probe;
         }
 
@@ -1857,7 +1847,7 @@ Promise.resolve().then(() => {
         let suppressedPressHoldClick = null;
 
         function isExpressionBuilderButton(target) {
-            return !!target.closest(".expression-builder-panel, #builderDigitRail");
+            return !!target.closest("#builderKeypadPanel");
         }
 
         function getPressHoldTarget(eventTarget) {
@@ -3650,7 +3640,7 @@ ctx.font = SETTINGS.textFont;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
         const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
-        const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyle";
+        const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2", "midline-double-arc-v3", "midline-double-arc-v4"]);
 
         function getSavedOperatorBarStyle() {
@@ -3737,34 +3727,11 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
 
-            const builderActive = document.body.classList.contains("expression-builder-active");
             sidePanel.classList.remove("two-column-tools");
             if (builderInputRail) {
                 builderInputRail.classList.remove("two-columns");
             }
             appContainer.classList.remove("side-panel-two-columns");
-
-            const availableHeight = sidePanel.clientHeight;
-            if (!availableHeight) {
-                return;
-            }
-
-            if (builderActive && builderInputRail) {
-                const buttonCount = builderInputRail.querySelectorAll("button").length;
-                const requiredHeight = buttonCount * 40 + Math.max(0, buttonCount - 1) * 3 + 12;
-                if (requiredHeight > availableHeight) {
-                    builderInputRail.classList.add("two-columns");
-                    appContainer.classList.add("side-panel-two-columns");
-                }
-                return;
-            }
-
-            const visibleButtons = Array.from(sidePanel.querySelectorAll("button")).filter(button => button.offsetParent !== null);
-            const requiredHeight = visibleButtons.length * 44 + Math.max(0, visibleButtons.length - 1) * 5 + 16;
-            if (requiredHeight > availableHeight) {
-                sidePanel.classList.add("two-column-tools");
-                appContainer.classList.add("side-panel-two-columns");
-            }
         }
 
         function setWorkspaceMode(mode) {
@@ -7581,12 +7548,12 @@ ctx.font = SETTINGS.textFont;
             builderRewritePreview.innerHTML = `
                 <div class="builder-rewrite-content">
                     <div class="builder-rewrite-original" aria-label="Selected expression">${originalMarkup}</div>
-                    <span class="builder-rewrite-arrow" aria-hidden="true">→</span>
+                    <span class="builder-rewrite-arrow" aria-hidden="true">↘</span>
                     <div class="builder-rewrite-proposal" aria-label="Proposed expression">${renderBuilderProposalSvg(proposal)}</div>
                 </div>
             `;
             builderRewritePreview.classList.remove("hidden");
-            fitBuilderRewritePreview(builder);
+            fitBuilderRewritePreview();
             svgContainer.scrollLeft = 0;
             svgContainer.scrollTop = 0;
         }
@@ -7600,7 +7567,7 @@ ctx.font = SETTINGS.textFont;
             };
         }
 
-        function fitBuilderRewritePreview(builder) {
+        function fitBuilderRewritePreview() {
             const content = builderRewritePreview.querySelector(".builder-rewrite-content");
             const originalContainer = builderRewritePreview.querySelector(".builder-rewrite-original");
             const proposalContainer = builderRewritePreview.querySelector(".builder-rewrite-proposal");
@@ -7613,32 +7580,21 @@ ctx.font = SETTINGS.textFont;
             const proposalSize = getBuilderPreviewSvgSize(proposalContainer);
             const previewStyle = window.getComputedStyle(builderRewritePreview);
             const availableWidth = Math.max(1, builderRewritePreview.clientWidth - (Number.parseFloat(previewStyle.paddingLeft) || 0) - (Number.parseFloat(previewStyle.paddingRight) || 0));
-            const availableHeight = Math.max(1, builderRewritePreview.clientHeight - (Number.parseFloat(previewStyle.paddingTop) || 0) - (Number.parseFloat(previewStyle.paddingBottom) || 0));
+            const keypadExclusion = builderKeypadPanel && !builderKeypadPanel.classList.contains("hidden")
+                ? builderKeypadPanel.offsetHeight + 16
+                : 0;
+            const availableHeight = Math.max(1, builderRewritePreview.clientHeight - (Number.parseFloat(previewStyle.paddingTop) || 0) - (Number.parseFloat(previewStyle.paddingBottom) || 0) - keypadExclusion);
             const baseGap = Math.max(8, Number.parseFloat(window.getComputedStyle(content).gap) || 20);
             const arrowSize = 30;
-            const horizontal = {
+            const diagonal = {
                 width: original.width + proposalSize.width + arrowSize + baseGap * 2,
-                height: Math.max(original.height, proposalSize.height, arrowSize)
-            };
-            const vertical = {
-                width: Math.max(original.width, proposalSize.width, arrowSize),
                 height: original.height + proposalSize.height + arrowSize + baseGap * 2
             };
-            const quadrantRatio = availableWidth / availableHeight;
-            const aspectDistance = candidate => Math.abs(Math.log((candidate.width / candidate.height) / quadrantRatio));
-            const horizontalDistance = aspectDistance(horizontal);
-            const verticalDistance = aspectDistance(vertical);
-            const selectedWidth = builder.originalSelectedNode.layout && builder.originalSelectedNode.layout.width || original.width;
-            const selectedHeight = builder.originalSelectedNode.layout && builder.originalSelectedNode.layout.height || original.height;
-            const defaultVertical = builder.tool === "replaceOneWithInverseProduct" || selectedWidth > selectedHeight;
-            const distancesAreEffectivelyTied = Math.abs(horizontalDistance - verticalDistance) < 0.05;
-            const useVertical = distancesAreEffectivelyTied ? defaultVertical : verticalDistance < horizontalDistance;
-            const chosen = useVertical ? vertical : horizontal;
-            const scale = Math.min(1, availableWidth / chosen.width, availableHeight / chosen.height) * 0.98;
+            const scale = Math.min(1, availableWidth / diagonal.width, availableHeight / diagonal.height) * 0.98;
             const safeScale = Math.max(0.01, scale);
 
-            builderRewritePreview.classList.toggle("vertical", useVertical);
-            arrowElement.textContent = useVertical ? "↓" : "→";
+            builderRewritePreview.classList.remove("vertical");
+            arrowElement.textContent = "↘";
             content.style.gap = `${baseGap * safeScale}px`;
             arrowElement.style.fontSize = `${arrowSize * safeScale}px`;
             [original, proposalSize].forEach(item => {
@@ -8830,7 +8786,7 @@ ctx.font = SETTINGS.textFont;
             const nextOrSubmitTitle = hasNextPlaceholder
                 ? "Move to the next blank. Keyboard shortcut: Right Arrow or Tab"
                 : "Submit the completed expression. Keyboard shortcut: Enter";
-            const nextOrSubmitButton = `<button class="builder-next-submit-button" data-builder-action="${nextOrSubmitAction}" title="${nextOrSubmitTitle}">Next / Submit</button>`;
+            const nextOrSubmitButton = `<button class="builder-next-submit-button" data-builder-action="${nextOrSubmitAction}" title="${nextOrSubmitTitle}">Next / Enter</button>`;
             return `<div class="expression-builder-panel">
                 <div class="builder-instruction">${escapeHtml(getExpressionBuilderNote())}</div>
                 ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
@@ -9144,7 +9100,7 @@ ctx.font = SETTINGS.textFont;
             if (!uiState.expressionBuilder || uiState.stage !== "builder") {
                 return false;
             }
-            const panel = document.querySelector(".expression-builder-panel");
+            const panel = builderKeypadPanel;
             if (!panel) {
                 return false;
             }
@@ -9361,8 +9317,14 @@ function renderToolArea() {
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
             syncBuilderWorkspaceView(builderActive);
             document.body.classList.toggle("expression-builder-active", builderActive);
+            if (builderKeypadPanel) {
+                builderKeypadPanel.classList.toggle("hidden", !builderActive);
+            }
             if (builderInputRail) {
                 builderInputRail.classList.toggle("hidden", !builderActive);
+            }
+            if (!builderActive && builderCommandPanel) {
+                builderCommandPanel.replaceChildren();
             }
             renderBuilderVariableRail(builderActive);
             requestAnimationFrame(updateSidePanelColumns);
@@ -9375,6 +9337,12 @@ function renderToolArea() {
             syncToolListToDemoStep();
             const html = buildToolAreaHtml();
             document.body.classList.toggle("tool-area-active", !!html);
+            if (builderActive && builderCommandPanel) {
+                builderCommandPanel.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
+                attachToolListeners(builderCommandPanel);
+                applyDemoButtonHighlights(builderKeypadPanel || builderCommandPanel);
+                return;
+            }
             if (!html) {
                 if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
                     renderLevelInfo(currentLevelIndex);

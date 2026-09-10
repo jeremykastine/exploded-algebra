@@ -2339,6 +2339,305 @@
             right: auto;
             left: max(6px, env(safe-area-inset-left));
         }
+
+        /* Bottom controls and calculator-style expression builder. */
+        .app-container,
+        body.left-handed .app-container {
+            --control-strip-height: 58px;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr) var(--control-strip-height) var(--top-panel-height);
+        }
+
+        .main,
+        body.left-handed .main {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .quadrant-tools,
+        body.left-handed .quadrant-tools {
+            position: relative;
+            z-index: 70;
+            grid-column: 1;
+            grid-row: 2;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            min-height: 0;
+            padding: 6px calc(58px + max(6px, env(safe-area-inset-right))) 6px max(8px, env(safe-area-inset-left));
+            overflow-x: auto;
+            overflow-y: hidden;
+            border: 0;
+            border-top: 1px solid #cfcfcf;
+            border-bottom: 1px solid #cfcfcf;
+            background: #f3f3f3;
+            scrollbar-width: thin;
+        }
+
+        body.left-handed .quadrant-tools {
+            padding-right: max(8px, env(safe-area-inset-right));
+            padding-left: calc(58px + max(6px, env(safe-area-inset-left)));
+            border-right: 0;
+        }
+
+        .quadrant-tool-actions,
+        .workspace-toolbar,
+        .workspace-tool-group,
+        .quadrant-tools.two-column-tools,
+        .quadrant-tools.two-column-tools .quadrant-tool-actions,
+        .quadrant-tools.two-column-tools .workspace-toolbar,
+        .quadrant-tools.two-column-tools .workspace-tool-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .quadrant-tool-actions {
+            flex: 0 0 auto;
+            gap: 5px;
+            padding: 0;
+        }
+
+        .workspace-toolbar {
+            flex: 0 0 auto;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 0;
+        }
+
+        .workspace-tool-group { gap: 5px; }
+
+        .quadrant-tools.two-column-tools {
+            grid-template-columns: none;
+            grid-auto-rows: auto;
+            align-content: normal;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+
+        .quadrant-tools.two-column-tools button,
+        .quadrant-tools button,
+        .reset-exercise-button,
+        .handedness-toggle-button,
+        .workspace-toolbar button {
+            flex: 0 0 44px;
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            min-height: 44px;
+            padding: 8px;
+        }
+
+        .quadrant-menu,
+        body.left-handed .quadrant-menu {
+            position: relative;
+            z-index: 80;
+            grid-column: 1;
+            grid-row: 2;
+            justify-self: end;
+            width: 58px;
+            border: 0;
+            border-left: 1px solid #cfcfcf;
+            background: #f3f3f3;
+        }
+
+        body.left-handed .quadrant-menu {
+            justify-self: start;
+            border-right: 1px solid #cfcfcf;
+            border-left: 0;
+        }
+
+        .left-panel,
+        body.left-handed .left-panel {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .level-menu-panel {
+            bottom: calc(var(--top-panel-height) + var(--control-strip-height) + 4px);
+            max-height: calc(100dvh - var(--top-panel-height) - var(--control-strip-height) - 12px);
+        }
+
+        .top-panel-height-probe {
+            width: 100vw;
+        }
+
+        body.expression-builder-active .app-container,
+        body.expression-builder-active.left-handed .app-container {
+            grid-template-rows: minmax(0, 1fr);
+        }
+
+        body.expression-builder-active .quadrant-menu,
+        body.expression-builder-active .quadrant-tools,
+        body.expression-builder-active .left-panel {
+            display: none;
+        }
+
+        .builder-keypad-panel {
+            position: absolute;
+            z-index: 60;
+            right: max(12px, env(safe-area-inset-right));
+            bottom: max(12px, env(safe-area-inset-bottom));
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-rows: repeat(6, minmax(0, 1fr));
+            gap: clamp(4px, 0.75vw, 8px);
+            width: min(430px, calc(100% - 24px));
+            height: min(350px, 52%);
+            min-height: min(228px, calc(100% - 24px));
+            box-sizing: border-box;
+            padding: clamp(7px, 1.2vw, 11px);
+            border: 1px solid #aaa;
+            border-radius: 12px;
+            background: rgba(246, 246, 246, 0.97);
+            box-shadow: 0 7px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .builder-keypad-panel.hidden { display: none; }
+
+        .builder-keypad-panel .builder-input-rail,
+        .builder-keypad-panel .builder-variable-rail,
+        .builder-keypad-panel .builder-digit-rail,
+        .builder-keypad-panel .builder-command-panel,
+        .builder-keypad-panel .panel-tool-menu,
+        .builder-keypad-panel .expression-builder-panel,
+        .builder-keypad-panel .builder-controls,
+        .builder-keypad-panel .builder-action-row {
+            display: contents;
+        }
+
+        .builder-keypad-panel .builder-input-rail.hidden { display: none; }
+
+        .builder-keypad-panel button,
+        .builder-keypad-panel .panel-tool-menu button,
+        .builder-keypad-panel .builder-action-row button {
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            margin: 0;
+            padding: clamp(3px, 0.8vw, 8px);
+            border-radius: 7px;
+            box-sizing: border-box;
+            overflow: hidden;
+            font-size: clamp(12px, 2.1dvh, 17px);
+            text-align: center;
+        }
+
+        .builder-keypad-panel .builder-variable-button:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .builder-keypad-panel .builder-variable-button:nth-child(2) { grid-column: 2; grid-row: 1; }
+        .builder-keypad-panel .builder-variable-button:nth-child(3) { grid-column: 3; grid-row: 1; }
+        .builder-keypad-panel .builder-variable-button:nth-child(4) { grid-column: 4; grid-row: 1; }
+
+        .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 1; grid-row: 3; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 2; grid-row: 3; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="9"] { grid-column: 3; grid-row: 3; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="4"] { grid-column: 1; grid-row: 4; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="5"] { grid-column: 2; grid-row: 4; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="6"] { grid-column: 3; grid-row: 4; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="1"] { grid-column: 1; grid-row: 5; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="2"] { grid-column: 2; grid-row: 5; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="3"] { grid-column: 3; grid-row: 5; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 2 / span 2; grid-row: 6; }
+
+        .builder-keypad-panel .builder-negative-one-button { grid-column: 1; grid-row: 6; }
+        .builder-keypad-panel .builder-inv-button { grid-column: 4; grid-row: 2; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 4; grid-row: 3; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 4; }
+        .builder-keypad-panel .builder-undo-button { grid-column: 1 / span 3; grid-row: 2; }
+        .builder-keypad-panel .builder-cancel-button { grid-column: 5; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-next-submit-button {
+            grid-column: 5;
+            grid-row: 3 / span 4;
+            writing-mode: horizontal-tb;
+        }
+
+        .builder-keypad-panel .builder-instruction { display: none; }
+        .builder-keypad-panel .builder-message {
+            position: absolute;
+            right: 0;
+            bottom: calc(100% + 7px);
+            max-width: min(430px, calc(100vw - 24px));
+            margin: 0;
+            padding: 5px 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.95);
+            font-size: 12px;
+        }
+
+        .builder-keypad-panel .builder-symbol-icon {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        body.expression-builder-active #expressionWorkspaceSvg { opacity: 0; }
+
+        body.expression-builder-active .builder-rewrite-preview {
+            inset: 0;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: clamp(16px, 3vw, 32px);
+        }
+
+        body.expression-builder-active .builder-rewrite-content,
+        body.expression-builder-active .builder-rewrite-preview.vertical .builder-rewrite-content {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            grid-template-rows: auto auto auto;
+            align-items: center;
+            justify-items: center;
+            max-width: none;
+            max-height: none;
+        }
+
+        body.expression-builder-active .builder-rewrite-original {
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        body.expression-builder-active .builder-rewrite-arrow {
+            grid-column: 2;
+            grid-row: 2;
+            transform: none;
+        }
+
+        body.expression-builder-active .builder-rewrite-proposal {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        @media (max-width: 520px) {
+            .app-container,
+            body.left-handed .app-container {
+                --control-strip-height: 54px;
+            }
+
+            .quadrant-tools,
+            body.left-handed .quadrant-tools {
+                gap: 5px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+            }
+
+            .quadrant-tools.two-column-tools button,
+            .quadrant-tools button,
+            .reset-exercise-button,
+            .handedness-toggle-button,
+            .workspace-toolbar button {
+                flex-basis: 42px;
+                width: 42px;
+                height: 42px;
+                min-width: 42px;
+                min-height: 42px;
+            }
+
+            .builder-keypad-panel {
+                width: min(390px, calc(100% - 16px));
+                right: max(8px, env(safe-area-inset-right));
+                bottom: max(8px, env(safe-area-inset-bottom));
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -2378,7 +2677,7 @@
                 <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                 </button>
-                <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the tool quadrants to the other side of the screen.">
+                <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the exercise-menu control to the other end of the bottom toolbar.">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
             </div>
@@ -2403,21 +2702,6 @@
                     </button>
                 </div>
             </div>
-            <div id="builderInputRail" class="builder-input-rail hidden">
-                <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>
-                <div id="builderDigitRail" class="builder-digit-rail" aria-label="Expression builder digits">
-                    <button type="button" data-builder-action="digit" data-value="9">9</button>
-                    <button type="button" data-builder-action="digit" data-value="8">8</button>
-                    <button type="button" data-builder-action="digit" data-value="7">7</button>
-                    <button type="button" data-builder-action="digit" data-value="6">6</button>
-                    <button type="button" data-builder-action="digit" data-value="5">5</button>
-                    <button type="button" data-builder-action="digit" data-value="4">4</button>
-                    <button type="button" data-builder-action="digit" data-value="3">3</button>
-                    <button type="button" data-builder-action="digit" data-value="2">2</button>
-                    <button type="button" data-builder-action="digit" data-value="1">1</button>
-                    <button type="button" data-builder-action="digit" data-value="0">0</button>
-                </div>
-            </div>
         </div>
         <div class="main" id="mainArea">
             <div id="rightTopBar" class="right-top-bar">
@@ -2436,14 +2720,32 @@
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
+            <div id="builderKeypadPanel" class="builder-keypad-panel hidden" role="group" aria-label="Expression builder keypad">
+                <div id="builderInputRail" class="builder-input-rail hidden">
+                    <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>
+                    <div id="builderDigitRail" class="builder-digit-rail" aria-label="Expression builder digits">
+                        <button type="button" data-builder-action="digit" data-value="9">9</button>
+                        <button type="button" data-builder-action="digit" data-value="8">8</button>
+                        <button type="button" data-builder-action="digit" data-value="7">7</button>
+                        <button type="button" data-builder-action="digit" data-value="6">6</button>
+                        <button type="button" data-builder-action="digit" data-value="5">5</button>
+                        <button type="button" data-builder-action="digit" data-value="4">4</button>
+                        <button type="button" data-builder-action="digit" data-value="3">3</button>
+                        <button type="button" data-builder-action="digit" data-value="2">2</button>
+                        <button type="button" data-builder-action="digit" data-value="1">1</button>
+                        <button type="button" data-builder-action="digit" data-value="0">0</button>
+                    </div>
+                </div>
+                <div id="builderCommandPanel" class="builder-command-panel"></div>
+            </div>
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
             <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-filled-gradient-midline-double-arc-v4"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-filled-gradient-midline-double-arc-v4"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-bottom-controls-builder-keypad"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-bottom-controls-builder-keypad"></script>
 
 </body>
 </html>
