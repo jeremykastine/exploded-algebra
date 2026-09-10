@@ -1853,6 +1853,50 @@
             margin: 0;
         }
         .level-menu-actions svg { width: 28px; height: 28px; }
+        .layout-size-controls {
+            display: grid;
+            gap: 8px;
+            margin: 0 0 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .layout-size-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .layout-size-label {
+            color: #333;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .layout-size-value {
+            display: inline-block;
+            min-width: 3.2em;
+            margin-left: 4px;
+            color: #666;
+            font-weight: 400;
+            text-align: right;
+        }
+        .layout-size-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .layout-size-buttons button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            min-height: 40px;
+            margin: 0;
+            padding: 0;
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1;
+        }
 
         .left-panel {
             grid-column: 1;
@@ -2673,11 +2717,11 @@
         body.left-handed .app-container {
             --main-key-size: 44px;
             --main-key-gap: 6px;
-            --main-keypad-width: 194px;
-            --main-keypad-height: 94px;
-            --builder-keypad-width: 244px;
-            --builder-keypad-height: 294px;
-            --main-action-key-width: clamp(76px, 10vw, 104px);
+            --main-icon-size: 28px;
+            --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
+            --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-gap));
+            --builder-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
+            --builder-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --main-control-edge: max(12px, env(safe-area-inset-right));
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows:
@@ -2882,8 +2926,8 @@
         }
         .main-action-panel .intent-category-actions {
             display: grid;
-            grid-template-columns: repeat(3, var(--main-action-key-width));
-            grid-template-rows: repeat(3, 58px);
+            grid-template-columns: repeat(3, var(--main-key-size));
+            grid-template-rows: repeat(3, var(--main-key-size));
             grid-auto-flow: row;
         }
         .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; grid-row: 3; }
@@ -2906,18 +2950,35 @@
         .main-action-panel .intent-category-actions .cancel-selection-button,
         .main-action-panel .builder-action-row button {
             flex: 0 0 auto;
-            width: var(--main-action-key-width);
-            min-width: 76px;
-            min-height: 52px;
+            width: var(--main-key-size);
+            height: var(--main-key-size);
+            min-width: var(--main-key-size);
+            min-height: var(--main-key-size);
             margin: 0;
-            padding: 5px 7px;
+            padding: 8px;
             border-radius: 7px;
             overflow: hidden;
             background: #fff;
             font-size: clamp(10px, 1.15vw, 13px);
             text-align: center;
         }
-        .main-action-panel .intent-category-button { min-height: 58px; }
+        .main-action-panel .intent-category-button {
+            width: var(--main-key-size);
+            height: var(--main-key-size);
+            min-width: var(--main-key-size);
+            min-height: var(--main-key-size);
+            max-height: var(--main-key-size);
+        }
+        .main-action-panel .intent-category-icon {
+            width: var(--main-icon-size);
+            height: var(--main-icon-size);
+        }
+        .main-action-panel .intent-category-math {
+            width: var(--main-icon-size);
+            height: var(--main-icon-size);
+            gap: 0.2em;
+            font-size: clamp(8px, calc(var(--main-icon-size) - 20px), 14px);
+        }
         .main-action-panel .small-note,
         .main-action-panel .tool-mode,
         .main-action-panel .input-box,
@@ -3000,11 +3061,7 @@
             body.left-handed .app-container {
                 --main-key-size: 42px;
                 --main-key-gap: 5px;
-                --main-keypad-width: 183px;
-                --main-keypad-height: 89px;
-                --builder-keypad-width: 230px;
-                --builder-keypad-height: 277px;
-                --main-action-key-width: clamp(68px, 22vw, 92px);
+                --main-icon-size: 26px;
                 --main-control-edge: max(8px, env(safe-area-inset-right));
             }
             .quadrant-tools,
@@ -3021,9 +3078,10 @@
             .main-action-panel .intent-category-actions .intent-category-button,
             .main-action-panel .intent-category-actions .cancel-selection-button,
             .main-action-panel .builder-action-row button {
-                width: clamp(68px, 22vw, 92px);
-                min-width: 68px;
-                min-height: 48px;
+                width: var(--main-key-size);
+                height: var(--main-key-size);
+                min-width: var(--main-key-size);
+                min-height: var(--main-key-size);
             }
         }
     </style>
@@ -3046,6 +3104,22 @@
                     <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the exercise-menu control to the other end of the bottom toolbar.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
+                </div>
+                <div class="layout-size-controls" aria-label="Size controls">
+                    <div class="layout-size-control">
+                        <span class="layout-size-label">Button size <output id="buttonSizeValue" class="layout-size-value">44 px</output></span>
+                        <div class="layout-size-buttons" role="group" aria-label="Button size">
+                            <button type="button" data-layout-action="button-smaller" aria-label="Make buttons smaller" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">−</button>
+                            <button type="button" data-layout-action="button-larger" aria-label="Make buttons larger" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">+</button>
+                        </div>
+                    </div>
+                    <div class="layout-size-control">
+                        <span class="layout-size-label">Steps panel height <output id="stepsPanelSizeValue" class="layout-size-value">22%</output></span>
+                        <div class="layout-size-buttons" role="group" aria-label="Steps panel height">
+                            <button type="button" data-layout-action="steps-smaller" aria-label="Make steps panel shorter" data-hold-description="Reduce the height of the conventional steps panel.">−</button>
+                            <button type="button" data-layout-action="steps-larger" aria-label="Make steps panel taller" data-hold-description="Increase the height of the conventional steps panel.">+</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="bar-style-control">
                     <label for="sumBarStyleSelect">Addition style</label>
@@ -3134,11 +3208,11 @@
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
             <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
-        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
+        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="6" aria-valuemax="55" aria-valuenow="22"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-steps-above-workspace"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-steps-above-workspace"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-sized-action-keypad"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-sized-action-keypad"></script>
 
 </body>
 </html>

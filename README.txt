@@ -48,6 +48,8 @@ use the same compact, bottom-corner keypad footprint; only the controls for the
 current state are visible. Each button is opaque, but the control clusters have
 no panel background. The conventional steps remain visible above a draggable
 horizontal divider and scroll vertically when their chosen height is too small.
+The exercise menu also provides plus/minus controls for button size and steps
+panel height; the initial steps-panel height fits its rendered expressions.
 Undo returns through completed expression states as far as the starting
 expression; Ctrl/Cmd+Z provides the same behavior when focus is not in a text
 field. Numerical Rewrite shows its exercise-specific permissions as a bulleted

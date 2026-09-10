@@ -671,9 +671,8 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            // In portrait, grid-auto-flow places each consecutive pair in one
-            // column. Keep inverse actions together in those columns.
-            const categoryIds = ["consolidate", "separate", "commute", "numericalRewrite", "delete", "insert"];
+            // The fixed keypad is ordered from its full bottom row upward.
+            const categoryIds = ["numericalRewrite", "insert", "delete", "separate", "consolidate", "commute"];
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
@@ -1221,6 +1220,8 @@ Promise.resolve().then(() => {
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
         const productBarStyleSelect = document.getElementById("productBarStyleSelect");
+        const buttonSizeValue = document.getElementById("buttonSizeValue");
+        const stepsPanelSizeValue = document.getElementById("stepsPanelSizeValue");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1273,19 +1274,67 @@ Promise.resolve().then(() => {
 
         let internalClipboardText = "";
         let workspacePanelSplit = window.innerWidth <= 650 ? 74 : 78;
+        let mainButtonSize = window.innerWidth <= 520 ? 42 : 44;
         let activeDividerPointerId = null;
+        const MAIN_BUTTON_SIZE_MIN = 34;
+        const MAIN_BUTTON_SIZE_MAX = 62;
+        const MAIN_BUTTON_SIZE_STEP = 4;
+        const MAIN_BUTTON_SIZE_STORAGE_KEY = "explodedAlgebraMainButtonSizeV1";
 
         function getCurrentPanelSplitLimits() {
-            return { min: 45, max: 90 };
+            return { min: 45, max: 94 };
+        }
+
+        function updateLayoutSizeControls() {
+            const limits = getCurrentPanelSplitLimits();
+            const stepsPanelPercent = 100 - workspacePanelSplit;
+            if (buttonSizeValue) {
+                buttonSizeValue.textContent = `${Math.round(mainButtonSize)} px`;
+            }
+            if (stepsPanelSizeValue) {
+                stepsPanelSizeValue.textContent = `${Math.round(stepsPanelPercent)}%`;
+            }
+            const buttonSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-smaller"]');
+            const buttonLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-larger"]');
+            const stepsSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-smaller"]');
+            const stepsLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-larger"]');
+            if (buttonSmaller) buttonSmaller.disabled = mainButtonSize <= MAIN_BUTTON_SIZE_MIN;
+            if (buttonLarger) buttonLarger.disabled = mainButtonSize >= MAIN_BUTTON_SIZE_MAX;
+            if (stepsSmaller) stepsSmaller.disabled = workspacePanelSplit >= limits.max;
+            if (stepsLarger) stepsLarger.disabled = workspacePanelSplit <= limits.min;
+        }
+
+        function loadSavedMainButtonSize() {
+            try {
+                const savedSize = Number(window.localStorage.getItem(MAIN_BUTTON_SIZE_STORAGE_KEY));
+                return Number.isFinite(savedSize) && savedSize >= MAIN_BUTTON_SIZE_MIN && savedSize <= MAIN_BUTTON_SIZE_MAX
+                    ? savedSize
+                    : mainButtonSize;
+            } catch (error) {
+                return mainButtonSize;
+            }
+        }
+
+        function setMainButtonSize(size, persist = false) {
+            const boundedSize = Math.max(MAIN_BUTTON_SIZE_MIN, Math.min(MAIN_BUTTON_SIZE_MAX, Number(size) || mainButtonSize));
+            mainButtonSize = boundedSize;
+            appContainer.style.setProperty("--main-key-size", `${boundedSize}px`);
+            appContainer.style.setProperty("--main-icon-size", `${Math.max(18, boundedSize - 16)}px`);
+            if (persist) {
+                try {
+                    window.localStorage.setItem(MAIN_BUTTON_SIZE_STORAGE_KEY, String(boundedSize));
+                } catch (error) {}
+            }
+            updateLayoutSizeControls();
         }
 
         function updateDividerAccessibility() {
             const limits = getCurrentPanelSplitLimits();
             const stepsPanelPercent = 100 - workspacePanelSplit;
             divider.setAttribute("aria-orientation", "horizontal");
-            divider.setAttribute("aria-valuemin", String(limits.min));
-            divider.setAttribute("aria-valuemax", String(limits.max));
-            divider.setAttribute("aria-valuenow", String(Math.round(workspacePanelSplit)));
+            divider.setAttribute("aria-valuemin", String(100 - limits.max));
+            divider.setAttribute("aria-valuemax", String(100 - limits.min));
+            divider.setAttribute("aria-valuenow", String(Math.round(stepsPanelPercent)));
             divider.setAttribute(
                 "aria-valuetext",
                 `Conventional steps ${Math.round(stepsPanelPercent)}%, expression workspace ${Math.round(workspacePanelSplit)}%`
@@ -1298,6 +1347,7 @@ Promise.resolve().then(() => {
             workspacePanelSplit = boundedPercent;
             appContainer.style.setProperty("--workspace-panel-split", `${boundedPercent}%`);
             updateDividerAccessibility();
+            updateLayoutSizeControls();
             if (expressionRoot) {
                 drawExpression();
             }
@@ -1817,19 +1867,28 @@ Promise.resolve().then(() => {
         }
 
         function updateTopPanelHeight(level = getCurrentLevel()) {
-            if (!appContainer || !level) {
+            if (!appContainer || !leftPanel || !level) {
                 return;
             }
-            const probe = buildTopPanelHeightProbe(level);
-            appContainer.appendChild(probe);
-            renderProbeMath(probe);
-            const measuredHeight = Math.ceil(probe.scrollHeight + 1);
-            probe.remove();
+            const visibleSteps = Array.from(leftPanel.querySelectorAll(".solution-step"));
+            const containerHeight = appContainer.getBoundingClientRect().height;
+            if (!visibleSteps.length || containerHeight <= 0) {
+                return;
+            }
 
-            const minimumForMenu = 62;
-            const maximumThatLeavesWorkspace = Math.max(minimumForMenu, window.innerHeight - 120);
-            const fittedHeight = Math.max(minimumForMenu, Math.min(measuredHeight, maximumThatLeavesWorkspace));
-            appContainer.style.setProperty("--top-panel-height", `${fittedHeight}px`);
+            const largestStepHeight = visibleSteps.reduce((largest, step) => (
+                Math.max(largest, step.scrollHeight, step.getBoundingClientRect().height)
+            ), 0);
+            const sampleColumn = visibleSteps[0].closest(".solution-column");
+            const panelStyle = window.getComputedStyle(leftPanel);
+            const columnStyle = sampleColumn ? window.getComputedStyle(sampleColumn) : null;
+            const verticalPadding = style => style
+                ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
+                : 0;
+            const fittedHeight = Math.ceil(
+                largestStepHeight + verticalPadding(panelStyle) + verticalPadding(columnStyle) + 4
+            );
+            setPanelSplit(100 - (fittedHeight / containerHeight) * 100);
         }
 
         function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
@@ -3470,6 +3529,7 @@ Promise.resolve().then(() => {
             layoutExpression(expressionRoot);
             updateStepCompletion(getCurrentLevel());
             renderLevelInfo(currentLevelIndex);
+            scheduleTopPanelHeightUpdate(level);
             renderCurrentExpressionDisplay();
             refreshStatus();
             drawExpression();
@@ -3479,6 +3539,7 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
+            setMainButtonSize(loadSavedMainButtonSize());
             setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
             setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
             if (sumBarStyleSelect) {
@@ -3579,7 +3640,22 @@ Promise.resolve().then(() => {
                     event.stopPropagation();
                     setMenuOpen(levelMenuPanel.classList.contains("hidden"));
                 });
-                levelMenuPanel.addEventListener("click", event => event.stopPropagation());
+                levelMenuPanel.addEventListener("click", event => {
+                    const layoutButton = event.target.closest("button[data-layout-action]");
+                    if (layoutButton && !layoutButton.disabled) {
+                        const action = layoutButton.dataset.layoutAction;
+                        if (action === "button-smaller") {
+                            setMainButtonSize(mainButtonSize - MAIN_BUTTON_SIZE_STEP, true);
+                        } else if (action === "button-larger") {
+                            setMainButtonSize(mainButtonSize + MAIN_BUTTON_SIZE_STEP, true);
+                        } else if (action === "steps-smaller") {
+                            setPanelSplit(workspacePanelSplit + 3);
+                        } else if (action === "steps-larger") {
+                            setPanelSplit(workspacePanelSplit - 3);
+                        }
+                    }
+                    event.stopPropagation();
+                });
                 document.addEventListener("click", () => setMenuOpen(false));
                 document.addEventListener("keydown", event => {
                     if (event.key === "Escape" && !levelMenuPanel.classList.contains("hidden")) {
