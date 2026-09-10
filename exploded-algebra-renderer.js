@@ -546,8 +546,6 @@ function drawMidlineDoubleArcV3SumBeam(drawingContext, x1, x2, y, halfThickness,
 }
 
 function drawCenterPinchedGradientArcProductBeam(drawingContext, x, y1, y2, halfThickness, edgeColor) {
-    const height = Math.max(0, y2 - y1);
-    const quarterY = height / 4;
     const centerY = (y1 + y2) / 2;
     const gradientId = `oops-center-pinched-gradient-arcs-product-${nextProductBeamGradientId++}`;
     const gradientPaint = createMidlineDoubleArcV3Gradient(
@@ -564,21 +562,17 @@ function drawCenterPinchedGradientArcProductBeam(drawingContext, x, y1, y2, half
     drawingContext.strokeStyle = gradientPaint;
     drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
     drawingContext.beginPath();
-    // Exact 90-degree rotation of the addition arcs: the left and right
-    // edges pinch together at the center of the multiplication bar.
+    // Exact 90-degree rotation of the addition arcs: one smooth parenthesis
+    // opens left and the other opens right, and both pass through the center.
     drawingContext.moveTo(x - halfThickness, y1);
-    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x, centerY);
-    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x - halfThickness, y2);
+    drawingContext.quadraticCurveTo(x + halfThickness, centerY, x - halfThickness, y2);
     drawingContext.moveTo(x + halfThickness, y1);
-    drawingContext.quadraticCurveTo(x + halfThickness, y1 + quarterY, x, centerY);
-    drawingContext.quadraticCurveTo(x + halfThickness, y2 - quarterY, x + halfThickness, y2);
+    drawingContext.quadraticCurveTo(x - halfThickness, centerY, x + halfThickness, y2);
     drawingContext.stroke();
     drawingContext.restore();
 }
 
 function drawCenterPinchedGradientArcSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
-    const width = Math.max(0, x2 - x1);
-    const quarterX = width / 4;
     const centerX = (x1 + x2) / 2;
     const gradientId = `oops-center-pinched-gradient-arcs-sum-${nextSumBeamGradientId++}`;
     const gradientPaint = createMidlineDoubleArcV3Gradient(
@@ -595,14 +589,13 @@ function drawCenterPinchedGradientArcSumBeam(drawingContext, x1, x2, y, halfThic
     drawingContext.strokeStyle = gradientPaint;
     drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
     drawingContext.beginPath();
-    // The upper and lower edges each run from their outside corners to the
-    // center, then return to the matching corners at the opposite endpoint.
+    // One smooth parenthesis opens upward and one opens downward. The control
+    // points extend through the opposite half so each curve passes through
+    // the center without the pointed join produced by two curve segments.
     drawingContext.moveTo(x1, y - halfThickness);
-    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y);
-    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y - halfThickness);
+    drawingContext.quadraticCurveTo(centerX, y + halfThickness, x2, y - halfThickness);
     drawingContext.moveTo(x1, y + halfThickness);
-    drawingContext.quadraticCurveTo(x1 + quarterX, y + halfThickness, centerX, y);
-    drawingContext.quadraticCurveTo(x2 - quarterX, y + halfThickness, x2, y + halfThickness);
+    drawingContext.quadraticCurveTo(centerX, y - halfThickness, x2, y + halfThickness);
     drawingContext.stroke();
     drawingContext.restore();
 }
