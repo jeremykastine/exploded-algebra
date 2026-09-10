@@ -545,6 +545,68 @@ function drawMidlineDoubleArcV3SumBeam(drawingContext, x1, x2, y, halfThickness,
     drawMidlineDoubleArcV2SumBeam(drawingContext, x1, x2, y, halfThickness, gradientPaint);
 }
 
+function drawCenterPinchedGradientArcProductBeam(drawingContext, x, y1, y2, halfThickness, edgeColor) {
+    const height = Math.max(0, y2 - y1);
+    const quarterY = height / 4;
+    const centerY = (y1 + y2) / 2;
+    const gradientId = `oops-center-pinched-gradient-arcs-product-${nextProductBeamGradientId++}`;
+    const gradientPaint = createMidlineDoubleArcV3Gradient(
+        drawingContext,
+        gradientId,
+        x,
+        y1,
+        x,
+        y2,
+        edgeColor
+    );
+
+    drawingContext.save();
+    drawingContext.strokeStyle = gradientPaint;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // Exact 90-degree rotation of the addition arcs: the left and right
+    // edges pinch together at the center of the multiplication bar.
+    drawingContext.moveTo(x - halfThickness, y1);
+    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x, centerY);
+    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x - halfThickness, y2);
+    drawingContext.moveTo(x + halfThickness, y1);
+    drawingContext.quadraticCurveTo(x + halfThickness, y1 + quarterY, x, centerY);
+    drawingContext.quadraticCurveTo(x + halfThickness, y2 - quarterY, x + halfThickness, y2);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
+function drawCenterPinchedGradientArcSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
+    const width = Math.max(0, x2 - x1);
+    const quarterX = width / 4;
+    const centerX = (x1 + x2) / 2;
+    const gradientId = `oops-center-pinched-gradient-arcs-sum-${nextSumBeamGradientId++}`;
+    const gradientPaint = createMidlineDoubleArcV3Gradient(
+        drawingContext,
+        gradientId,
+        x1,
+        y,
+        x2,
+        y,
+        edgeColor
+    );
+
+    drawingContext.save();
+    drawingContext.strokeStyle = gradientPaint;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // The upper and lower edges each run from their outside corners to the
+    // center, then return to the matching corners at the opposite endpoint.
+    drawingContext.moveTo(x1, y - halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y - halfThickness);
+    drawingContext.moveTo(x1, y + halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y + halfThickness, centerX, y);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y + halfThickness, x2, y + halfThickness);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
 function fillMidlineDoubleArcProductBeam(drawingContext, x, y1, y2, halfThickness, fillStyle) {
     const height = Math.max(0, y2 - y1);
     const quarterY = height / 4;
@@ -1135,6 +1197,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcV3Beam = settings.productBeamStyle === "midline-double-arc-v3";
             const useMidlineDoubleArcV4Beam = settings.productBeamStyle === "midline-double-arc-v4";
             const useNestedParenthesesBeam = needsBeam && settings.productBeamStyle === "nested-parentheses";
+            const useCenterPinchedGradientArcBeam = needsBeam && settings.productBeamStyle === "center-pinched-gradient-arcs";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1155,6 +1218,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV4ProductBeam(drawingContext, x, y1, y2, flare, "black");
             } else if (useNestedParenthesesBeam) {
                 drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
+            } else if (useCenterPinchedGradientArcBeam) {
+                drawCenterPinchedGradientArcProductBeam(drawingContext, x, y1, y2, flare, "black");
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -1175,7 +1240,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam && !useCenterPinchedGradientArcBeam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,
@@ -1222,6 +1287,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcV3Beam = settings.sumBeamStyle === "midline-double-arc-v3";
             const useMidlineDoubleArcV4Beam = settings.sumBeamStyle === "midline-double-arc-v4";
             const useNestedParenthesesBeam = needsBeam && settings.sumBeamStyle === "nested-parentheses";
+            const useCenterPinchedGradientArcBeam = needsBeam && settings.sumBeamStyle === "center-pinched-gradient-arcs";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1242,6 +1308,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV4SumBeam(drawingContext, x1, x2, y, flare, "black");
             } else if (useNestedParenthesesBeam) {
                 drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
+            } else if (useCenterPinchedGradientArcBeam) {
+                drawCenterPinchedGradientArcSumBeam(drawingContext, x1, x2, y, flare, "black");
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
@@ -1262,7 +1330,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam && !useCenterPinchedGradientArcBeam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,

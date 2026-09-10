@@ -3657,7 +3657,7 @@ ctx.font = SETTINGS.textFont;
         let pendingResponsiveWorkspaceView = null;
         const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
         const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
-        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2", "midline-double-arc-v3", "midline-double-arc-v4", "nested-parentheses"]);
+        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2", "midline-double-arc-v3", "midline-double-arc-v4", "nested-parentheses", "center-pinched-gradient-arcs"]);
 
         function getSavedOperatorBarStyle() {
             try {
