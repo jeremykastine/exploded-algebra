@@ -294,6 +294,45 @@ function drawSCurveSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
     drawingContext.restore();
 }
 
+function drawDoubleArcProductBeam(drawingContext, x, y1, y2, halfThickness, color) {
+    const height = Math.max(0, y2 - y1);
+    const quarterY = height / 4;
+    const centerY = (y1 + y2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // Exact 90-degree rotation of the two sum arcs.
+    drawingContext.moveTo(x - halfThickness, y1);
+    drawingContext.quadraticCurveTo(x + halfThickness, y1 + quarterY, x + halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x + halfThickness, y2 - quarterY, x - halfThickness, y2);
+    drawingContext.moveTo(x + halfThickness, y1);
+    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x - halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x + halfThickness, y2);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
+function drawDoubleArcSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
+    const width = Math.max(0, x2 - x1);
+    const quarterX = width / 4;
+    const centerX = (x1 + x2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    drawingContext.moveTo(x1, y + halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y - halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y + halfThickness);
+    drawingContext.moveTo(x1, y - halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y + halfThickness, centerX, y + halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y + halfThickness, x2, y - halfThickness);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
 let svgMeasureTextElement = null;
 
 function measureSvgText(text, font) {
@@ -813,12 +852,15 @@ function drawNodeToContext(
             const needsBeam = nodeNeedsSeparatorFlares(node);
             const useGradientBeam = needsBeam && settings.productBeamStyle === "gradient";
             const useSCurveBeam = needsBeam && settings.productBeamStyle === "s-curve";
+            const useDoubleArcBeam = needsBeam && settings.productBeamStyle === "double-arc";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
                 drawGradientProductBeam(drawingContext, x, y1, y2, flare, gradientBeamColor);
             } else if (useSCurveBeam) {
                 drawSCurveProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
+            } else if (useDoubleArcBeam) {
+                drawDoubleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -878,12 +920,15 @@ function drawNodeToContext(
             const needsBeam = nodeNeedsSeparatorFlares(node);
             const useGradientBeam = needsBeam && settings.sumBeamStyle === "gradient";
             const useSCurveBeam = needsBeam && settings.sumBeamStyle === "s-curve";
+            const useDoubleArcBeam = needsBeam && settings.sumBeamStyle === "double-arc";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
                 drawGradientSumBeam(drawingContext, x1, x2, y, flare, gradientBeamColor);
             } else if (useSCurveBeam) {
                 drawSCurveSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
+            } else if (useDoubleArcBeam) {
+                drawDoubleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
