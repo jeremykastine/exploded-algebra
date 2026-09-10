@@ -1212,6 +1212,7 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
+        const mainActionPanel = document.getElementById("mainActionPanel");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
         const handednessToggleButton = document.getElementById("handednessToggleButton");
         const toolOptionMenu = document.getElementById("toolOptionMenu");
@@ -1267,6 +1268,8 @@ Promise.resolve().then(() => {
         let solutionRecorder = null;
         let completionExportReadyForRun = false;
         let completionExportCompletedAtDate = null;
+        let expressionUndoHistory = [];
+        let stableExpressionState = null;
 
         let internalClipboardText = "";
         let workspacePanelSplit = window.innerWidth <= 650 ? 74 : 78;
@@ -2132,6 +2135,80 @@ Promise.resolve().then(() => {
                 actions: [],
                 demoSteps: []
             };
+        }
+
+        function captureExpressionUndoState() {
+            return {
+                root: cloneExpressionTree(expressionRoot),
+                completedSteps: Array.isArray(completedSteps) ? completedSteps.slice() : [],
+                demoStepIndex,
+                solutionRecorder: clonePlainData(solutionRecorder),
+                completionExportReadyForRun,
+                completionExportCompletedAt: completionExportCompletedAtDate
+                    ? completionExportCompletedAtDate.toISOString()
+                    : null
+            };
+        }
+
+        function resetExpressionUndoHistory() {
+            expressionUndoHistory = [];
+            stableExpressionState = null;
+            updateWorkspaceToolbar();
+        }
+
+        function rememberExpressionChangeForUndo() {
+            if (!expressionRoot) {
+                return false;
+            }
+            if (!stableExpressionState || !stableExpressionState.root) {
+                stableExpressionState = captureExpressionUndoState();
+                return false;
+            }
+            if (sameExpression(stableExpressionState.root, expressionRoot)) {
+                return false;
+            }
+            expressionUndoHistory.push(stableExpressionState);
+            return true;
+        }
+
+        function saveStableExpressionState(changed) {
+            if (changed || !stableExpressionState) {
+                stableExpressionState = captureExpressionUndoState();
+            }
+            updateWorkspaceToolbar();
+        }
+
+        function undoExpressionStep() {
+            if (!expressionUndoHistory.length) {
+                updateWorkspaceToolbar();
+                return false;
+            }
+            const snapshot = expressionUndoHistory.pop();
+            expressionRoot = cloneExpressionTree(snapshot.root);
+            currentExpressionRoot = expressionRoot;
+            completedSteps = Array.isArray(snapshot.completedSteps) ? snapshot.completedSteps.slice() : [];
+            demoStepIndex = Number.isInteger(snapshot.demoStepIndex) ? snapshot.demoStepIndex : 0;
+            solutionRecorder = clonePlainData(snapshot.solutionRecorder);
+            completionExportReadyForRun = !!snapshot.completionExportReadyForRun;
+            completionExportCompletedAtDate = snapshot.completionExportCompletedAt
+                ? new Date(snapshot.completionExportCompletedAt)
+                : null;
+            inspectSavedExpressionRoot = null;
+            uiState.mode = "edit";
+            uiState.inspectStepIndex = -1;
+            document.body.classList.remove("inspect-mode");
+            if (inspectExitButton) {
+                inspectExitButton.classList.add("hidden");
+            }
+            clearSelection();
+            clearInteraction();
+            layoutExpression(expressionRoot);
+            renderLevelInfo(currentLevelIndex);
+            renderCurrentExpressionDisplay();
+            refreshStatus();
+            stableExpressionState = captureExpressionUndoState();
+            drawExpression();
+            return true;
         }
 
         function recordSolutionAction(action, demoStep) {
@@ -3372,6 +3449,7 @@ Promise.resolve().then(() => {
             currentLevelIndex = levelIndex;
             resetDemoStateForCurrentLevel();
             resetSolutionRecorderForCurrentLevel();
+            resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
             currentExpressionRoot = textToExpression(level.startExpression);
             currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
@@ -3391,6 +3469,8 @@ Promise.resolve().then(() => {
             renderCurrentExpressionDisplay();
             refreshStatus();
             drawExpression();
+            stableExpressionState = captureExpressionUndoState();
+            updateWorkspaceToolbar();
         }
 
         function initializeExplodedAlgebra() {
@@ -3419,6 +3499,10 @@ Promise.resolve().then(() => {
                     }
                     if (button.dataset.workspaceAction === "resetZoom") {
                         resetWorkspaceZoom();
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "undoExpression") {
+                        undoExpressionStep();
                         return;
                     }
                     const mode = button.dataset.workspaceMode;
@@ -3540,6 +3624,18 @@ Promise.resolve().then(() => {
                     return;
                 }
                 if (handleExpressionBuilderKeydown(event)) {
+                    return;
+                }
+                if (
+                    (event.ctrlKey || event.metaKey)
+                    && !event.altKey
+                    && String(event.key).toLowerCase() === "z"
+                    && uiState.mode === "edit"
+                    && uiState.stage !== "builder"
+                    && !(event.target && event.target.closest && event.target.closest("input, textarea, select, [contenteditable='true']"))
+                ) {
+                    event.preventDefault();
+                    undoExpressionStep();
                     return;
                 }
                 if (event.key === "Escape" && uiState.mode === "inspect") {
@@ -3752,6 +3848,10 @@ ctx.font = SETTINGS.textFont;
             const cancelSelectionButton = workspaceToolbar.querySelector('button[data-workspace-action="cancelSelection"]');
             if (cancelSelectionButton) {
                 cancelSelectionButton.disabled = !selection.node;
+            }
+            const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
+            if (undoExpressionButton) {
+                undoExpressionButton.disabled = expressionUndoHistory.length === 0;
             }
         }
 
@@ -4254,11 +4354,13 @@ ctx.font = SETTINGS.textFont;
         function finishOperation() {
             expressionRoot = normalizeExpressionTree(expressionRoot);
             syncCurrentExpressionRoot();
+            const expressionChanged = rememberExpressionChangeForUndo();
             clearSelection();
             clearInteraction();
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
             refreshStatus();
+            saveStableExpressionState(expressionChanged);
             drawExpression();
         }
 
@@ -6843,12 +6945,14 @@ ctx.font = SETTINGS.textFont;
 
             expressionRoot = normalizeExpressionTree(expressionRoot);
             syncCurrentExpressionRoot();
+            const expressionChanged = rememberExpressionChangeForUndo();
             layoutExpression(expressionRoot);
             updateStepCompletion(getCurrentLevel());
             renderLevelInfo(currentLevelIndex);
             renderCurrentExpressionDisplay();
             refreshStatus();
             renderToolArea();
+            saveStableExpressionState(expressionChanged);
             drawExpression();
 
             uiState.postviewTimerId = setTimeout(() => {
@@ -9306,8 +9410,8 @@ ctx.font = SETTINGS.textFont;
             });
         }
 
-        function attachInputListeners() {
-            document.querySelectorAll(".number-input").forEach(input => {
+        function attachInputListeners(container = document) {
+            container.querySelectorAll(".number-input").forEach(input => {
                 input.addEventListener("input", () => {
                     uiState.inputText = input.value;
                 });
@@ -9320,13 +9424,13 @@ ctx.font = SETTINGS.textFont;
                 });
             });
 
-            const visibleInput = levelContent.querySelector(".number-input");
+            const visibleInput = container.querySelector(".number-input");
             if (visibleInput) {
                 visibleInput.focus();
                 visibleInput.setSelectionRange(visibleInput.value.length, visibleInput.value.length);
             }
 
-            const copyTextBox = levelContent.querySelector(".copy-text-box");
+            const copyTextBox = container.querySelector(".copy-text-box");
             if (copyTextBox) {
                 copyTextBox.focus();
                 copyTextBox.setSelectionRange(0, copyTextBox.value.length);
@@ -9347,9 +9451,8 @@ ctx.font = SETTINGS.textFont;
         }
 function renderToolArea() {
             // The old floating menu is intentionally kept in the document for
-            // possible future restoration, but the active rule menu now lives
-            // in the left panel. When no selection is active, the left panel
-            // goes back to showing the level steps.
+            // possible future restoration. Main-workspace actions float above
+            // the steps, while builder actions use their dedicated keypad.
             hideFloatingMenu();
             hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
@@ -9364,10 +9467,19 @@ function renderToolArea() {
             if (!builderActive && builderCommandPanel) {
                 builderCommandPanel.replaceChildren();
             }
+            if (mainActionPanel && builderActive) {
+                mainActionPanel.replaceChildren();
+                mainActionPanel.classList.add("hidden");
+            }
             renderBuilderVariableRail(builderActive);
             requestAnimationFrame(updateSidePanelColumns);
 
             if (uiState.mode !== "edit") {
+                document.body.classList.remove("tool-area-active");
+                if (mainActionPanel) {
+                    mainActionPanel.replaceChildren();
+                    mainActionPanel.classList.add("hidden");
+                }
                 return;
             }
 
@@ -9382,16 +9494,27 @@ function renderToolArea() {
                 return;
             }
             if (!html) {
+                if (mainActionPanel) {
+                    mainActionPanel.replaceChildren();
+                    mainActionPanel.classList.add("hidden");
+                }
                 if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
                     renderLevelInfo(currentLevelIndex);
                 }
                 return;
             }
 
-            levelContent.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
-            attachToolListeners(levelContent);
-            applyDemoButtonHighlights(levelContent);
-            attachInputListeners();
+            if (!mainActionPanel) {
+                return;
+            }
+            if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
+                renderLevelInfo(currentLevelIndex);
+            }
+            mainActionPanel.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
+            mainActionPanel.classList.remove("hidden");
+            attachToolListeners(mainActionPanel);
+            applyDemoButtonHighlights(mainActionPanel);
+            attachInputListeners(mainActionPanel);
         }
 
         function beginAutoPreviewThenExecute(executeFn) {

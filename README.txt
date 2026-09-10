@@ -42,13 +42,15 @@ Older files remain compatible: `introduction` falls back to `instruction`, and a
 step's old `introduction` plus `conclusion` are combined into its single above-step
 guidance area. Exercise-wide description fields are no longer used.
 
-The Numerical Rewrite button is the final button in the main tool list. The
-description area beneath the action buttons changes when an action is hovered or
-focused. Each action has a brief explanation only in that area; the action
-buttons do not create browser tooltips beside the pointer. Numerical Rewrite
-shows its exercise-specific permissions as a bulleted list. Display settings,
-layout controls, Reset, and Download Move History appear in the hamburger options
-menu rather than in the action or expression-builder panels.
+The main workspace controls and contextual action choices use compact,
+bottom-corner keypad layouts. Each button is opaque, but the control clusters
+have no panel background, so the expression remains visible behind the empty
+space. Undo returns through completed expression states as far as the starting
+expression; Ctrl/Cmd+Z provides the same behavior when focus is not in a text
+field. Numerical Rewrite shows its exercise-specific permissions as a bulleted
+list. Operation display settings, handedness, Reset, and Download Move History
+appear in the hamburger options menu rather than in the action or
+expression-builder panels.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 
