@@ -333,6 +333,39 @@ function drawDoubleArcSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
     drawingContext.restore();
 }
 
+function drawSingleArcProductBeam(drawingContext, x, y1, y2, halfThickness, color) {
+    const height = Math.max(0, y2 - y1);
+    const quarterY = height / 4;
+    const centerY = (y1 + y2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    // Right-opening rotation of the downward-opening sum arc.
+    drawingContext.moveTo(x + halfThickness, y1);
+    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x - halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x + halfThickness, y2);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
+function drawSingleArcSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
+    const width = Math.max(0, x2 - x1);
+    const quarterX = width / 4;
+    const centerX = (x1 + x2) / 2;
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    drawingContext.moveTo(x1, y + halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y - halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y + halfThickness);
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
 let svgMeasureTextElement = null;
 
 function measureSvgText(text, font) {
@@ -853,6 +886,7 @@ function drawNodeToContext(
             const useGradientBeam = needsBeam && settings.productBeamStyle === "gradient";
             const useSCurveBeam = needsBeam && settings.productBeamStyle === "s-curve";
             const useDoubleArcBeam = needsBeam && settings.productBeamStyle === "double-arc";
+            const useSingleArcBeam = needsBeam && settings.productBeamStyle === "single-arc";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -861,6 +895,8 @@ function drawNodeToContext(
                 drawSCurveProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (useDoubleArcBeam) {
                 drawDoubleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
+            } else if (useSingleArcBeam) {
+                drawSingleArcProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -881,7 +917,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            if (needsBeam && !useGradientBeam) {
+            if (needsBeam && !useGradientBeam && !useSingleArcBeam) {
                 drawOperatorCircle(
                     drawingContext,
                     x,
@@ -921,6 +957,7 @@ function drawNodeToContext(
             const useGradientBeam = needsBeam && settings.sumBeamStyle === "gradient";
             const useSCurveBeam = needsBeam && settings.sumBeamStyle === "s-curve";
             const useDoubleArcBeam = needsBeam && settings.sumBeamStyle === "double-arc";
+            const useSingleArcBeam = needsBeam && settings.sumBeamStyle === "single-arc";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -929,6 +966,8 @@ function drawNodeToContext(
                 drawSCurveSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (useDoubleArcBeam) {
                 drawDoubleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
+            } else if (useSingleArcBeam) {
+                drawSingleArcSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
@@ -949,7 +988,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            if (needsBeam && !useGradientBeam) {
+            if (needsBeam && !useGradientBeam && !useSingleArcBeam) {
                 drawOperatorCircle(
                     drawingContext,
                     centerX,
