@@ -1218,7 +1218,8 @@ Promise.resolve().then(() => {
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
-        const operatorBarStyleSelect = document.getElementById("operatorBarStyleSelect");
+        const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
+        const productBarStyleSelect = document.getElementById("productBarStyleSelect");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -3394,10 +3395,16 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
-            setOperatorBarStyle(getSavedOperatorBarStyle());
-            if (operatorBarStyleSelect) {
-                operatorBarStyleSelect.addEventListener("change", () => {
-                    setOperatorBarStyle(operatorBarStyleSelect.value, true);
+            setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
+            setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
+            if (sumBarStyleSelect) {
+                sumBarStyleSelect.addEventListener("change", () => {
+                    setOperationBarStyle("sum", sumBarStyleSelect.value, true);
+                });
+            }
+            if (productBarStyleSelect) {
+                productBarStyleSelect.addEventListener("change", () => {
+                    setOperationBarStyle("product", productBarStyleSelect.value, true);
                 });
             }
             if (workspaceToolbar) {
@@ -3656,31 +3663,42 @@ ctx.font = SETTINGS.textFont;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
         const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
-        const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
-        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve", "double-arc", "single-arc", "midline-double-arc", "midline-double-arc-v2", "midline-double-arc-v3", "midline-double-arc-v4", "nested-parentheses", "center-pinched-gradient-arcs"]);
+        const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
+        const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
+        const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
+        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "nested-parentheses", "outward-parentheses"]);
 
-        function getSavedOperatorBarStyle() {
+        function getSavedOperationBarStyle(storageKey, fallbackStyle) {
             try {
-                const savedStyle = window.localStorage.getItem(OPERATOR_BAR_STYLE_STORAGE_KEY);
-                return OPERATOR_BAR_STYLES.has(savedStyle) ? savedStyle : SETTINGS.sumBeamStyle;
+                const savedStyle = window.localStorage.getItem(storageKey);
+                if (OPERATOR_BAR_STYLES.has(savedStyle)) {
+                    return savedStyle;
+                }
+                const legacyStyle = window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY);
+                return OPERATOR_BAR_STYLES.has(legacyStyle) ? legacyStyle : fallbackStyle;
             } catch (error) {
-                return SETTINGS.sumBeamStyle;
+                return fallbackStyle;
             }
         }
 
-        function setOperatorBarStyle(style, persist = false) {
+        function setOperationBarStyle(operation, style, persist = false) {
             const normalizedStyle = OPERATOR_BAR_STYLES.has(style) ? style : "gradient";
-            SETTINGS.sumBeamStyle = normalizedStyle;
-            SETTINGS.productBeamStyle = normalizedStyle;
-            if (operatorBarStyleSelect) {
-                operatorBarStyleSelect.value = normalizedStyle;
+            const isSum = operation === "sum";
+            const select = isSum ? sumBarStyleSelect : productBarStyleSelect;
+            SETTINGS[isSum ? "sumBeamStyle" : "productBeamStyle"] = normalizedStyle;
+            if (select) {
+                select.value = normalizedStyle;
             }
             if (persist) {
                 try {
-                    window.localStorage.setItem(OPERATOR_BAR_STYLE_STORAGE_KEY, normalizedStyle);
+                    window.localStorage.setItem(
+                        isSum ? SUM_BAR_STYLE_STORAGE_KEY : PRODUCT_BAR_STYLE_STORAGE_KEY,
+                        normalizedStyle
+                    );
                 } catch (error) {}
             }
             if (expressionRoot) {
+                layoutExpression(expressionRoot);
                 drawExpression();
             }
         }
@@ -5025,7 +5043,9 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.productBeamStyle === "midline-double-arc-v2" || SETTINGS.productBeamStyle === "midline-double-arc-v3" || SETTINGS.productBeamStyle === "midline-double-arc-v4";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) ||
+                    SETTINGS.productBeamStyle === "nested-parentheses" ||
+                    SETTINGS.productBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
                     const distance = hasConnectorFlares
@@ -5038,7 +5058,9 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.sumBeamStyle === "midline-double-arc-v2" || SETTINGS.sumBeamStyle === "midline-double-arc-v3" || SETTINGS.sumBeamStyle === "midline-double-arc-v4";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) ||
+                    SETTINGS.sumBeamStyle === "nested-parentheses" ||
+                    SETTINGS.sumBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
                     const distance = hasConnectorFlares

@@ -1831,7 +1831,8 @@
             font-size: 12px;
             font-weight: 700;
         }
-        .bar-style-control .panel-select { margin: 0; }
+        .bar-style-control .panel-select { margin: 0 0 10px; }
+        .bar-style-control .panel-select:last-child { margin-bottom: 0; }
         .level-menu-actions {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2688,19 +2689,19 @@
                     </button>
                 </div>
                 <div class="bar-style-control">
-                    <label for="operatorBarStyleSelect">Addition and multiplication bar style</label>
-                    <select id="operatorBarStyleSelect" class="panel-select">
+                    <label for="sumBarStyleSelect">Addition style</label>
+                    <select id="sumBarStyleSelect" class="panel-select">
                         <option value="gradient">Gradient</option>
                         <option value="flared">Flared ends</option>
-                        <option value="s-curve">S curve</option>
-                        <option value="double-arc">Double arcs</option>
-                        <option value="single-arc">Single arcs</option>
-                        <option value="midline-double-arc">Midline double arcs</option>
-                        <option value="midline-double-arc-v2">Midline double arcs 2.0</option>
-                        <option value="midline-double-arc-v3">Midline double arcs 3.0</option>
-                        <option value="midline-double-arc-v4">Midline double arcs 4.0</option>
                         <option value="nested-parentheses">Nested parentheses</option>
-                        <option value="center-pinched-gradient-arcs">Center-pinched gradient arcs</option>
+                        <option value="outward-parentheses">Outward parentheses</option>
+                    </select>
+                    <label for="productBarStyleSelect">Multiplication style</label>
+                    <select id="productBarStyleSelect" class="panel-select">
+                        <option value="gradient">Gradient</option>
+                        <option value="flared">Flared ends</option>
+                        <option value="nested-parentheses">Nested parentheses</option>
+                        <option value="outward-parentheses">Outward parentheses</option>
                     </select>
                 </div>
                 <div id="moveHistoryControls"></div>
@@ -2773,8 +2774,8 @@
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-center-pinched-gradient-arcs-v2"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-center-pinched-gradient-arcs-v2"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-independent-operation-styles"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-independent-operation-styles"></script>
 
 </body>
 </html>
