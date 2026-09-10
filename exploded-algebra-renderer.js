@@ -490,6 +490,70 @@ function drawMidlineDoubleArcV3SumBeam(drawingContext, x1, x2, y, halfThickness,
     drawMidlineDoubleArcV2SumBeam(drawingContext, x1, x2, y, halfThickness, gradientPaint);
 }
 
+function fillMidlineDoubleArcProductBeam(drawingContext, x, y1, y2, halfThickness, fillStyle) {
+    const height = Math.max(0, y2 - y1);
+    const quarterY = height / 4;
+    const centerY = (y1 + y2) / 2;
+
+    drawingContext.save();
+    drawingContext.fillStyle = fillStyle;
+    drawingContext.beginPath();
+    drawingContext.moveTo(x, y1);
+    drawingContext.quadraticCurveTo(x + halfThickness, y1 + quarterY, x + halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x + halfThickness, y2 - quarterY, x, y2);
+    drawingContext.quadraticCurveTo(x - halfThickness, y2 - quarterY, x - halfThickness, centerY);
+    drawingContext.quadraticCurveTo(x - halfThickness, y1 + quarterY, x, y1);
+    drawingContext.fill();
+    drawingContext.restore();
+}
+
+function fillMidlineDoubleArcSumBeam(drawingContext, x1, x2, y, halfThickness, fillStyle) {
+    const width = Math.max(0, x2 - x1);
+    const quarterX = width / 4;
+    const centerX = (x1 + x2) / 2;
+
+    drawingContext.save();
+    drawingContext.fillStyle = fillStyle;
+    drawingContext.beginPath();
+    drawingContext.moveTo(x1, y);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y - halfThickness, centerX, y - halfThickness);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y - halfThickness, x2, y);
+    drawingContext.quadraticCurveTo(x2 - quarterX, y + halfThickness, centerX, y + halfThickness);
+    drawingContext.quadraticCurveTo(x1 + quarterX, y + halfThickness, x1, y);
+    drawingContext.fill();
+    drawingContext.restore();
+}
+
+function drawMidlineDoubleArcV4ProductBeam(drawingContext, x, y1, y2, halfThickness, edgeColor) {
+    const gradientId = `oops-midline-double-arc-v4-product-${nextProductBeamGradientId++}`;
+    const gradientPaint = createMidlineDoubleArcV3Gradient(
+        drawingContext,
+        gradientId,
+        x,
+        y1,
+        x,
+        y2,
+        edgeColor
+    );
+    fillMidlineDoubleArcProductBeam(drawingContext, x, y1, y2, halfThickness, gradientPaint);
+    drawMidlineDoubleArcV2ProductBeam(drawingContext, x, y1, y2, halfThickness, gradientPaint);
+}
+
+function drawMidlineDoubleArcV4SumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
+    const gradientId = `oops-midline-double-arc-v4-sum-${nextSumBeamGradientId++}`;
+    const gradientPaint = createMidlineDoubleArcV3Gradient(
+        drawingContext,
+        gradientId,
+        x1,
+        y,
+        x2,
+        y,
+        edgeColor
+    );
+    fillMidlineDoubleArcSumBeam(drawingContext, x1, x2, y, halfThickness, gradientPaint);
+    drawMidlineDoubleArcV2SumBeam(drawingContext, x1, x2, y, halfThickness, gradientPaint);
+}
+
 let svgMeasureTextElement = null;
 
 function measureSvgText(text, font) {
@@ -1014,6 +1078,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcBeam = needsBeam && settings.productBeamStyle === "midline-double-arc";
             const useMidlineDoubleArcV2Beam = settings.productBeamStyle === "midline-double-arc-v2";
             const useMidlineDoubleArcV3Beam = settings.productBeamStyle === "midline-double-arc-v3";
+            const useMidlineDoubleArcV4Beam = settings.productBeamStyle === "midline-double-arc-v4";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1030,6 +1095,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV2ProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (useMidlineDoubleArcV3Beam) {
                 drawMidlineDoubleArcV3ProductBeam(drawingContext, x, y1, y2, flare, "black");
+            } else if (useMidlineDoubleArcV4Beam) {
+                drawMidlineDoubleArcV4ProductBeam(drawingContext, x, y1, y2, flare, "black");
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -1050,7 +1117,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,
@@ -1063,7 +1130,7 @@ function drawNodeToContext(
                 );
             }
 
-            if (needsBeam || useMidlineDoubleArcV2Beam || useMidlineDoubleArcV3Beam) {
+            if (needsBeam || useMidlineDoubleArcV2Beam || useMidlineDoubleArcV3Beam || useMidlineDoubleArcV4Beam) {
                 drawDebugComponentBounds(drawingContext, x - flare, y1, x + flare, y2, settings);
             }
 
@@ -1095,6 +1162,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcBeam = needsBeam && settings.sumBeamStyle === "midline-double-arc";
             const useMidlineDoubleArcV2Beam = settings.sumBeamStyle === "midline-double-arc-v2";
             const useMidlineDoubleArcV3Beam = settings.sumBeamStyle === "midline-double-arc-v3";
+            const useMidlineDoubleArcV4Beam = settings.sumBeamStyle === "midline-double-arc-v4";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1111,6 +1179,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV2SumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (useMidlineDoubleArcV3Beam) {
                 drawMidlineDoubleArcV3SumBeam(drawingContext, x1, x2, y, flare, "black");
+            } else if (useMidlineDoubleArcV4Beam) {
+                drawMidlineDoubleArcV4SumBeam(drawingContext, x1, x2, y, flare, "black");
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
@@ -1131,7 +1201,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,
@@ -1153,7 +1223,7 @@ function drawNodeToContext(
             drawingContext.lineWidth = getOperatorIconStrokeWidth(settings);
             drawingContext.stroke();
             drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-            if (needsBeam || useMidlineDoubleArcV2Beam || useMidlineDoubleArcV3Beam) {
+            if (needsBeam || useMidlineDoubleArcV2Beam || useMidlineDoubleArcV3Beam || useMidlineDoubleArcV4Beam) {
                 drawDebugComponentBounds(drawingContext, x1, y - flare, x2, y + flare, settings);
             }
         }
