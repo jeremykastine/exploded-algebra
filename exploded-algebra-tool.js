@@ -1217,6 +1217,7 @@ Promise.resolve().then(() => {
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const levelMenuContent = document.getElementById("levelMenuContent");
+        const operatorBarStyleSelect = document.getElementById("operatorBarStyleSelect");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -3387,6 +3388,12 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
+            setOperatorBarStyle(getSavedOperatorBarStyle());
+            if (operatorBarStyleSelect) {
+                operatorBarStyleSelect.addEventListener("change", () => {
+                    setOperatorBarStyle(operatorBarStyleSelect.value, true);
+                });
+            }
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -3643,6 +3650,34 @@ ctx.font = SETTINGS.textFont;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
         const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
+        const OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyle";
+        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "s-curve"]);
+
+        function getSavedOperatorBarStyle() {
+            try {
+                const savedStyle = window.localStorage.getItem(OPERATOR_BAR_STYLE_STORAGE_KEY);
+                return OPERATOR_BAR_STYLES.has(savedStyle) ? savedStyle : SETTINGS.sumBeamStyle;
+            } catch (error) {
+                return SETTINGS.sumBeamStyle;
+            }
+        }
+
+        function setOperatorBarStyle(style, persist = false) {
+            const normalizedStyle = OPERATOR_BAR_STYLES.has(style) ? style : "gradient";
+            SETTINGS.sumBeamStyle = normalizedStyle;
+            SETTINGS.productBeamStyle = normalizedStyle;
+            if (operatorBarStyleSelect) {
+                operatorBarStyleSelect.value = normalizedStyle;
+            }
+            if (persist) {
+                try {
+                    window.localStorage.setItem(OPERATOR_BAR_STYLE_STORAGE_KEY, normalizedStyle);
+                } catch (error) {}
+            }
+            if (expressionRoot) {
+                drawExpression();
+            }
+        }
 
         function setLeftHandedLayout(enabled, persist = false) {
             const isLeftHanded = !!enabled;
