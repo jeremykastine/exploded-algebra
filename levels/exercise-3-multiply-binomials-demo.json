@@ -3,11 +3,6 @@
   "title": "Demo: Exercise 3: Multiply Binomials and Combine Like Terms (9/1/2026, 1:52:53 AM)",
   "instruction": "Multiply and combine like terms.",
   "initialKatex": "(x+3)(2x+5)",
-  "exerciseInfo": [
-    "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-    "Keep x squared visible as the repeated product x times x in the exploded expression, then factor the common x from 5x + 6x before evaluating 5 + 6.",
-    "Follow the yellow-outlined selections and buttons to reproduce the recorded solution."
-  ],
   "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
   "evaluationLevel": 2,
   "numericalRewrite": {
@@ -381,10 +376,6 @@
     "title": "Exercise 3: Multiply Binomials and Combine Like Terms",
     "instruction": "Multiply and combine like terms.",
     "initialKatex": "(x+3)(2x+5)",
-    "exerciseInfo": [
-      "Practice multiplying two binomials by distributing each term, simplifying the numerical products, and combining like terms.",
-      "Keep x squared visible as the repeated product x times x in the exploded expression, then factor the common x from 5x + 6x before evaluating 5 + 6."
-    ],
     "completionMessage": "The binomial product has been expanded and all like terms have been combined.",
     "evaluationLevel": 2,
     "numericalRewrite": {

@@ -1819,8 +1819,6 @@
 
         .level-menu-panel.hidden { display: none; }
         .level-menu-title { margin: 0 0 8px; font-size: 15px; }
-        .level-menu-information { font-size: 13px; line-height: 1.45; }
-        .level-menu-information p { margin: 0 0 8px; }
         .bar-style-control {
             margin: 12px 0;
             padding-top: 10px;
@@ -1834,6 +1832,26 @@
             font-weight: 700;
         }
         .bar-style-control .panel-select { margin: 0; }
+        .level-menu-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 0 0 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .level-menu-actions .reset-exercise-button,
+        .level-menu-actions .handedness-toggle-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 44px;
+            min-width: 0;
+            min-height: 44px;
+            margin: 0;
+        }
+        .level-menu-actions svg { width: 28px; height: 28px; }
 
         .left-panel {
             grid-column: 1;
@@ -2527,10 +2545,10 @@
 
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
-        .builder-keypad-panel .builder-variable-button:nth-child(1) { grid-column: 1; grid-row: 5; }
-        .builder-keypad-panel .builder-variable-button:nth-child(2) { grid-column: 1; grid-row: 4; }
-        .builder-keypad-panel .builder-variable-button:nth-child(3) { grid-column: 1; grid-row: 3; }
-        .builder-keypad-panel .builder-variable-button:nth-child(4) { grid-column: 1; grid-row: 2; }
+        .builder-keypad-panel .builder-variable-button:nth-child(1) { grid-column: 1; grid-row: 6; }
+        .builder-keypad-panel .builder-variable-button:nth-child(2) { grid-column: 1; grid-row: 5; }
+        .builder-keypad-panel .builder-variable-button:nth-child(3) { grid-column: 1; grid-row: 4; }
+        .builder-keypad-panel .builder-variable-button:nth-child(4) { grid-column: 1; grid-row: 3; }
 
         .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 3; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 4; grid-row: 3; }
@@ -2544,15 +2562,23 @@
         .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 4; grid-row: 6; }
 
         .builder-keypad-panel .builder-negative-one-button { grid-column: 3; grid-row: 6; }
-        .builder-keypad-panel .builder-inv-button { grid-column: 2; grid-row: 3; }
-        .builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 4; }
-        .builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 5; }
+        .builder-keypad-panel .builder-inv-button { grid-column: 2; grid-row: 4; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 5; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 6; }
         .builder-keypad-panel .builder-undo-button { grid-column: 5; grid-row: 6; }
         .builder-keypad-panel .builder-cancel-button { grid-column: 5; grid-row: 1; }
         .builder-keypad-panel .builder-next-submit-button {
-            grid-column: 3 / span 3;
+            grid-column: 4 / span 2;
             grid-row: 2;
             writing-mode: horizontal-tb;
+        }
+
+        .builder-keypad-panel .builder-undo-button svg {
+            display: block;
+            width: min(30px, 70%);
+            height: min(30px, 70%);
+            margin: auto;
+            pointer-events: none;
         }
 
         .builder-keypad-panel .builder-instruction { display: none; }
@@ -2651,9 +2677,16 @@
             <button id="hamburgerButton" class="hamburger-button" type="button" aria-label="Open exercise menu" aria-expanded="false" aria-controls="levelMenuPanel" title="Exercise menu">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
             </button>
-            <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Exercise information">
-                <h2 class="level-menu-title">Exercise information</h2>
-                <div id="levelMenuContent" class="level-menu-information"></div>
+            <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Exercise options">
+                <h2 class="level-menu-title">Options</h2>
+                <div class="level-menu-actions" aria-label="Exercise and layout controls">
+                    <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                    </button>
+                    <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the exercise-menu control to the other end of the bottom toolbar.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                </div>
                 <div class="bar-style-control">
                     <label for="operatorBarStyleSelect">Addition and multiplication bar style</label>
                     <select id="operatorBarStyleSelect" class="panel-select">
@@ -2675,14 +2708,6 @@
             <div id="levelContent"></div>
         </div>
         <div class="quadrant-tools">
-            <div class="quadrant-tool-actions" aria-label="Exercise and layout controls">
-                <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                </button>
-                <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Move the exercise-menu control to the other end of the bottom toolbar.">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-            </div>
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
                     <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
@@ -2746,8 +2771,8 @@
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-bottom-controls-builder-keypad"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-bottom-controls-builder-keypad"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-menu-keypad-scroll"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-menu-keypad-scroll"></script>
 
 </body>
 </html>

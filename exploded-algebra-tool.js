@@ -1218,7 +1218,6 @@ Promise.resolve().then(() => {
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const hamburgerButton = document.getElementById("hamburgerButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
-        const levelMenuContent = document.getElementById("levelMenuContent");
         const operatorBarStyleSelect = document.getElementById("operatorBarStyleSelect");
         const divider = document.getElementById("divider");
         const leftPanel = document.getElementById("leftPanel");
@@ -1920,7 +1919,7 @@ Promise.resolve().then(() => {
                 return `${titleHtml}<p>Show the algebra rules in this category.</p>`;
             }
             if (button.id === "hamburgerButton") {
-                return `${titleHtml}<p>Open the exercise information and move-history controls.</p>`;
+                return `${titleHtml}<p>Open exercise options and move-history controls.</p>`;
             }
             if (button.classList.contains("completion-export-button")) {
                 return `${titleHtml}<p>Download the complete move history for this exercise.</p>`;
@@ -2093,6 +2092,8 @@ Promise.resolve().then(() => {
             delete copy.recordedActions;
             delete copy.completedAt;
             delete copy.createdAt;
+            delete copy.description;
+            delete copy.instructions;
             copy.kind = "interactive";
             return copy;
         }
@@ -2480,19 +2481,10 @@ Promise.resolve().then(() => {
             if (!Array.isArray(level.steps) || level.steps.length === 0) {
                 throw new Error(`${sourceName} must contain at least one step.`);
             }
-            if (level.description !== undefined && (typeof level.description !== "string" || !level.description.trim())) {
-                throw new Error(`${sourceName} has an invalid description.`);
-            }
-            if (level.instructions !== undefined) {
-                if (!isValidTextBlocks(level.instructions)) {
-                    throw new Error(`${sourceName} has invalid instructions.`);
-                }
-            }
             [
                 "instruction",
                 "introduction",
                 "conclusion",
-                "exerciseInfo",
                 "completionMessage"
             ].forEach(fieldName => {
                 if (level[fieldName] === undefined) {
@@ -2537,6 +2529,12 @@ Promise.resolve().then(() => {
             const copy = isDemoOnlyLevel(levelCopy) && levelCopy.sourceLevel && typeof levelCopy.sourceLevel === "object"
                 ? { ...clonePlainData(levelCopy.sourceLevel), ...levelCopy }
                 : levelCopy;
+            delete copy.description;
+            delete copy.instructions;
+            if (copy.sourceLevel && typeof copy.sourceLevel === "object") {
+                delete copy.sourceLevel.description;
+                delete copy.sourceLevel.instructions;
+            }
             if (!Array.isArray(copy.variables) || !copy.variables.length) {
                 copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
             }
@@ -3216,37 +3214,52 @@ Promise.resolve().then(() => {
             });
         }
 
-        function renderLevelMenuInfo(level, isExerciseComplete = false) {
-            if (!levelMenuContent) {
+        const STEP_PANEL_SCROLL_DURATION_MS = 520;
+        let stepPanelScrollAnimationFrame = null;
+
+        function animateStepPanelScroll(targetLeft) {
+            if (!leftPanel) {
                 return;
             }
-            if (!level) {
-                levelMenuContent.innerHTML = "<p>No exercise is loaded.</p>";
+            if (stepPanelScrollAnimationFrame !== null) {
+                cancelAnimationFrame(stepPanelScrollAnimationFrame);
+                stepPanelScrollAnimationFrame = null;
+            }
+
+            const maximumLeft = Math.max(0, leftPanel.scrollWidth - leftPanel.clientWidth);
+            const startLeft = leftPanel.scrollLeft;
+            const endLeft = Math.max(0, Math.min(targetLeft, maximumLeft));
+            const reduceMotion = typeof window.matchMedia === "function"
+                && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            if (Math.abs(endLeft - startLeft) < 1 || reduceMotion) {
+                leftPanel.scrollLeft = endLeft;
                 return;
             }
 
-            const exerciseInfo = normalizeTextBlocks(level.exerciseInfo).length
-                ? normalizeTextBlocks(level.exerciseInfo)
-                : [
-                    ...normalizeTextBlocks(level.description),
-                    ...normalizeTextBlocks(level.instructions)
-                ];
-            const completionMessage = normalizeTextBlocks(level.completionMessage).length
-                ? normalizeTextBlocks(level.completionMessage)
-                : normalizeTextBlocks(level.conclusion);
-            const blocks = isExerciseComplete && completionMessage.length
-                ? [...exerciseInfo, ...completionMessage]
-                : exerciseInfo;
-            levelMenuContent.innerHTML = blocks.length
-                ? blocks.map(text => `<p>${escapeHtml(text)}</p>`).join("")
-                : "<p>No additional exercise instructions.</p>";
+            let startTime = null;
+            const tick = timestamp => {
+                if (startTime === null) {
+                    startTime = timestamp;
+                }
+                const progress = Math.min(1, (timestamp - startTime) / STEP_PANEL_SCROLL_DURATION_MS);
+                const easedProgress = progress < 0.5
+                    ? 4 * progress * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                leftPanel.scrollLeft = startLeft + (endLeft - startLeft) * easedProgress;
+                if (progress < 1) {
+                    stepPanelScrollAnimationFrame = requestAnimationFrame(tick);
+                } else {
+                    leftPanel.scrollLeft = endLeft;
+                    stepPanelScrollAnimationFrame = null;
+                }
+            };
+            stepPanelScrollAnimationFrame = requestAnimationFrame(tick);
         }
 
         function renderLevelInfo(levelIndex) {
             const level = LEVELS[levelIndex];
             if (!level) {
                 levelContent.innerHTML = "";
-                renderLevelMenuInfo(null);
                 renderMoveHistoryControls(null);
                 return;
             }
@@ -3305,7 +3318,6 @@ Promise.resolve().then(() => {
                     </section>
                 </div>
             `;
-            renderLevelMenuInfo(level, isExerciseComplete);
             renderMoveHistoryControls(level);
 
             renderLeftPanelMath();
@@ -3336,12 +3348,16 @@ Promise.resolve().then(() => {
             });
 
             const currentColumn = levelContent.querySelector(".current-step-column");
-            if (currentColumn) {
+            if (currentColumn || isExerciseComplete) {
                 requestAnimationFrame(() => {
+                    if (isExerciseComplete) {
+                        animateStepPanelScroll(leftPanel.scrollWidth - leftPanel.clientWidth);
+                        return;
+                    }
                     const panelBounds = leftPanel.getBoundingClientRect();
                     const columnBounds = currentColumn.getBoundingClientRect();
                     const desiredLeft = leftPanel.scrollLeft + columnBounds.right - panelBounds.right + 12;
-                    leftPanel.scrollTo({ left: Math.max(0, desiredLeft), behavior: "smooth" });
+                    animateStepPanelScroll(desiredLeft);
                 });
             }
 
@@ -8793,7 +8809,7 @@ ctx.font = SETTINGS.textFont;
                 <div class="builder-controls">
                     <div class="builder-action-row" aria-label="Expression builder actions">
                         ${nextOrSubmitButton}
-                        <button class="builder-undo-button" data-builder-action="undoBackspace" title="Keyboard shortcut: Backspace or Delete">Backspace</button>
+                        <button class="builder-undo-button" data-builder-action="undoBackspace" aria-label="Backspace" title="Keyboard shortcut: Backspace or Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}

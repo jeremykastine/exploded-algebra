@@ -23,12 +23,10 @@ standalone JSON files remain in the levels folder for hosting, distribution, and
 editing. No exploded-algebra-levels.js file is used.
 
 The conventional-notation panel uses three textbook-style sections separated by
-horizontal rules. `instruction` is the brief textbook direction. `initialKatex`
-is the conventional form of the starting expression. The running solution shows
-completed steps plus the one current step. `exerciseInfo` supplies the exercise-wide
-information shown while work is in progress, and `completionMessage` replaces it
-when the final step is complete. Text fields may be one string or an array of
-strings unless described otherwise.
+horizontal rules. `instruction` is the brief textbook direction available with
+the original expression. `initialKatex` is the conventional form of the starting
+expression. The running solution shows completed steps plus the one current step.
+Text fields may be one string or an array of strings unless described otherwise.
 
 The original expression remains the first item in `steps` for matching and move
 history compatibility, but it is displayed only in the problem-statement section.
@@ -40,18 +38,17 @@ step is complete. If either is omitted, the ordinary `katex` version is used. Th
 permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
 exact exploded `expression` used to recognize the completed step.
 
-Older files remain compatible: `introduction` falls back to `instruction`;
-`description` plus `instructions` fall back to `exerciseInfo`; `conclusion` falls
-back to `completionMessage`; and a step's old `introduction` plus `conclusion` are
-combined into its single above-step guidance area.
+Older files remain compatible: `introduction` falls back to `instruction`, and a
+step's old `introduction` plus `conclusion` are combined into its single above-step
+guidance area. Exercise-wide description fields are no longer used.
 
 The Numerical Rewrite button is the final button in the main tool list. The
 description area beneath the action buttons changes when an action is hovered or
 focused. Each action has a brief explanation only in that area; the action
 buttons do not create browser tooltips beside the pointer. Numerical Rewrite
-shows its exercise-specific permissions as a bulleted list. Download Move History
-appears only with the textbook steps panel, not in the action or expression-builder
-panels.
+shows its exercise-specific permissions as a bulleted list. Display settings,
+layout controls, Reset, and Download Move History appear in the hamburger options
+menu rather than in the action or expression-builder panels.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

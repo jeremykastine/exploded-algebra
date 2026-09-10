@@ -3,11 +3,6 @@
   "title": "Exercise 2: Add Fractions with Unlike Denominators",
   "instruction": "Add the fractions.",
   "initialKatex": "\\frac{2}{3}+\\frac{5}{6}",
-  "exerciseInfo": [
-    "Practice adding fractions with unlike denominators by creating a common denominator, combining the numerators, and simplifying the result.",
-    "To rewrite 2/3 with denominator 6, use multiplication by 1 and the inverse-product tools to create an equivalent fraction. Work out the needed factor and numerator yourself.",
-    "A displayed unit fraction such as 1/7 means inverse(7) itself, not a separate factor 1 multiplied by inverse(7). More generally, a/b is represented as a multiplied by inverse(b)."
-  ],
   "completionMessage": "When the final fraction is in lowest terms, compare it with the original sum and make sure the value has not changed.",
   "evaluationLevel": 2,
   "numericalRewrite": {

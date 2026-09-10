@@ -3,12 +3,6 @@
   "title": "Exercise 4: Multiply Two Rational Expressions",
   "instruction": "Multiply and simplify.",
   "initialKatex": "\\frac{3x}{x+4}\\cdot\\frac{x+4}{6}",
-  "exerciseInfo": [
-    "Practice multiplying rational expressions by canceling a common factor and simplifying the remaining numerical coefficient.",
-    "Treat each denominator as an inverse. A displayed unit fraction such as 1/6 means inverse(6), not 1 multiplied by inverse(6).",
-    "Cancel x + 4 with inverse(x + 4), factor 6 as 2 times 3, distribute the inverse across that product, and cancel 3 with inverse(3).",
-    "Assume every denominator is nonzero; here x is not equal to -4."
-  ],
   "completionMessage": "The common factor and numerical coefficient have been simplified, leaving the product in lowest terms.",
   "evaluationLevel": 2,
   "numericalRewrite": {
