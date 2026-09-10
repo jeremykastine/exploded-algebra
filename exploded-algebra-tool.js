@@ -10363,10 +10363,30 @@ function renderToolArea() {
         }
 
         function workspaceClientPointToSvg(clientX, clientY) {
+            const screenMatrix = workspaceSvg.getScreenCTM && workspaceSvg.getScreenCTM();
+            if (screenMatrix && workspaceSvg.createSVGPoint) {
+                try {
+                    const screenPoint = workspaceSvg.createSVGPoint();
+                    screenPoint.x = clientX;
+                    screenPoint.y = clientY;
+                    const svgPoint = screenPoint.matrixTransform(screenMatrix.inverse());
+                    if (Number.isFinite(svgPoint.x) && Number.isFinite(svgPoint.y)) {
+                        return { x: svgPoint.x, y: svgPoint.y };
+                    }
+                } catch (error) {
+                    // Fall back to the bounding-box conversion below if the
+                    // browser cannot invert the SVG's current screen matrix.
+                }
+            }
             const rect = workspaceSvg.getBoundingClientRect();
+            const viewBox = workspaceSvg.viewBox && workspaceSvg.viewBox.baseVal;
+            const viewBoxX = viewBox ? viewBox.x : 0;
+            const viewBoxY = viewBox ? viewBox.y : 0;
+            const viewBoxWidth = viewBox && viewBox.width ? viewBox.width : getSvgWidth(workspaceSvg);
+            const viewBoxHeight = viewBox && viewBox.height ? viewBox.height : getSvgHeight(workspaceSvg);
             return {
-                x: (clientX - rect.left) * (getSvgWidth(workspaceSvg) / Math.max(1, rect.width)),
-                y: (clientY - rect.top) * (getSvgHeight(workspaceSvg) / Math.max(1, rect.height))
+                x: viewBoxX + (clientX - rect.left) * (viewBoxWidth / Math.max(1, rect.width)),
+                y: viewBoxY + (clientY - rect.top) * (viewBoxHeight / Math.max(1, rect.height))
             };
         }
 
@@ -10423,9 +10443,9 @@ function renderToolArea() {
             }
 
             const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
-            const workspaceBounds = workspaceSvg.getBoundingClientRect();
-            const pointerX = (e.clientX - workspaceBounds.left) * (getSvgWidth(workspaceSvg) / Math.max(1, workspaceBounds.width));
-            const pointerY = (e.clientY - workspaceBounds.top) * (getSvgHeight(workspaceSvg) / Math.max(1, workspaceBounds.height));
+            const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
+            const pointerX = pointerPoint.x;
+            const pointerY = pointerPoint.y;
             const clearingSelectionFromEmptySpace = !cancelingBuilder && !!selection.node &&
                 !findNearestVisibleObject(pointerX, pointerY, e.pointerType || "mouse");
             if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode === "zoomOut") {
