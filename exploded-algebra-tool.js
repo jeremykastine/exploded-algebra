@@ -1281,10 +1281,15 @@ Promise.resolve().then(() => {
 
         function updateDividerAccessibility() {
             const limits = getCurrentPanelSplitLimits();
+            const stepsPanelPercent = 100 - workspacePanelSplit;
             divider.setAttribute("aria-orientation", "horizontal");
             divider.setAttribute("aria-valuemin", String(limits.min));
             divider.setAttribute("aria-valuemax", String(limits.max));
             divider.setAttribute("aria-valuenow", String(Math.round(workspacePanelSplit)));
+            divider.setAttribute(
+                "aria-valuetext",
+                `Conventional steps ${Math.round(stepsPanelPercent)}%, expression workspace ${Math.round(workspacePanelSplit)}%`
+            );
         }
 
         function setPanelSplit(percent) {
@@ -1303,7 +1308,7 @@ Promise.resolve().then(() => {
             const position = event.clientY - bounds.top;
             const total = bounds.height;
             if (total > 0) {
-                setPanelSplit((position / total) * 100);
+                setPanelSplit(((total - position) / total) * 100);
             }
         }
 
@@ -1365,7 +1370,7 @@ Promise.resolve().then(() => {
                 setPanelSplit(window.innerWidth <= 650 ? 74 : 78);
                 return;
             }
-            const direction = event.key === "ArrowDown" ? 1 : -1;
+            const direction = event.key === "ArrowDown" ? -1 : 1;
             setPanelSplit(workspacePanelSplit + direction * 2);
         });
 

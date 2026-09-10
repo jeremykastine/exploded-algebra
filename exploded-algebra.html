@@ -2681,15 +2681,21 @@
             --main-control-edge: max(12px, env(safe-area-inset-right));
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows:
-                calc(var(--workspace-panel-split) - var(--divider-half-size))
+                calc(100% - var(--workspace-panel-split) - var(--divider-half-size))
                 var(--divider-size)
-                calc(100% - var(--workspace-panel-split) - var(--divider-half-size));
+                calc(var(--workspace-panel-split) - var(--divider-half-size));
+        }
+
+        .main,
+        body.left-handed .main {
+            grid-column: 1;
+            grid-row: 3;
         }
 
         .left-panel,
         body.left-handed .left-panel {
             grid-column: 1;
-            grid-row: 3;
+            grid-row: 1;
             overflow-x: auto;
             overflow-y: auto;
             overscroll-behavior: contain;
@@ -2723,7 +2729,7 @@
             position: relative;
             z-index: 70;
             grid-column: 1;
-            grid-row: 1;
+            grid-row: 3;
             align-self: end;
             justify-self: end;
             display: grid;
@@ -2777,7 +2783,7 @@
             position: relative;
             z-index: 80;
             grid-column: 1;
-            grid-row: 1;
+            grid-row: 3;
             align-self: end;
             justify-self: end;
             display: flex;
@@ -2798,7 +2804,7 @@
             pointer-events: auto;
         }
         .level-menu-panel {
-            bottom: calc(100dvh - var(--workspace-panel-split) + 12px);
+            bottom: calc(max(12px, env(safe-area-inset-bottom)) + var(--main-keypad-height) + var(--main-key-gap) + var(--main-key-size) + 6px);
             max-height: calc(var(--workspace-panel-split) - 24px);
             pointer-events: auto;
         }
@@ -2965,9 +2971,9 @@
         body.expression-builder-active .app-container,
         body.expression-builder-active.left-handed .app-container {
             grid-template-rows:
-                calc(var(--workspace-panel-split) - var(--divider-half-size))
+                calc(100% - var(--workspace-panel-split) - var(--divider-half-size))
                 var(--divider-size)
-                calc(100% - var(--workspace-panel-split) - var(--divider-half-size));
+                calc(var(--workspace-panel-split) - var(--divider-half-size));
         }
         body.expression-builder-active .left-panel,
         body.expression-builder-active.left-handed .left-panel {
@@ -3131,8 +3137,8 @@
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-adjustable-workspace-layout"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-adjustable-workspace-layout"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-steps-above-workspace"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-steps-above-workspace"></script>
 
 </body>
 </html>
