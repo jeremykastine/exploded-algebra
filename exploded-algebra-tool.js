@@ -615,9 +615,7 @@ Promise.resolve().then(() => {
 
         function getIntentCategoryIconHtml(categoryId) {
             if (categoryId === "numericalRewrite") {
-                return `<span class="intent-category-math" aria-hidden="true">
-                    <span>1 + 2</span><span class="math-arrow">↔</span><span>3</span>
-                </span>`;
+                return `<span class="intent-category-number-icon" aria-hidden="true">123</span>`;
             }
             if (categoryId === "commute") {
                 return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">

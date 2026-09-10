@@ -967,6 +967,18 @@
             line-height: 1;
         }
 
+        .intent-category-number-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: currentColor;
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
         .intent-category-icon .icon-stroke {
             fill: none;
             stroke: currentColor;
@@ -3019,6 +3031,11 @@
             height: var(--main-icon-size);
             gap: 0.2em;
             font-size: clamp(8px, calc(var(--main-icon-size) - 20px), 14px);
+        }
+        .main-action-panel .intent-category-number-icon {
+            width: var(--main-icon-size);
+            height: var(--main-icon-size);
+            font-size: clamp(12px, calc(var(--main-key-size) - 30px), 20px);
         }
         .main-action-panel .small-note,
         .main-action-panel .tool-mode,

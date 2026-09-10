@@ -58,7 +58,8 @@ when the font size changes.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. Numerical Rewrite shows its exercise-specific permissions as a
-bulleted list. Operation display settings, handedness, Reset, and Download Move History
+bulleted list, and its action button is marked with bold `123`. Operation display
+settings, handedness, Reset, and Download Move History
 appear on the settings screen rather than in the action or expression-builder
 panels. Handedness reflects each button layout, while the numeric Expression
 Builder keypad moves as a single block so its internal order remains familiar.
