@@ -5042,7 +5042,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.productBeamStyle === "midline-double-arc-v2";
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
                     const distance = hasConnectorFlares
@@ -5055,7 +5055,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node) || SETTINGS.sumBeamStyle === "midline-double-arc-v2";
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
                     const distance = hasConnectorFlares
