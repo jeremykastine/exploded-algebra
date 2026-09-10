@@ -257,6 +257,61 @@ function drawGradientSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor
     drawingContext.restore();
 }
 
+function getNestedParenthesisCenters(start, end, halfThickness) {
+    const center = (start + end) / 2;
+    const depth = Math.max(1.5, halfThickness * 0.45);
+    const operatorClearance = Math.max(halfThickness * 0.8, depth * 1.5);
+    const outerCenter = start + depth;
+    const innerCenter = center - operatorClearance - depth;
+    if (innerCenter <= outerCenter) {
+        return { center, depth, centers: [(start + center) / 2] };
+    }
+
+    const desiredSpacing = Math.max(depth * 1.8, 4);
+    const count = Math.max(2, Math.ceil((innerCenter - outerCenter) / desiredSpacing) + 1);
+    const centers = Array.from({ length: count }, (_, index) => (
+        outerCenter + (innerCenter - outerCenter) * index / (count - 1)
+    ));
+    return { center, depth, centers };
+}
+
+function drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, halfThickness, color) {
+    const { center, depth, centers } = getNestedParenthesisCenters(x1, x2, halfThickness);
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    centers.forEach(leftCenter => {
+        const rightCenter = center * 2 - leftCenter;
+        drawingContext.moveTo(leftCenter + depth, y - halfThickness);
+        drawingContext.quadraticCurveTo(leftCenter - depth, y, leftCenter + depth, y + halfThickness);
+        drawingContext.moveTo(rightCenter - depth, y - halfThickness);
+        drawingContext.quadraticCurveTo(rightCenter + depth, y, rightCenter - depth, y + halfThickness);
+    });
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
+function drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, halfThickness, color) {
+    const { center, depth, centers } = getNestedParenthesisCenters(y1, y2, halfThickness);
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
+    drawingContext.beginPath();
+    centers.forEach(topCenter => {
+        const bottomCenter = center * 2 - topCenter;
+        // Exact clockwise 90-degree rotation of the corresponding sum parentheses.
+        drawingContext.moveTo(x + halfThickness, topCenter + depth);
+        drawingContext.quadraticCurveTo(x, topCenter - depth, x - halfThickness, topCenter + depth);
+        drawingContext.moveTo(x + halfThickness, bottomCenter - depth);
+        drawingContext.quadraticCurveTo(x, bottomCenter + depth, x - halfThickness, bottomCenter - depth);
+    });
+    drawingContext.stroke();
+    drawingContext.restore();
+}
+
 function drawSCurveProductBeam(drawingContext, x, y1, y2, halfThickness, color) {
     const height = Math.max(0, y2 - y1);
     const quarterY = height / 4;
@@ -1079,6 +1134,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcV2Beam = settings.productBeamStyle === "midline-double-arc-v2";
             const useMidlineDoubleArcV3Beam = settings.productBeamStyle === "midline-double-arc-v3";
             const useMidlineDoubleArcV4Beam = settings.productBeamStyle === "midline-double-arc-v4";
+            const useNestedParenthesesBeam = needsBeam && settings.productBeamStyle === "nested-parentheses";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1097,6 +1153,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV3ProductBeam(drawingContext, x, y1, y2, flare, "black");
             } else if (useMidlineDoubleArcV4Beam) {
                 drawMidlineDoubleArcV4ProductBeam(drawingContext, x, y1, y2, flare, "black");
+            } else if (useNestedParenthesesBeam) {
+                drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous multiplication-beam renderer. Keep this path
                 // available by setting productBeamStyle to "flared".
@@ -1117,7 +1175,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,
@@ -1163,6 +1221,7 @@ function drawNodeToContext(
             const useMidlineDoubleArcV2Beam = settings.sumBeamStyle === "midline-double-arc-v2";
             const useMidlineDoubleArcV3Beam = settings.sumBeamStyle === "midline-double-arc-v3";
             const useMidlineDoubleArcV4Beam = settings.sumBeamStyle === "midline-double-arc-v4";
+            const useNestedParenthesesBeam = needsBeam && settings.sumBeamStyle === "nested-parentheses";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
@@ -1181,6 +1240,8 @@ function drawNodeToContext(
                 drawMidlineDoubleArcV3SumBeam(drawingContext, x1, x2, y, flare, "black");
             } else if (useMidlineDoubleArcV4Beam) {
                 drawMidlineDoubleArcV4SumBeam(drawingContext, x1, x2, y, flare, "black");
+            } else if (useNestedParenthesesBeam) {
+                drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, operatorColor);
             } else if (needsBeam) {
                 // Previous addition-beam renderer. Keep this path available by
                 // setting sumBeamStyle to "flared".
@@ -1201,7 +1262,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
             }
 
-            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam;
+            const showOperatorCircle = needsBeam && !useGradientBeam && !useSingleArcBeam && !useMidlineDoubleArcV2Beam && !useMidlineDoubleArcV3Beam && !useMidlineDoubleArcV4Beam && !useNestedParenthesesBeam;
             if (showOperatorCircle) {
                 drawOperatorCircle(
                     drawingContext,
