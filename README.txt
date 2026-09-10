@@ -42,10 +42,13 @@ Older files remain compatible: `introduction` falls back to `instruction`, and a
 step's old `introduction` plus `conclusion` are combined into its single above-step
 guidance area. Exercise-wide description fields are no longer used.
 
-The main workspace controls and contextual action choices use compact,
-bottom-corner keypad layouts. Each button is opaque, but the control clusters
-have no panel background, so the expression remains visible behind the empty
-space. Undo returns through completed expression states as far as the starting
+The exploded expression is anchored at the upper-left of its workspace. The
+idle workspace controls, contextual action choices, and Expression Builder each
+use the same compact, bottom-corner keypad footprint; only the controls for the
+current state are visible. Each button is opaque, but the control clusters have
+no panel background. The conventional steps remain visible below a draggable
+horizontal divider and scroll vertically when their chosen height is too small.
+Undo returns through completed expression states as far as the starting
 expression; Ctrl/Cmd+Z provides the same behavior when focus is not in a text
 field. Numerical Rewrite shows its exercise-specific permissions as a bulleted
 list. Operation display settings, handedness, Reset, and Download Move History

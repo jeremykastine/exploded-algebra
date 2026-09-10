@@ -2675,18 +2675,48 @@
             --main-key-gap: 6px;
             --main-keypad-width: 194px;
             --main-keypad-height: 94px;
+            --builder-keypad-width: 244px;
+            --builder-keypad-height: 294px;
+            --main-action-key-width: clamp(76px, 10vw, 104px);
             --main-control-edge: max(12px, env(safe-area-inset-right));
-            --main-control-stack-height: 162px;
             grid-template-columns: minmax(0, 1fr);
-            grid-template-rows: minmax(0, 1fr) var(--top-panel-height);
+            grid-template-rows:
+                calc(var(--workspace-panel-split) - var(--divider-half-size))
+                var(--divider-size)
+                calc(100% - var(--workspace-panel-split) - var(--divider-half-size));
         }
 
         .left-panel,
         body.left-handed .left-panel {
             grid-column: 1;
-            grid-row: 2;
+            grid-row: 3;
+            overflow-x: auto;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: auto;
         }
-        body.tool-area-active .left-panel { overflow-x: auto; overflow-y: hidden; }
+        body.tool-area-active .left-panel { overflow: auto; }
+
+        .divider {
+            position: relative;
+            z-index: 90;
+            grid-column: 1;
+            grid-row: 2;
+            display: block;
+            width: 100%;
+            height: var(--divider-size);
+            min-height: var(--divider-size);
+            cursor: row-resize;
+            touch-action: none;
+            background: #e5e5e5;
+        }
+        .divider::after {
+            content: "";
+            position: absolute;
+            inset: -5px 0;
+        }
+        .divider:hover,
+        .divider:focus-visible { background: #aaa; }
 
         .quadrant-tools,
         body.left-handed .quadrant-tools {
@@ -2768,8 +2798,8 @@
             pointer-events: auto;
         }
         .level-menu-panel {
-            bottom: calc(var(--top-panel-height) + 12px);
-            max-height: calc(100dvh - var(--top-panel-height) - 24px);
+            bottom: calc(100dvh - var(--workspace-panel-split) + 12px);
+            max-height: calc(var(--workspace-panel-split) - 24px);
             pointer-events: auto;
         }
 
@@ -2777,12 +2807,12 @@
             position: absolute;
             z-index: 65;
             right: var(--main-control-edge);
-            bottom: var(--main-control-stack-height);
+            bottom: max(12px, env(safe-area-inset-bottom));
             display: flex;
             align-items: flex-end;
             justify-content: flex-end;
             width: min(720px, calc(100% - 24px));
-            max-height: calc(100% - var(--main-control-stack-height) - 12px);
+            max-height: calc(100% - 24px);
             overflow: auto;
             box-sizing: border-box;
             padding: 0;
@@ -2833,7 +2863,6 @@
             justify-content: flex-end;
         }
         .main-action-panel .intent-category-list,
-        .main-action-panel .tool-grid,
         .main-action-panel .tool-form-grid,
         .main-action-panel .insert-choice-list { display: flex; flex-direction: column; }
         .main-action-panel .intent-category-actions,
@@ -2845,6 +2874,24 @@
             flex-direction: row;
             flex-wrap: wrap;
         }
+        .main-action-panel .intent-category-actions {
+            display: grid;
+            grid-template-columns: repeat(3, var(--main-action-key-width));
+            grid-template-rows: repeat(3, 58px);
+            grid-auto-flow: row;
+        }
+        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; grid-row: 3; }
+        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; grid-row: 3; }
+        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 3; grid-row: 3; }
+        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; grid-row: 2; }
+        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 3; grid-row: 2; }
+        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 3; grid-row: 1; }
+        .main-action-panel .tool-grid {
+            display: flex;
+            flex-flow: row wrap;
+            justify-content: flex-end;
+            width: min(324px, 100%);
+        }
         .main-action-panel button,
         .main-action-panel .intent-category-button,
         .main-action-panel .tool-grid > button,
@@ -2853,7 +2900,7 @@
         .main-action-panel .intent-category-actions .cancel-selection-button,
         .main-action-panel .builder-action-row button {
             flex: 0 0 auto;
-            width: clamp(76px, 10vw, 104px);
+            width: var(--main-action-key-width);
             min-width: 76px;
             min-height: 52px;
             margin: 0;
@@ -2910,9 +2957,37 @@
         body.expression-builder-active.left-handed .quadrant-menu,
         body.expression-builder-active .quadrant-tools,
         body.expression-builder-active.left-handed .quadrant-tools,
-        body.expression-builder-active .left-panel,
-        body.expression-builder-active.left-handed .left-panel,
         body.expression-builder-active .main-action-panel { display: none; }
+
+        body.selection-active:not(.expression-builder-active) .quadrant-menu,
+        body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }
+
+        body.expression-builder-active .app-container,
+        body.expression-builder-active.left-handed .app-container {
+            grid-template-rows:
+                calc(var(--workspace-panel-split) - var(--divider-half-size))
+                var(--divider-size)
+                calc(100% - var(--workspace-panel-split) - var(--divider-half-size));
+        }
+        body.expression-builder-active .left-panel,
+        body.expression-builder-active.left-handed .left-panel {
+            display: flex;
+            overflow: auto;
+        }
+
+        .builder-keypad-panel {
+            grid-template-columns: repeat(5, var(--main-key-size));
+            grid-template-rows: repeat(6, var(--main-key-size));
+            gap: var(--main-key-gap);
+            width: var(--builder-keypad-width);
+            height: var(--builder-keypad-height);
+            min-height: 0;
+        }
+        .builder-keypad-panel button,
+        .builder-keypad-panel .panel-tool-menu button,
+        .builder-keypad-panel .builder-action-row button {
+            font-size: 13px;
+        }
 
         @media (max-width: 520px) {
             .app-container,
@@ -2921,8 +2996,10 @@
                 --main-key-gap: 5px;
                 --main-keypad-width: 183px;
                 --main-keypad-height: 89px;
+                --builder-keypad-width: 230px;
+                --builder-keypad-height: 277px;
+                --main-action-key-width: clamp(68px, 22vw, 92px);
                 --main-control-edge: max(8px, env(safe-area-inset-right));
-                --main-control-stack-height: 149px;
             }
             .quadrant-tools,
             body.left-handed .quadrant-tools { margin-bottom: max(8px, env(safe-area-inset-bottom)); }
@@ -3003,7 +3080,7 @@
                     <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" data-hold-description="Make the expression smaller.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and recenter" data-hold-description="Return the expression to 100% zoom and center it in the workspace.">
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and return to top left" data-hold-description="Return the expression to 100% zoom at the upper-left of the workspace.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><text x="12" y="15" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor">100</text></svg>
                     </button>
                     <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Return to the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
@@ -3051,11 +3128,11 @@
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
             <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
-        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and multipurpose panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
+        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="45" aria-valuemax="90" aria-valuenow="78"></div>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-main-corner-controls"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-main-corner-controls"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-adjustable-workspace-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-adjustable-workspace-layout"></script>
 
 </body>
 </html>

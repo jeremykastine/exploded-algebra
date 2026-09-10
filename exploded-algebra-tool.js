@@ -3399,7 +3399,6 @@ Promise.resolve().then(() => {
             renderMoveHistoryControls(level);
 
             renderLeftPanelMath();
-            scheduleTopPanelHeightUpdate(level);
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
@@ -3704,9 +3703,7 @@ Promise.resolve().then(() => {
             ctx.font = SETTINGS.textFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            const centeredX = Math.max(SETTINGS.marginX, (neededWidth - expressionWidth) / 2);
-            const centeredY = Math.max(SETTINGS.marginY, (neededHeight - expressionHeight) / 2);
-            layoutExpressionWithSettings(expressionRoot, ctx, SETTINGS, centeredX, centeredY);
+            layoutExpressionWithSettings(expressionRoot, ctx, SETTINGS, SETTINGS.marginX, SETTINGS.marginY);
             applyWorkspaceZoomSizing();
         }
 
@@ -3832,8 +3829,8 @@ ctx.font = SETTINGS.textFont;
             const scaledHeight = Math.ceil(height * workspaceZoom);
             workspaceSvg.style.width = `${scaledWidth}px`;
             workspaceSvg.style.height = `${scaledHeight}px`;
-            workspaceSvg.style.marginLeft = `${Math.max(0, (svgContainer.clientWidth - scaledWidth) / 2)}px`;
-            workspaceSvg.style.marginTop = `${Math.max(0, (svgContainer.clientHeight - scaledHeight) / 2)}px`;
+            workspaceSvg.style.marginLeft = "0px";
+            workspaceSvg.style.marginTop = "0px";
         }
 
         function updateWorkspaceToolbar() {
@@ -3916,8 +3913,8 @@ ctx.font = SETTINGS.textFont;
                 applyWorkspaceZoomSizing();
             }
             requestAnimationFrame(() => {
-                svgContainer.scrollLeft = Math.max(0, (svgContainer.scrollWidth - svgContainer.clientWidth) / 2);
-                svgContainer.scrollTop = Math.max(0, (svgContainer.scrollHeight - svgContainer.clientHeight) / 2);
+                svgContainer.scrollLeft = 0;
+                svgContainer.scrollTop = 0;
             });
             setWorkspaceMode("select");
         }
@@ -3968,7 +3965,6 @@ ctx.font = SETTINGS.textFont;
             }
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
-                updateTopPanelHeight();
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
                     drawExpression();
@@ -3993,8 +3989,8 @@ ctx.font = SETTINGS.textFont;
                 workspaceZoom = 1;
                 applyWorkspaceZoomSizing();
                 requestAnimationFrame(() => {
-                    svgContainer.scrollLeft = Math.max(0, (svgContainer.scrollWidth - svgContainer.clientWidth) / 2);
-                    svgContainer.scrollTop = Math.max(0, (svgContainer.scrollHeight - svgContainer.clientHeight) / 2);
+                    svgContainer.scrollLeft = 0;
+                    svgContainer.scrollTop = 0;
                 });
                 return;
             }
@@ -9456,8 +9452,10 @@ function renderToolArea() {
             hideFloatingMenu();
             hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
+            const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
             syncBuilderWorkspaceView(builderActive);
             document.body.classList.toggle("expression-builder-active", builderActive);
+            document.body.classList.toggle("selection-active", selectionActive);
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
             }
