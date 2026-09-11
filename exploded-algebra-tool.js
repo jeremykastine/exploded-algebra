@@ -9398,7 +9398,10 @@ ctx.font = SETTINGS.textFont;
                 const enabled = operationTypes.includes(type);
                 const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
                 const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
-                return `<button class="builder-operator-button builder-${type}-button" aria-label="${operationNames[type]}"${actionAttrs}${title}>${getBuilderSymbolIcon(type)}</button>`;
+                const plainGlyph = type === "sum" ? "+" : type === "prod" ? "·" : "";
+                const content = plainGlyph || getBuilderSymbolIcon(type);
+                const plainClass = plainGlyph ? " builder-plain-operator-button" : "";
+                return `<button class="builder-operator-button builder-${type}-button${plainClass}" aria-label="${operationNames[type]}"${actionAttrs}${title}>${content}</button>`;
             };
             const negativeOneButton = builderAllowsNegativeOne(toolName)
                 ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`

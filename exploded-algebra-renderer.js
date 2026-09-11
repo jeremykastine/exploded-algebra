@@ -50,6 +50,8 @@ const SETTINGS = {
     inverseOperatorColor: "white",
     inverseDenominatorFill: "white",
     inverseDenominatorColor: "black",
+    negativeUnitFillColor: "black",
+    negativeUnitTextColor: "white",
     bufferSize: 16,
     operatorThickness: 12,
     // Keep the previous flared addition beam available as "flared" while the
@@ -165,16 +167,12 @@ function getComponentGap(settings) {
     return settings.bufferSize || settings.debugComponentBuffer || 16;
 }
 
-function isBorderedNegativeOne(node) {
+function isNegativeUnit(node) {
     return !!node && node.type === "value" && String(node.value) === "-1";
 }
 
-function getNegOneBorderPadding(settings) {
-    return Math.max(2, getOperatorThickness(settings) * 0.14);
-}
-
-function getNegOneBorderLineWidth(settings) {
-    return Math.max(1, getStructuralStrokeWidth(settings));
+function getNegativeUnitPadding(settings) {
+    return Math.max(3, getOperatorThickness(settings) * 0.22);
 }
 
 function drawDebugComponentBounds(drawingContext, left, top, right, bottom, settings) {
@@ -709,13 +707,11 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const textHeight = Math.abs(metrics.actualBoundingBoxAscent || 0) + Math.abs(metrics.actualBoundingBoxDescent || 0);
         node.layout.textWidth = Math.max(1, textWidth || metrics.width || 0);
         node.layout.textHeight = Math.max(1, textHeight);
-        if (isBorderedNegativeOne(node)) {
-            const pad = getNegOneBorderPadding(settings);
-            const lineWidth = getNegOneBorderLineWidth(settings);
-            node.layout.negOneBorderPad = pad;
-            node.layout.negOneBorderLineWidth = lineWidth;
-            node.layout.width = node.layout.textWidth + pad * 2 + lineWidth;
-            node.layout.height = node.layout.textHeight + pad * 2 + lineWidth;
+        if (isNegativeUnit(node)) {
+            const pad = getNegativeUnitPadding(settings);
+            node.layout.negativeUnitPadding = pad;
+            node.layout.width = node.layout.textWidth + pad * 2;
+            node.layout.height = node.layout.textHeight + pad * 2;
         } else {
             node.layout.width = node.layout.textWidth;
             node.layout.height = node.layout.textHeight;
@@ -1579,24 +1575,15 @@ function drawValueNodeToContext(node, drawingContext, settings, foregroundColor 
     let tightTop = cy - tightHeight / 2;
     let tightBottom = cy + tightHeight / 2;
 
-    if (isBorderedNegativeOne(node)) {
-        const lineWidth = node.layout.negOneBorderLineWidth || getNegOneBorderLineWidth(settings);
-        const borderHalf = lineWidth / 2;
-        const borderLeft = node.left() + borderHalf;
-        const borderTop = node.top() + borderHalf;
-        const borderWidth = Math.max(0, node.layout.width - lineWidth);
-        const borderHeight = Math.max(0, node.layout.height - lineWidth);
+    if (isNegativeUnit(node)) {
         drawingContext.save();
-        drawingContext.strokeStyle = foregroundColor;
-        drawingContext.lineWidth = lineWidth;
-        drawingContext.beginPath();
-        drawingContext.rect(borderLeft, borderTop, borderWidth, borderHeight);
-        drawingContext.stroke();
+        drawingContext.fillStyle = settings.negativeUnitFillColor || "black";
+        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
+        drawingContext.fillStyle = settings.negativeUnitTextColor || "white";
+        drawingContext.fillText(node.value, cx, cy);
         drawingContext.restore();
-        tightLeft = node.left();
-        tightRight = node.right();
-        tightTop = node.top();
-        tightBottom = node.bottom();
+        drawDebugComponentBounds(drawingContext, node.left(), node.top(), node.right(), node.bottom(), settings);
+        return;
     }
 
     drawDebugComponentBounds(drawingContext, tightLeft, tightTop, tightRight, tightBottom, settings);
