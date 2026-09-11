@@ -5597,22 +5597,21 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (node.type === "inv") {
-                const borderThickness = node.layout.inverseBorderThickness || SETTINGS.operatorThickness || 14;
-                const borderHalf = borderThickness / 2;
-                const left = node.left() + borderHalf;
-                const top = node.top() + borderHalf;
-                const right = node.right() - borderHalf;
-                const bottom = node.bottom() - borderHalf;
                 candidates.push({
                     node,
                     firstPart: 0,
                     lastPart: 0,
-                    distance: distanceFromPointToSegments(x, y, [
-                        [left, top, right, top],
-                        [right, top, right, bottom],
-                        [right, bottom, left, bottom],
-                        [left, bottom, left, top]
-                    ])
+                    // The numerator, bar, and black surround form one inverse
+                    // target. Descendants still win over it on the denominator
+                    // because their selectable areas are smaller.
+                    distance: distanceFromPointToRect(
+                        x,
+                        y,
+                        node.left(),
+                        node.top(),
+                        node.right(),
+                        node.bottom()
+                    )
                 });
             }
         }

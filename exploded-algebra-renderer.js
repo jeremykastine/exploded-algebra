@@ -46,7 +46,10 @@ const SETTINGS = {
     overlayAlpha: 0.25,
     previewDurationMs: 500,
     postviewDurationMs: 500,
-    inverseBorderColor: "rgb(170,170,170)",
+    inverseFillColor: "black",
+    inverseOperatorColor: "white",
+    inverseDenominatorFill: "white",
+    inverseDenominatorColor: "black",
     bufferSize: 16,
     operatorThickness: 12,
     // Keep the previous flared addition beam available as "flared" while the
@@ -130,16 +133,32 @@ function getOperatorHalfSize(settings) {
     return getOperatorThickness(settings) / 2;
 }
 
-function getInverseOperatorRadius(settings) {
-    return getOperatorHalfSize(settings);
+function getInverseOuterPadding(settings) {
+    return Math.max(getOperatorThickness(settings), getComponentGap(settings) * 0.75);
 }
 
-function getInverseBorderThickness(settings) {
-    return getOperatorThickness(settings);
+function getInverseDenominatorPaddingX(settings) {
+    return Math.max(getOperatorThickness(settings) * 0.75, getComponentGap(settings) * 0.5);
 }
 
-function getInverseInnerGap(settings) {
-    return getComponentGap(settings);
+function getInverseDenominatorPaddingY(settings) {
+    return Math.max(getOperatorThickness(settings) * 0.4, getComponentGap(settings) * 0.3);
+}
+
+function getInverseNumeratorGap(settings) {
+    return Math.max(getOperatorThickness(settings) * 0.4, getComponentGap(settings) * 0.4);
+}
+
+function getInverseBarGap(settings) {
+    return Math.max(getOperatorThickness(settings) * 0.35, getComponentGap(settings) * 0.35);
+}
+
+function getInverseBarThickness(settings) {
+    return Math.max(2, getOperatorThickness(settings) * 0.18);
+}
+
+function getInverseCornerRadius(settings) {
+    return Math.max(2, getOperatorThickness(settings) * 0.45);
 }
 
 function getComponentGap(settings) {
@@ -574,6 +593,19 @@ class SvgDrawingContext {
         this.appendSvgElement(rect);
     }
 
+    fillRoundedRect(x, y, width, height, radius) {
+        const rect = document.createElementNS(SVG_NS, "rect");
+        rect.setAttribute("x", String(x));
+        rect.setAttribute("y", String(y));
+        rect.setAttribute("width", String(width));
+        rect.setAttribute("height", String(height));
+        const safeRadius = Math.max(0, Math.min(Number(radius) || 0, width / 2, height / 2));
+        rect.setAttribute("rx", String(safeRadius));
+        rect.setAttribute("ry", String(safeRadius));
+        this.applyPaintAttributes(rect, "fill");
+        this.appendSvgElement(rect);
+    }
+
     strokeRect(x, y, width, height) {
         const rect = document.createElementNS(SVG_NS, "rect");
         rect.setAttribute("x", String(x));
@@ -740,18 +772,53 @@ function measureNodeWithContext(node, drawingContext, settings) {
         node.layout.vLines = [0, node.layout.width];
     } else if (node.type === "inv") {
         const [arg] = node.args;
-        const operatorRadius = getInverseOperatorRadius(settings);
-        const borderThickness = getInverseBorderThickness(settings);
-        const innerGap = getInverseInnerGap(settings);
-        const contentOffset = borderThickness + innerGap;
-        node.layout.inverseOperatorRadius = operatorRadius;
-        node.layout.inverseBorderThickness = borderThickness;
-        node.layout.inverseInnerGap = innerGap;
-        node.layout.inverseContentOffset = contentOffset;
-        node.layout.width = arg.layout.width + borderThickness * 2 + innerGap * 2;
-        node.layout.height = arg.layout.height + borderThickness * 2 + innerGap * 2;
-        node.layout.vLines = [0, operatorRadius, contentOffset, node.layout.width];
-        node.layout.hLines = [0, operatorRadius, contentOffset, node.layout.height];
+        const oneMetrics = drawingContext.measureText("1");
+        const numeratorWidth = Math.max(
+            1,
+            (Math.abs(oneMetrics.actualBoundingBoxLeft || 0) +
+                Math.abs(oneMetrics.actualBoundingBoxRight || 0)) ||
+                oneMetrics.width ||
+                0
+        );
+        const numeratorHeight = Math.max(
+            1,
+            Math.abs(oneMetrics.actualBoundingBoxAscent || 0) +
+                Math.abs(oneMetrics.actualBoundingBoxDescent || 0)
+        );
+        const outerPadding = getInverseOuterPadding(settings);
+        const denominatorPaddingX = getInverseDenominatorPaddingX(settings);
+        const denominatorPaddingY = getInverseDenominatorPaddingY(settings);
+        const numeratorGap = getInverseNumeratorGap(settings);
+        const barGap = getInverseBarGap(settings);
+        const barThickness = getInverseBarThickness(settings);
+        const denominatorBoxWidth = arg.layout.width + denominatorPaddingX * 2;
+        const denominatorBoxHeight = arg.layout.height + denominatorPaddingY * 2;
+        const barWidth = Math.max(denominatorBoxWidth, numeratorWidth + denominatorPaddingX * 2);
+        const width = barWidth + outerPadding * 2;
+        const barTop = outerPadding + numeratorHeight + numeratorGap;
+        const denominatorBoxTop = barTop + barThickness + barGap;
+        const denominatorBoxLeft = (width - denominatorBoxWidth) / 2;
+
+        node.layout.inverseNumeratorWidth = numeratorWidth;
+        node.layout.inverseNumeratorHeight = numeratorHeight;
+        node.layout.inverseOuterPadding = outerPadding;
+        node.layout.inverseDenominatorPaddingX = denominatorPaddingX;
+        node.layout.inverseDenominatorPaddingY = denominatorPaddingY;
+        node.layout.inverseNumeratorGap = numeratorGap;
+        node.layout.inverseBarGap = barGap;
+        node.layout.inverseBarThickness = barThickness;
+        node.layout.inverseBarLeft = outerPadding;
+        node.layout.inverseBarTop = barTop;
+        node.layout.inverseBarWidth = barWidth;
+        node.layout.inverseDenominatorBoxLeft = denominatorBoxLeft;
+        node.layout.inverseDenominatorBoxTop = denominatorBoxTop;
+        node.layout.inverseDenominatorBoxWidth = denominatorBoxWidth;
+        node.layout.inverseDenominatorBoxHeight = denominatorBoxHeight;
+        node.layout.inverseCornerRadius = getInverseCornerRadius(settings);
+        node.layout.width = width;
+        node.layout.height = denominatorBoxTop + denominatorBoxHeight + outerPadding;
+        node.layout.vLines = [0, denominatorBoxLeft, denominatorBoxLeft + denominatorBoxWidth, node.layout.width];
+        node.layout.hLines = [0, barTop, denominatorBoxTop, node.layout.height];
     }
 }
 
@@ -797,8 +864,16 @@ function placeNodeWithSettings(node, x, y, settings) {
         }
     } else if (node.type === "inv") {
         const [arg] = node.args;
-        const contentOffset = node.layout.inverseContentOffset || (getInverseBorderThickness(settings) + getInverseInnerGap(settings));
-        placeNodeWithSettings(arg, x + contentOffset, y + contentOffset, settings);
+        const denominatorBoxLeft = node.layout.inverseDenominatorBoxLeft || 0;
+        const denominatorBoxTop = node.layout.inverseDenominatorBoxTop || 0;
+        const denominatorPaddingX = node.layout.inverseDenominatorPaddingX || getInverseDenominatorPaddingX(settings);
+        const denominatorPaddingY = node.layout.inverseDenominatorPaddingY || getInverseDenominatorPaddingY(settings);
+        placeNodeWithSettings(
+            arg,
+            x + denominatorBoxLeft + denominatorPaddingX,
+            y + denominatorBoxTop + denominatorPaddingY,
+            settings
+        );
         node.layout.childBoxes.push(childBox(arg));
     }
 }
@@ -824,6 +899,27 @@ function drawNodeRecursiveToContext(
     nodeForeground = () => null,
     separatorForeground = () => null
 ) {
+    if (node.type === "inv") {
+        drawInverseBackgroundToContext(node, drawingContext, settings);
+        const denominatorColor = settings.inverseDenominatorColor || "black";
+        const denominatorNodeForeground = child => nodeForeground(child) || denominatorColor;
+        const denominatorSeparatorForeground = (child, separatorIndex) =>
+            separatorForeground(child, separatorIndex) || denominatorColor;
+        for (const child of node.args) {
+            drawNodeRecursiveToContext(
+                child,
+                drawingContext,
+                settings,
+                separatorHidden,
+                separatorFill,
+                denominatorNodeForeground,
+                denominatorSeparatorForeground
+            );
+        }
+        drawInverseForegroundToContext(node, drawingContext, settings);
+        return;
+    }
+
     for (const child of node.args) {
         drawNodeRecursiveToContext(
             child,
@@ -844,6 +940,46 @@ function drawNodeRecursiveToContext(
         nodeForeground,
         separatorForeground
     );
+}
+
+function drawInverseBackgroundToContext(node, drawingContext, settings) {
+    const denominatorLeft = node.left() + (node.layout.inverseDenominatorBoxLeft || 0);
+    const denominatorTop = node.top() + (node.layout.inverseDenominatorBoxTop || 0);
+    const denominatorWidth = node.layout.inverseDenominatorBoxWidth || 0;
+    const denominatorHeight = node.layout.inverseDenominatorBoxHeight || 0;
+    const cornerRadius = node.layout.inverseCornerRadius || getInverseCornerRadius(settings);
+
+    drawingContext.save();
+    drawingContext.fillStyle = settings.inverseFillColor || "black";
+    drawingContext.fillRoundedRect(
+        node.left(),
+        node.top(),
+        node.layout.width,
+        node.layout.height,
+        cornerRadius
+    );
+    drawingContext.fillStyle = settings.inverseDenominatorFill || "white";
+    drawingContext.fillRect(denominatorLeft, denominatorTop, denominatorWidth, denominatorHeight);
+    drawingContext.restore();
+}
+
+function drawInverseForegroundToContext(node, drawingContext, settings) {
+    const operatorColor = settings.inverseOperatorColor || "white";
+    const numeratorCenterX = (node.left() + node.right()) / 2;
+    const numeratorCenterY = node.top() +
+        (node.layout.inverseOuterPadding || getInverseOuterPadding(settings)) +
+        (node.layout.inverseNumeratorHeight || parseFontSize(settings.textFont)) / 2;
+    const barLeft = node.left() + (node.layout.inverseBarLeft || 0);
+    const barTop = node.top() + (node.layout.inverseBarTop || 0);
+    const barWidth = node.layout.inverseBarWidth || node.layout.width;
+    const barThickness = node.layout.inverseBarThickness || getInverseBarThickness(settings);
+
+    drawingContext.save();
+    drawingContext.fillStyle = operatorColor;
+    drawingContext.fillText("1", numeratorCenterX, numeratorCenterY);
+    drawingContext.fillRect(barLeft, barTop, barWidth, barThickness);
+    drawingContext.restore();
+    drawDebugComponentBounds(drawingContext, node.left(), node.top(), node.right(), node.bottom(), settings);
 }
 
 function nodeNeedsSeparatorFlares(node) {
@@ -1029,21 +1165,10 @@ function drawNodeToContext(
             }
         }
     } else if (node.type === "inv") {
-        const borderThickness = node.layout.inverseBorderThickness || getInverseBorderThickness(settings);
-        const borderHalf = borderThickness / 2;
-        const left = node.left() + borderHalf;
-        const top = node.top() + borderHalf;
-        const right = node.right() - borderHalf;
-        const bottom = node.bottom() - borderHalf;
-
-        drawingContext.save();
-        drawingContext.strokeStyle = settings.inverseBorderColor || "rgb(170,170,170)";
-        drawingContext.lineWidth = borderThickness;
-        drawingContext.beginPath();
-        drawingContext.rect(left, top, Math.max(0, right - left), Math.max(0, bottom - top));
-        drawingContext.stroke();
-        drawingContext.restore();
-        drawDebugComponentBounds(drawingContext, node.left(), node.top(), node.right(), node.bottom(), settings);
+        // Recursive rendering sandwiches the denominator between these layers.
+        // Direct node rendering remains complete for callers that need it.
+        drawInverseBackgroundToContext(node, drawingContext, settings);
+        drawInverseForegroundToContext(node, drawingContext, settings);
     }
 }
 
