@@ -3254,6 +3254,230 @@
                 min-height: var(--main-key-size);
             }
         }
+
+        /* The conventional-expression strip always fits its contents and is not user-resizable. */
+        .app-container,
+        body.left-handed .app-container,
+        body.expression-builder-active .app-container,
+        body.expression-builder-active.left-handed .app-container {
+            grid-template-rows: var(--top-panel-height) minmax(0, 1fr);
+        }
+        .left-panel,
+        body.left-handed .left-panel {
+            grid-row: 1;
+        }
+        .main,
+        body.left-handed .main {
+            grid-row: 2;
+        }
+        .divider { display: none !important; }
+
+        /* Full-canvas settings view. */
+        body.settings-active .app-container,
+        body.settings-active.left-handed .app-container {
+            grid-template-rows: minmax(0, 1fr);
+        }
+        body.settings-active .main,
+        body.settings-active.left-handed .main {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        body.settings-active .left-panel,
+        body.settings-active .quadrant-menu,
+        body.settings-active .quadrant-tools,
+        body.settings-active .main-action-panel,
+        body.settings-active .builder-keypad-panel,
+        body.settings-active .right-top-bar,
+        body.settings-active #svgContainer,
+        body.settings-active .numerical-rewrite-error,
+        body.settings-active .press-hold-popover,
+        body.settings-active .step-guidance-arrow {
+            display: none !important;
+        }
+        .level-menu-panel {
+            position: fixed;
+            z-index: 200;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            width: auto;
+            max-height: none;
+            padding: clamp(18px, 4vw, 42px);
+            overflow: auto;
+            border: 0;
+            border-radius: 0;
+            background: #fff;
+            box-shadow: none;
+        }
+        .level-menu-panel.hidden { display: none; }
+        .level-menu-title {
+            width: min(520px, 100%);
+            margin: 0 auto clamp(18px, 3vh, 30px);
+            font-size: clamp(22px, 4vw, 32px);
+            text-align: center;
+        }
+        .settings-control-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: min(520px, 100%);
+            margin: 0 auto;
+        }
+        .level-menu-actions,
+        .layout-size-controls,
+        .bar-style-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 0;
+            padding: 0;
+            border: 0;
+        }
+        .layout-size-control {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 9px;
+            padding: 12px;
+            border: 1px solid #d5d5d5;
+            border-radius: 8px;
+        }
+        .layout-size-label {
+            font-size: 14px;
+            text-align: center;
+        }
+        .layout-size-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        body.left-handed .layout-size-buttons { flex-direction: column; }
+        .level-menu-panel .level-menu-actions button,
+        .level-menu-panel .layout-size-buttons button,
+        .level-menu-panel .completion-export-button,
+        .exit-settings-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-width: 0;
+            height: auto;
+            min-height: 46px;
+            margin: 0;
+            padding: 10px 14px;
+            border: 1px solid #8d8d8d;
+            border-radius: 7px;
+            background: #fff;
+            color: #222;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .settings-button-sample {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-self: center;
+            width: var(--main-key-size);
+            height: var(--main-key-size);
+            min-width: var(--main-key-size);
+            min-height: var(--main-key-size);
+            padding: 4px;
+            border: 1px solid #8d8d8d;
+            border-radius: 7px;
+            background: #fff;
+            font-size: clamp(9px, calc(var(--main-key-size) * 0.25), 15px);
+            font-weight: 800;
+            pointer-events: none;
+        }
+        .settings-expression-sample {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--steps-font-size);
+        }
+        .bar-style-control label {
+            margin: 2px 0 0;
+            font-size: 14px;
+            text-align: center;
+        }
+        .bar-style-control .panel-select {
+            min-height: 46px;
+            margin: 0;
+            border-radius: 7px;
+            font-size: 14px;
+            text-align: center;
+        }
+        #moveHistoryControls:not(:empty) { padding: 0; }
+        .exit-settings-button {
+            flex: 0 0 auto;
+            width: min(520px, 100%);
+            margin: auto auto 0;
+            margin-top: clamp(22px, 5vh, 48px);
+            border-color: #7040a0;
+            background: #7040a0;
+            color: #fff;
+        }
+
+        /* Step guidance shown automatically and when a step is held. */
+        .press-hold-popover-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: min(760px, 100%);
+        }
+        .press-hold-popover .step-guidance-expression {
+            margin-top: 8px;
+            font-size: clamp(20px, 4vw, 34px);
+            font-weight: 700;
+        }
+        .step-guidance-arrow {
+            position: fixed;
+            z-index: 210;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: visible;
+            pointer-events: none;
+        }
+        .step-guidance-arrow.hidden { display: none; }
+        .step-guidance-arrow-path {
+            fill: none;
+            stroke: #7040a0;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+        #stepGuidanceArrowhead path { fill: #7040a0; }
+
+        /* Bold, optically consistent Expression Builder symbols. */
+        .builder-keypad-panel button,
+        .builder-keypad-panel .panel-tool-menu button,
+        .builder-keypad-panel .builder-action-row button {
+            font-weight: 800;
+        }
+        .builder-keypad-panel [data-builder-action="digit"] {
+            font-size: clamp(20px, calc(var(--main-key-size) * 0.48), 30px) !important;
+            font-weight: 800;
+        }
+        .builder-keypad-panel .builder-symbol-icon {
+            width: 78%;
+            height: 78%;
+            max-width: 78%;
+            max-height: 78%;
+        }
+        .builder-keypad-panel .builder-sum-button .builder-symbol-icon,
+        .builder-keypad-panel .builder-prod-button .builder-symbol-icon {
+            transform: none;
+        }
+        .builder-keypad-panel .builder-undo-button svg {
+            width: 72%;
+            height: 72%;
+        }
+        .builder-keypad-panel .builder-undo-button svg path { stroke-width: 2.5; }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -3273,7 +3497,7 @@
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
                     <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l6.8 16 2.2-6 6-2.2L5 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.6"/></svg>
                     </button>
                 </div>
                 <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
@@ -3295,47 +3519,48 @@
         <div class="main" id="mainArea">
             <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Settings">
                 <h2 class="level-menu-title">Settings</h2>
-                <div class="level-menu-actions" aria-label="Exercise and layout controls">
-                    <button id="resetExerciseButton" class="reset-exercise-button" type="button" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.2 7.2A7 7 0 1 1 5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 11.5h6M12 8.5v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                    </button>
-                    <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Reflect every button arrangement for the other hand while keeping the numeric keypad ordered as one block.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="4" width="5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h5.5l-2-2M15 16H9.5l2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </button>
-                </div>
-                <div class="layout-size-controls" aria-label="Size controls">
+                <div class="settings-control-stack">
+                    <div class="level-menu-actions" aria-label="Exercise and layout controls">
+                        <button id="resetExerciseButton" class="reset-exercise-button" type="button" data-hold-description="Restart the current exercise from its original expression.">Reset Exercise</button>
+                        <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Reflect every button arrangement for the other hand while keeping the numeric keypad ordered as one block.">Switch to Left-Handed Layout</button>
+                    </div>
+                    <div class="layout-size-controls" aria-label="Size controls">
                     <div class="layout-size-control">
                         <span class="layout-size-label">Button size <output id="buttonSizeValue" class="layout-size-value">44 px</output></span>
+                        <button id="buttonSizeSample" class="settings-button-sample" type="button" tabindex="-1" aria-hidden="true">ABC</button>
                         <div class="layout-size-buttons" role="group" aria-label="Button size">
-                            <button type="button" data-layout-action="button-smaller" aria-label="Make buttons smaller" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">−</button>
-                            <button type="button" data-layout-action="button-larger" aria-label="Make buttons larger" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">+</button>
+                            <button type="button" data-layout-action="button-smaller" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">Smaller</button>
+                            <button type="button" data-layout-action="button-larger" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">Larger</button>
                         </div>
                     </div>
                     <div class="layout-size-control">
                         <span class="layout-size-label">Steps font size <output id="stepsFontSizeValue" class="layout-size-value">15 px</output></span>
+                        <div class="settings-expression-sample" aria-label="Sample expression"><span id="settingsExpressionSample" class="katex-placeholder" data-expr="2x+3">2x + 3</span></div>
                         <div class="layout-size-buttons" role="group" aria-label="Steps font size">
-                            <button type="button" data-layout-action="steps-font-smaller" aria-label="Make steps text smaller" data-hold-description="Make the conventional steps text smaller and refit the panel height.">−</button>
-                            <button type="button" data-layout-action="steps-font-larger" aria-label="Make steps text larger" data-hold-description="Make the conventional steps text larger and refit the panel height.">+</button>
+                            <button type="button" data-layout-action="steps-font-smaller" data-hold-description="Make the conventional steps text smaller and refit the panel height.">Smaller</button>
+                            <button type="button" data-layout-action="steps-font-larger" data-hold-description="Make the conventional steps text larger and refit the panel height.">Larger</button>
                         </div>
                     </div>
+                    </div>
+                    <div class="bar-style-control">
+                        <label for="sumBarStyleSelect">Addition style</label>
+                        <select id="sumBarStyleSelect" class="panel-select">
+                            <option value="gradient">Gradient</option>
+                            <option value="flared">Flared ends</option>
+                            <option value="nested-parentheses">Nested parentheses</option>
+                            <option value="outward-parentheses">Outward parentheses</option>
+                        </select>
+                        <label for="productBarStyleSelect">Multiplication style</label>
+                        <select id="productBarStyleSelect" class="panel-select">
+                            <option value="gradient">Gradient</option>
+                            <option value="flared">Flared ends</option>
+                            <option value="nested-parentheses">Nested parentheses</option>
+                            <option value="outward-parentheses">Outward parentheses</option>
+                        </select>
+                    </div>
+                    <div id="moveHistoryControls"></div>
                 </div>
-                <div class="bar-style-control">
-                    <label for="sumBarStyleSelect">Addition style</label>
-                    <select id="sumBarStyleSelect" class="panel-select">
-                        <option value="gradient">Gradient</option>
-                        <option value="flared">Flared ends</option>
-                        <option value="nested-parentheses">Nested parentheses</option>
-                        <option value="outward-parentheses">Outward parentheses</option>
-                    </select>
-                    <label for="productBarStyleSelect">Multiplication style</label>
-                    <select id="productBarStyleSelect" class="panel-select">
-                        <option value="gradient">Gradient</option>
-                        <option value="flared">Flared ends</option>
-                        <option value="nested-parentheses">Nested parentheses</option>
-                        <option value="outward-parentheses">Outward parentheses</option>
-                    </select>
-                </div>
-                <div id="moveHistoryControls"></div>
+                <button id="exitSettingsButton" class="exit-settings-button" type="button">Exit Settings</button>
             </div>
             <div id="rightTopBar" class="right-top-bar">
                 <div class="right-top-row">
@@ -3375,8 +3600,15 @@
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
             <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
-        <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="6" aria-valuemax="55" aria-valuenow="22"></div>
     </div>
+    <svg id="stepGuidanceArrow" class="step-guidance-arrow hidden" aria-hidden="true">
+        <defs>
+            <marker id="stepGuidanceArrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z"></path>
+            </marker>
+        </defs>
+        <path class="step-guidance-arrow-path" marker-end="url(#stepGuidanceArrowhead)"></path>
+    </svg>
     <div id="modeChoiceBackdrop" class="mode-choice-backdrop hidden">
         <section class="mode-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-describedby="modeChoicePrompt">
             <h2 id="modeChoiceTitle">Choose a mode</h2>
@@ -3388,8 +3620,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-guided-mode-choice"></script>
-    <script src="exploded-algebra-tool.js?v=20260911-recordable-undo"></script>
+    <script src="exploded-algebra-renderer.js?v=20260911-step-guidance"></script>
+    <script src="exploded-algebra-tool.js?v=20260911-step-guidance"></script>
 
 </body>
 </html>

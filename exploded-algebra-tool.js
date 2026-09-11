@@ -619,12 +619,10 @@ Promise.resolve().then(() => {
             }
             if (categoryId === "commute") {
                 return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <g transform="translate(18 2)">
-                        <path class="icon-stroke" d="M32 7 A25 25 0 0 1 57 32"/><path class="icon-fill" d="M57 39 L51 29 L63 29 Z"/>
-                        <path class="icon-stroke" d="M57 32 A25 25 0 0 1 32 57"/><path class="icon-fill" d="M25 57 L35 51 L35 63 Z"/>
-                        <path class="icon-stroke" d="M32 57 A25 25 0 0 1 7 32"/><path class="icon-fill" d="M7 25 L13 35 L1 35 Z"/>
-                        <path class="icon-stroke" d="M7 32 A25 25 0 0 1 32 7"/><path class="icon-fill" d="M39 7 L29 13 L29 1 Z"/>
-                    </g>
+                    <path class="icon-stroke" d="M33 12 C44 4 58 4 68 12"/><path class="icon-fill" d="M64 7 L76 14 L64 19 Z"/>
+                    <path class="icon-stroke" d="M79 24 C85 34 82 46 73 54"/><path class="icon-fill" d="M79 49 L70 61 L67 49 Z"/>
+                    <path class="icon-stroke" d="M61 63 C49 68 36 64 28 56"/><path class="icon-fill" d="M33 62 L20 55 L32 49 Z"/>
+                    <path class="icon-stroke" d="M18 44 C14 33 18 21 28 14"/><path class="icon-fill" d="M22 17 L31 7 L34 19 Z"/>
                 </svg>`;
             }
             if (categoryId === "insert") {
@@ -1225,7 +1223,9 @@ Promise.resolve().then(() => {
         const productBarStyleSelect = document.getElementById("productBarStyleSelect");
         const buttonSizeValue = document.getElementById("buttonSizeValue");
         const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
-        const divider = document.getElementById("divider");
+        const settingsExpressionSample = document.getElementById("settingsExpressionSample");
+        const exitSettingsButton = document.getElementById("exitSettingsButton");
+        const stepGuidanceArrow = document.getElementById("stepGuidanceArrow");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const svgContainer = document.getElementById("svgContainer");
@@ -1276,10 +1276,8 @@ Promise.resolve().then(() => {
         let stableExpressionState = null;
 
         let internalClipboardText = "";
-        let workspacePanelSplit = window.innerWidth <= 650 ? 74 : 78;
         let mainButtonSize = window.innerWidth <= 520 ? 42 : 44;
         let stepsFontSize = 15;
-        let activeDividerPointerId = null;
         const MAIN_BUTTON_SIZE_MIN = 34;
         const MAIN_BUTTON_SIZE_MAX = 62;
         const MAIN_BUTTON_SIZE_STEP = 4;
@@ -1288,10 +1286,6 @@ Promise.resolve().then(() => {
         const STEPS_FONT_SIZE_MAX = 26;
         const STEPS_FONT_SIZE_STEP = 1;
         const STEPS_FONT_SIZE_STORAGE_KEY = "explodedAlgebraStepsFontSizeV1";
-
-        function getCurrentPanelSplitLimits() {
-            return { min: 45, max: 94 };
-        }
 
         function updateLayoutSizeControls() {
             if (buttonSizeValue) {
@@ -1308,6 +1302,19 @@ Promise.resolve().then(() => {
             if (buttonLarger) buttonLarger.disabled = mainButtonSize >= MAIN_BUTTON_SIZE_MAX;
             if (stepsFontSmaller) stepsFontSmaller.disabled = stepsFontSize <= STEPS_FONT_SIZE_MIN;
             if (stepsFontLarger) stepsFontLarger.disabled = stepsFontSize >= STEPS_FONT_SIZE_MAX;
+        }
+
+        function renderSettingsExpressionSample() {
+            if (!settingsExpressionSample) {
+                return;
+            }
+            const expression = settingsExpressionSample.getAttribute("data-expr") || "2x+3";
+            if (!window.katex) {
+                settingsExpressionSample.textContent = "2x + 3";
+                return;
+            }
+            settingsExpressionSample.innerHTML = "";
+            katex.render(expression, settingsExpressionSample, { throwOnError: false, displayMode: false });
         }
 
         function loadSavedMainButtonSize() {
@@ -1358,108 +1365,9 @@ Promise.resolve().then(() => {
             scheduleTopPanelHeightUpdate(getCurrentLevel());
         }
 
-        function updateDividerAccessibility() {
-            const limits = getCurrentPanelSplitLimits();
-            const stepsPanelPercent = 100 - workspacePanelSplit;
-            divider.setAttribute("aria-orientation", "horizontal");
-            divider.setAttribute("aria-valuemin", String(100 - limits.max));
-            divider.setAttribute("aria-valuemax", String(100 - limits.min));
-            divider.setAttribute("aria-valuenow", String(Math.round(stepsPanelPercent)));
-            divider.setAttribute(
-                "aria-valuetext",
-                `Conventional steps ${Math.round(stepsPanelPercent)}%, expression workspace ${Math.round(workspacePanelSplit)}%`
-            );
-        }
-
-        function setPanelSplit(percent) {
-            const limits = getCurrentPanelSplitLimits();
-            const boundedPercent = Math.max(limits.min, Math.min(limits.max, percent));
-            workspacePanelSplit = boundedPercent;
-            appContainer.style.setProperty("--workspace-panel-split", `${boundedPercent}%`);
-            updateDividerAccessibility();
-            updateLayoutSizeControls();
-            if (expressionRoot) {
-                drawExpression();
-            }
-        }
-
-        function setPanelSplitFromPointer(event) {
-            const bounds = appContainer.getBoundingClientRect();
-            const position = event.clientY - bounds.top;
-            const total = bounds.height;
-            if (total > 0) {
-                setPanelSplit(((total - position) / total) * 100);
-            }
-        }
-
-        function finishDividerDrag(event) {
-            if (activeDividerPointerId === null) {
-                return;
-            }
-            const pointerId = activeDividerPointerId;
-            activeDividerPointerId = null;
-            document.body.style.cursor = "";
-            if (divider.hasPointerCapture && divider.hasPointerCapture(pointerId)) {
-                try {
-                    divider.releasePointerCapture(pointerId);
-                } catch (error) {
-                    // The browser may already have released capture.
-                }
-            }
-            if (event && event.cancelable) {
-                event.preventDefault();
-            }
-        }
-
-        divider.addEventListener("pointerdown", event => {
-            if (!event.isPrimary || (event.pointerType === "mouse" && event.button !== 0)) {
-                return;
-            }
-            event.preventDefault();
-            activeDividerPointerId = event.pointerId;
-            document.body.style.cursor = "row-resize";
-            if (divider.setPointerCapture) {
-                try {
-                    divider.setPointerCapture(event.pointerId);
-                } catch (error) {
-                    // Continue without capture on older implementations.
-                }
-            }
-            setPanelSplitFromPointer(event);
-        });
-
-        divider.addEventListener("pointermove", event => {
-            if (event.pointerId !== activeDividerPointerId) {
-                return;
-            }
-            event.preventDefault();
-            setPanelSplitFromPointer(event);
-        });
-
-        divider.addEventListener("pointerup", finishDividerDrag);
-        divider.addEventListener("pointercancel", finishDividerDrag);
-        divider.addEventListener("lostpointercapture", finishDividerDrag);
-
-        divider.addEventListener("keydown", event => {
-            const activeKey = event.key === "ArrowUp" || event.key === "ArrowDown";
-            if (!activeKey && event.key !== "Home") {
-                return;
-            }
-            event.preventDefault();
-            if (event.key === "Home") {
-                setPanelSplit(window.innerWidth <= 650 ? 74 : 78);
-                return;
-            }
-            const direction = event.key === "ArrowDown" ? -1 : 1;
-            setPanelSplit(workspacePanelSplit + direction * 2);
-        });
-
         const handlePanelOrientationChange = () => {
-            finishDividerDrag();
-            updateDividerAccessibility();
             scheduleResponsiveLayoutRecalculation();
         };
-        updateDividerAccessibility();
 
 
 
@@ -1901,8 +1809,7 @@ Promise.resolve().then(() => {
                 return;
             }
             const visibleSteps = Array.from(leftPanel.querySelectorAll(".solution-step"));
-            const containerHeight = appContainer.getBoundingClientRect().height;
-            if (!visibleSteps.length || containerHeight <= 0) {
+            if (!visibleSteps.length) {
                 return;
             }
 
@@ -1918,7 +1825,8 @@ Promise.resolve().then(() => {
             const fittedHeight = Math.ceil(
                 largestStepHeight + verticalPadding(panelStyle) + verticalPadding(columnStyle) + 4
             );
-            setPanelSplit(100 - (fittedHeight / containerHeight) * 100);
+            appContainer.style.setProperty("--top-panel-height", `${Math.max(48, fittedHeight)}px`);
+            updateStepGuidanceArrow();
         }
 
         function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
@@ -1942,6 +1850,11 @@ Promise.resolve().then(() => {
         };
         let pressHoldState = null;
         let suppressedPressHoldClick = null;
+        let activeStepGuidanceIndex = null;
+        let activeStepGuidanceSource = null;
+        let initialStepGuidancePending = false;
+        let queuedAutomaticStepIndex = null;
+        let lastAutomaticStepIndex = null;
 
         function isExpressionBuilderButton(target) {
             return !!target.closest("#builderKeypadPanel");
@@ -1979,18 +1892,7 @@ Promise.resolve().then(() => {
 
         function getPressHoldDescriptionHtml(button) {
             if (button.classList.contains("step-hold-target")) {
-                const level = getCurrentLevel();
-                const stepIndex = Number(button.dataset.stepIndex);
-                const descriptions = stepIndex < 0
-                    ? (normalizeTextBlocks(level && level.instruction).length
-                        ? normalizeTextBlocks(level.instruction)
-                        : normalizeTextBlocks(level && level.introduction))
-                    : getStepGuidanceForDisplay(level && level.steps ? level.steps[stepIndex] : null);
-                const title = stepIndex < 0 ? "Original expression" : "Step guidance";
-                const paragraphs = descriptions.length
-                    ? descriptions.map(text => `<p>${escapeHtml(text)}</p>`).join("")
-                    : "<p>No additional instruction is provided for this step.</p>";
-                return `<span class="press-hold-popover-title">${title}</span>${paragraphs}`;
+                return getStepGuidanceHtml(Number(button.dataset.stepIndex));
             }
             const name = getButtonVisibleName(button);
             const titleHtml = `<span class="press-hold-popover-title">${escapeHtml(name)}</span>`;
@@ -2034,14 +1936,171 @@ Promise.resolve().then(() => {
             }
             pressHoldPopover.classList.add("hidden");
             pressHoldPopover.replaceChildren();
+            activeStepGuidanceIndex = null;
+            activeStepGuidanceSource = null;
+            if (stepGuidanceArrow) {
+                stepGuidanceArrow.classList.add("hidden");
+                const path = stepGuidanceArrow.querySelector(".step-guidance-arrow-path");
+                if (path) {
+                    path.removeAttribute("d");
+                }
+            }
+        }
+
+        function getStepGuidanceDetails(stepIndex) {
+            const level = getCurrentLevel();
+            if (!level) {
+                return null;
+            }
+            const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
+            if (stepIndex < 0) {
+                const descriptions = normalizeTextBlocks(level.instruction).length
+                    ? normalizeTextBlocks(level.instruction)
+                    : normalizeTextBlocks(level.introduction);
+                return {
+                    title: "Original expression",
+                    descriptions,
+                    expression: level.initialKatex || (
+                        firstStep
+                            ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
+                            : level.startExpression
+                    )
+                };
+            }
+            const step = level.steps && level.steps[stepIndex];
+            if (!step) {
+                return null;
+            }
+            const cardExpression = levelContent.querySelector(`.step-hold-target[data-step-index="${stepIndex}"] .katex-placeholder`);
+            return {
+                title: "Step guidance",
+                descriptions: getStepGuidanceForDisplay(step),
+                expression: (cardExpression && cardExpression.getAttribute("data-expr")) ||
+                    step.afterKatex || step.katex || step.beforeKatex || step.expression || ""
+            };
+        }
+
+        function getStepGuidanceHtml(stepIndex) {
+            const details = getStepGuidanceDetails(stepIndex);
+            if (!details) {
+                return "";
+            }
+            const paragraphs = details.descriptions.length
+                ? details.descriptions.map(text => `<p>${escapeHtml(text)}</p>`).join("")
+                : "<p>No additional instruction is provided for this step.</p>";
+            const expression = details.expression
+                ? `<div class="step-guidance-expression"><span class="katex-placeholder" data-expr="${escapeHtml(details.expression)}"></span></div>`
+                : "";
+            return `<div class="press-hold-popover-content"><span class="press-hold-popover-title">${escapeHtml(details.title)}</span>${paragraphs}${expression}</div>`;
+        }
+
+        function renderPressHoldPopoverMath() {
+            if (!pressHoldPopover) {
+                return;
+            }
+            pressHoldPopover.querySelectorAll(".katex-placeholder").forEach(node => {
+                const expression = node.getAttribute("data-expr") || "";
+                if (!window.katex) {
+                    node.textContent = expression;
+                    return;
+                }
+                katex.render(expression, node, { throwOnError: false, displayMode: false });
+            });
+        }
+
+        function updateStepGuidanceArrow() {
+            if (!stepGuidanceArrow || activeStepGuidanceIndex === null || !pressHoldPopover || pressHoldPopover.classList.contains("hidden")) {
+                if (stepGuidanceArrow) {
+                    stepGuidanceArrow.classList.add("hidden");
+                }
+                return;
+            }
+            const card = levelContent.querySelector(`.step-hold-target[data-step-index="${activeStepGuidanceIndex}"]`);
+            const content = pressHoldPopover.querySelector(".press-hold-popover-content");
+            const path = stepGuidanceArrow.querySelector(".step-guidance-arrow-path");
+            if (!card || !content || !path) {
+                stepGuidanceArrow.classList.add("hidden");
+                return;
+            }
+            const cardBounds = card.getBoundingClientRect();
+            const contentBounds = content.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const startX = Math.max(8, Math.min(viewportWidth - 8, contentBounds.left + contentBounds.width / 2));
+            const startY = Math.max(8, contentBounds.top - 12);
+            const endX = Math.max(8, Math.min(viewportWidth - 8, cardBounds.left + cardBounds.width / 2));
+            const endY = Math.max(8, cardBounds.bottom + 7);
+            const controlY = endY + Math.max(28, (startY - endY) * 0.42);
+            stepGuidanceArrow.setAttribute("viewBox", `0 0 ${viewportWidth} ${viewportHeight}`);
+            path.setAttribute("d", `M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`);
+            stepGuidanceArrow.classList.remove("hidden");
+        }
+
+        function showStepGuidance(stepIndex, source = "hold") {
+            const html = getStepGuidanceHtml(stepIndex);
+            if (!html || !pressHoldPopover) {
+                return false;
+            }
+            activeStepGuidanceIndex = stepIndex;
+            activeStepGuidanceSource = source;
+            pressHoldPopover.innerHTML = html;
+            pressHoldPopover.classList.remove("hidden");
+            renderPressHoldPopoverMath();
+            requestAnimationFrame(updateStepGuidanceArrow);
+            return true;
         }
 
         function showPressHoldPopover(button) {
             if (!pressHoldPopover || !isPressHoldTargetEligible(button)) {
                 return;
             }
-            pressHoldPopover.innerHTML = getPressHoldDescriptionHtml(button);
+            if (button.classList.contains("step-hold-target")) {
+                showStepGuidance(Number(button.dataset.stepIndex), "hold");
+                return;
+            }
+            activeStepGuidanceIndex = null;
+            activeStepGuidanceSource = null;
+            pressHoldPopover.innerHTML = `<div class="press-hold-popover-content">${getPressHoldDescriptionHtml(button)}</div>`;
             pressHoldPopover.classList.remove("hidden");
+        }
+
+        function resetAutomaticStepGuidance() {
+            hidePressHoldPopover();
+            initialStepGuidancePending = true;
+            queuedAutomaticStepIndex = null;
+            lastAutomaticStepIndex = null;
+        }
+
+        function presentAutomaticStepGuidance(currentStepIndex) {
+            if (document.body.classList.contains("settings-active")) {
+                return;
+            }
+            if (initialStepGuidancePending) {
+                initialStepGuidancePending = false;
+                queuedAutomaticStepIndex = currentStepIndex >= 0 ? currentStepIndex : null;
+                showStepGuidance(-1, "automatic");
+                return;
+            }
+            if (activeStepGuidanceSource === "automatic" && activeStepGuidanceIndex === -1) {
+                queuedAutomaticStepIndex = currentStepIndex >= 0 ? currentStepIndex : null;
+                return;
+            }
+            if (currentStepIndex >= 0 && currentStepIndex !== lastAutomaticStepIndex) {
+                lastAutomaticStepIndex = currentStepIndex;
+                showStepGuidance(currentStepIndex, "automatic");
+            }
+        }
+
+        function dismissStepGuidance() {
+            const shouldShowFirstStep = activeStepGuidanceSource === "automatic" &&
+                activeStepGuidanceIndex === -1 && queuedAutomaticStepIndex !== null;
+            const nextStepIndex = queuedAutomaticStepIndex;
+            queuedAutomaticStepIndex = null;
+            hidePressHoldPopover();
+            if (shouldShowFirstStep) {
+                lastAutomaticStepIndex = nextStepIndex;
+                requestAnimationFrame(() => showStepGuidance(nextStepIndex, "automatic"));
+            }
         }
 
         function preserveNonBuilderButtonTitle(button) {
@@ -2063,13 +2122,15 @@ Promise.resolve().then(() => {
             }
         }
 
-        function clearPendingPressHold() {
+        function clearPendingPressHold(hidePopover = true) {
             if (!pressHoldState) {
                 return;
             }
             clearTimeout(pressHoldState.timerId);
             pressHoldState = null;
-            hidePressHoldPopover();
+            if (hidePopover) {
+                hidePressHoldPopover();
+            }
         }
 
         function installPressHoldDescriptions() {
@@ -2088,7 +2149,27 @@ Promise.resolve().then(() => {
             });
             titleObserver.observe(document.body, { childList: true, subtree: true });
 
+            document.addEventListener("click", event => {
+                if (!activeStepGuidanceSource) {
+                    return;
+                }
+                const suppressedTarget = getPressHoldTarget(event.target);
+                if (
+                    suppressedPressHoldClick &&
+                    Date.now() <= suppressedPressHoldClick.expiresAt &&
+                    suppressedTarget === suppressedPressHoldClick.button
+                ) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                dismissStepGuidance();
+            }, true);
+
             document.addEventListener("pointerdown", event => {
+                if (activeStepGuidanceSource) {
+                    return;
+                }
                 const button = getPressHoldTarget(event.target);
                 if (!isPressHoldTargetEligible(button) || (event.pointerType === "mouse" && event.button !== 0)) {
                     return;
@@ -2127,7 +2208,8 @@ Promise.resolve().then(() => {
                 }
                 const heldButton = pressHoldState.button;
                 const wasShown = pressHoldState.shown;
-                clearPendingPressHold();
+                const heldStep = heldButton.classList.contains("step-hold-target");
+                clearPendingPressHold(!(wasShown && heldStep));
                 if (wasShown) {
                     suppressedPressHoldClick = { button: heldButton, expiresAt: Date.now() + 800 };
                     event.preventDefault();
@@ -2154,6 +2236,7 @@ Promise.resolve().then(() => {
                 }
             }, true);
             window.addEventListener("blur", clearPendingPressHold);
+            leftPanel.addEventListener("scroll", updateStepGuidanceArrow, { passive: true });
             document.addEventListener("visibilitychange", () => {
                 if (document.hidden) {
                     clearPendingPressHold();
@@ -3564,6 +3647,7 @@ Promise.resolve().then(() => {
             if (!level) {
                 levelContent.innerHTML = "";
                 renderMoveHistoryControls(null);
+                hidePressHoldPopover();
                 return;
             }
 
@@ -3624,6 +3708,8 @@ Promise.resolve().then(() => {
             renderMoveHistoryControls(level);
 
             renderLeftPanelMath();
+            scheduleTopPanelHeightUpdate(level);
+            presentAutomaticStepGuidance(currentStepIndex);
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
@@ -3672,6 +3758,7 @@ Promise.resolve().then(() => {
 
             currentLevelIndex = levelIndex;
             resetDemoStateForCurrentLevel();
+            resetAutomaticStepGuidance();
             resetSolutionRecorderForCurrentLevel();
             resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
@@ -3690,7 +3777,6 @@ Promise.resolve().then(() => {
             layoutExpression(expressionRoot);
             updateStepCompletion(getCurrentLevel());
             renderLevelInfo(currentLevelIndex);
-            scheduleTopPanelHeightUpdate(level);
             renderCurrentExpressionDisplay();
             refreshStatus();
             drawExpression();
@@ -3702,6 +3788,7 @@ Promise.resolve().then(() => {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setMainButtonSize(loadSavedMainButtonSize());
             setStepsFontSize(loadSavedStepsFontSize());
+            renderSettingsExpressionSample();
             setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
             setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
             if (sumBarStyleSelect) {
@@ -3812,10 +3899,17 @@ Promise.resolve().then(() => {
             }
             if (settingsButton && levelMenuPanel) {
                 const setSettingsOpen = open => {
+                    if (open) {
+                        hidePressHoldPopover();
+                        renderSettingsExpressionSample();
+                    }
                     levelMenuPanel.classList.toggle("hidden", !open);
                     document.body.classList.toggle("settings-active", open);
                     settingsButton.setAttribute("aria-expanded", String(open));
-                    settingsButton.setAttribute("aria-label", open ? "Close settings" : "Open settings");
+                    settingsButton.setAttribute("aria-label", "Open settings");
+                    if (!open) {
+                        scheduleResponsiveLayoutRecalculation();
+                    }
                 };
                 settingsButton.addEventListener("click", event => {
                     event.stopPropagation();
@@ -3837,6 +3931,13 @@ Promise.resolve().then(() => {
                     }
                     event.stopPropagation();
                 });
+                if (exitSettingsButton) {
+                    exitSettingsButton.addEventListener("click", event => {
+                        event.stopPropagation();
+                        setSettingsOpen(false);
+                        settingsButton.focus();
+                    });
+                }
                 document.addEventListener("keydown", event => {
                     if (event.key === "Escape" && !levelMenuPanel.classList.contains("hidden")) {
                         setSettingsOpen(false);
@@ -4066,6 +4167,9 @@ ctx.font = SETTINGS.textFont;
                     "aria-label",
                     isLeftHanded ? "Switch to right-handed layout" : "Switch to left-handed layout"
                 );
+                handednessToggleButton.textContent = isLeftHanded
+                    ? "Switch to Right-Handed Layout"
+                    : "Switch to Left-Handed Layout";
             }
             if (persist) {
                 try {
@@ -4275,8 +4379,6 @@ ctx.font = SETTINGS.textFont;
         }
 
         function scheduleResponsiveLayoutRecalculation() {
-            finishDividerDrag();
-            updateDividerAccessibility();
             if (!builderWorkspaceViewActive) {
                 pendingResponsiveWorkspaceView = captureWorkspaceView();
             }
@@ -4294,6 +4396,8 @@ ctx.font = SETTINGS.textFont;
                 }
                 positionToolOptionMenu();
                 updateSidePanelColumns();
+                scheduleTopPanelHeightUpdate(getCurrentLevel());
+                updateStepGuidanceArrow();
                 pendingResponsiveWorkspaceView = null;
             });
         }
@@ -9230,7 +9334,7 @@ ctx.font = SETTINGS.textFont;
             } else {
                 node = valueNode(value === "−1" ? "-1" : value || "-1");
             }
-            return renderExpressionSvgMarkup(node, {
+            const markup = renderExpressionSvgMarkup(node, {
                 className: "builder-symbol-icon",
                 ariaHidden: true,
                 focusable: false,
@@ -9240,13 +9344,26 @@ ctx.font = SETTINGS.textFont;
                     marginX: 2,
                     marginY: 2,
                     bufferSize: 3,
-                    operatorThickness: 6,
-                    builderPlaceholderWidth: 8,
-                    builderPlaceholderHeight: 8,
-                    textFont: "bold 15px Verdana, Arial, Helvetica, sans-serif",
+                    operatorThickness: 7,
+                    builderPlaceholderWidth: 9,
+                    builderPlaceholderHeight: 9,
+                    textFont: "800 20px Verdana, Arial, Helvetica, sans-serif",
                     expressionStrokeFill: "currentColor"
                 }
             });
+            const template = document.createElement("template");
+            template.innerHTML = markup.trim();
+            const svg = template.content.firstElementChild;
+            if (!svg) {
+                return markup;
+            }
+            const width = Math.max(1, Number(svg.getAttribute("width")) || 1);
+            const height = Math.max(1, Number(svg.getAttribute("height")) || 1);
+            svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+            svg.removeAttribute("width");
+            svg.removeAttribute("height");
+            return svg.outerHTML;
         }
 
         function renderBuilderVariableRail(builderActive) {
