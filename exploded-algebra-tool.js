@@ -2230,7 +2230,7 @@ Promise.resolve().then(() => {
                 return;
             }
             solutionRecorder = {
-                format: "exploded-algebra-solution-trace-v3",
+                format: "exploded-algebra-solution-trace-v4",
                 createdAt: new Date().toISOString(),
                 levelId: level.id || "",
                 levelTitle: level.title || "",
@@ -2244,9 +2244,7 @@ Promise.resolve().then(() => {
             return {
                 root: cloneExpressionTree(expressionRoot),
                 completedSteps: Array.isArray(completedSteps) ? completedSteps.slice() : [],
-                demoStepIndex,
                 workspaceView: captureWorkspaceView(),
-                solutionRecorder: clonePlainData(solutionRecorder),
                 completionExportReadyForRun,
                 completionExportCompletedAt: completionExportCompletedAtDate
                     ? completionExportCompletedAtDate.toISOString()
@@ -2283,16 +2281,22 @@ Promise.resolve().then(() => {
         }
 
         function undoExpressionStep() {
-            if (!expressionUndoHistory.length) {
+            if (!expressionUndoHistory.length || !isDemoUndoAllowed()) {
                 updateWorkspaceToolbar();
                 return false;
             }
+            const replayingGuidedUndo = isDemoModeActive();
+            const guidedUndoStepIndex = demoStepIndex;
+            const beforeExpression = getExpressionTextForTrace();
+            const beforeWorkspaceView = captureWorkspaceView();
             const snapshot = expressionUndoHistory.pop();
             expressionRoot = cloneExpressionTree(snapshot.root);
             currentExpressionRoot = expressionRoot;
             completedSteps = Array.isArray(snapshot.completedSteps) ? snapshot.completedSteps.slice() : [];
-            demoStepIndex = Number.isInteger(snapshot.demoStepIndex) ? snapshot.demoStepIndex : 0;
-            solutionRecorder = clonePlainData(snapshot.solutionRecorder);
+            if (replayingGuidedUndo) {
+                const steps = getCurrentDemoSteps();
+                demoStepIndex = Math.min(guidedUndoStepIndex + 1, steps.length);
+            }
             completionExportReadyForRun = !!snapshot.completionExportReadyForRun;
             completionExportCompletedAtDate = snapshot.completionExportCompletedAt
                 ? new Date(snapshot.completionExportCompletedAt)
@@ -2307,6 +2311,12 @@ Promise.resolve().then(() => {
             }
             clearSelection();
             clearInteraction();
+            recordUndoForSolution(
+                beforeExpression,
+                getExpressionTextForTrace(),
+                beforeWorkspaceView,
+                snapshot.workspaceView || null
+            );
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
             renderCurrentExpressionDisplay();
@@ -2416,12 +2426,32 @@ Promise.resolve().then(() => {
             }, step);
         }
 
+        function recordUndoForSolution(beforeExpression, afterExpression, beforeWorkspaceView, afterWorkspaceView) {
+            recordSolutionAction({
+                type: "undo",
+                beforeExpression,
+                afterExpression,
+                beforeWorkspaceView: clonePlainData(beforeWorkspaceView),
+                afterWorkspaceView: clonePlainData(afterWorkspaceView)
+            }, {
+                type: "undo"
+            });
+        }
+
         function isDemoWorkspaceViewAllowed(action) {
             if (!isDemoModeActive()) {
                 return true;
             }
             const step = getCurrentDemoStep();
             return !!step && step.type === "view" && step.action === action;
+        }
+
+        function isDemoUndoAllowed() {
+            if (!isDemoModeActive()) {
+                return true;
+            }
+            const step = getCurrentDemoStep();
+            return !!step && step.type === "undo";
         }
 
         function recordCommuteChoiceForSolution(clickedIndex, beforeExpression) {
@@ -4075,7 +4105,7 @@ ctx.font = SETTINGS.textFont;
             });
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
             if (undoExpressionButton) {
-                undoExpressionButton.disabled = expressionUndoHistory.length === 0;
+                undoExpressionButton.disabled = expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
             }
             workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
                 button.classList.remove("demo-target-button", "demo-blocked-button");
@@ -4090,6 +4120,10 @@ ctx.font = SETTINGS.textFont;
                     button.classList.toggle("demo-target-button", !!step && step.type === "view" && step.action === action);
                     button.classList.toggle("demo-blocked-button", !step || step.type !== "view" || step.action !== action);
                 });
+                if (undoExpressionButton) {
+                    undoExpressionButton.classList.toggle("demo-target-button", !!step && step.type === "undo");
+                    undoExpressionButton.classList.toggle("demo-blocked-button", !step || step.type !== "undo");
+                }
             }
         }
 
@@ -10228,6 +10262,11 @@ function renderToolArea() {
                 } else {
                     setStatus("Showing transformed expression briefly.");
                 }
+                return;
+            }
+
+            if (isDemoModeActive() && getCurrentDemoStep()?.type === "undo") {
+                setStatus("Use Undo to return to the previous expression or zoom state.");
                 return;
             }
 

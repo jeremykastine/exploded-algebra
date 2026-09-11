@@ -112,7 +112,10 @@ as a file:// fallback. Refreshing that app tab keeps the selected level. Separat
 tabs keep separate level state.
 
 For an interactive level, Download Move History saves the current run as a JSON
-file that can later be chosen from the home page.
+file that can later be chosen from the home page. Undo is retained as an explicit
+move: the attempted forward steps remain in the history, and guided playback
+requires the learner to undo at the same point before continuing along the
+recorded path. Zoom in, zoom out, and zoom reset are also retained as moves.
 
 The home page links to Introduction.html and Exercises.html.
 
