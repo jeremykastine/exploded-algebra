@@ -1254,15 +1254,15 @@ Promise.resolve().then(() => {
         const loadedLevelFileName = document.getElementById("loadedLevelFileName");
         const levelContent = document.getElementById("levelContent");
         const moveHistoryControls = document.getElementById("moveHistoryControls");
-        const regularModeRadio = document.getElementById("regularModeRadio");
-        const demoModeRadio = document.getElementById("demoModeRadio");
+        const modeChoiceBackdrop = document.getElementById("modeChoiceBackdrop");
+        const modeChoiceTitle = document.getElementById("modeChoiceTitle");
 
         const PLAY_MODES = {
-            regular: "regular",
-            demo: "demo"
+            guided: "guided",
+            unguided: "unguided"
         };
 
-        let playMode = PLAY_MODES.regular;
+        let playMode = PLAY_MODES.unguided;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -2168,12 +2168,21 @@ Promise.resolve().then(() => {
             return level.kind === "demoOnly" || level.type === "demoOnly" || level.mode === "demoOnly";
         }
 
-        function isInteractiveLevel(level) {
-            return !!level && !isDemoOnlyLevel(level);
-        }
-
         function clonePlainData(value) {
             return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+        }
+
+        function hasGuidedMode(level) {
+            return !!(
+                level
+                && level.demo
+                && Array.isArray(level.demo.steps)
+                && level.demo.steps.length > 0
+            );
+        }
+
+        function isInteractiveLevel(level) {
+            return !!level && (!hasGuidedMode(level) || playMode === PLAY_MODES.unguided);
         }
 
         function getExpressionTextForTrace() {
@@ -2737,7 +2746,7 @@ Promise.resolve().then(() => {
             });
 
             const levelCopy = clonePlainData(level);
-            const copy = isDemoOnlyLevel(levelCopy) && levelCopy.sourceLevel && typeof levelCopy.sourceLevel === "object"
+            let copy = isDemoOnlyLevel(levelCopy) && levelCopy.sourceLevel && typeof levelCopy.sourceLevel === "object"
                 ? { ...clonePlainData(levelCopy.sourceLevel), ...levelCopy }
                 : levelCopy;
             delete copy.description;
@@ -2750,6 +2759,16 @@ Promise.resolve().then(() => {
                 copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
             }
             upgradeLegacyCommuteDemoSteps(copy);
+            if (isDemoOnlyLevel(copy) && copy.sourceLevel && typeof copy.sourceLevel === "object") {
+                copy = {
+                    ...clonePlainData(copy.sourceLevel),
+                    kind: "guidedCapable",
+                    demo: clonePlainData(copy.demo)
+                };
+                if (!Array.isArray(copy.variables) || !copy.variables.length) {
+                    copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
+                }
+            }
             return copy;
         }
 
@@ -2787,8 +2806,7 @@ Promise.resolve().then(() => {
                 LEVELS.splice(0, LEVELS.length, level);
                 currentLevelIndex = 0;
                 setLevelFileStatus(`${file.name} — ${level.title}`);
-                document.body.classList.remove("no-level-loaded");
-                loadLevel(0);
+                beginLoadedLevel(level);
                 loadSucceeded = true;
             } catch (error) {
                 console.error("The selected level file could not be loaded.", error);
@@ -2842,8 +2860,7 @@ Promise.resolve().then(() => {
             const level = validateChosenLevel(parsed, sourceName);
             LEVELS.splice(0, LEVELS.length, level);
             currentLevelIndex = 0;
-            document.body.classList.remove("no-level-loaded");
-            loadLevel(0);
+            beginLoadedLevel(level);
             return true;
         }
 
@@ -2968,7 +2985,7 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return isDemoOnlyLevel(getCurrentLevel()) && getCurrentDemoSteps().length > 0;
+            return playMode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel());
         }
 
         function getCurrentDemoStep() {
@@ -3011,7 +3028,9 @@ Promise.resolve().then(() => {
         }
 
         function updateModeControls() {
-            playMode = isDemoOnlyLevel(getCurrentLevel()) ? PLAY_MODES.demo : PLAY_MODES.regular;
+            if (!hasGuidedMode(getCurrentLevel())) {
+                playMode = PLAY_MODES.unguided;
+            }
             refreshDemoBodyClass();
         }
 
@@ -3021,7 +3040,9 @@ Promise.resolve().then(() => {
         }
 
         function setPlayMode(mode, options = {}) {
-            const nextMode = mode === PLAY_MODES.demo ? PLAY_MODES.demo : PLAY_MODES.regular;
+            const nextMode = mode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel())
+                ? PLAY_MODES.guided
+                : PLAY_MODES.unguided;
             const changed = playMode !== nextMode;
             playMode = nextMode;
             updateModeControls();
@@ -3038,19 +3059,62 @@ Promise.resolve().then(() => {
                 return;
             }
             const url = new URL(window.location.href);
-            if (mode === PLAY_MODES.demo) {
-                url.searchParams.set("mode", "demo");
-            } else {
-                url.searchParams.delete("mode");
-            }
+            url.searchParams.set("mode", mode === PLAY_MODES.guided
+                ? PLAY_MODES.guided
+                : PLAY_MODES.unguided);
             window.history.replaceState(null, "", url.toString());
         }
 
         function playModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
-            return String(params.get("mode") || "").toLowerCase() === "demo"
-                ? PLAY_MODES.demo
-                : PLAY_MODES.regular;
+            const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
+            return requestedMode === PLAY_MODES.guided || requestedMode === PLAY_MODES.unguided
+                ? requestedMode
+                : null;
+        }
+
+        function hideModeChoice() {
+            if (modeChoiceBackdrop) {
+                modeChoiceBackdrop.classList.add("hidden");
+            }
+        }
+
+        function startLoadedLevel(mode) {
+            playMode = mode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel())
+                ? PLAY_MODES.guided
+                : PLAY_MODES.unguided;
+            hideModeChoice();
+            document.body.classList.remove("no-level-loaded");
+            loadLevel(0);
+        }
+
+        function showModeChoice(level) {
+            if (!modeChoiceBackdrop) {
+                startLoadedLevel(PLAY_MODES.guided);
+                return;
+            }
+            if (modeChoiceTitle) {
+                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose a mode";
+            }
+            showNoLevelSelectedState("Choose guided or unguided to begin this exercise.");
+            modeChoiceBackdrop.classList.remove("hidden");
+            const guidedButton = modeChoiceBackdrop.querySelector('[data-play-mode="guided"]');
+            if (guidedButton) {
+                requestAnimationFrame(() => guidedButton.focus());
+            }
+        }
+
+        function beginLoadedLevel(level) {
+            if (!hasGuidedMode(level)) {
+                startLoadedLevel(PLAY_MODES.unguided);
+                return;
+            }
+            const requestedMode = playModeFromQueryString();
+            if (requestedMode) {
+                startLoadedLevel(requestedMode);
+                return;
+            }
+            showModeChoice(level);
         }
 
         function getDemoTargetNode(step) {
@@ -3695,6 +3759,19 @@ Promise.resolve().then(() => {
                     if (window.confirm("Are you sure you want to reset the exercise?")) {
                         window.location.reload();
                     }
+                });
+            }
+            if (modeChoiceBackdrop) {
+                modeChoiceBackdrop.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-play-mode]");
+                    if (!button) {
+                        return;
+                    }
+                    const selectedMode = button.dataset.playMode === PLAY_MODES.guided
+                        ? PLAY_MODES.guided
+                        : PLAY_MODES.unguided;
+                    updateModeQueryString(selectedMode);
+                    startLoadedLevel(selectedMode);
                 });
             }
             if (handednessToggleButton) {

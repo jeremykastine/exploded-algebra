@@ -2145,6 +2145,68 @@
             transform: translate(-50%, -50%);
         }
         .numerical-rewrite-error.hidden { display: none; }
+        .mode-choice-backdrop {
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: rgba(20, 20, 28, 0.58);
+        }
+        .mode-choice-backdrop.hidden { display: none; }
+        .mode-choice-dialog {
+            width: min(560px, 100%);
+            padding: clamp(22px, 5vw, 38px);
+            border: 2px solid #7040a0;
+            border-radius: 16px;
+            box-sizing: border-box;
+            background: #fff;
+            box-shadow: 0 18px 56px rgba(0, 0, 0, 0.34);
+            color: #222;
+            text-align: center;
+        }
+        .mode-choice-dialog h2 {
+            margin: 0 0 10px;
+            color: #4f2878;
+            font-size: clamp(20px, 4vw, 28px);
+            line-height: 1.2;
+        }
+        .mode-choice-dialog p {
+            margin: 0 0 22px;
+            font-size: clamp(16px, 2.5vw, 19px);
+            line-height: 1.45;
+        }
+        .mode-choice-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+        .mode-choice-actions button {
+            min-height: 58px;
+            padding: 12px 16px;
+            border: 2px solid #7040a0;
+            border-radius: 10px;
+            background: #fff;
+            color: #4f2878;
+            font: inherit;
+            font-size: clamp(16px, 2.8vw, 20px);
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .mode-choice-actions button:first-child {
+            background: #7040a0;
+            color: #fff;
+        }
+        .mode-choice-actions button:focus-visible {
+            outline: 3px solid #f2c94c;
+            outline-offset: 3px;
+        }
+        @media (max-width: 460px) {
+            .mode-choice-actions { grid-template-columns: 1fr; }
+        }
         .press-hold-popover-title,
         .press-hold-popover .rule-name {
             display: block;
@@ -3315,9 +3377,19 @@
         </div>
         <div id="divider" class="divider" role="separator" tabindex="0" aria-label="Resize the expression workspace and conventional steps panel" aria-orientation="horizontal" aria-valuemin="6" aria-valuemax="55" aria-valuenow="22"></div>
     </div>
+    <div id="modeChoiceBackdrop" class="mode-choice-backdrop hidden">
+        <section class="mode-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-describedby="modeChoicePrompt">
+            <h2 id="modeChoiceTitle">Choose a mode</h2>
+            <p id="modeChoicePrompt">Do you want to do this exercise guided or unguided?</p>
+            <div class="mode-choice-actions">
+                <button type="button" data-play-mode="guided">Guided</button>
+                <button type="button" data-play-mode="unguided">Unguided</button>
+            </div>
+        </section>
+    </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260910-unique-selection-nodes"></script>
-    <script src="exploded-algebra-tool.js?v=20260910-unique-selection-nodes"></script>
+    <script src="exploded-algebra-renderer.js?v=20260910-guided-mode-choice"></script>
+    <script src="exploded-algebra-tool.js?v=20260910-guided-mode-choice"></script>
 
 </body>
 </html>

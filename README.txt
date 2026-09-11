@@ -116,9 +116,12 @@ file that can later be chosen from the home page.
 
 The home page links to Introduction.html and Exercises.html.
 
-Built-in level URLs now include the selected JSON file in the level query parameter, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&source=builtin
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin
+Built-in level URLs include the selected JSON file in the level query parameter. A
+level that contains guided steps accepts mode=guided or mode=unguided, for example:
+  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
+  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
+If mode is absent or invalid, a guided-capable exercise asks the learner to choose.
+Exercises without guided steps start unguided without asking.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
