@@ -3309,6 +3309,10 @@
             background: #fff;
             box-shadow: none;
         }
+        body.left-handed .level-menu-panel {
+            inset: 0;
+            width: auto;
+        }
         .level-menu-panel.hidden { display: none; }
         .level-menu-title {
             width: min(520px, 100%);
@@ -3335,25 +3339,29 @@
         }
         .layout-size-control {
             display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 9px;
-            padding: 12px;
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            padding: 7px 9px;
             border: 1px solid #d5d5d5;
             border-radius: 8px;
         }
         .layout-size-label {
+            flex: 1 1 auto;
+            min-width: 0;
             font-size: 14px;
-            text-align: center;
+            text-align: left;
+            white-space: nowrap;
         }
         .layout-size-buttons {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex: 0 0 auto;
+            flex-direction: row;
+            gap: 4px;
         }
-        body.left-handed .layout-size-buttons { flex-direction: column; }
+        body.left-handed .layout-size-buttons { flex-direction: row; }
         .level-menu-panel .level-menu-actions button,
-        .level-menu-panel .layout-size-buttons button,
         .level-menu-panel .completion-export-button,
         .exit-settings-button {
             display: flex;
@@ -3373,6 +3381,51 @@
             font-weight: 700;
             text-align: center;
         }
+        .level-menu-panel .layout-size-buttons button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            min-width: 30px;
+            min-height: 30px;
+            margin: 0;
+            padding: 0;
+            border: 1px solid #8d8d8d;
+            border-radius: 5px;
+            background: #fff;
+            color: #222;
+            font-size: 21px;
+            font-weight: 600;
+            line-height: 1;
+        }
+        .handedness-choice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            min-width: 0;
+            margin: 0;
+            padding: 9px 12px 10px;
+            border: 1px solid #d5d5d5;
+            border-radius: 8px;
+        }
+        .handedness-choice legend {
+            padding: 0 5px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 700;
+        }
+        .handedness-choice label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .handedness-choice input { margin: 0; }
         .settings-button-sample {
             display: flex;
             align-items: center;
@@ -3391,7 +3444,9 @@
             pointer-events: none;
         }
         .settings-expression-sample {
-            min-height: 42px;
+            flex: 0 1 100px;
+            min-width: 58px;
+            min-height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -3478,6 +3533,11 @@
             height: 72%;
         }
         .builder-keypad-panel .builder-undo-button svg path { stroke-width: 2.5; }
+        .main-action-panel .intent-category-commute-icon {
+            font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", sans-serif;
+            font-size: clamp(24px, calc(var(--main-key-size) * 0.68), 38px);
+            font-weight: 600;
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -3522,23 +3582,27 @@
                 <div class="settings-control-stack">
                     <div class="level-menu-actions" aria-label="Exercise and layout controls">
                         <button id="resetExerciseButton" class="reset-exercise-button" type="button" data-hold-description="Restart the current exercise from its original expression.">Reset Exercise</button>
-                        <button id="handednessToggleButton" class="handedness-toggle-button" type="button" aria-label="Switch to left-handed layout" aria-pressed="false" data-hold-description="Reflect every button arrangement for the other hand while keeping the numeric keypad ordered as one block.">Switch to Left-Handed Layout</button>
+                        <fieldset class="handedness-choice">
+                            <legend>Handedness</legend>
+                            <label><input type="radio" name="handedness" value="right" checked> Right-handed</label>
+                            <label><input type="radio" name="handedness" value="left"> Left-handed</label>
+                        </fieldset>
                     </div>
                     <div class="layout-size-controls" aria-label="Size controls">
                     <div class="layout-size-control">
                         <span class="layout-size-label">Button size <output id="buttonSizeValue" class="layout-size-value">44 px</output></span>
                         <button id="buttonSizeSample" class="settings-button-sample" type="button" tabindex="-1" aria-hidden="true">ABC</button>
                         <div class="layout-size-buttons" role="group" aria-label="Button size">
-                            <button type="button" data-layout-action="button-smaller" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">Smaller</button>
-                            <button type="button" data-layout-action="button-larger" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">Larger</button>
+                            <button type="button" data-layout-action="button-smaller" aria-label="Decrease button size" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">−</button>
+                            <button type="button" data-layout-action="button-larger" aria-label="Increase button size" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">+</button>
                         </div>
                     </div>
                     <div class="layout-size-control">
                         <span class="layout-size-label">Steps font size <output id="stepsFontSizeValue" class="layout-size-value">15 px</output></span>
                         <div class="settings-expression-sample" aria-label="Sample expression"><span id="settingsExpressionSample" class="katex-placeholder" data-expr="2x+3">2x + 3</span></div>
                         <div class="layout-size-buttons" role="group" aria-label="Steps font size">
-                            <button type="button" data-layout-action="steps-font-smaller" data-hold-description="Make the conventional steps text smaller and refit the panel height.">Smaller</button>
-                            <button type="button" data-layout-action="steps-font-larger" data-hold-description="Make the conventional steps text larger and refit the panel height.">Larger</button>
+                            <button type="button" data-layout-action="steps-font-smaller" aria-label="Decrease steps font size" data-hold-description="Make the conventional steps text smaller and refit the panel height.">−</button>
+                            <button type="button" data-layout-action="steps-font-larger" aria-label="Increase steps font size" data-hold-description="Make the conventional steps text larger and refit the panel height.">+</button>
                         </div>
                     </div>
                     </div>
@@ -3547,6 +3611,7 @@
                         <select id="sumBarStyleSelect" class="panel-select">
                             <option value="gradient">Gradient</option>
                             <option value="flared">Flared ends</option>
+                            <option value="midline">Thin midline</option>
                             <option value="nested-parentheses">Nested parentheses</option>
                             <option value="outward-parentheses">Outward parentheses</option>
                         </select>
@@ -3554,6 +3619,7 @@
                         <select id="productBarStyleSelect" class="panel-select">
                             <option value="gradient">Gradient</option>
                             <option value="flared">Flared ends</option>
+                            <option value="midline">Thin midline</option>
                             <option value="nested-parentheses">Nested parentheses</option>
                             <option value="outward-parentheses">Outward parentheses</option>
                         </select>
@@ -3620,8 +3686,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260911-step-guidance"></script>
-    <script src="exploded-algebra-tool.js?v=20260911-step-guidance"></script>
+    <script src="exploded-algebra-renderer.js?v=20260911-settings-bars"></script>
+    <script src="exploded-algebra-tool.js?v=20260911-settings-bars"></script>
 
 </body>
 </html>

@@ -893,12 +893,19 @@ function drawNodeToContext(
             const beamStyle = settings.productBeamStyle;
             const useGradientBeam = needsBeam && settings.productBeamStyle === "gradient";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
+            const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
 
             if (useGradientBeam) {
                 drawGradientProductBeam(drawingContext, x, y1, y2, flare, gradientBeamColor);
+            } else if (useMidlineBeam) {
+                drawingContext.beginPath();
+                drawingContext.moveTo(x, y1);
+                drawingContext.lineTo(x, y2);
+                drawingContext.lineWidth = getStructuralStrokeWidth(settings);
+                drawingContext.stroke();
             } else if (useNestedParenthesesBeam) {
                 drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, operatorColor, !needsBeam);
             } else if (useOutwardParenthesesBeam) {
@@ -961,12 +968,19 @@ function drawNodeToContext(
             const beamStyle = settings.sumBeamStyle;
             const useGradientBeam = needsBeam && settings.sumBeamStyle === "gradient";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
+            const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
 
             if (useGradientBeam) {
                 drawGradientSumBeam(drawingContext, x1, x2, y, flare, gradientBeamColor);
+            } else if (useMidlineBeam) {
+                drawingContext.beginPath();
+                drawingContext.moveTo(x1, y);
+                drawingContext.lineTo(x2, y);
+                drawingContext.lineWidth = getStructuralStrokeWidth(settings);
+                drawingContext.stroke();
             } else if (useNestedParenthesesBeam) {
                 drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, operatorColor, !needsBeam);
             } else if (useOutwardParenthesesBeam) {

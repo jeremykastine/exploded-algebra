@@ -618,12 +618,7 @@ Promise.resolve().then(() => {
                 return `<span class="intent-category-number-icon" aria-hidden="true">123</span>`;
             }
             if (categoryId === "commute") {
-                return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
-                    <path class="icon-stroke" d="M33 12 C44 4 58 4 68 12"/><path class="icon-fill" d="M64 7 L76 14 L64 19 Z"/>
-                    <path class="icon-stroke" d="M79 24 C85 34 82 46 73 54"/><path class="icon-fill" d="M79 49 L70 61 L67 49 Z"/>
-                    <path class="icon-stroke" d="M61 63 C49 68 36 64 28 56"/><path class="icon-fill" d="M33 62 L20 55 L32 49 Z"/>
-                    <path class="icon-stroke" d="M18 44 C14 33 18 21 28 14"/><path class="icon-fill" d="M22 17 L31 7 L34 19 Z"/>
-                </svg>`;
+                return `<span class="intent-category-math intent-category-commute-icon" aria-hidden="true">⇄</span>`;
             }
             if (categoryId === "insert") {
                 return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
@@ -1214,7 +1209,7 @@ Promise.resolve().then(() => {
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const mainActionPanel = document.getElementById("mainActionPanel");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
-        const handednessToggleButton = document.getElementById("handednessToggleButton");
+        const handednessInputs = Array.from(document.querySelectorAll('input[name="handedness"]'));
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const settingsButton = document.getElementById("settingsButton");
@@ -1263,6 +1258,7 @@ Promise.resolve().then(() => {
         };
 
         let playMode = PLAY_MODES.unguided;
+        let playModeWasSpecifiedByNavigation = false;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -2027,7 +2023,7 @@ Promise.resolve().then(() => {
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const startX = Math.max(8, Math.min(viewportWidth - 8, contentBounds.left + contentBounds.width / 2));
-            const startY = Math.max(8, contentBounds.top - 12);
+            const startY = Math.max(8, contentBounds.top - 22);
             const endX = Math.max(8, Math.min(viewportWidth - 8, cardBounds.left + cardBounds.width / 2));
             const endY = Math.max(8, cardBounds.bottom + 7);
             const controlY = endY + Math.max(28, (startY - endY) * 0.42);
@@ -3178,6 +3174,15 @@ Promise.resolve().then(() => {
             window.history.replaceState(null, "", url.toString());
         }
 
+        function clearModeQueryString() {
+            if (!window.history || !window.history.replaceState) {
+                return;
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.delete("mode");
+            window.history.replaceState(null, "", url.toString());
+        }
+
         function playModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
             const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
@@ -3219,10 +3224,12 @@ Promise.resolve().then(() => {
 
         function beginLoadedLevel(level) {
             if (!hasGuidedMode(level)) {
+                playModeWasSpecifiedByNavigation = false;
                 startLoadedLevel(PLAY_MODES.unguided);
                 return;
             }
             const requestedMode = playModeFromQueryString();
+            playModeWasSpecifiedByNavigation = !!requestedMode;
             if (requestedMode) {
                 startLoadedLevel(requestedMode);
                 return;
@@ -3874,6 +3881,9 @@ Promise.resolve().then(() => {
             if (resetExerciseButton) {
                 resetExerciseButton.addEventListener("click", () => {
                     if (window.confirm("Are you sure you want to reset the exercise?")) {
+                        if (hasGuidedMode(getCurrentLevel()) && !playModeWasSpecifiedByNavigation) {
+                            clearModeQueryString();
+                        }
                         window.location.reload();
                     }
                 });
@@ -3891,12 +3901,14 @@ Promise.resolve().then(() => {
                     startLoadedLevel(selectedMode);
                 });
             }
-            if (handednessToggleButton) {
-                setLeftHandedLayout(loadSavedHandedness());
-                handednessToggleButton.addEventListener("click", () => {
-                    setLeftHandedLayout(!document.body.classList.contains("left-handed"), true);
+            setLeftHandedLayout(loadSavedHandedness());
+            handednessInputs.forEach(input => {
+                input.addEventListener("change", () => {
+                    if (input.checked) {
+                        setLeftHandedLayout(input.value === "left", true);
+                    }
                 });
-            }
+            });
             if (settingsButton && levelMenuPanel) {
                 const setSettingsOpen = open => {
                     if (open) {
@@ -4121,7 +4133,7 @@ ctx.font = SETTINGS.textFont;
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
-        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "nested-parentheses", "outward-parentheses"]);
+        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "midline", "nested-parentheses", "outward-parentheses"]);
 
         function getSavedOperationBarStyle(storageKey, fallbackStyle) {
             try {
@@ -4161,16 +4173,9 @@ ctx.font = SETTINGS.textFont;
         function setLeftHandedLayout(enabled, persist = false) {
             const isLeftHanded = !!enabled;
             document.body.classList.toggle("left-handed", isLeftHanded);
-            if (handednessToggleButton) {
-                handednessToggleButton.setAttribute("aria-pressed", String(isLeftHanded));
-                handednessToggleButton.setAttribute(
-                    "aria-label",
-                    isLeftHanded ? "Switch to right-handed layout" : "Switch to left-handed layout"
-                );
-                handednessToggleButton.textContent = isLeftHanded
-                    ? "Switch to Right-Handed Layout"
-                    : "Switch to Left-Handed Layout";
-            }
+            handednessInputs.forEach(input => {
+                input.checked = input.value === (isLeftHanded ? "left" : "right");
+            });
             if (persist) {
                 try {
                     window.localStorage.setItem(HANDEDNESS_STORAGE_KEY, isLeftHanded ? "1" : "0");
