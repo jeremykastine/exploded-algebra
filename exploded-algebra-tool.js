@@ -1216,6 +1216,7 @@ Promise.resolve().then(() => {
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
         const productBarStyleSelect = document.getElementById("productBarStyleSelect");
+        const operationBarGradientCheckbox = document.getElementById("operationBarGradientCheckbox");
         const buttonSizeValue = document.getElementById("buttonSizeValue");
         const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
         const settingsExpressionSample = document.getElementById("settingsExpressionSample");
@@ -3798,6 +3799,7 @@ Promise.resolve().then(() => {
             renderSettingsExpressionSample();
             setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
             setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
+            setOperationBarGradient(getSavedOperationBarGradient(SETTINGS.operationBarGradientEnabled));
             if (sumBarStyleSelect) {
                 sumBarStyleSelect.addEventListener("change", () => {
                     setOperationBarStyle("sum", sumBarStyleSelect.value, true);
@@ -3806,6 +3808,11 @@ Promise.resolve().then(() => {
             if (productBarStyleSelect) {
                 productBarStyleSelect.addEventListener("change", () => {
                     setOperationBarStyle("product", productBarStyleSelect.value, true);
+                });
+            }
+            if (operationBarGradientCheckbox) {
+                operationBarGradientCheckbox.addEventListener("change", () => {
+                    setOperationBarGradient(operationBarGradientCheckbox.checked, true);
                 });
             }
             if (workspaceToolbar) {
@@ -4133,23 +4140,56 @@ ctx.font = SETTINGS.textFont;
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
-        const OPERATOR_BAR_STYLES = new Set(["gradient", "flared", "midline", "nested-parentheses", "outward-parentheses"]);
+        const OPERATION_BAR_GRADIENT_STORAGE_KEY = "explodedAlgebraOperationBarGradientV1";
+        const OPERATOR_BAR_STYLES = new Set(["thick", "flared", "midline", "nested-parentheses", "outward-parentheses"]);
+
+        function normalizeOperationBarStyle(style) {
+            if (style === "gradient") {
+                return "thick";
+            }
+            return OPERATOR_BAR_STYLES.has(style) ? style : null;
+        }
 
         function getSavedOperationBarStyle(storageKey, fallbackStyle) {
             try {
                 const savedStyle = window.localStorage.getItem(storageKey);
-                if (OPERATOR_BAR_STYLES.has(savedStyle)) {
-                    return savedStyle;
+                const normalizedSavedStyle = normalizeOperationBarStyle(savedStyle);
+                if (normalizedSavedStyle) {
+                    return normalizedSavedStyle;
                 }
                 const legacyStyle = window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY);
-                return OPERATOR_BAR_STYLES.has(legacyStyle) ? legacyStyle : fallbackStyle;
+                return normalizeOperationBarStyle(legacyStyle) ||
+                    normalizeOperationBarStyle(fallbackStyle) ||
+                    "thick";
             } catch (error) {
-                return fallbackStyle;
+                return normalizeOperationBarStyle(fallbackStyle) || "thick";
             }
         }
 
+        function getSavedOperationBarGradient(fallbackEnabled) {
+            try {
+                const savedValue = window.localStorage.getItem(OPERATION_BAR_GRADIENT_STORAGE_KEY);
+                if (savedValue === "1" || savedValue === "0") {
+                    return savedValue === "1";
+                }
+
+                const previousStyles = [
+                    window.localStorage.getItem(SUM_BAR_STYLE_STORAGE_KEY),
+                    window.localStorage.getItem(PRODUCT_BAR_STYLE_STORAGE_KEY),
+                    window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY)
+                ].filter(Boolean);
+                if (previousStyles.includes("gradient")) {
+                    return true;
+                }
+                if (previousStyles.some(style => OPERATOR_BAR_STYLES.has(style))) {
+                    return false;
+                }
+            } catch (error) {}
+            return !!fallbackEnabled;
+        }
+
         function setOperationBarStyle(operation, style, persist = false) {
-            const normalizedStyle = OPERATOR_BAR_STYLES.has(style) ? style : "gradient";
+            const normalizedStyle = normalizeOperationBarStyle(style) || "thick";
             const isSum = operation === "sum";
             const select = isSum ? sumBarStyleSelect : productBarStyleSelect;
             SETTINGS[isSum ? "sumBeamStyle" : "productBeamStyle"] = normalizedStyle;
@@ -4166,6 +4206,25 @@ ctx.font = SETTINGS.textFont;
             }
             if (expressionRoot) {
                 layoutExpression(expressionRoot);
+                drawExpression();
+            }
+        }
+
+        function setOperationBarGradient(enabled, persist = false) {
+            const gradientEnabled = !!enabled;
+            SETTINGS.operationBarGradientEnabled = gradientEnabled;
+            if (operationBarGradientCheckbox) {
+                operationBarGradientCheckbox.checked = gradientEnabled;
+            }
+            if (persist) {
+                try {
+                    window.localStorage.setItem(
+                        OPERATION_BAR_GRADIENT_STORAGE_KEY,
+                        gradientEnabled ? "1" : "0"
+                    );
+                } catch (error) {}
+            }
+            if (expressionRoot) {
                 drawExpression();
             }
         }

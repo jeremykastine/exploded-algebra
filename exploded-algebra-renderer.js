@@ -54,13 +54,11 @@ const SETTINGS = {
     negativeUnitTextColor: "white",
     bufferSize: 16,
     operatorThickness: 12,
-    // Keep the previous flared addition beam available as "flared" while the
-    // full-thickness gradient beam is being evaluated.
-    sumBeamStyle: "gradient",
+    sumBeamStyle: "thick",
     sumBeamEdgeColor: "black",
-    // Keep the previous flared multiplication beam available as "flared".
-    productBeamStyle: "gradient",
+    productBeamStyle: "thick",
     productBeamEdgeColor: "black",
+    operationBarGradientEnabled: true,
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     debugComponentBounds: false,
@@ -208,7 +206,7 @@ function drawOperatorCircle(drawingContext, centerX, centerY, diameter, fillStyl
 let nextSumBeamGradientId = 1;
 let nextProductBeamGradientId = 1;
 
-function drawGradientProductBeam(drawingContext, x, y1, y2, halfThickness, edgeColor) {
+function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor) {
     const gradientId = `oops-product-beam-gradient-${nextProductBeamGradientId++}`;
     const defs = document.createElementNS(SVG_NS, "defs");
     const gradient = document.createElementNS(SVG_NS, "linearGradient");
@@ -232,16 +230,10 @@ function drawGradientProductBeam(drawingContext, x, y1, y2, halfThickness, edgeC
 
     defs.appendChild(gradient);
     drawingContext.appendSvgElement(defs);
-
-    drawingContext.save();
-    drawingContext.fillStyle = `url(#${gradientId})`;
-    drawingContext.beginPath();
-    drawingContext.rect(x - halfThickness, y1, halfThickness * 2, Math.max(0, y2 - y1));
-    drawingContext.fill();
-    drawingContext.restore();
+    return `url(#${gradientId})`;
 }
 
-function drawGradientSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor) {
+function createSumBeamGradient(drawingContext, x1, x2, y, edgeColor) {
     const gradientId = `oops-sum-beam-gradient-${nextSumBeamGradientId++}`;
     const defs = document.createElementNS(SVG_NS, "defs");
     const gradient = document.createElementNS(SVG_NS, "linearGradient");
@@ -265,9 +257,21 @@ function drawGradientSumBeam(drawingContext, x1, x2, y, halfThickness, edgeColor
 
     defs.appendChild(gradient);
     drawingContext.appendSvgElement(defs);
+    return `url(#${gradientId})`;
+}
 
+function drawThickProductBeam(drawingContext, x, y1, y2, halfThickness, paintStyle) {
     drawingContext.save();
-    drawingContext.fillStyle = `url(#${gradientId})`;
+    drawingContext.fillStyle = paintStyle;
+    drawingContext.beginPath();
+    drawingContext.rect(x - halfThickness, y1, halfThickness * 2, Math.max(0, y2 - y1));
+    drawingContext.fill();
+    drawingContext.restore();
+}
+
+function drawThickSumBeam(drawingContext, x1, x2, y, halfThickness, paintStyle) {
+    drawingContext.save();
+    drawingContext.fillStyle = paintStyle;
     drawingContext.beginPath();
     drawingContext.rect(x1, y - halfThickness, Math.max(0, x2 - x1), halfThickness * 2);
     drawingContext.fill();
@@ -1023,15 +1027,23 @@ function drawNodeToContext(
             drawingContext.fillStyle = operatorColor;
             const needsBeam = nodeNeedsSeparatorFlares(node);
             const beamStyle = settings.productBeamStyle;
-            const useGradientBeam = needsBeam && settings.productBeamStyle === "gradient";
+            const useThickBeam = needsBeam && beamStyle === "thick";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
             const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
+            const useGradientPaint = !!settings.operationBarGradientEnabled &&
+                (needsBeam || useNestedParenthesesBeam || useOutwardParenthesesBeam);
+            const beamPaint = useGradientPaint
+                ? createProductBeamGradient(drawingContext, x, y1, y2, gradientBeamColor)
+                : gradientBeamColor;
+            const operatorIconColor = useGradientPaint ? gradientBeamColor : operatorColor;
+            drawingContext.strokeStyle = beamPaint;
+            drawingContext.fillStyle = beamPaint;
 
-            if (useGradientBeam) {
-                drawGradientProductBeam(drawingContext, x, y1, y2, flare, gradientBeamColor);
+            if (useThickBeam) {
+                drawThickProductBeam(drawingContext, x, y1, y2, flare, beamPaint);
             } else if (useMidlineBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(x, y1);
@@ -1039,9 +1051,9 @@ function drawNodeToContext(
                 drawingContext.lineWidth = getStructuralStrokeWidth(settings);
                 drawingContext.stroke();
             } else if (useNestedParenthesesBeam) {
-                drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, operatorColor, !needsBeam);
+                drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, beamPaint, !needsBeam);
             } else if (useOutwardParenthesesBeam) {
-                drawOutwardParenthesesProductBeam(drawingContext, x, y1, y2, flare, operatorColor, !needsBeam);
+                drawOutwardParenthesesProductBeam(drawingContext, x, y1, y2, flare, beamPaint, !needsBeam);
             } else if (useFlaredBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(x, circleTop);
@@ -1076,7 +1088,7 @@ function drawNodeToContext(
                 drawDebugComponentBounds(drawingContext, x - flare, y1, x + flare, y2, settings);
             }
 
-            drawingContext.fillStyle = useGradientBeam ? gradientBeamColor : operatorColor;
+            drawingContext.fillStyle = operatorIconColor;
             drawingContext.beginPath();
             drawingContext.arc(x, centerY, getOperatorDotRadius(settings), 0, Math.PI * 2);
             drawingContext.fill();
@@ -1098,15 +1110,23 @@ function drawNodeToContext(
             drawingContext.fillStyle = operatorColor;
             const needsBeam = nodeNeedsSeparatorFlares(node);
             const beamStyle = settings.sumBeamStyle;
-            const useGradientBeam = needsBeam && settings.sumBeamStyle === "gradient";
+            const useThickBeam = needsBeam && beamStyle === "thick";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
             const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
+            const useGradientPaint = !!settings.operationBarGradientEnabled &&
+                (needsBeam || useNestedParenthesesBeam || useOutwardParenthesesBeam);
+            const beamPaint = useGradientPaint
+                ? createSumBeamGradient(drawingContext, x1, x2, y, gradientBeamColor)
+                : gradientBeamColor;
+            const operatorIconColor = useGradientPaint ? gradientBeamColor : operatorColor;
+            drawingContext.strokeStyle = beamPaint;
+            drawingContext.fillStyle = beamPaint;
 
-            if (useGradientBeam) {
-                drawGradientSumBeam(drawingContext, x1, x2, y, flare, gradientBeamColor);
+            if (useThickBeam) {
+                drawThickSumBeam(drawingContext, x1, x2, y, flare, beamPaint);
             } else if (useMidlineBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(x1, y);
@@ -1114,9 +1134,9 @@ function drawNodeToContext(
                 drawingContext.lineWidth = getStructuralStrokeWidth(settings);
                 drawingContext.stroke();
             } else if (useNestedParenthesesBeam) {
-                drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, operatorColor, !needsBeam);
+                drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, beamPaint, !needsBeam);
             } else if (useOutwardParenthesesBeam) {
-                drawOutwardParenthesesSumBeam(drawingContext, x1, x2, y, flare, operatorColor, !needsBeam);
+                drawOutwardParenthesesSumBeam(drawingContext, x1, x2, y, flare, beamPaint, !needsBeam);
             } else if (useFlaredBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(circleLeft, y);
@@ -1147,7 +1167,7 @@ function drawNodeToContext(
                 );
             }
 
-            drawingContext.strokeStyle = useGradientBeam ? gradientBeamColor : operatorColor;
+            drawingContext.strokeStyle = operatorIconColor;
             drawingContext.beginPath();
             drawingContext.moveTo(centerX - flare / 2, y);
             drawingContext.lineTo(centerX + flare / 2, y);

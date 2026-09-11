@@ -1847,6 +1847,19 @@
         }
         .bar-style-control .panel-select { margin: 0 0 10px; }
         .bar-style-control .panel-select:last-child { margin-bottom: 0; }
+        .bar-style-control .bar-gradient-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            margin: 2px 0 0;
+        }
+        .bar-gradient-option input {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+        }
         .level-menu-actions {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3602,7 +3615,7 @@
                     <div class="bar-style-control">
                         <label for="sumBarStyleSelect">Addition style</label>
                         <select id="sumBarStyleSelect" class="panel-select">
-                            <option value="gradient">Gradient</option>
+                            <option value="thick">Thick bar</option>
                             <option value="flared">Flared ends</option>
                             <option value="midline">Thin midline</option>
                             <option value="nested-parentheses">Nested parentheses</option>
@@ -3610,12 +3623,16 @@
                         </select>
                         <label for="productBarStyleSelect">Multiplication style</label>
                         <select id="productBarStyleSelect" class="panel-select">
-                            <option value="gradient">Gradient</option>
+                            <option value="thick">Thick bar</option>
                             <option value="flared">Flared ends</option>
                             <option value="midline">Thin midline</option>
                             <option value="nested-parentheses">Nested parentheses</option>
                             <option value="outward-parentheses">Outward parentheses</option>
                         </select>
+                        <label class="bar-gradient-option" for="operationBarGradientCheckbox">
+                            <input id="operationBarGradientCheckbox" type="checkbox" checked>
+                            <span>Apply black–white–black gradient</span>
+                        </label>
                     </div>
                     <div id="moveHistoryControls"></div>
                 </div>
@@ -3679,8 +3696,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260911-negative-unit"></script>
-    <script src="exploded-algebra-tool.js?v=20260911-negative-unit"></script>
+    <script src="exploded-algebra-renderer.js?v=20260911-bar-gradient-toggle"></script>
+    <script src="exploded-algebra-tool.js?v=20260911-bar-gradient-toggle"></script>
 
 </body>
 </html>
