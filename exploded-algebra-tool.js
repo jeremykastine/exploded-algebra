@@ -4347,12 +4347,15 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (builderActive) {
-                savedMainWorkspaceView = captureWorkspaceView();
+                // The builder preview has its own top-left fit-to-screen layout.
+                // Preserve the main workspace's exact view without borrowing or
+                // changing that state while the builder is open.
+                savedMainWorkspaceView = {
+                    zoom: workspaceZoom,
+                    panX: workspacePanX,
+                    panY: workspacePanY
+                };
                 builderWorkspaceViewActive = true;
-                workspaceZoom = 1;
-                workspacePanX = 0;
-                workspacePanY = 0;
-                applyWorkspaceZoomSizing();
                 return;
             }
 
@@ -4362,14 +4365,14 @@ ctx.font = SETTINGS.textFont;
             }
             const view = savedMainWorkspaceView;
             savedMainWorkspaceView = null;
+            workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, view.zoom));
+            workspacePanX = Number.isFinite(view.panX) ? view.panX : 0;
+            workspacePanY = Number.isFinite(view.panY) ? view.panY : 0;
             if (expressionRoot) {
                 drawExpression();
             } else {
                 applyWorkspaceZoomSizing();
             }
-            requestAnimationFrame(() => {
-                restoreWorkspaceView(view);
-            });
         }
 
         function setStatus(message) {
@@ -8096,8 +8099,6 @@ ctx.font = SETTINGS.textFont;
             `;
             builderRewritePreview.classList.remove("hidden");
             fitBuilderRewritePreview();
-            svgContainer.scrollLeft = 0;
-            svgContainer.scrollTop = 0;
         }
 
         function getBuilderPreviewSvgSize(container) {
@@ -9876,7 +9877,11 @@ function renderToolArea() {
             hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
-            syncBuilderWorkspaceView(builderActive);
+            const exitingBuilder = !builderActive && builderWorkspaceViewActive;
+            if (builderActive) {
+                // Save the main view before the builder layout changes the page.
+                syncBuilderWorkspaceView(true);
+            }
             document.body.classList.toggle("expression-builder-active", builderActive);
             document.body.classList.toggle("selection-active", selectionActive);
             if (builderKeypadPanel) {
@@ -9884,6 +9889,10 @@ function renderToolArea() {
             }
             if (builderInputRail) {
                 builderInputRail.classList.toggle("hidden", !builderActive);
+            }
+            if (exitingBuilder) {
+                // Restore only after the normal workspace dimensions are back.
+                syncBuilderWorkspaceView(false);
             }
             if (!builderActive && builderCommandPanel) {
                 builderCommandPanel.replaceChildren();
