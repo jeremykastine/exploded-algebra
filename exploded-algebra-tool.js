@@ -1847,9 +1847,6 @@ Promise.resolve().then(() => {
         let suppressedPressHoldClick = null;
         let activeStepGuidanceIndex = null;
         let activeStepGuidanceSource = null;
-        let initialStepGuidancePending = false;
-        let queuedAutomaticStepIndex = null;
-        let lastAutomaticStepIndex = null;
 
         function isExpressionBuilderButton(target) {
             return !!target.closest("#builderKeypadPanel");
@@ -2026,43 +2023,8 @@ Promise.resolve().then(() => {
             pressHoldPopover.classList.remove("hidden");
         }
 
-        function resetAutomaticStepGuidance() {
-            hidePressHoldPopover();
-            initialStepGuidancePending = true;
-            queuedAutomaticStepIndex = null;
-            lastAutomaticStepIndex = null;
-        }
-
-        function presentAutomaticStepGuidance(currentStepIndex) {
-            if (document.body.classList.contains("settings-active")) {
-                return;
-            }
-            if (initialStepGuidancePending) {
-                initialStepGuidancePending = false;
-                queuedAutomaticStepIndex = currentStepIndex >= 0 ? currentStepIndex : null;
-                showStepGuidance(-1, "automatic");
-                return;
-            }
-            if (activeStepGuidanceSource === "automatic" && activeStepGuidanceIndex === -1) {
-                queuedAutomaticStepIndex = currentStepIndex >= 0 ? currentStepIndex : null;
-                return;
-            }
-            if (currentStepIndex >= 0 && currentStepIndex !== lastAutomaticStepIndex) {
-                lastAutomaticStepIndex = currentStepIndex;
-                showStepGuidance(currentStepIndex, "automatic");
-            }
-        }
-
         function dismissStepGuidance() {
-            const shouldShowFirstStep = activeStepGuidanceSource === "automatic" &&
-                activeStepGuidanceIndex === -1 && queuedAutomaticStepIndex !== null;
-            const nextStepIndex = queuedAutomaticStepIndex;
-            queuedAutomaticStepIndex = null;
             hidePressHoldPopover();
-            if (shouldShowFirstStep) {
-                lastAutomaticStepIndex = nextStepIndex;
-                requestAnimationFrame(() => showStepGuidance(nextStepIndex, "automatic"));
-            }
         }
 
         function preserveNonBuilderButtonTitle(button) {
@@ -3681,7 +3643,6 @@ Promise.resolve().then(() => {
 
             renderLeftPanelMath();
             scheduleTopPanelHeightUpdate(level);
-            presentAutomaticStepGuidance(currentStepIndex);
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
@@ -3730,7 +3691,7 @@ Promise.resolve().then(() => {
 
             currentLevelIndex = levelIndex;
             resetDemoStateForCurrentLevel();
-            resetAutomaticStepGuidance();
+            hidePressHoldPopover();
             resetSolutionRecorderForCurrentLevel();
             resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
