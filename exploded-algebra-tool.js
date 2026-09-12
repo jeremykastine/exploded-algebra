@@ -1252,14 +1252,14 @@ Promise.resolve().then(() => {
         const modeChoiceBackdrop = document.getElementById("modeChoiceBackdrop");
         const modeChoiceTitle = document.getElementById("modeChoiceTitle");
 
-        const PLAY_MODES = {
-            guided: "guided",
-            unguided: "unguided",
-            finalOnly: "final-only"
+        const ASSISTANCE_LEVELS = {
+            high: "high",
+            medium: "medium",
+            low: "low"
         };
 
-        let playMode = PLAY_MODES.unguided;
-        let playModeWasSpecifiedByNavigation = false;
+        let assistanceLevel = ASSISTANCE_LEVELS.medium;
+        let assistanceWasSpecifiedByNavigation = false;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -1776,7 +1776,7 @@ Promise.resolve().then(() => {
                 </section>
             `);
 
-            const stepsToMeasure = playMode === PLAY_MODES.finalOnly && level.steps && level.steps.length
+            const stepsToMeasure = assistanceLevel === ASSISTANCE_LEVELS.low && level.steps && level.steps.length
                 ? [level.steps[level.steps.length - 1]]
                 : (level.steps || []);
             stepsToMeasure.forEach(step => {
@@ -2981,7 +2981,7 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return playMode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel());
+            return assistanceLevel === ASSISTANCE_LEVELS.high && hasGuidedMode(getCurrentLevel());
         }
 
         function getCurrentDemoStep() {
@@ -3024,8 +3024,8 @@ Promise.resolve().then(() => {
         }
 
         function updateModeControls() {
-            if (playMode === PLAY_MODES.guided && !hasGuidedMode(getCurrentLevel())) {
-                playMode = PLAY_MODES.unguided;
+            if (assistanceLevel === ASSISTANCE_LEVELS.high && !hasGuidedMode(getCurrentLevel())) {
+                assistanceLevel = ASSISTANCE_LEVELS.medium;
             }
             refreshDemoBodyClass();
         }
@@ -3035,10 +3035,10 @@ Promise.resolve().then(() => {
             updateModeControls();
         }
 
-        function setPlayMode(mode, options = {}) {
-            const nextMode = normalizePlayModeForLevel(mode, getCurrentLevel()) || PLAY_MODES.unguided;
-            const changed = playMode !== nextMode;
-            playMode = nextMode;
+        function setAssistanceLevel(level, options = {}) {
+            const nextLevel = normalizeAssistanceLevelForLevel(level, getCurrentLevel()) || ASSISTANCE_LEVELS.medium;
+            const changed = assistanceLevel !== nextLevel;
+            assistanceLevel = nextLevel;
             updateModeControls();
             if (options.reload && changed) {
                 loadLevel(currentLevelIndex);
@@ -3048,38 +3048,48 @@ Promise.resolve().then(() => {
             }
         }
 
-        function updateModeQueryString(mode) {
-            if (!window.history || !window.history.replaceState) {
-                return;
-            }
-            const url = new URL(window.location.href);
-            url.searchParams.set("mode", mode);
-            window.history.replaceState(null, "", url.toString());
-        }
-
-        function clearModeQueryString() {
+        function updateAssistanceQueryString(level) {
             if (!window.history || !window.history.replaceState) {
                 return;
             }
             const url = new URL(window.location.href);
             url.searchParams.delete("mode");
+            url.searchParams.set("assistance", level);
             window.history.replaceState(null, "", url.toString());
         }
 
-        function playModeFromQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
-            return Object.values(PLAY_MODES).includes(requestedMode)
-                ? requestedMode
-                : null;
+        function clearAssistanceQueryString() {
+            if (!window.history || !window.history.replaceState) {
+                return;
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.delete("assistance");
+            url.searchParams.delete("mode");
+            window.history.replaceState(null, "", url.toString());
         }
 
-        function normalizePlayModeForLevel(mode, level) {
-            if (mode === PLAY_MODES.finalOnly || mode === PLAY_MODES.unguided) {
-                return mode;
+        function assistanceLevelFromQueryString() {
+            const params = new URLSearchParams(window.location.search);
+            const requestedLevel = String(params.get("assistance") || "").trim().toLowerCase();
+            if (Object.values(ASSISTANCE_LEVELS).includes(requestedLevel)) {
+                return requestedLevel;
             }
-            if (mode === PLAY_MODES.guided && hasGuidedMode(level)) {
-                return mode;
+
+            // Preserve previously shared URLs that used the old mode names.
+            const legacyMode = String(params.get("mode") || "").trim().toLowerCase();
+            return {
+                guided: ASSISTANCE_LEVELS.high,
+                unguided: ASSISTANCE_LEVELS.medium,
+                "final-only": ASSISTANCE_LEVELS.low
+            }[legacyMode] || null;
+        }
+
+        function normalizeAssistanceLevelForLevel(assistance, level) {
+            if (assistance === ASSISTANCE_LEVELS.low || assistance === ASSISTANCE_LEVELS.medium) {
+                return assistance;
+            }
+            if (assistance === ASSISTANCE_LEVELS.high && hasGuidedMode(level)) {
+                return assistance;
             }
             return null;
         }
@@ -3090,8 +3100,8 @@ Promise.resolve().then(() => {
             }
         }
 
-        function startLoadedLevel(mode) {
-            playMode = normalizePlayModeForLevel(mode, getCurrentLevel()) || PLAY_MODES.unguided;
+        function startLoadedLevel(level) {
+            assistanceLevel = normalizeAssistanceLevelForLevel(level, getCurrentLevel()) || ASSISTANCE_LEVELS.medium;
             hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
@@ -3099,36 +3109,34 @@ Promise.resolve().then(() => {
 
         function showModeChoice(level) {
             if (!modeChoiceBackdrop) {
-                startLoadedLevel(PLAY_MODES.guided);
+                startLoadedLevel(ASSISTANCE_LEVELS.medium);
                 return;
             }
             if (modeChoiceTitle) {
-                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose a mode";
+                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose an assistance level";
             }
-            const guidedButton = modeChoiceBackdrop.querySelector('[data-play-mode="guided"]');
+            const highButton = modeChoiceBackdrop.querySelector('[data-assistance-level="high"]');
             const guidedAvailable = hasGuidedMode(level);
-            if (guidedButton) {
-                guidedButton.classList.toggle("hidden", !guidedAvailable);
+            if (highButton) {
+                highButton.classList.toggle("hidden", !guidedAvailable);
             }
-            showNoLevelSelectedState("Choose a play mode to begin this exercise.");
+            showNoLevelSelectedState("Choose an assistance level to begin this exercise.");
             modeChoiceBackdrop.classList.remove("hidden");
-            const firstButton = guidedAvailable
-                ? guidedButton
-                : modeChoiceBackdrop.querySelector('[data-play-mode="unguided"]');
-            modeChoiceBackdrop.querySelectorAll("button[data-play-mode]").forEach(button => {
-                button.classList.toggle("default-mode-choice", button === firstButton);
+            const mediumButton = modeChoiceBackdrop.querySelector('[data-assistance-level="medium"]');
+            modeChoiceBackdrop.querySelectorAll("button[data-assistance-level]").forEach(button => {
+                button.classList.toggle("default-mode-choice", button === mediumButton);
             });
-            if (firstButton) {
-                requestAnimationFrame(() => firstButton.focus());
+            if (mediumButton) {
+                requestAnimationFrame(() => mediumButton.focus());
             }
         }
 
         function beginLoadedLevel(level) {
-            const requestedMode = playModeFromQueryString();
-            const validMode = normalizePlayModeForLevel(requestedMode, level);
-            playModeWasSpecifiedByNavigation = !!validMode;
-            if (validMode) {
-                startLoadedLevel(validMode);
+            const requestedLevel = assistanceLevelFromQueryString();
+            const validLevel = normalizeAssistanceLevelForLevel(requestedLevel, level);
+            assistanceWasSpecifiedByNavigation = !!validLevel;
+            if (validLevel) {
+                startLoadedLevel(validLevel);
                 return;
             }
             showModeChoice(level);
@@ -3462,7 +3470,7 @@ Promise.resolve().then(() => {
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
-            if (playMode === PLAY_MODES.finalOnly) {
+            if (assistanceLevel === ASSISTANCE_LEVELS.low) {
                 const finalStepIndex = level.steps.length - 1;
                 if (expressionMatchesParenthesizedText(level.steps[finalStepIndex].expression)) {
                     completedSteps[finalStepIndex] = true;
@@ -3575,7 +3583,7 @@ Promise.resolve().then(() => {
                     : level.startExpression
             );
 
-            const finalOnlyMode = playMode === PLAY_MODES.finalOnly;
+            const finalOnlyMode = assistanceLevel === ASSISTANCE_LEVELS.low;
             const finalStepIndex = Math.max(0, (level.steps || []).length - 1);
             const currentStepIndex = finalOnlyMode
                 ? (completion[finalStepIndex] ? -1 : finalStepIndex)
@@ -3802,8 +3810,8 @@ Promise.resolve().then(() => {
             if (resetExerciseButton) {
                 resetExerciseButton.addEventListener("click", () => {
                     if (window.confirm("Are you sure you want to reset the exercise?")) {
-                        if (!playModeWasSpecifiedByNavigation) {
-                            clearModeQueryString();
+                        if (!assistanceWasSpecifiedByNavigation) {
+                            clearAssistanceQueryString();
                         }
                         window.location.reload();
                     }
@@ -3811,16 +3819,16 @@ Promise.resolve().then(() => {
             }
             if (modeChoiceBackdrop) {
                 modeChoiceBackdrop.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-play-mode]");
+                    const button = event.target.closest("button[data-assistance-level]");
                     if (!button) {
                         return;
                     }
-                    const selectedMode = normalizePlayModeForLevel(button.dataset.playMode, getCurrentLevel());
-                    if (!selectedMode) {
+                    const selectedLevel = normalizeAssistanceLevelForLevel(button.dataset.assistanceLevel, getCurrentLevel());
+                    if (!selectedLevel) {
                         return;
                     }
-                    updateModeQueryString(selectedMode);
-                    startLoadedLevel(selectedMode);
+                    updateAssistanceQueryString(selectedLevel);
+                    startLoadedLevel(selectedLevel);
                 });
             }
             setLeftHandedLayout(loadSavedHandedness());
