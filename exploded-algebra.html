@@ -2195,9 +2195,10 @@
         }
         .mode-choice-actions {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 14px;
         }
+        .mode-choice-actions button.hidden { display: none; }
         .mode-choice-actions button {
             min-height: 58px;
             padding: 12px 16px;
@@ -2210,7 +2211,7 @@
             font-weight: 800;
             cursor: pointer;
         }
-        .mode-choice-actions button:first-child {
+        .mode-choice-actions button.default-mode-choice {
             background: #7040a0;
             color: #fff;
         }
@@ -3680,16 +3681,17 @@
     <div id="modeChoiceBackdrop" class="mode-choice-backdrop hidden">
         <section class="mode-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-describedby="modeChoicePrompt">
             <h2 id="modeChoiceTitle">Choose a mode</h2>
-            <p id="modeChoicePrompt">Do you want to do this exercise guided or unguided?</p>
+            <p id="modeChoicePrompt">How do you want to do this exercise?</p>
             <div class="mode-choice-actions">
                 <button type="button" data-play-mode="guided">Guided</button>
                 <button type="button" data-play-mode="unguided">Unguided</button>
+                <button type="button" data-play-mode="final-only">Final expression only</button>
             </div>
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260911-bar-gradient-toggle"></script>
-    <script src="exploded-algebra-tool.js?v=20260912-manual-step-guidance"></script>
+    <script src="exploded-algebra-tool.js?v=20260912-final-expression-mode"></script>
 
 </body>
 </html>

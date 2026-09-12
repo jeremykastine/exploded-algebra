@@ -1254,7 +1254,8 @@ Promise.resolve().then(() => {
 
         const PLAY_MODES = {
             guided: "guided",
-            unguided: "unguided"
+            unguided: "unguided",
+            finalOnly: "final-only"
         };
 
         let playMode = PLAY_MODES.unguided;
@@ -1775,7 +1776,10 @@ Promise.resolve().then(() => {
                 </section>
             `);
 
-            (level.steps || []).forEach(step => {
+            const stepsToMeasure = playMode === PLAY_MODES.finalOnly && level.steps && level.steps.length
+                ? [level.steps[level.steps.length - 1]]
+                : (level.steps || []);
+            stepsToMeasure.forEach(step => {
                 const expressions = uniqueToolKeys([
                     step.beforeKatex || "",
                     step.afterKatex || step.katex || step.expression || ""
@@ -2188,7 +2192,7 @@ Promise.resolve().then(() => {
         }
 
         function isInteractiveLevel(level) {
-            return !!level && (!hasGuidedMode(level) || playMode === PLAY_MODES.unguided);
+            return !!level && !isDemoModeActive();
         }
 
         function getExpressionTextForTrace() {
@@ -3020,7 +3024,7 @@ Promise.resolve().then(() => {
         }
 
         function updateModeControls() {
-            if (!hasGuidedMode(getCurrentLevel())) {
+            if (playMode === PLAY_MODES.guided && !hasGuidedMode(getCurrentLevel())) {
                 playMode = PLAY_MODES.unguided;
             }
             refreshDemoBodyClass();
@@ -3032,9 +3036,7 @@ Promise.resolve().then(() => {
         }
 
         function setPlayMode(mode, options = {}) {
-            const nextMode = mode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel())
-                ? PLAY_MODES.guided
-                : PLAY_MODES.unguided;
+            const nextMode = normalizePlayModeForLevel(mode, getCurrentLevel()) || PLAY_MODES.unguided;
             const changed = playMode !== nextMode;
             playMode = nextMode;
             updateModeControls();
@@ -3051,9 +3053,7 @@ Promise.resolve().then(() => {
                 return;
             }
             const url = new URL(window.location.href);
-            url.searchParams.set("mode", mode === PLAY_MODES.guided
-                ? PLAY_MODES.guided
-                : PLAY_MODES.unguided);
+            url.searchParams.set("mode", mode);
             window.history.replaceState(null, "", url.toString());
         }
 
@@ -3069,9 +3069,19 @@ Promise.resolve().then(() => {
         function playModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
             const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
-            return requestedMode === PLAY_MODES.guided || requestedMode === PLAY_MODES.unguided
+            return Object.values(PLAY_MODES).includes(requestedMode)
                 ? requestedMode
                 : null;
+        }
+
+        function normalizePlayModeForLevel(mode, level) {
+            if (mode === PLAY_MODES.finalOnly || mode === PLAY_MODES.unguided) {
+                return mode;
+            }
+            if (mode === PLAY_MODES.guided && hasGuidedMode(level)) {
+                return mode;
+            }
+            return null;
         }
 
         function hideModeChoice() {
@@ -3081,9 +3091,7 @@ Promise.resolve().then(() => {
         }
 
         function startLoadedLevel(mode) {
-            playMode = mode === PLAY_MODES.guided && hasGuidedMode(getCurrentLevel())
-                ? PLAY_MODES.guided
-                : PLAY_MODES.unguided;
+            playMode = normalizePlayModeForLevel(mode, getCurrentLevel()) || PLAY_MODES.unguided;
             hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
@@ -3097,24 +3105,30 @@ Promise.resolve().then(() => {
             if (modeChoiceTitle) {
                 modeChoiceTitle.textContent = level && level.title ? level.title : "Choose a mode";
             }
-            showNoLevelSelectedState("Choose guided or unguided to begin this exercise.");
-            modeChoiceBackdrop.classList.remove("hidden");
             const guidedButton = modeChoiceBackdrop.querySelector('[data-play-mode="guided"]');
+            const guidedAvailable = hasGuidedMode(level);
             if (guidedButton) {
-                requestAnimationFrame(() => guidedButton.focus());
+                guidedButton.classList.toggle("hidden", !guidedAvailable);
+            }
+            showNoLevelSelectedState("Choose a play mode to begin this exercise.");
+            modeChoiceBackdrop.classList.remove("hidden");
+            const firstButton = guidedAvailable
+                ? guidedButton
+                : modeChoiceBackdrop.querySelector('[data-play-mode="unguided"]');
+            modeChoiceBackdrop.querySelectorAll("button[data-play-mode]").forEach(button => {
+                button.classList.toggle("default-mode-choice", button === firstButton);
+            });
+            if (firstButton) {
+                requestAnimationFrame(() => firstButton.focus());
             }
         }
 
         function beginLoadedLevel(level) {
-            if (!hasGuidedMode(level)) {
-                playModeWasSpecifiedByNavigation = false;
-                startLoadedLevel(PLAY_MODES.unguided);
-                return;
-            }
             const requestedMode = playModeFromQueryString();
-            playModeWasSpecifiedByNavigation = !!requestedMode;
-            if (requestedMode) {
-                startLoadedLevel(requestedMode);
+            const validMode = normalizePlayModeForLevel(requestedMode, level);
+            playModeWasSpecifiedByNavigation = !!validMode;
+            if (validMode) {
+                startLoadedLevel(validMode);
                 return;
             }
             showModeChoice(level);
@@ -3448,6 +3462,14 @@ Promise.resolve().then(() => {
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
+            if (playMode === PLAY_MODES.finalOnly) {
+                const finalStepIndex = level.steps.length - 1;
+                if (expressionMatchesParenthesizedText(level.steps[finalStepIndex].expression)) {
+                    completedSteps[finalStepIndex] = true;
+                }
+                maybePrepareCompletedLevelExport(level);
+                return;
+            }
             const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
             if (
                 nextStepIndex >= 0
@@ -3553,25 +3575,36 @@ Promise.resolve().then(() => {
                     : level.startExpression
             );
 
-            const currentStepIndex = completion.findIndex(isComplete => !isComplete);
-            const isExerciseComplete = currentStepIndex < 0;
+            const finalOnlyMode = playMode === PLAY_MODES.finalOnly;
+            const finalStepIndex = Math.max(0, (level.steps || []).length - 1);
+            const currentStepIndex = finalOnlyMode
+                ? (completion[finalStepIndex] ? -1 : finalStepIndex)
+                : completion.findIndex(isComplete => !isComplete);
+            const isExerciseComplete = finalOnlyMode
+                ? !!completion[finalStepIndex]
+                : currentStepIndex < 0;
             const firstSolutionStepIndex = firstStepIsInitialExpression ? 1 : 0;
             const lastVisibleStepIndex = currentStepIndex >= 0
                 ? currentStepIndex
                 : Math.max(0, (level.steps || []).length - 1);
-            const stepsHtml = (level.steps || [])
-                .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
-                .map((step, relativeIndex) => {
-                const index = firstSolutionStepIndex + relativeIndex;
+            const visibleStepEntries = finalOnlyMode
+                ? (level.steps && level.steps.length ? [{ step: level.steps[finalStepIndex], index: finalStepIndex }] : [])
+                : (level.steps || [])
+                    .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
+                    .map((step, relativeIndex) => ({ step, index: firstSolutionStepIndex + relativeIndex }));
+            const stepsHtml = visibleStepEntries
+                .map(({ step, index }) => {
                 const isComplete = !!completion[index];
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
-                const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
+                const displayKatex = finalOnlyMode
+                    ? (completedKatex || step.beforeKatex || step.expression || "")
+                    : (!isComplete && step.beforeKatex ? step.beforeKatex : completedKatex);
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
                 return `
-                    <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}">
+                    <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}"${finalOnlyMode ? ' aria-label="Target final expression"' : ""}>
                         <div class="solution-step step-card step-hold-target ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
                             ${completedCheckHtml}
@@ -3769,7 +3802,7 @@ Promise.resolve().then(() => {
             if (resetExerciseButton) {
                 resetExerciseButton.addEventListener("click", () => {
                     if (window.confirm("Are you sure you want to reset the exercise?")) {
-                        if (hasGuidedMode(getCurrentLevel()) && !playModeWasSpecifiedByNavigation) {
+                        if (!playModeWasSpecifiedByNavigation) {
                             clearModeQueryString();
                         }
                         window.location.reload();
@@ -3782,9 +3815,10 @@ Promise.resolve().then(() => {
                     if (!button) {
                         return;
                     }
-                    const selectedMode = button.dataset.playMode === PLAY_MODES.guided
-                        ? PLAY_MODES.guided
-                        : PLAY_MODES.unguided;
+                    const selectedMode = normalizePlayModeForLevel(button.dataset.playMode, getCurrentLevel());
+                    if (!selectedMode) {
+                        return;
+                    }
                     updateModeQueryString(selectedMode);
                     startLoadedLevel(selectedMode);
                 });

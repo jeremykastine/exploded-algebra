@@ -119,12 +119,17 @@ recorded path. Zoom in, zoom out, and zoom reset are also retained as moves.
 
 The home page links to Introduction.html and Exercises.html.
 
-Built-in level URLs include the selected JSON file in the level query parameter. A
-level that contains guided steps accepts mode=guided or mode=unguided, for example:
+Built-in level URLs include the selected JSON file in the level query parameter.
+Every level accepts mode=unguided or mode=final-only, and a level that contains
+guided steps also accepts mode=guided, for example:
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
-If mode is absent or invalid, a guided-capable exercise asks the learner to choose.
-Exercises without guided steps start unguided without asking.
+  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=final-only
+Final-expression-only mode shows the original problem and final target while hiding
+all intermediate conventional steps. Completion is checked directly against the
+final expression, so the learner may use a different valid sequence of moves.
+If mode is absent or invalid, the learner is asked to choose. The Guided choice is
+hidden for exercises without recorded guidance.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
