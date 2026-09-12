@@ -1712,6 +1712,67 @@ function exprFromData(data) {
     return new ExprNode("value", [], "?");
 }
 
+function escapeKatexValue(value) {
+    return String(value ?? "")
+        .replace(/\\/g, "\\textbackslash{}")
+        .replace(/([{}_#$%&])/g, "\\$1");
+}
+
+function expressionToKatex(rootOrData) {
+    const root = exprFromData(rootOrData);
+
+    const isNegativeProduct = node => node && node.type === "prod" &&
+        node.args.length > 1 && node.args[0].type === "value" && node.args[0].value === "-1";
+
+    const render = (node, parentType = null) => {
+        if (!node) {
+            return "";
+        }
+        if (node.type === "value") {
+            return escapeKatexValue(node.value);
+        }
+        if (node.type === "inv") {
+            return `\\frac{1}{${render(node.args[0])}}`;
+        }
+        if (node.type === "sum") {
+            const body = node.args.map((term, index) => {
+                if (isNegativeProduct(term)) {
+                    const negativeBody = render(new ExprNode("prod", term.args.slice(1).map(exprFromData), null), "sum");
+                    return `${index === 0 ? "-" : " - "}${negativeBody}`;
+                }
+                return `${index === 0 ? "" : " + "}${render(term, "sum")}`;
+            }).join("");
+            return parentType === "prod" || parentType === "inv"
+                ? `\\left(${body}\\right)`
+                : body;
+        }
+        if (node.type === "prod") {
+            if (isNegativeProduct(node)) {
+                const positive = new ExprNode("prod", node.args.slice(1).map(exprFromData), null);
+                return `-${render(positive, parentType)}`;
+            }
+            const factors = node.args.map(factor => render(factor, "prod"));
+            return factors.map((factor, index) => {
+                if (index === 0) {
+                    return factor;
+                }
+                const previousNode = node.args[index - 1];
+                const currentNode = node.args[index];
+                const canJuxtapose = (
+                    previousNode.type === "value" && /^-?\d/.test(String(previousNode.value)) &&
+                    (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
+                ) || (
+                    previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
+                );
+                return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
+            }).join("");
+        }
+        return "?";
+    };
+
+    return render(root);
+}
+
 function renderExpressionInto(target, rootOrData, options = {}) {
     const targetElement = typeof target === "string" ? document.querySelector(target) : target;
     if (!targetElement) {
@@ -1785,6 +1846,7 @@ window.ExplodedAlgebraRenderer = {
     drawValueNodeToContext,
     renderExpressionSvgMarkup,
     renderExpressionInto,
+    expressionToKatex,
     renderMiniOopsSvg,
     renderAllInDocument
 };

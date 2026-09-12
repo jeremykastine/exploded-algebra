@@ -1258,6 +1258,11 @@ Promise.resolve().then(() => {
             low: "low"
         };
 
+        const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "builder";
+        let authoringPhase = "";
+        let authoringInitialExpressionCommitted = false;
+        let authoringVariableOptions = ["x", "y", "z", "a", "b", "c"];
+
         let assistanceLevel = ASSISTANCE_LEVELS.medium;
         let assistanceWasSpecifiedByNavigation = false;
         let demoStepIndex = 0;
@@ -2211,6 +2216,8 @@ Promise.resolve().then(() => {
             delete copy.createdAt;
             delete copy.description;
             delete copy.instructions;
+            copy.format = copy.format || "exploded-algebra-level";
+            copy.formatVersion = copy.formatVersion || 1;
             copy.kind = "interactive";
             return copy;
         }
@@ -2245,6 +2252,7 @@ Promise.resolve().then(() => {
                 levelId: level.id || "",
                 levelTitle: level.title || "",
                 startExpression: level.startExpression || "",
+                includeUndoActions: level.includeUndoActions !== false,
                 actions: [],
                 demoSteps: []
             };
@@ -2254,6 +2262,12 @@ Promise.resolve().then(() => {
             return {
                 root: cloneExpressionTree(expressionRoot),
                 completedSteps: Array.isArray(completedSteps) ? completedSteps.slice() : [],
+                recorderActionCount: solutionRecorder && Array.isArray(solutionRecorder.actions)
+                    ? solutionRecorder.actions.length
+                    : 0,
+                recorderDemoStepCount: solutionRecorder && Array.isArray(solutionRecorder.demoSteps)
+                    ? solutionRecorder.demoSteps.length
+                    : 0,
                 completionExportReadyForRun,
                 completionExportCompletedAt: completionExportCompletedAtDate
                     ? completionExportCompletedAtDate.toISOString()
@@ -2318,10 +2332,21 @@ Promise.resolve().then(() => {
             }
             clearSelection();
             clearInteraction();
-            recordUndoForSolution(
-                beforeExpression,
-                getExpressionTextForTrace()
-            );
+            if (solutionRecorder && solutionRecorder.includeUndoActions === false) {
+                solutionRecorder.actions.length = Math.min(
+                    solutionRecorder.actions.length,
+                    Number.isInteger(snapshot.recorderActionCount) ? snapshot.recorderActionCount : 0
+                );
+                solutionRecorder.demoSteps.length = Math.min(
+                    solutionRecorder.demoSteps.length,
+                    Number.isInteger(snapshot.recorderDemoStepCount) ? snapshot.recorderDemoStepCount : 0
+                );
+            } else {
+                recordUndoForSolution(
+                    beforeExpression,
+                    getExpressionTextForTrace()
+                );
+            }
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
             renderCurrentExpressionDisplay();
@@ -2685,6 +2710,12 @@ Promise.resolve().then(() => {
             if (!level || typeof level !== "object" || Array.isArray(level)) {
                 throw new Error(`${sourceName} must contain one JSON level object.`);
             }
+            if (
+                level.formatVersion !== undefined &&
+                (!Number.isInteger(level.formatVersion) || level.formatVersion < 1)
+            ) {
+                throw new Error(`${sourceName} has an invalid formatVersion.`);
+            }
             if (typeof level.id !== "string" || !level.id.trim()) {
                 throw new Error(`${sourceName} is missing a valid id.`);
             }
@@ -2821,11 +2852,13 @@ Promise.resolve().then(() => {
         const CUSTOM_LEVEL_STORAGE_KEY = "explodedAlgebra.currentCustomLevel";
         const CUSTOM_LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
 
-        function readCustomLevelTransferPayload() {
+        function readCustomLevelTransferPayload(storageKey = CUSTOM_LEVEL_STORAGE_KEY, useLocalStorage = false) {
             let payloadText = null;
 
             try {
-                payloadText = window.sessionStorage.getItem(CUSTOM_LEVEL_STORAGE_KEY);
+                payloadText = useLocalStorage
+                    ? window.localStorage.getItem(storageKey)
+                    : window.sessionStorage.getItem(storageKey);
             } catch (error) {
                 // file:// pages can have browser-specific storage behavior.
             }
@@ -2896,6 +2929,21 @@ Promise.resolve().then(() => {
             const params = new URLSearchParams(window.location.search);
             const requestedLevelFile = String(params.get("level") || "").trim();
             const navigationSource = String(params.get("source") || "").toLowerCase();
+
+            if (navigationSource === "builder") {
+                try {
+                    const draftKey = String(params.get("draftKey") || "").trim();
+                    const payload = readCustomLevelTransferPayload(draftKey || CUSTOM_LEVEL_STORAGE_KEY, !!draftKey);
+                    const parsed = JSON.parse(payload.text);
+                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Exercise Builder draft");
+                } catch (error) {
+                    console.error("The Exercise Builder test level could not be loaded.", error);
+                    showNoLevelSelectedState(error && error.message
+                        ? error.message
+                        : "The Exercise Builder test level could not be loaded. Return to the builder and try again.");
+                    return false;
+                }
+            }
 
             if (requestedLevelFile) {
                 // Levels launched from the home page carry their JSON in this tab so
@@ -3718,6 +3766,300 @@ Promise.resolve().then(() => {
             updateWorkspaceToolbar();
         }
 
+        function notifyAuthoringHost(type, detail = {}) {
+            if (!authoringSessionActive) {
+                return;
+            }
+            const message = {
+                source: "exploded-algebra-authoring",
+                type,
+                detail: clonePlainData(detail)
+            };
+            window.dispatchEvent(new CustomEvent("exploded-algebra-authoring", { detail: message }));
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage(message, window.location.origin === "null" ? "*" : window.location.origin);
+            }
+        }
+
+        function makeAuthoringLevel(config, startExpression) {
+            const expression = String(startExpression || "(0)");
+            const initialKatex = config.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expression));
+            return {
+                format: "exploded-algebra-level",
+                formatVersion: 1,
+                kind: "interactive",
+                id: config.id || "exercise-builder-draft",
+                title: config.title || "Exercise Builder Draft",
+                startExpression: expression,
+                initialKatex,
+                evaluationLevel: Number.isInteger(config.evaluationLevel) ? config.evaluationLevel : 0,
+                numericalRewrite: clonePlainData(config.numericalRewrite || {
+                    addition: "no-carry",
+                    multiplication: "one-significant-figure",
+                    allowNegativeOne: false,
+                    allowInverses: false
+                }),
+                variables: Array.isArray(config.variables) && config.variables.length
+                    ? config.variables.slice()
+                    : authoringVariableOptions.slice(),
+                excludedDefaultTools: clonePlainData(config.excludedDefaultTools || []),
+                allowedUnavailableTools: clonePlainData(config.allowedUnavailableTools || []),
+                includeUndoActions: config.includeUndoActions !== false,
+                steps: [{ expression, katex: initialKatex }]
+            };
+        }
+
+        function installAuthoringLevel(level) {
+            const validated = validateChosenLevel(level, "Exercise Builder draft");
+            LEVELS.splice(0, LEVELS.length, validated);
+            currentLevelIndex = 0;
+            assistanceLevel = ASSISTANCE_LEVELS.medium;
+            assistanceWasSpecifiedByNavigation = true;
+            hideModeChoice();
+            document.body.classList.remove("no-level-loaded");
+            loadLevel(0);
+            return validated;
+        }
+
+        function selectWholeExpressionForAuthoring() {
+            if (!expressionRoot) {
+                return false;
+            }
+            clearSelection();
+            selection.status = "yes";
+            selection.node = expressionRoot;
+            selection.firstPart = 0;
+            selection.lastPart = expressionRoot.type === "sum" || expressionRoot.type === "prod"
+                ? Math.max(0, expressionRoot.args.length - 1)
+                : 0;
+            uiState.selectionRecorded = false;
+            return true;
+        }
+
+        function serializeBuilderNode(node) {
+            if (!node) {
+                return null;
+            }
+            return {
+                type: node.type,
+                value: node.value,
+                args: (node.args || []).map(serializeBuilderNode),
+                isBuilderPlaceholder: !!node.isBuilderPlaceholder,
+                isBuilderOuter: !!node.isBuilderOuter,
+                isBuilderActive: !!node.isBuilderActive
+            };
+        }
+
+        function reviveBuilderNode(data) {
+            if (!data) {
+                return null;
+            }
+            const node = new ExprNode(
+                data.type,
+                Array.isArray(data.args) ? data.args.map(reviveBuilderNode) : [],
+                data.value
+            );
+            node.isBuilderPlaceholder = !!data.isBuilderPlaceholder;
+            node.isBuilderOuter = !!data.isBuilderOuter;
+            node.isBuilderActive = !!data.isBuilderActive;
+            return node;
+        }
+
+        function serializeExpressionState(snapshot) {
+            if (!snapshot || !snapshot.root) {
+                return null;
+            }
+            return {
+                expression: expressionToFullyParenthesizedText(snapshot.root),
+                completedSteps: clonePlainData(snapshot.completedSteps || []),
+                recorderActionCount: Number(snapshot.recorderActionCount) || 0,
+                recorderDemoStepCount: Number(snapshot.recorderDemoStepCount) || 0,
+                completionExportReadyForRun: !!snapshot.completionExportReadyForRun,
+                completionExportCompletedAt: snapshot.completionExportCompletedAt || null
+            };
+        }
+
+        function reviveExpressionState(snapshot) {
+            if (!snapshot || typeof snapshot.expression !== "string") {
+                return null;
+            }
+            return {
+                root: normalizeExpressionTree(textToExpression(snapshot.expression)),
+                completedSteps: clonePlainData(snapshot.completedSteps || []),
+                recorderActionCount: Number(snapshot.recorderActionCount) || 0,
+                recorderDemoStepCount: Number(snapshot.recorderDemoStepCount) || 0,
+                completionExportReadyForRun: !!snapshot.completionExportReadyForRun,
+                completionExportCompletedAt: snapshot.completionExportCompletedAt || null
+            };
+        }
+
+        function startInitialExpressionBuilder(builderDraft = null) {
+            if (!authoringSessionActive || authoringPhase !== "initial") {
+                return false;
+            }
+            clearInteraction();
+            if (!selectWholeExpressionForAuthoring()) {
+                return false;
+            }
+            uiState.activeTool = "authorInitial";
+            uiState.stage = "builder";
+            if (!beginExpressionBuilder("authorInitial")) {
+                return false;
+            }
+            authoringInitialExpressionCommitted = false;
+            if (builderDraft && builderDraft.root) {
+                uiState.expressionBuilder.root = reviveBuilderNode(builderDraft.root);
+                uiState.expressionBuilder.currentPath = Array.isArray(builderDraft.currentPath)
+                    ? builderDraft.currentPath.slice()
+                    : [];
+                uiState.expressionBuilder.history = Array.isArray(builderDraft.history)
+                    ? builderDraft.history.map(snapshot => ({
+                        root: reviveBuilderNode(snapshot.root),
+                        currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : []
+                    }))
+                    : [];
+                refreshExpressionBuilderPreview();
+            }
+            notifyAuthoringHost("state-change");
+            return true;
+        }
+
+        function loadInitialAuthoringSession(config = {}, resume = null) {
+            authoringPhase = "initial";
+            authoringVariableOptions = Array.isArray(config.variables) && config.variables.length
+                ? config.variables.slice()
+                : ["x", "y", "z", "a", "b", "c"];
+            const startExpression = resume && resume.currentExpression
+                ? resume.currentExpression
+                : "(0)";
+            installAuthoringLevel(makeAuthoringLevel(config, startExpression));
+            authoringInitialExpressionCommitted = !!(resume && resume.initialCommitted);
+            if (!authoringInitialExpressionCommitted || resume && resume.builderDraft) {
+                startInitialExpressionBuilder(resume && resume.builderDraft);
+            }
+            notifyAuthoringHost("session-loaded", { phase: authoringPhase });
+            return getAuthoringSnapshot();
+        }
+
+        function restoreRecordingState(resume) {
+            if (!resume) {
+                return;
+            }
+            if (typeof resume.currentExpression === "string" && resume.currentExpression.trim()) {
+                expressionRoot = normalizeExpressionTree(textToExpression(resume.currentExpression));
+                currentExpressionRoot = expressionRoot;
+            }
+            if (solutionRecorder && resume.recorder) {
+                solutionRecorder = {
+                    ...solutionRecorder,
+                    ...clonePlainData(resume.recorder),
+                    includeUndoActions: getCurrentLevel().includeUndoActions !== false,
+                    actions: clonePlainData(resume.recorder.actions || []),
+                    demoSteps: clonePlainData(resume.recorder.demoSteps || [])
+                };
+            }
+            expressionUndoHistory = Array.isArray(resume.undoHistory)
+                ? resume.undoHistory.map(reviveExpressionState).filter(Boolean)
+                : [];
+            stableExpressionState = reviveExpressionState(resume.stableState) || captureExpressionUndoState();
+            clearSelection();
+            clearInteraction();
+            layoutExpression(expressionRoot);
+            renderLevelInfo(currentLevelIndex);
+            renderCurrentExpressionDisplay();
+            refreshStatus();
+            drawExpression();
+            updateWorkspaceToolbar();
+        }
+
+        function loadRecordingAuthoringSession(level, resume = null) {
+            authoringPhase = "recording";
+            const recordingLevel = clonePlainData(level);
+            recordingLevel.kind = "interactive";
+            recordingLevel.includeUndoActions = level.includeUndoActions !== false;
+            recordingLevel.steps = [{
+                expression: recordingLevel.startExpression,
+                katex: recordingLevel.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(recordingLevel.startExpression))
+            }, {
+                expression: "(__ea_builder_unfinished__)",
+                katex: "\\text{Recording in progress}"
+            }];
+            installAuthoringLevel(recordingLevel);
+            restoreRecordingState(resume);
+            notifyAuthoringHost("session-loaded", { phase: authoringPhase });
+            return getAuthoringSnapshot();
+        }
+
+        function getAuthoringSnapshot() {
+            const builder = uiState.expressionBuilder;
+            return {
+                phase: authoringPhase,
+                currentExpression: getExpressionTextForTrace(),
+                currentKatex: expressionRoot ? ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) : "",
+                initialCommitted: authoringInitialExpressionCommitted,
+                builderActive: !!builder,
+                builderDraft: builder ? {
+                    root: serializeBuilderNode(builder.root),
+                    currentPath: builder.currentPath.slice(),
+                    history: (builder.history || []).map(snapshot => ({
+                        root: serializeBuilderNode(snapshot.root),
+                        currentPath: snapshot.currentPath.slice()
+                    }))
+                } : null,
+                recorder: solutionRecorder ? clonePlainData(solutionRecorder) : null,
+                undoHistory: expressionUndoHistory.map(serializeExpressionState).filter(Boolean),
+                stableState: serializeExpressionState(stableExpressionState)
+            };
+        }
+
+        function renderAuthoringExpression(expressionText) {
+            const node = normalizeExpressionTree(textToExpression(expressionText));
+            return renderExpressionSvgMarkup(node, {
+                className: "authoring-expression-preview",
+                role: "img",
+                ariaLabel: "Exploded Algebra expression",
+                settings: {
+                    padding: 14,
+                    marginX: 14,
+                    marginY: 14,
+                    textFont: "20px Verdana, Arial, Helvetica, sans-serif"
+                }
+            });
+        }
+
+        function installAuthoringApi() {
+            if (!authoringSessionActive) {
+                return;
+            }
+            document.body.classList.add("authoring-session");
+            window.ExplodedAlgebraAuthoring = Object.freeze({
+                loadInitialSession: loadInitialAuthoringSession,
+                loadRecordingSession: loadRecordingAuthoringSession,
+                startInitialExpressionBuilder,
+                getSnapshot: getAuthoringSnapshot,
+                generateKatex(expressionText) {
+                    return ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expressionText));
+                },
+                renderExpression: renderAuthoringExpression,
+                validateLevel(level) {
+                    return clonePlainData(validateChosenLevel(clonePlainData(level), "Authored exercise"));
+                },
+                getToolCatalog() {
+                    return AVAILABLE_BY_DEFAULT_TOOLS.map(key => ({
+                        key,
+                        label: stripHtmlTags(TOOL_INFO[key] || key) || key
+                    }));
+                },
+                refreshLayout() {
+                    scheduleResponsiveLayoutRecalculation();
+                    if (expressionRoot) {
+                        drawExpression();
+                    }
+                }
+            });
+            notifyAuthoringHost("ready");
+        }
+
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setMainButtonSize(loadSavedMainButtonSize());
@@ -3904,9 +4246,22 @@ Promise.resolve().then(() => {
                     }
                     performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
                 });
+                builderVariableRail.addEventListener("change", event => {
+                    const select = event.target.closest("select.authoring-variable-select");
+                    if (!select || !select.value || select.disabled) {
+                        return;
+                    }
+                    performBuilderAction("value", select.value);
+                    select.value = "";
+                });
             }
             updateWorkspaceToolbar();
-            loadInitialLevelFromNavigation();
+            if (authoringSessionActive) {
+                showNoLevelSelectedState("Preparing the Exercise Builder workspace…");
+                installAuthoringApi();
+            } else {
+                loadInitialLevelFromNavigation();
+            }
             scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
@@ -7946,7 +8301,7 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
                 return ["sum", "prod"];
             }
-            if (toolName === "replaceOneWithInverseProduct") {
+            if (toolName === "replaceOneWithInverseProduct" || toolName === "authorInitial") {
                 return ["sum", "prod", "inv"];
             }
             return ["sum", "prod"];
@@ -7963,6 +8318,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function getBuilderVariableNames() {
+            if (authoringSessionActive && authoringPhase === "initial") {
+                return authoringVariableOptions.slice();
+            }
             const level = getCurrentLevel();
             if (level && Array.isArray(level.variables) && level.variables.length) {
                 return level.variables.slice();
@@ -8597,6 +8955,10 @@ ctx.font = SETTINGS.textFont;
             syncCurrentExpressionRoot();
             uiState.expressionBuilder = null;
             finishOperation();
+            if (builder.tool === "authorInitial") {
+                authoringInitialExpressionCommitted = true;
+                notifyAuthoringHost("initial-expression-committed");
+            }
             return true;
         }
 
@@ -9366,11 +9728,19 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             const disabled = !builderAllowsVariables(uiState.activeTool);
-            const variableNames = getBuilderVariableNames().slice(0, 4);
+            const variableNames = getBuilderVariableNames();
             if (!variableNames.length) {
                 variableNames.push("x");
             }
-            builderVariableRail.innerHTML = variableNames.map(variable => {
+            if (authoringSessionActive && authoringPhase === "initial") {
+                builderVariableRail.innerHTML = `<select class="authoring-variable-select" aria-label="Insert a variable"${disabled ? " disabled" : ""}>
+                    <option value="">Variable</option>
+                    ${variableNames.map(variable => `<option value="${escapeHtml(variable)}">${escapeHtml(variable)}</option>`).join("")}
+                </select>`;
+                return;
+            }
+            const displayedVariableNames = variableNames.slice(0, 4);
+            builderVariableRail.innerHTML = displayedVariableNames.map(variable => {
                 const escapedVariable = escapeHtml(variable);
                 return `<button type="button" class="builder-variable-button" data-builder-action="value" data-value="${escapedVariable}" aria-label="Insert ${escapedVariable}" title="Keyboard shortcut: ${escapedVariable}"${disabled ? " disabled" : ""}>${getBuilderSymbolIcon("value", variable)}</button>`;
             }).join("");
@@ -9704,6 +10074,14 @@ ctx.font = SETTINGS.textFont;
 
             if (result !== false) {
                 recordBuilderForSolution(action, value, beforeExpression);
+                // Submit completes the mathematical rewrite before this input
+                // action is appended. Keep the stable state's recorder cursor
+                // aligned so a later undo-without-history preserves the Submit
+                // needed to replay this surviving Expression Builder rewrite.
+                if (action === "submit" && stableExpressionState && solutionRecorder) {
+                    stableExpressionState.recorderActionCount = solutionRecorder.actions.length;
+                    stableExpressionState.recorderDemoStepCount = solutionRecorder.demoSteps.length;
+                }
                 advanceDemoStep();
             }
             return result !== false;
@@ -9759,6 +10137,11 @@ ctx.font = SETTINGS.textFont;
             if (action === "cancel") {
                 event.preventDefault();
                 cancelExpressionBuilder();
+                return true;
+            }
+            if (action === "value" && authoringSessionActive && authoringPhase === "initial" && authoringVariableOptions.includes(value)) {
+                event.preventDefault();
+                performBuilderAction(action, value);
                 return true;
             }
             const matchingButton = panel.querySelector(selector);

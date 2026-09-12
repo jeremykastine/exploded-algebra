@@ -115,9 +115,18 @@ For an interactive level, Download Move History saves the current run as a JSON
 file that can later be chosen from the home page. Undo is retained as an explicit
 move: the attempted forward steps remain in the history, and guided playback
 requires the learner to undo at the same point before continuing along the
-recorded path. Zoom in, zoom out, and zoom reset are also retained as moves.
+recorded path. Exercise Builder authors can instead exclude undos, which removes
+the abandoned branch from the saved path. Zoom in, zoom out, and zoom reset are
+view-only controls and are never retained as solution moves.
 
 The home page links to Introduction.html and Exercises.html.
+It also links to exercise-builder.html, a four-phase authoring application that
+uses the real Exploded Algebra player in an embedded authoring session. Builder
+drafts autosave in localStorage. Completed levels export with formatVersion 1,
+the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
+and enough information for High, Medium, and Low assistance. Test Level passes
+the current draft to the ordinary player through a short-lived local-storage key
+with a window.name fallback, so no JSON file needs to be installed first.
 
 Built-in level URLs include the selected JSON file in the level query parameter.
 Every level accepts assistance=medium or assistance=low, and a level that contains

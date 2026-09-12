@@ -29,7 +29,7 @@
 
     .choices {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 24px;
     }
 
@@ -54,9 +54,9 @@
     .choice:hover { background: #f3f3f3; }
     .choice:focus-visible { outline: 4px solid #78aeda; outline-offset: 4px; }
 
-    @media (max-width: 520px) {
+    @media (max-width: 720px) {
       main { padding: 36px 14px; }
-      .choices { gap: 12px; }
+      .choices { grid-template-columns: 1fr; gap: 12px; }
       .choice { min-height: 150px; padding: 16px 10px; }
     }
   </style>
@@ -67,6 +67,7 @@
     <nav class="choices" aria-label="Choose how to begin">
       <a class="choice" href="Introduction.html">Want to read a quick introduction?</a>
       <a class="choice" href="Exercises.html">Want to try it out yourself?</a>
+      <a class="choice" href="exercise-builder.html">Build a Level</a>
     </nav>
   </main>
 </body>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Exercise Builder — Exploded Algebra</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260912-exercise-builder">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="exercise-builder.js?v=20260912-exercise-builder"></script>
+</head>
+<body>
+  <header class="builder-header">
+    <a href="index.html" class="home-link" aria-label="Return to the Exploded Algebra home page">EA Home</a>
+    <div>
+      <h1>Exercise Builder</h1>
+      <p id="saveStatus" class="save-status" aria-live="polite">Draft autosaves on this device.</p>
+    </div>
+    <button id="discardDraftButton" class="quiet-button" type="button">Discard Draft</button>
+  </header>
+
+  <nav class="phase-nav" aria-label="Builder phases">
+    <button type="button" data-go-phase="1"><span>1</span> Setup</button>
+    <button type="button" data-go-phase="2"><span>2</span> Starting Expression</button>
+    <button type="button" data-go-phase="3"><span>3</span> Record Solution</button>
+    <button type="button" data-go-phase="4"><span>4</span> Review &amp; Export</button>
+  </nav>
+
+  <main>
+    <section class="phase" data-phase="1">
+      <div class="phase-heading">
+        <div><span class="eyebrow">Phase 1</span><h2>Setup and metadata</h2></div>
+        <p>Define how this exercise is identified and which mathematical rewrites students may use.</p>
+      </div>
+      <form id="setupForm" class="card form-card" novalidate>
+        <div class="field-grid two-columns">
+          <label>Exercise / level name
+            <input id="exerciseTitle" name="title" required autocomplete="off" placeholder="Add fractions with unlike denominators">
+          </label>
+          <label>ID / slug
+            <input id="exerciseId" name="id" required autocomplete="off" pattern="[A-Za-z0-9_-]+" placeholder="add-unlike-fractions">
+            <small>Letters, numbers, hyphens, and underscores only.</small>
+          </label>
+        </div>
+        <label>Opening instruction <span class="optional">optional</span>
+          <textarea id="exerciseInstruction" name="instruction" rows="2" placeholder="Simplify the expression."></textarea>
+        </label>
+        <label>Completion message <span class="optional">optional</span>
+          <input id="completionMessage" name="completionMessage" autocomplete="off" placeholder="Well done.">
+        </label>
+
+        <fieldset>
+          <legend>Numerical rewrite permissions</legend>
+          <div class="field-grid two-columns">
+            <label>Addition
+              <select id="additionPermission">
+                <option value="none">None</option>
+                <option value="no-carry" selected>No carrying</option>
+                <option value="flat">Flat sums with carrying</option>
+                <option value="expression-terms">Unrestricted expression terms</option>
+              </select>
+            </label>
+            <label>Multiplication
+              <select id="multiplicationPermission">
+                <option value="none">None</option>
+                <option value="one-significant-figure" selected>One significant figure per factor</option>
+                <option value="unrestricted">Unrestricted</option>
+              </select>
+            </label>
+            <label>Legacy evaluation level
+              <select id="evaluationLevel">
+                <option value="0">Level 0</option>
+                <option value="1">Level 1</option>
+                <option value="2" selected>Level 2</option>
+                <option value="3">Level 3</option>
+              </select>
+            </label>
+            <div class="check-stack">
+              <label class="check-label"><input id="allowNegativeOne" type="checkbox"> Allow −1 in numerical rewrites</label>
+              <label class="check-label"><input id="allowInverses" type="checkbox"> Allow inverses in numerical rewrites</label>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Recorded undo actions</legend>
+          <p class="field-help">Choose whether High assistance should replay failed approaches and their undos.</p>
+          <div class="radio-row">
+            <label><input type="radio" name="includeUndo" value="yes" checked> Yes — include undo actions</label>
+            <label><input type="radio" name="includeUndo" value="no"> No — keep the surviving solution path</label>
+          </div>
+        </fieldset>
+
+        <details class="advanced-settings">
+          <summary>Advanced tool permissions</summary>
+          <p class="field-help">All standard tools are enabled by default. Uncheck a tool to exclude it from this exercise.</p>
+          <div id="toolPermissionList" class="tool-permission-list"><span class="muted">Loading the shared tool catalog…</span></div>
+        </details>
+        <p id="setupError" class="form-error" role="alert"></p>
+        <div class="phase-actions end">
+          <button class="primary-button" type="submit">Continue to Starting Expression</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="phase" data-phase="2" hidden>
+      <div class="phase-heading">
+        <div><span class="eyebrow">Phase 2</span><h2>Build the starting expression</h2></div>
+        <p>Construct the authoritative Exploded Algebra expression, then approve its conventional presentation.</p>
+      </div>
+      <div id="phase2WorkspaceSlot"></div>
+      <div class="card author-controls">
+        <p id="initialExpressionStatus" class="status-line" aria-live="polite">Use the Expression Builder above, then submit the expression.</p>
+        <div class="button-row">
+          <button id="editInitialExpressionButton" type="button" class="secondary-button">Edit Starting Expression</button>
+          <button id="lockInitialExpressionButton" type="button" class="primary-button" disabled>Lock Starting Expression</button>
+        </div>
+      </div>
+      <div id="initialConventionalCard" class="card conventional-card" hidden>
+        <h3>Initial conventional representation</h3>
+        <p>The generated KaTeX is a starting point. Edit it to control exactly what students see.</p>
+        <label>KaTeX source
+          <textarea id="initialKatexInput" rows="3" spellcheck="false"></textarea>
+        </label>
+        <div class="math-preview" id="initialKatexPreview" aria-label="Rendered initial conventional expression"></div>
+        <button id="acceptInitialKatexButton" type="button" class="primary-button">Accept Conventional Representation</button>
+      </div>
+      <div class="phase-actions">
+        <button type="button" class="secondary-button" data-go-phase="1">Back</button>
+        <button id="phase2NextButton" type="button" class="primary-button" disabled>Continue to Record Solution</button>
+      </div>
+    </section>
+
+    <section class="phase" data-phase="3" hidden>
+      <div class="phase-heading">
+        <div><span class="eyebrow">Phase 3</span><h2>Record the solution</h2></div>
+        <p>Solve in the real EA workspace. Mark checkpoints after the small actions that make up each meaningful algebraic step.</p>
+      </div>
+      <div class="recording-toolbar card">
+        <div><strong id="recordingActionCount">0 recorded actions</strong><span id="undoRecordingLabel"></span></div>
+        <div class="button-row">
+          <button id="markStepButton" type="button" class="secondary-button">Mark Important Step</button>
+          <button id="finishRecordingButton" type="button" class="primary-button">Finish Recording</button>
+        </div>
+      </div>
+      <div id="phase3WorkspaceSlot"></div>
+      <section class="card checkpoint-list-card">
+        <h3>Important checkpoints</h3>
+        <div id="checkpointList" class="checkpoint-list"><p class="muted">No checkpoints marked yet.</p></div>
+      </section>
+      <div class="phase-actions">
+        <button type="button" class="secondary-button" data-go-phase="2">Back to Starting Expression</button>
+      </div>
+    </section>
+
+    <section class="phase" data-phase="4" hidden>
+      <div class="phase-heading">
+        <div><span class="eyebrow">Phase 4</span><h2>Review, test, and export</h2></div>
+        <p>Inspect the complete level definition, test it in the student player, and download a ready-to-use JSON file.</p>
+      </div>
+      <div id="reviewContent" class="review-grid"></div>
+      <section class="card export-card">
+        <div>
+          <h3>Test in the student player</h3>
+          <p>The current draft opens in a new tab through local browser storage; no download or repository edit is needed.</p>
+        </div>
+        <label>Assistance level
+          <select id="testAssistanceLevel">
+            <option value="high">High</option>
+            <option value="medium" selected>Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+        <div class="button-row">
+          <button id="testLevelButton" type="button" class="primary-button">Test Level</button>
+          <button id="downloadJsonButton" type="button" class="primary-button">Download JSON</button>
+        </div>
+        <p id="exportStatus" class="status-line" aria-live="polite"></p>
+      </section>
+      <div class="phase-actions">
+        <button type="button" class="secondary-button" data-go-phase="3">Back to Recording</button>
+        <button type="button" class="secondary-button" data-go-phase="2">Edit Starting Expression</button>
+        <button type="button" class="secondary-button" data-go-phase="1">Edit Setup</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="workspaceShell" class="workspace-shell card">
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder"></iframe>
+  </div>
+
+  <div id="resumeBackdrop" class="modal-backdrop" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="resumeTitle">
+      <h2 id="resumeTitle">Resume unfinished exercise?</h2>
+      <p id="resumeDescription">A locally saved Exercise Builder draft is available on this device.</p>
+      <div class="button-row">
+        <button id="resumeDraftButton" type="button" class="primary-button">Resume Draft</button>
+        <button id="startFreshButton" type="button" class="secondary-button">Discard and Start Fresh</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="checkpointBackdrop" class="modal-backdrop" hidden>
+    <section class="modal-card checkpoint-editor" role="dialog" aria-modal="true" aria-labelledby="checkpointTitle">
+      <h2 id="checkpointTitle">Mark Important Step</h2>
+      <p id="checkpointRangeSummary" class="field-help"></p>
+      <label>Conventional notation before
+        <textarea id="checkpointBeforeKatex" rows="2" spellcheck="false"></textarea>
+      </label>
+      <div id="checkpointBeforePreview" class="math-preview compact"></div>
+      <label>Instruction / explanation
+        <textarea id="checkpointInstruction" rows="3" placeholder="Describe the mathematical idea in this transition."></textarea>
+      </label>
+      <label>Conventional notation after
+        <textarea id="checkpointAfterKatex" rows="2" spellcheck="false"></textarea>
+      </label>
+      <div id="checkpointAfterPreview" class="math-preview compact"></div>
+      <p id="checkpointError" class="form-error" role="alert"></p>
+      <div class="button-row end">
+        <button id="cancelCheckpointButton" type="button" class="secondary-button">Cancel</button>
+        <button id="saveCheckpointButton" type="button" class="primary-button">Save Checkpoint</button>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

@@ -3542,6 +3542,41 @@
             font-size: clamp(24px, calc(var(--main-key-size) * 0.68), 38px);
             font-weight: 600;
         }
+
+        /* The Exercise Builder embeds the real workspace but supplies its own
+           phase navigation, metadata, and checkpoint controls outside it. */
+        body.authoring-session:not(.expression-builder-active) .app-container,
+        body.authoring-session:not(.expression-builder-active).left-handed .app-container {
+            --top-panel-height: 0px;
+            grid-template-rows: minmax(0, 1fr);
+        }
+        body.authoring-session:not(.expression-builder-active) .main,
+        body.authoring-session:not(.expression-builder-active).left-handed .main {
+            grid-row: 1;
+        }
+        body.authoring-session .left-panel,
+        body.authoring-session .quadrant-menu {
+            display: none !important;
+        }
+        body.authoring-session .quadrant-tools {
+            margin-right: max(8px, env(safe-area-inset-right));
+        }
+        .builder-keypad-panel .authoring-variable-select {
+            grid-column: 1;
+            grid-row: 3;
+            width: var(--main-key-size);
+            height: var(--main-key-size);
+            min-width: var(--main-key-size);
+            padding: 4px;
+            border: 1px solid #8d8d8d;
+            border-radius: 7px;
+            background: #fff;
+            color: #222;
+            font: 700 10px Verdana, Arial, Helvetica, sans-serif;
+        }
+        body.left-handed .builder-keypad-panel .authoring-variable-select {
+            grid-column: 5;
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -3690,8 +3725,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260911-bar-gradient-toggle"></script>
-    <script src="exploded-algebra-tool.js?v=20260912-assistance-levels"></script>
+    <script src="exploded-algebra-renderer.js?v=20260912-exercise-builder"></script>
+    <script src="exploded-algebra-tool.js?v=20260912-exercise-builder"></script>
 
 </body>
 </html>
