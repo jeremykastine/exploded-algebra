@@ -1213,12 +1213,13 @@
         }
 
         #expressionWorkspaceSvg {
-            /* A one-pointer swipe is an endpoint-selection gesture. Keep
-               two-pointer pinch zoom available without letting the browser
-               cancel single-pointer swipes to pan the page. */
-            touch-action: pinch-zoom;
+            /* Workspace gestures belong to the active Select or Pan tool. */
+            touch-action: none;
             user-select: none;
         }
+
+        body.workspace-pan-active #expressionWorkspaceSvg { cursor: grab; }
+        body.workspace-pan-active.workspace-panning #expressionWorkspaceSvg { cursor: grabbing; }
 
         dialog {
             box-sizing: border-box;
@@ -2052,7 +2053,7 @@
         .right-svg-wrap {
             flex: 1 1 auto;
             min-height: 0;
-            overflow: auto;
+            overflow: hidden;
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
@@ -2899,15 +2900,17 @@
             background: #fff;
             pointer-events: auto;
         }
-        .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 1; grid-row: 2; }
-        .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 2; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 3; grid-row: 1; }
 
-        body.left-handed .workspace-toolbar [data-workspace-mode="zoomIn"] { grid-column: 3; }
-        body.left-handed .workspace-toolbar [data-workspace-mode="zoomOut"] { grid-column: 2; }
+        body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; }
+        body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 1; }
+        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; }
         body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
 
@@ -2915,8 +2918,9 @@
             display: block;
             font-size: clamp(10px, calc(var(--main-key-size) * 0.27), 14px);
             font-weight: 800;
-            line-height: 0.9;
+            line-height: 1;
             text-align: center;
+            white-space: nowrap;
             pointer-events: none;
         }
 
@@ -3554,22 +3558,25 @@
         <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
+                    <button type="button" data-workspace-mode="pan" aria-pressed="false" aria-label="Move view" data-hold-description="Drag to move the expression view. Zooming automatically returns to this tool.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                     <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.6"/></svg>
                     </button>
                 </div>
                 <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
-                    <button type="button" data-workspace-mode="zoomIn" aria-pressed="false" aria-label="Zoom in" data-hold-description="Make the expression larger. Click the expression to zoom toward that point.">
+                    <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in" data-hold-description="Make the expression larger while keeping its upper-left point fixed.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-mode="zoomOut" aria-pressed="false" aria-label="Zoom out" data-hold-description="Make the expression smaller.">
+                    <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out" data-hold-description="Make the expression smaller while keeping its upper-left point fixed.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and return to top left" data-hold-description="Return the expression to 100% zoom at the upper-left of the workspace.">
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and view position" data-hold-description="Return the expression to 100% zoom and its original position.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="15" text-anchor="middle" font-size="7.5" font-weight="800" fill="currentColor">100%</text></svg>
                     </button>
-                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression or zoom step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression or zoom step. Continue undoing to return to the beginning of the exercise." disabled>
-                        <span class="workspace-undo-label" aria-hidden="true">UN-<br>DO</span>
+                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
+                        <span class="workspace-undo-label" aria-hidden="true">Undo</span>
                     </button>
                 </div>
             </div>

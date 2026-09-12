@@ -2183,7 +2183,7 @@ Promise.resolve().then(() => {
                 level
                 && level.demo
                 && Array.isArray(level.demo.steps)
-                && level.demo.steps.length > 0
+                && level.demo.steps.some(step => step && step.type !== "view")
             );
         }
 
@@ -2250,7 +2250,6 @@ Promise.resolve().then(() => {
             return {
                 root: cloneExpressionTree(expressionRoot),
                 completedSteps: Array.isArray(completedSteps) ? completedSteps.slice() : [],
-                workspaceView: captureWorkspaceView(),
                 completionExportReadyForRun,
                 completionExportCompletedAt: completionExportCompletedAtDate
                     ? completionExportCompletedAtDate.toISOString()
@@ -2294,7 +2293,6 @@ Promise.resolve().then(() => {
             const replayingGuidedUndo = isDemoModeActive();
             const guidedUndoStepIndex = demoStepIndex;
             const beforeExpression = getExpressionTextForTrace();
-            const beforeWorkspaceView = captureWorkspaceView();
             const snapshot = expressionUndoHistory.pop();
             expressionRoot = cloneExpressionTree(snapshot.root);
             currentExpressionRoot = expressionRoot;
@@ -2307,7 +2305,6 @@ Promise.resolve().then(() => {
             completionExportCompletedAtDate = snapshot.completionExportCompletedAt
                 ? new Date(snapshot.completionExportCompletedAt)
                 : null;
-            const workspaceView = snapshot.workspaceView || null;
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
             uiState.inspectStepIndex = -1;
@@ -2319,9 +2316,7 @@ Promise.resolve().then(() => {
             clearInteraction();
             recordUndoForSolution(
                 beforeExpression,
-                getExpressionTextForTrace(),
-                beforeWorkspaceView,
-                snapshot.workspaceView || null
+                getExpressionTextForTrace()
             );
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
@@ -2329,22 +2324,7 @@ Promise.resolve().then(() => {
             refreshStatus();
             stableExpressionState = captureExpressionUndoState();
             drawExpression();
-            if (workspaceView) {
-                requestAnimationFrame(() => {
-                    restoreWorkspaceView(workspaceView);
-                    stableExpressionState = captureExpressionUndoState();
-                });
-            }
             return true;
-        }
-
-        function rememberWorkspaceViewChangeForUndo(snapshot) {
-            if (!snapshot || !snapshot.root) {
-                return;
-            }
-            expressionUndoHistory.push(snapshot);
-            stableExpressionState = captureExpressionUndoState();
-            updateWorkspaceToolbar();
         }
 
         function recordSolutionAction(action, demoStep) {
@@ -2418,38 +2398,14 @@ Promise.resolve().then(() => {
             }, step);
         }
 
-        function recordWorkspaceViewForSolution(action, beforeZoom, afterZoom) {
-            const step = {
-                type: "view",
-                action,
-                zoom: Number(afterZoom.toFixed(4))
-            };
-            recordSolutionAction({
-                ...step,
-                beforeZoom: Number(beforeZoom.toFixed(4)),
-                afterZoom: Number(afterZoom.toFixed(4)),
-                expression: getExpressionTextForTrace()
-            }, step);
-        }
-
-        function recordUndoForSolution(beforeExpression, afterExpression, beforeWorkspaceView, afterWorkspaceView) {
+        function recordUndoForSolution(beforeExpression, afterExpression) {
             recordSolutionAction({
                 type: "undo",
                 beforeExpression,
-                afterExpression,
-                beforeWorkspaceView: clonePlainData(beforeWorkspaceView),
-                afterWorkspaceView: clonePlainData(afterWorkspaceView)
+                afterExpression
             }, {
                 type: "undo"
             });
-        }
-
-        function isDemoWorkspaceViewAllowed(action) {
-            if (!isDemoModeActive()) {
-                return true;
-            }
-            const step = getCurrentDemoStep();
-            return !!step && step.type === "view" && step.action === action;
         }
 
         function isDemoUndoAllowed() {
@@ -3016,7 +2972,7 @@ Promise.resolve().then(() => {
         function getCurrentDemoSteps() {
             const level = getCurrentLevel();
             return level && level.demo && Array.isArray(level.demo.steps)
-                ? level.demo.steps
+                ? level.demo.steps.filter(step => step && step.type !== "view")
                 : [];
         }
 
@@ -3698,6 +3654,10 @@ Promise.resolve().then(() => {
             currentExpressionRoot = textToExpression(level.startExpression);
             currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
             expressionRoot = currentExpressionRoot;
+            workspaceZoom = 1;
+            workspacePanX = 0;
+            workspacePanY = 0;
+            setWorkspaceMode("select");
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
             uiState.inspectStepIndex = -1;
@@ -3746,10 +3706,15 @@ Promise.resolve().then(() => {
                     if (!button || button.disabled) {
                         return;
                     }
+                    if (button.dataset.workspaceAction === "zoomIn") {
+                        zoomWorkspaceIn();
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "zoomOut") {
+                        zoomWorkspaceOut();
+                        return;
+                    }
                     if (button.dataset.workspaceAction === "resetZoom") {
-                        if (!isDemoWorkspaceViewAllowed("resetZoom")) {
-                            return;
-                        }
                         resetWorkspaceZoom();
                         return;
                     }
@@ -3761,16 +3726,7 @@ Promise.resolve().then(() => {
                     if (!mode) {
                         return;
                     }
-                    if ((mode === "zoomIn" || mode === "zoomOut") && !isDemoWorkspaceViewAllowed(mode)) {
-                        return;
-                    }
-                    if (mode === "select" && isDemoModeActive() && getCurrentDemoStep()?.type === "view") {
-                        return;
-                    }
                     setWorkspaceMode(mode);
-                    if (mode === "zoomOut") {
-                        zoomWorkspaceOut();
-                    }
                 });
             }
             installPressHoldDescriptions();
@@ -4057,6 +4013,8 @@ ctx.font = SETTINGS.textFont;
         const WORKSPACE_ZOOM_MAX = 3;
         const WORKSPACE_ZOOM_STEP = 1.25;
         let workspaceZoom = 1;
+        let workspacePanX = 0;
+        let workspacePanY = 0;
         let builderWorkspaceViewActive = false;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
@@ -4185,6 +4143,7 @@ ctx.font = SETTINGS.textFont;
             workspaceSvg.style.height = `${scaledHeight}px`;
             workspaceSvg.style.marginLeft = "0px";
             workspaceSvg.style.marginTop = "0px";
+            workspaceSvg.style.transform = `translate3d(${workspacePanX}px, ${workspacePanY}px, 0)`;
         }
 
         function updateWorkspaceToolbar() {
@@ -4205,14 +4164,6 @@ ctx.font = SETTINGS.textFont;
             });
             if (isDemoModeActive()) {
                 const step = getCurrentDemoStep();
-                const viewButtons = workspaceToolbar.querySelectorAll(
-                    'button[data-workspace-mode="zoomIn"],button[data-workspace-mode="zoomOut"],button[data-workspace-action="resetZoom"]'
-                );
-                viewButtons.forEach(button => {
-                    const action = button.dataset.workspaceMode || button.dataset.workspaceAction;
-                    button.classList.toggle("demo-target-button", !!step && step.type === "view" && step.action === action);
-                    button.classList.toggle("demo-blocked-button", !step || step.type !== "view" || step.action !== action);
-                });
                 if (undoExpressionButton) {
                     undoExpressionButton.classList.toggle("demo-target-button", !!step && step.type === "undo");
                     undoExpressionButton.classList.toggle("demo-blocked-button", !step || step.type !== "undo");
@@ -4234,23 +4185,57 @@ ctx.font = SETTINGS.textFont;
         }
 
         function setWorkspaceMode(mode) {
-            uiState.workspaceMode = mode === "zoomIn" || mode === "zoomOut" ? mode : "select";
+            uiState.workspaceMode = mode === "pan" ? "pan" : "select";
+            document.body.classList.toggle("workspace-pan-active", uiState.workspaceMode === "pan");
+            if (uiState.workspaceMode !== "pan") {
+                document.body.classList.remove("workspace-panning");
+            }
             updateWorkspaceToolbar();
         }
 
-        function setWorkspaceZoom(nextZoom, clientX = null, clientY = null) {
+        const WORKSPACE_PAN_MIN_VISIBLE = 32;
+
+        function clampWorkspacePan(x, y) {
+            if (!expressionRoot) {
+                return { x: 0, y: 0 };
+            }
+
+            const bounds = getExpressionBounds();
+            const scaledLeft = bounds.left * workspaceZoom;
+            const scaledTop = bounds.top * workspaceZoom;
+            const scaledRight = bounds.right * workspaceZoom;
+            const scaledBottom = bounds.bottom * workspaceZoom;
+            const expressionWidth = Math.max(1, scaledRight - scaledLeft);
+            const expressionHeight = Math.max(1, scaledBottom - scaledTop);
+            const visibleX = Math.min(WORKSPACE_PAN_MIN_VISIBLE, expressionWidth);
+            const visibleY = Math.min(WORKSPACE_PAN_MIN_VISIBLE, expressionHeight);
+            const minimumX = visibleX - scaledRight;
+            const maximumX = svgContainer.clientWidth - visibleX - scaledLeft;
+            const minimumY = visibleY - scaledBottom;
+            const maximumY = svgContainer.clientHeight - visibleY - scaledTop;
+
+            return {
+                x: Math.max(minimumX, Math.min(x, maximumX)),
+                y: Math.max(minimumY, Math.min(y, maximumY))
+            };
+        }
+
+        function setWorkspacePan(x, y) {
+            const clamped = clampWorkspacePan(x, y);
+            workspacePanX = clamped.x;
+            workspacePanY = clamped.y;
+            workspaceSvg.style.transform = `translate3d(${workspacePanX}px, ${workspacePanY}px, 0)`;
+        }
+
+        function setWorkspaceZoom(nextZoom) {
             const boundedZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, nextZoom));
             if (Math.abs(boundedZoom - workspaceZoom) < 0.001) {
                 return false;
             }
 
-            const bounds = svgContainer.getBoundingClientRect();
-            const focalX = clientX === null ? bounds.width / 2 : clientX - bounds.left;
-            const focalY = clientY === null ? bounds.height / 2 : clientY - bounds.top;
-            const oldMarginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
-            const oldMarginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
-            const unscaledX = (svgContainer.scrollLeft + focalX - oldMarginLeft) / workspaceZoom;
-            const unscaledY = (svgContainer.scrollTop + focalY - oldMarginTop) / workspaceZoom;
+            const expressionBounds = expressionRoot ? getExpressionBounds() : { left: 0, top: 0 };
+            const fixedScreenX = expressionBounds.left * workspaceZoom + workspacePanX;
+            const fixedScreenY = expressionBounds.top * workspaceZoom + workspacePanY;
 
             workspaceZoom = boundedZoom;
             if (expressionRoot) {
@@ -4258,58 +4243,29 @@ ctx.font = SETTINGS.textFont;
             } else {
                 applyWorkspaceZoomSizing();
             }
-            const newMarginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
-            const newMarginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
-            svgContainer.scrollLeft = Math.max(0, unscaledX * workspaceZoom + newMarginLeft - focalX);
-            svgContainer.scrollTop = Math.max(0, unscaledY * workspaceZoom + newMarginTop - focalY);
+            setWorkspacePan(
+                fixedScreenX - expressionBounds.left * workspaceZoom,
+                fixedScreenY - expressionBounds.top * workspaceZoom
+            );
             return true;
         }
 
-        function zoomWorkspaceInAt(clientX, clientY) {
-            if (!isDemoWorkspaceViewAllowed("zoomIn")) {
-                return false;
-            }
-            const snapshot = captureExpressionUndoState();
-            const beforeZoom = workspaceZoom;
-            if (!setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP, clientX, clientY)) {
-                return false;
-            }
-            recordWorkspaceViewForSolution("zoomIn", beforeZoom, workspaceZoom);
-            rememberWorkspaceViewChangeForUndo(snapshot);
-            if (isDemoModeActive()) {
-                advanceDemoStep();
-            }
-            return true;
+        function zoomWorkspaceIn() {
+            const changed = setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP);
+            setWorkspaceMode("pan");
+            return changed;
         }
 
         function zoomWorkspaceOut() {
-            if (!isDemoWorkspaceViewAllowed("zoomOut")) {
-                return false;
-            }
-            const snapshot = captureExpressionUndoState();
-            const beforeZoom = workspaceZoom;
-            if (!setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP)) {
-                setWorkspaceMode("select");
-                return false;
-            }
-            recordWorkspaceViewForSolution("zoomOut", beforeZoom, workspaceZoom);
-            rememberWorkspaceViewChangeForUndo(snapshot);
-            setWorkspaceMode("select");
-            if (isDemoModeActive()) {
-                advanceDemoStep();
-            }
-            return true;
+            const changed = setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
+            setWorkspaceMode("pan");
+            return changed;
         }
 
         function resetWorkspaceZoom() {
-            if (!isDemoWorkspaceViewAllowed("resetZoom")) {
-                return false;
-            }
-            const snapshot = captureExpressionUndoState();
-            const beforeZoom = workspaceZoom;
-            const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || svgContainer.scrollLeft !== 0 || svgContainer.scrollTop !== 0;
+            const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || workspacePanX !== 0 || workspacePanY !== 0;
             if (!viewChanged) {
-                setWorkspaceMode("select");
+                setWorkspaceMode("pan");
                 return false;
             }
             workspaceZoom = 1;
@@ -4318,17 +4274,10 @@ ctx.font = SETTINGS.textFont;
             } else {
                 applyWorkspaceZoomSizing();
             }
-            requestAnimationFrame(() => {
-                svgContainer.scrollLeft = 0;
-                svgContainer.scrollTop = 0;
-                stableExpressionState = captureExpressionUndoState();
-            });
-            recordWorkspaceViewForSolution("resetZoom", beforeZoom, workspaceZoom);
-            rememberWorkspaceViewChangeForUndo(snapshot);
-            setWorkspaceMode("select");
-            if (isDemoModeActive()) {
-                advanceDemoStep();
-            }
+            workspacePanX = 0;
+            workspacePanY = 0;
+            applyWorkspaceZoomSizing();
+            setWorkspaceMode("pan");
             return true;
         }
 
@@ -4339,10 +4288,8 @@ ctx.font = SETTINGS.textFont;
             const bounds = getExpressionBounds();
             const expressionWidth = Math.max(1, bounds.right - bounds.left);
             const expressionHeight = Math.max(1, bounds.bottom - bounds.top);
-            const marginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
-            const marginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
-            const centerX = (svgContainer.scrollLeft + svgContainer.clientWidth / 2 - marginLeft) / workspaceZoom;
-            const centerY = (svgContainer.scrollTop + svgContainer.clientHeight / 2 - marginTop) / workspaceZoom;
+            const centerX = (svgContainer.clientWidth / 2 - workspacePanX) / workspaceZoom;
+            const centerY = (svgContainer.clientHeight / 2 - workspacePanY) / workspaceZoom;
             return {
                 zoom: workspaceZoom,
                 expressionXRatio: (centerX - bounds.left) / expressionWidth,
@@ -4361,10 +4308,10 @@ ctx.font = SETTINGS.textFont;
             const expressionHeight = Math.max(1, bounds.bottom - bounds.top);
             const centerX = bounds.left + view.expressionXRatio * expressionWidth;
             const centerY = bounds.top + view.expressionYRatio * expressionHeight;
-            const marginLeft = Number.parseFloat(workspaceSvg.style.marginLeft) || 0;
-            const marginTop = Number.parseFloat(workspaceSvg.style.marginTop) || 0;
-            svgContainer.scrollLeft = Math.max(0, centerX * workspaceZoom + marginLeft - svgContainer.clientWidth / 2);
-            svgContainer.scrollTop = Math.max(0, centerY * workspaceZoom + marginTop - svgContainer.clientHeight / 2);
+            setWorkspacePan(
+                svgContainer.clientWidth / 2 - centerX * workspaceZoom,
+                svgContainer.clientHeight / 2 - centerY * workspaceZoom
+            );
         }
 
         function scheduleResponsiveLayoutRecalculation() {
@@ -4399,11 +4346,9 @@ ctx.font = SETTINGS.textFont;
                 savedMainWorkspaceView = captureWorkspaceView();
                 builderWorkspaceViewActive = true;
                 workspaceZoom = 1;
+                workspacePanX = 0;
+                workspacePanY = 0;
                 applyWorkspaceZoomSizing();
-                requestAnimationFrame(() => {
-                    svgContainer.scrollLeft = 0;
-                    svgContainer.scrollTop = 0;
-                });
                 return;
             }
 
@@ -10373,7 +10318,7 @@ function renderToolArea() {
             }
 
             if (isDemoModeActive() && getCurrentDemoStep()?.type === "undo") {
-                setStatus("Use Undo to return to the previous expression or zoom state.");
+                setStatus("Use Undo to return to the previous expression.");
                 return;
             }
 
@@ -10549,6 +10494,7 @@ function renderToolArea() {
         function releaseWorkspacePointer() {
             activeWorkspacePointerId = null;
             workspacePointerStart = null;
+            document.body.classList.remove("workspace-panning");
         }
 
         function selectFromWorkspaceTap(x, y, pointerType) {
@@ -10617,13 +10563,15 @@ function renderToolArea() {
             }
 
             const pointerStart = workspacePointerStart;
+            if (pointerStart.mode === "pan") {
+                releaseWorkspacePointer();
+                return;
+            }
             const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
             const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
             if (movement <= tapTolerance) {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
-                if (pointerStart.mode === "zoomIn") {
-                    zoomWorkspaceInAt(e.clientX, e.clientY);
-                } else if (pointerStart.mode === "commute") {
+                if (pointerStart.mode === "commute") {
                     const clickedIndex = getClickedIndexWithinSelection(point.x, point.y);
                     if (clickedIndex >= 0) {
                         recordCommutePermutationChoice(clickedIndex);
@@ -10664,20 +10612,18 @@ function renderToolArea() {
             }
 
             const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
+            const panningView = !cancelingBuilder && uiState.workspaceMode === "pan";
             const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
             const pointerX = pointerPoint.x;
             const pointerY = pointerPoint.y;
-            const clearingSelectionFromEmptySpace = !cancelingBuilder && !!selection.node &&
+            const clearingSelectionFromEmptySpace = !cancelingBuilder && !panningView && !!selection.node &&
                 !findNearestVisibleObject(pointerX, pointerY, e.pointerType || "mouse");
-            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode === "zoomOut") {
-                return;
-            }
 
             const choosingCommuteOrder = selection.status === "yes" &&
                 uiState.stage === "preview" &&
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
 
-            if (isDemoModeActive()) {
+            if (isDemoModeActive() && !panningView) {
                 const step = getCurrentDemoStep();
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
@@ -10685,12 +10631,12 @@ function renderToolArea() {
                 if (clearingSelectionFromEmptySpace) {
                     return;
                 }
-                if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode !== "zoomIn" && !selectingExpression && !choosingDemoCommuteOrder) {
+                if (!cancelingBuilder && !clearingSelectionFromEmptySpace && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && uiState.workspaceMode !== "zoomIn" && !choosingCommuteOrder && uiState.activeTool) {
+            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && !panningView && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -10699,12 +10645,14 @@ function renderToolArea() {
                 clientX: e.clientX,
                 clientY: e.clientY,
                 pointerType: e.pointerType || "mouse",
+                panX: workspacePanX,
+                panY: workspacePanY,
                 mode: cancelingBuilder
                     ? "cancelBuilder"
+                    : panningView
+                        ? "pan"
                     : clearingSelectionFromEmptySpace
                         ? "selection"
-                    : uiState.workspaceMode === "zoomIn"
-                        ? "zoomIn"
                         : choosingCommuteOrder
                             ? "commute"
                             : "selection"
@@ -10717,6 +10665,29 @@ function renderToolArea() {
                     // the gesture when capture is unavailable.
                 }
             }
+            if (panningView) {
+                e.preventDefault();
+            }
+        });
+
+        workspaceSvg.addEventListener("pointermove", e => {
+            if (
+                e.pointerId !== activeWorkspacePointerId ||
+                !workspacePointerStart ||
+                workspacePointerStart.mode !== "pan"
+            ) {
+                return;
+            }
+            const deltaX = e.clientX - workspacePointerStart.clientX;
+            const deltaY = e.clientY - workspacePointerStart.clientY;
+            if (Math.hypot(deltaX, deltaY) > 2) {
+                document.body.classList.add("workspace-panning");
+            }
+            setWorkspacePan(
+                workspacePointerStart.panX + deltaX,
+                workspacePointerStart.panY + deltaY
+            );
+            e.preventDefault();
         });
 
         workspaceSvg.addEventListener("pointerup", e => {
