@@ -2804,6 +2804,7 @@
             --main-icon-size: 28px;
             --steps-font-size: 15px;
             --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
+            --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-gap));
             --builder-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --builder-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
@@ -2862,7 +2863,7 @@
             align-self: end;
             justify-self: end;
             display: grid;
-            width: var(--main-keypad-width);
+            width: var(--workspace-keypad-width);
             height: var(--main-keypad-height);
             min-width: 0;
             min-height: 0;
@@ -2877,10 +2878,10 @@
         .quadrant-tools .workspace-toolbar,
         .quadrant-tools.two-column-tools .workspace-toolbar {
             display: grid;
-            grid-template-columns: repeat(3, var(--main-key-size));
+            grid-template-columns: repeat(4, var(--main-key-size));
             grid-template-rows: repeat(2, var(--main-key-size));
             gap: var(--main-key-gap);
-            width: var(--main-keypad-width);
+            width: var(--workspace-keypad-width);
             height: var(--main-keypad-height);
             padding: 0;
             pointer-events: none;
@@ -2900,17 +2901,17 @@
             background: #fff;
             pointer-events: auto;
         }
-        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 2; }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 3; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 4; grid-row: 2; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 3; grid-row: 1; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 1; }
 
+        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; }
         body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; }
         body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 1; }
-        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; }
         body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
 
@@ -3566,14 +3567,14 @@
                     </button>
                 </div>
                 <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
-                    <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in" data-hold-description="Make the expression larger while keeping its upper-left point fixed.">
+                    <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in" data-hold-description="Make the expression larger while keeping its upper-leftmost visible point fixed.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out" data-hold-description="Make the expression smaller while keeping its upper-left point fixed.">
+                    <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out" data-hold-description="Make the expression smaller while keeping its upper-leftmost visible point fixed.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset zoom and view position" data-hold-description="Return the expression to 100% zoom and its original position.">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="15" text-anchor="middle" font-size="7.5" font-weight="800" fill="currentColor">100%</text></svg>
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset view" data-hold-description="Return the expression to 100% zoom and its original position.">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg>
                     </button>
                     <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
                         <span class="workspace-undo-label" aria-hidden="true">Undo</span>
