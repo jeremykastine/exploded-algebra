@@ -1221,7 +1221,6 @@ Promise.resolve().then(() => {
         const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
         const settingsExpressionSample = document.getElementById("settingsExpressionSample");
         const exitSettingsButton = document.getElementById("exitSettingsButton");
-        const stepGuidanceArrow = document.getElementById("stepGuidanceArrow");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const svgContainer = document.getElementById("svgContainer");
@@ -1823,7 +1822,6 @@ Promise.resolve().then(() => {
                 largestStepHeight + verticalPadding(panelStyle) + verticalPadding(columnStyle) + 4
             );
             appContainer.style.setProperty("--top-panel-height", `${Math.max(48, fittedHeight)}px`);
-            updateStepGuidanceArrow();
         }
 
         function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
@@ -1935,13 +1933,7 @@ Promise.resolve().then(() => {
             pressHoldPopover.replaceChildren();
             activeStepGuidanceIndex = null;
             activeStepGuidanceSource = null;
-            if (stepGuidanceArrow) {
-                stepGuidanceArrow.classList.add("hidden");
-                const path = stepGuidanceArrow.querySelector(".step-guidance-arrow-path");
-                if (path) {
-                    path.removeAttribute("d");
-                }
-            }
+            document.body.classList.remove("step-guidance-active");
         }
 
         function getStepGuidanceDetails(stepIndex) {
@@ -2005,34 +1997,6 @@ Promise.resolve().then(() => {
             });
         }
 
-        function updateStepGuidanceArrow() {
-            if (!stepGuidanceArrow || activeStepGuidanceIndex === null || !pressHoldPopover || pressHoldPopover.classList.contains("hidden")) {
-                if (stepGuidanceArrow) {
-                    stepGuidanceArrow.classList.add("hidden");
-                }
-                return;
-            }
-            const card = levelContent.querySelector(`.step-hold-target[data-step-index="${activeStepGuidanceIndex}"]`);
-            const content = pressHoldPopover.querySelector(".press-hold-popover-content");
-            const path = stepGuidanceArrow.querySelector(".step-guidance-arrow-path");
-            if (!card || !content || !path) {
-                stepGuidanceArrow.classList.add("hidden");
-                return;
-            }
-            const cardBounds = card.getBoundingClientRect();
-            const contentBounds = content.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-            const startX = Math.max(8, Math.min(viewportWidth - 8, contentBounds.left + contentBounds.width / 2));
-            const startY = Math.max(8, contentBounds.top - 22);
-            const endX = Math.max(8, Math.min(viewportWidth - 8, cardBounds.left + cardBounds.width / 2));
-            const endY = Math.max(8, cardBounds.bottom + 7);
-            const controlY = endY + Math.max(28, (startY - endY) * 0.42);
-            stepGuidanceArrow.setAttribute("viewBox", `0 0 ${viewportWidth} ${viewportHeight}`);
-            path.setAttribute("d", `M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`);
-            stepGuidanceArrow.classList.remove("hidden");
-        }
-
         function showStepGuidance(stepIndex, source = "hold") {
             const html = getStepGuidanceHtml(stepIndex);
             if (!html || !pressHoldPopover) {
@@ -2042,8 +2006,8 @@ Promise.resolve().then(() => {
             activeStepGuidanceSource = source;
             pressHoldPopover.innerHTML = html;
             pressHoldPopover.classList.remove("hidden");
+            document.body.classList.add("step-guidance-active");
             renderPressHoldPopoverMath();
-            requestAnimationFrame(updateStepGuidanceArrow);
             return true;
         }
 
@@ -2057,6 +2021,7 @@ Promise.resolve().then(() => {
             }
             activeStepGuidanceIndex = null;
             activeStepGuidanceSource = null;
+            document.body.classList.remove("step-guidance-active");
             pressHoldPopover.innerHTML = `<div class="press-hold-popover-content">${getPressHoldDescriptionHtml(button)}</div>`;
             pressHoldPopover.classList.remove("hidden");
         }
@@ -2233,7 +2198,6 @@ Promise.resolve().then(() => {
                 }
             }, true);
             window.addEventListener("blur", clearPendingPressHold);
-            leftPanel.addEventListener("scroll", updateStepGuidanceArrow, { passive: true });
             document.addEventListener("visibilitychange", () => {
                 if (document.hidden) {
                     clearPendingPressHold();
@@ -4461,7 +4425,6 @@ ctx.font = SETTINGS.textFont;
                 positionToolOptionMenu();
                 updateSidePanelColumns();
                 scheduleTopPanelHeightUpdate(getCurrentLevel());
-                updateStepGuidanceArrow();
                 pendingResponsiveWorkspaceView = null;
             });
         }

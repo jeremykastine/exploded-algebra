@@ -3297,8 +3297,7 @@
         body.settings-active .right-top-bar,
         body.settings-active #svgContainer,
         body.settings-active .numerical-rewrite-error,
-        body.settings-active .press-hold-popover,
-        body.settings-active .step-guidance-arrow {
+        body.settings-active .press-hold-popover {
             display: none !important;
         }
         .level-menu-panel {
@@ -3497,23 +3496,16 @@
             font-size: clamp(20px, 4vw, 34px);
             font-weight: 700;
         }
-        .step-guidance-arrow {
-            position: fixed;
-            z-index: 210;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: visible;
-            pointer-events: none;
+        body.step-guidance-active #svgContainer,
+        body.step-guidance-active .quadrant-menu,
+        body.step-guidance-active .quadrant-tools,
+        body.step-guidance-active .main-action-panel,
+        body.step-guidance-active .builder-keypad-panel {
+            display: none !important;
         }
-        .step-guidance-arrow.hidden { display: none; }
-        .step-guidance-arrow-path {
-            fill: none;
-            stroke: #7040a0;
-            stroke-width: 4;
-            stroke-linecap: round;
+        body.step-guidance-active .press-hold-popover {
+            background: #fff;
         }
-        #stepGuidanceArrowhead path { fill: #7040a0; }
 
         /* Bold, optically consistent Expression Builder symbols. */
         .builder-keypad-panel button,
@@ -3677,14 +3669,6 @@
             <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
         </div>
     </div>
-    <svg id="stepGuidanceArrow" class="step-guidance-arrow hidden" aria-hidden="true">
-        <defs>
-            <marker id="stepGuidanceArrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z"></path>
-            </marker>
-        </defs>
-        <path class="step-guidance-arrow-path" marker-end="url(#stepGuidanceArrowhead)"></path>
-    </svg>
     <div id="modeChoiceBackdrop" class="mode-choice-backdrop hidden">
         <section class="mode-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-describedby="modeChoicePrompt">
             <h2 id="modeChoiceTitle">Choose a mode</h2>
@@ -3697,7 +3681,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260911-bar-gradient-toggle"></script>
-    <script src="exploded-algebra-tool.js?v=20260911-bar-gradient-toggle"></script>
+    <script src="exploded-algebra-tool.js?v=20260912-clean-step-guidance"></script>
 
 </body>
 </html>
