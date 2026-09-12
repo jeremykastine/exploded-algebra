@@ -5532,22 +5532,34 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (node.type === "inv") {
-                candidates.push({
-                    node,
-                    firstPart: 0,
-                    lastPart: 0,
-                    // The numerator, bar, and black surround form one inverse
-                    // target. Descendants still win over it on the denominator
-                    // because their selectable areas are smaller.
-                    distance: distanceFromPointToRect(
-                        x,
-                        y,
-                        node.left(),
-                        node.top(),
-                        node.right(),
-                        node.bottom()
-                    )
-                });
+                const relativeBarTop = Number(node.layout && node.layout.inverseBarTop);
+                const barThickness = Number(node.layout && node.layout.inverseBarThickness);
+                const relativeHeaderBottom = Number.isFinite(relativeBarTop) && Number.isFinite(barThickness)
+                    ? relativeBarTop + barThickness
+                    : Number(node.layout && node.layout.inverseDenominatorBoxTop);
+                const headerBottom = node.top() + (
+                    Number.isFinite(relativeHeaderBottom)
+                        ? relativeHeaderBottom
+                        : Math.max(1, (node.bottom() - node.top()) / 2)
+                );
+                const clickedInverseHeader =
+                    x >= node.left() &&
+                    x <= node.right() &&
+                    y >= node.top() &&
+                    y <= headerBottom;
+
+                // Only the solid black numerator/header (the 1 and fraction
+                // bar) targets the inverse wrapper. Below it, including the
+                // denominator padding and lower outline, selection is resolved
+                // exclusively among the inverse's descendants collected above.
+                if (clickedInverseHeader) {
+                    candidates.push({
+                        node,
+                        firstPart: 0,
+                        lastPart: 0,
+                        distance: 0
+                    });
+                }
             }
         }
 
