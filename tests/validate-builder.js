@@ -24,6 +24,7 @@ for (const phase of ["1", "2", "3", "4"]) {
 assert(builderHtml.includes("exploded-algebra.html?authoring=builder"), "Builder must embed the real player in authoring mode");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
+assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 

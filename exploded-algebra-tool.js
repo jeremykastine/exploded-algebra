@@ -8216,6 +8216,7 @@ ctx.font = SETTINGS.textFont;
 
         function isExpressionBuilderTool(toolName) {
             return [
+                "authorInitial",
                 "replaceOneWithInverseProduct",
                 "insertZeroProduct",
                 "cancelOpposites",
