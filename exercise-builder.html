@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260913-phase2-single">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260913-step-curation">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260913-phase2-single"></script>
+  <script defer src="exercise-builder.js?v=20260913-step-curation"></script>
 </head>
 <body>
   <header class="builder-header">
@@ -22,8 +22,8 @@
   <nav class="phase-nav" aria-label="Builder phases">
     <button type="button" data-go-phase="1"><span>1</span> Setup</button>
     <button type="button" data-go-phase="2"><span>2</span> Starting Expression</button>
-    <button type="button" data-go-phase="3"><span>3</span> Record Solution</button>
-    <button type="button" data-go-phase="4"><span>4</span> Review &amp; Export</button>
+    <button type="button" data-go-phase="3"><span>3</span> Solve</button>
+    <button type="button" data-go-phase="4"><span>4</span> Choose Steps &amp; Export</button>
   </nav>
 
   <main>
@@ -105,56 +105,44 @@
 
     <section class="phase" data-phase="2" hidden>
       <div id="phase2WorkspaceSlot"></div>
-      <div class="card author-controls">
-        <p id="initialExpressionStatus" class="status-line" aria-live="polite">Use the Expression Builder above, then submit the expression.</p>
-        <div class="button-row">
-          <button id="editInitialExpressionButton" type="button" class="secondary-button">Edit Starting Expression</button>
-          <button id="lockInitialExpressionButton" type="button" class="primary-button" disabled>Lock Starting Expression</button>
-        </div>
-      </div>
-      <div id="initialConventionalCard" class="card conventional-card" hidden>
-        <h3>Initial conventional representation</h3>
-        <p>The generated KaTeX is a starting point. Edit it to control exactly what students see.</p>
-        <label>KaTeX source
-          <textarea id="initialKatexInput" rows="3" spellcheck="false"></textarea>
-        </label>
-        <div class="math-preview" id="initialKatexPreview" aria-label="Rendered initial conventional expression"></div>
-        <button id="acceptInitialKatexButton" type="button" class="primary-button">Accept Conventional Representation</button>
-      </div>
-      <div class="phase-actions">
-        <button type="button" class="secondary-button" data-go-phase="1">Back</button>
-        <button id="phase2NextButton" type="button" class="primary-button" disabled>Continue to Record Solution</button>
-      </div>
+      <p id="initialExpressionStatus" class="visually-hidden" aria-live="polite">Build and submit the starting expression.</p>
     </section>
 
     <section class="phase" data-phase="3" hidden>
-      <div class="phase-heading">
-        <div><span class="eyebrow">Phase 3</span><h2>Record the solution</h2></div>
-        <p>Solve in the real EA workspace. Mark checkpoints after the small actions that make up each meaningful algebraic step.</p>
-      </div>
-      <div class="recording-toolbar card">
-        <div><strong id="recordingActionCount">0 recorded actions</strong><span id="undoRecordingLabel"></span></div>
-        <div class="button-row">
-          <button id="markStepButton" type="button" class="secondary-button">Mark Important Step</button>
-          <button id="finishRecordingButton" type="button" class="primary-button">Finish Recording</button>
-        </div>
-      </div>
       <div id="phase3WorkspaceSlot"></div>
-      <section class="card checkpoint-list-card">
-        <h3>Important checkpoints</h3>
-        <div id="checkpointList" class="checkpoint-list"><p class="muted">No checkpoints marked yet.</p></div>
-      </section>
-      <div class="phase-actions">
-        <button type="button" class="secondary-button" data-go-phase="2">Back to Starting Expression</button>
-      </div>
+      <button id="finishRecordingButton" type="button" class="all-done-button">All Done</button>
     </section>
 
     <section class="phase" data-phase="4" hidden>
       <div class="phase-heading">
-        <div><span class="eyebrow">Phase 4</span><h2>Review, test, and export</h2></div>
-        <p>Inspect the complete level definition, test it in the student player, and download a ready-to-use JSON file.</p>
+        <div><span class="eyebrow">Phase 4</span><h2>Choose the major steps</h2></div>
+        <p>Every expression state from the recorded solution is included below. Hide the minor ones, then edit the notation and guidance students should see.</p>
       </div>
-      <div id="reviewContent" class="review-grid"></div>
+      <section class="card initial-step-card">
+        <div class="step-card-heading">
+          <div><span class="step-number">Start</span><h3>Starting expression</h3></div>
+          <span class="required-step-label">Always shown</span>
+        </div>
+        <label>Conventional notation
+          <textarea id="initialKatexInput" rows="2" spellcheck="false"></textarea>
+        </label>
+        <div class="math-preview compact" id="initialKatexPreview" aria-label="Rendered starting expression"></div>
+      </section>
+
+      <section class="step-curation-section" aria-labelledby="stepCurationTitle">
+        <div class="curation-heading">
+          <div>
+            <h3 id="stepCurationTitle">Recorded expression steps</h3>
+            <p id="curationSummary" class="status-line"></p>
+          </div>
+          <button id="showAllStepsButton" type="button" class="secondary-button">Keep All Steps</button>
+        </div>
+        <div class="step-table-heading" aria-hidden="true">
+          <span>Step</span><span>Student display</span><span>Include</span>
+        </div>
+        <div id="curationTable" class="curation-table"></div>
+      </section>
+
       <section class="card export-card">
         <div>
           <h3>Test in the student player</h3>
@@ -174,15 +162,15 @@
         <p id="exportStatus" class="status-line" aria-live="polite"></p>
       </section>
       <div class="phase-actions">
-        <button type="button" class="secondary-button" data-go-phase="3">Back to Recording</button>
-        <button type="button" class="secondary-button" data-go-phase="2">Edit Starting Expression</button>
+        <button id="resumeRecordingButton" type="button" class="secondary-button">Back to Solving</button>
+        <button id="editInitialExpressionButton" type="button" class="secondary-button">Edit Starting Expression</button>
         <button type="button" class="secondary-button" data-go-phase="1">Edit Setup</button>
       </div>
     </section>
   </main>
 
   <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260913-phase2-single"></iframe>
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260913-step-curation"></iframe>
   </div>
 
   <div id="resumeBackdrop" class="modal-backdrop" hidden>
@@ -192,29 +180,6 @@
       <div class="button-row">
         <button id="resumeDraftButton" type="button" class="primary-button">Resume Draft</button>
         <button id="startFreshButton" type="button" class="secondary-button">Discard and Start Fresh</button>
-      </div>
-    </section>
-  </div>
-
-  <div id="checkpointBackdrop" class="modal-backdrop" hidden>
-    <section class="modal-card checkpoint-editor" role="dialog" aria-modal="true" aria-labelledby="checkpointTitle">
-      <h2 id="checkpointTitle">Mark Important Step</h2>
-      <p id="checkpointRangeSummary" class="field-help"></p>
-      <label>Conventional notation before
-        <textarea id="checkpointBeforeKatex" rows="2" spellcheck="false"></textarea>
-      </label>
-      <div id="checkpointBeforePreview" class="math-preview compact"></div>
-      <label>Instruction / explanation
-        <textarea id="checkpointInstruction" rows="3" placeholder="Describe the mathematical idea in this transition."></textarea>
-      </label>
-      <label>Conventional notation after
-        <textarea id="checkpointAfterKatex" rows="2" spellcheck="false"></textarea>
-      </label>
-      <div id="checkpointAfterPreview" class="math-preview compact"></div>
-      <p id="checkpointError" class="form-error" role="alert"></p>
-      <div class="button-row end">
-        <button id="cancelCheckpointButton" type="button" class="secondary-button">Cancel</button>
-        <button id="saveCheckpointButton" type="button" class="primary-button">Save Checkpoint</button>
       </div>
     </section>
   </div>

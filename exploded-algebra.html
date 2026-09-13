@@ -3543,8 +3543,9 @@
             font-weight: 600;
         }
 
-        /* The Exercise Builder embeds the real workspace but supplies its own
-           phase navigation, metadata, and checkpoint controls outside it. */
+        /* Exercise Builder authoring removes only the student step strip. The
+           recording phase otherwise keeps the same workspace and settings UI
+           students use. */
         body.authoring-session:not(.expression-builder-active) .app-container,
         body.authoring-session:not(.expression-builder-active).left-handed .app-container {
             --top-panel-height: 0px;
@@ -3555,7 +3556,7 @@
             grid-row: 1;
         }
         body.authoring-session .left-panel,
-        body.authoring-session .quadrant-menu {
+        body.authoring-session.authoring-initial-session .quadrant-menu {
             display: none !important;
         }
         body.authoring-session .quadrant-tools {

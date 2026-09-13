@@ -25,8 +25,18 @@ for (const phase of ["1", "2", "3", "4"]) {
 
 assert(builderHtml.includes("exploded-algebra.html?authoring=builder"), "Builder must embed the real player in authoring mode");
 assert(!/<section class="phase" data-phase="2" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 2 must not include explanatory heading chrome");
+assert(!/<section class="phase" data-phase="3" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 3 must not include explanatory heading chrome");
+assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
+assert(builderHtml.includes('id="curationTable"'), "Review phase must include the recorded-step curation table");
+assert(builderJs.includes("Before completion") && builderJs.includes("After completion"), "Each candidate step must have editable pre/post notation");
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
+assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
+assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
+assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states must be converted into curation candidates");
+assert(builderJs.includes('candidate.included !== false'), "Hidden candidate steps must be omitted from export");
+assert(builderJs.includes("candidates[candidates.length - 1].required = true"), "The final expression must remain an included completion target");
 assert(playerHtml.includes("authoring-initial-session.expression-builder-active"), "Initial authoring must collapse the conventional-notation row");
+assert(playerHtml.includes("body.authoring-session.authoring-initial-session .quadrant-menu"), "Recording authoring must preserve the student settings control");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");

@@ -5,6 +5,7 @@
   const TEST_STORAGE_PREFIX = "explodedAlgebra.builderTest.";
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
   const FORMAT_VERSION = 1;
+  const DRAFT_VERSION = 2;
   const VARIABLES = ["x", "y", "z", "a", "b", "c"];
 
   const byId = id => document.getElementById(id);
@@ -16,15 +17,14 @@
   let loadedWorkspacePhase = 0;
   let iframeReady = false;
   let idWasEdited = false;
-  let checkpointEditIndex = -1;
-  let finishAfterCheckpoint = false;
   let saveTimer = null;
+  let initialCommitInProgress = false;
   let lastWorkspaceSnapshotFingerprint = "";
   let draft = makeFreshDraft();
 
   function makeFreshDraft() {
     return {
-      draftVersion: 1,
+      draftVersion: DRAFT_VERSION,
       updatedAt: null,
       phase: 1,
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
@@ -49,12 +49,55 @@
       },
       recording: {
         workspaceSnapshot: null,
-        checkpoints: [],
+        candidates: [],
         finalExpression: "",
         finalKatex: "",
         finished: false
       }
     };
+  }
+
+  function normalizeSavedDraft(saved) {
+    if (!saved || (saved.draftVersion !== 1 && saved.draftVersion !== DRAFT_VERSION)) return null;
+    const normalized = makeFreshDraft();
+    normalized.updatedAt = saved.updatedAt || null;
+    normalized.phase = Number(saved.phase) || 1;
+    normalized.metadata = { ...normalized.metadata, ...(saved.metadata || {}) };
+    normalized.settings = {
+      ...normalized.settings,
+      ...(saved.settings || {}),
+      numericalRewrite: {
+        ...normalized.settings.numericalRewrite,
+        ...(saved.settings && saved.settings.numericalRewrite || {})
+      },
+      excludedDefaultTools: Array.isArray(saved.settings && saved.settings.excludedDefaultTools)
+        ? saved.settings.excludedDefaultTools.slice()
+        : [],
+      allowedUnavailableTools: Array.isArray(saved.settings && saved.settings.allowedUnavailableTools)
+        ? saved.settings.allowedUnavailableTools.slice()
+        : []
+    };
+    normalized.initial = { ...normalized.initial, ...(saved.initial || {}) };
+    normalized.recording = { ...normalized.recording, ...(saved.recording || {}) };
+    normalized.recording.candidates = Array.isArray(saved.recording && saved.recording.candidates)
+      ? saved.recording.candidates.map(candidate => ({ ...candidate }))
+      : Array.isArray(saved.recording && saved.recording.checkpoints)
+        ? saved.recording.checkpoints.map((checkpoint, index, checkpoints) => ({
+          key: `legacy-${index}`,
+          expression: checkpoint.afterExpression,
+          beforeExpression: checkpoint.beforeExpression,
+          beforeKatex: checkpoint.beforeKatex || checkpoint.afterKatex,
+          afterKatex: checkpoint.afterKatex,
+          instruction: checkpoint.instruction || "",
+          actionStartIndex: checkpoint.actionStartIndex,
+          actionEndIndex: checkpoint.actionEndIndex,
+          included: true,
+          required: index === checkpoints.length - 1
+        }))
+        : [];
+    delete normalized.recording.checkpoints;
+    normalized.draftVersion = DRAFT_VERSION;
+    return normalized;
   }
 
   function getApi() {
@@ -103,10 +146,13 @@
       .replace(/^-+|-+$/g, "");
   }
 
+  function sameExpressionText(first, second) {
+    return String(first || "").replace(/\s+/g, "") === String(second || "").replace(/\s+/g, "");
+  }
+
   function readSavedDraft() {
     try {
-      const parsed = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "null");
-      return parsed && parsed.draftVersion === 1 ? parsed : null;
+      return normalizeSavedDraft(JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "null"));
     } catch (error) {
       return null;
     }
@@ -192,6 +238,11 @@
     return !message;
   }
 
+  function inferVariables(expression) {
+    return Array.from(new Set((String(expression || "").match(/[A-Za-z][A-Za-z0-9_]*/g) || [])
+      .filter(value => !value.startsWith("__ea_")))).sort();
+  }
+
   function getLevelBase() {
     const level = {
       format: "exploded-algebra-level",
@@ -213,31 +264,27 @@
     return level;
   }
 
-  function inferVariables(expression) {
-    return Array.from(new Set((String(expression || "").match(/[A-Za-z][A-Za-z0-9_]*/g) || [])
-      .filter(value => !value.startsWith("__ea_")))).sort();
-  }
-
   function buildExportLevel() {
     const snapshot = draft.recording.workspaceSnapshot;
     const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [], demoSteps: [] };
-    const checkpoints = draft.recording.checkpoints || [];
+    const includedCandidates = (draft.recording.candidates || []).filter(candidate => candidate.included !== false);
     const steps = [{
       expression: draft.initial.expression,
       katex: draft.initial.katex,
       afterKatex: draft.initial.katex
-    }, ...checkpoints.map(checkpoint => ({
-      expression: checkpoint.afterExpression,
-      explodedExpression: checkpoint.afterExpression,
-      beforeExplodedExpression: checkpoint.beforeExpression,
-      afterExplodedExpression: checkpoint.afterExpression,
-      katex: checkpoint.afterKatex,
-      beforeKatex: checkpoint.beforeKatex,
-      afterKatex: checkpoint.afterKatex,
-      guidance: checkpoint.instruction,
-      actionStartIndex: checkpoint.actionStartIndex,
-      actionEndIndex: checkpoint.actionEndIndex
-    }))];
+    }, ...includedCandidates.map(candidate => {
+      const step = {
+        expression: candidate.expression,
+        explodedExpression: candidate.expression,
+        katex: candidate.afterKatex,
+        beforeKatex: candidate.beforeKatex,
+        afterKatex: candidate.afterKatex,
+        actionStartIndex: candidate.actionStartIndex,
+        actionEndIndex: candidate.actionEndIndex
+      };
+      if (candidate.instruction && candidate.instruction.trim()) step.guidance = candidate.instruction.trim();
+      return step;
+    })];
     return {
       ...getLevelBase(),
       steps,
@@ -246,8 +293,8 @@
         steps: JSON.parse(JSON.stringify(recorder.demoSteps || []))
       },
       recordedActions: JSON.parse(JSON.stringify(recorder.actions || [])),
-      finalExpression: draft.recording.finalExpression || checkpoints.at(-1)?.afterExpression || draft.initial.expression,
-      finalKatex: draft.recording.finalKatex || checkpoints.at(-1)?.afterKatex || draft.initial.katex
+      finalExpression: draft.recording.finalExpression || includedCandidates.at(-1)?.expression || draft.initial.expression,
+      finalKatex: includedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
     };
   }
 
@@ -296,40 +343,28 @@
   async function preparePhase2() {
     moveWorkspaceTo("phase2WorkspaceSlot");
     const api = await waitForApi();
+    let snapshot;
     if (loadedWorkspacePhase !== 2) {
       const resume = draft.initial.workspaceSnapshot || (draft.initial.expression ? {
         currentExpression: draft.initial.expression,
         initialCommitted: true
       } : null);
-      draft.initial.workspaceSnapshot = api.loadInitialSession({
+      snapshot = api.loadInitialSession({
         ...getLevelBase(),
         initialKatex: draft.initial.katex || undefined,
         variables: VARIABLES
       }, resume);
       loadedWorkspacePhase = 2;
-    }
-    refreshInitialControls(draft.initial.workspaceSnapshot || api.getSnapshot());
-  }
-
-  function refreshInitialControls(snapshot) {
-    if (!snapshot) return;
-    const ready = snapshot.initialCommitted && !snapshot.builderActive;
-    document.body.classList.toggle("phase2-expression-building", currentPhase === 2 && snapshot.builderActive);
-    byId("lockInitialExpressionButton").disabled = !ready;
-    byId("editInitialExpressionButton").disabled = snapshot.builderActive;
-    if (snapshot.builderActive) {
-      byId("initialExpressionStatus").textContent = "Build the expression in the shared Expression Builder, then press Next / Enter there to submit it.";
-    } else if (ready) {
-      byId("initialExpressionStatus").textContent = `Expression ready to lock: ${snapshot.currentExpression}`;
     } else {
-      byId("initialExpressionStatus").textContent = "Choose Edit Starting Expression to reopen the Expression Builder.";
+      snapshot = api.getSnapshot();
     }
-    byId("initialConventionalCard").hidden = !draft.initial.eaLocked;
-    byId("phase2NextButton").disabled = !draft.initial.eaLocked || !draft.initial.conventionalLocked;
-    if (draft.initial.eaLocked) {
-      byId("initialKatexInput").value = draft.initial.katex || snapshot.currentKatex || "";
-      renderKatex(byId("initialKatexPreview"), byId("initialKatexInput").value);
+    if (!snapshot.builderActive) {
+      api.startInitialExpressionBuilder(snapshot.builderDraft || null);
+      snapshot = api.getSnapshot();
     }
+    draft.initial.workspaceSnapshot = snapshot;
+    document.body.classList.add("phase2-expression-building");
+    byId("initialExpressionStatus").textContent = "Build the starting expression, then press Next / Enter.";
   }
 
   async function preparePhase3() {
@@ -339,102 +374,155 @@
       draft.recording.workspaceSnapshot = api.loadRecordingSession(getLevelBase(), draft.recording.workspaceSnapshot);
       loadedWorkspacePhase = 3;
     }
-    refreshRecordingUi(draft.recording.workspaceSnapshot || api.getSnapshot());
+    document.body.classList.add("phase3-recording");
+    api.refreshLayout();
   }
 
   function actionLabel(action) {
     if (!action) return "Unknown action";
     if (action.type === "select") return `Select ${action.expression || "expression"}`;
-    if (action.type === "tool") return `Choose ${action.tool || "tool"}`;
-    if (action.type === "builder") return `Expression Builder: ${action.action}${action.value ? ` (${action.value})` : ""}`;
-    if (action.type === "action") return `${action.action}${action.value ? `: ${action.value}` : ""}`;
-    if (action.type === "commuteChoice") return `Commute choice: ${action.expression || action.relativeIndex}`;
+    if (action.type === "tool") return `Use ${action.tool || "tool"}`;
+    if (action.type === "builder") return action.action === "submit"
+      ? "Submit Expression Builder rewrite"
+      : `Expression Builder ${action.action}${action.value ? ` ${action.value}` : ""}`;
+    if (action.type === "action") return `${action.action}${action.value ? ` ${action.value}` : ""}`;
+    if (action.type === "commuteChoice") return "Choose commute position";
     if (action.type === "undo") return "Undo";
     return action.type;
   }
 
-  function refreshRecordingUi(snapshot) {
-    const actionCount = snapshot && snapshot.recorder && snapshot.recorder.actions ? snapshot.recorder.actions.length : 0;
-    byId("recordingActionCount").textContent = `${actionCount} recorded action${actionCount === 1 ? "" : "s"}`;
-    byId("undoRecordingLabel").textContent = draft.settings.includeUndoActions
-      ? "Undo actions will be preserved in the guided solution."
-      : "Undo removes the abandoned branch from the recorded solution.";
-    renderCheckpointList();
+  function summarizeActionRange(actions) {
+    const labels = actions.map(actionLabel);
+    if (!labels.length) return "Expression changed";
+    if (labels.length <= 3) return labels.join(" · ");
+    return `${labels[0]} · ${labels[1]} · ${labels.length - 2} more actions`;
   }
 
-  function renderCheckpointList() {
-    const container = byId("checkpointList");
-    const checkpoints = draft.recording.checkpoints || [];
-    if (!checkpoints.length) {
-      container.innerHTML = '<p class="muted">No checkpoints marked yet.</p>';
-      return;
-    }
-    container.innerHTML = checkpoints.map((checkpoint, index) => `
-      <article class="checkpoint-item">
-        <span class="checkpoint-number">${index + 1}</span>
-        <div><p>${escapeHtml(checkpoint.instruction)}</p><small>Actions ${checkpoint.actionStartIndex + 1}–${checkpoint.actionEndIndex}</small></div>
-        <button type="button" data-edit-checkpoint="${index}">Edit</button>
-      </article>`).join("");
-  }
+  function deriveStepCandidates(snapshot, api) {
+    const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [] };
+    const actions = Array.isArray(recorder.actions) ? recorder.actions : [];
+    const previous = Array.isArray(draft.recording.candidates) ? draft.recording.candidates : [];
+    const previousByExpression = new Map();
+    previous.forEach(candidate => {
+      const key = String(candidate.expression || "").replace(/\s+/g, "");
+      if (!previousByExpression.has(key)) previousByExpression.set(key, []);
+      previousByExpression.get(key).push(candidate);
+    });
 
-  async function openCheckpointEditor(index = -1, finishing = false) {
-    const api = await waitForApi();
-    const snapshot = api.getSnapshot();
-    draft.recording.workspaceSnapshot = snapshot;
-    const recorder = snapshot.recorder || { actions: [] };
-    const previous = draft.recording.checkpoints.at(-1);
-    const actionStartIndex = previous ? previous.actionEndIndex : 0;
-    if (index < 0 && recorder.actions.length <= actionStartIndex) {
-      window.alert("Perform at least one new EA action before marking an important step.");
-      return false;
-    }
-    checkpointEditIndex = index;
-    finishAfterCheckpoint = finishing;
-    const existing = index >= 0 ? draft.recording.checkpoints[index] : null;
-    const beforeExpression = existing ? existing.beforeExpression : (previous ? previous.afterExpression : draft.initial.expression);
-    const afterExpression = existing ? existing.afterExpression : snapshot.currentExpression;
-    byId("checkpointRangeSummary").textContent = existing
-      ? `Editing checkpoint ${index + 1}.`
-      : `This checkpoint covers recorded actions ${actionStartIndex + 1} through ${recorder.actions.length}.`;
-    byId("checkpointBeforeKatex").value = existing ? existing.beforeKatex : api.generateKatex(beforeExpression);
-    byId("checkpointInstruction").value = existing ? existing.instruction : "";
-    byId("checkpointAfterKatex").value = existing ? existing.afterKatex : api.generateKatex(afterExpression);
-    byId("checkpointBackdrop").dataset.beforeExpression = beforeExpression;
-    byId("checkpointBackdrop").dataset.afterExpression = afterExpression;
-    byId("checkpointBackdrop").dataset.actionStartIndex = String(existing ? existing.actionStartIndex : actionStartIndex);
-    byId("checkpointBackdrop").dataset.actionEndIndex = String(existing ? existing.actionEndIndex : recorder.actions.length);
-    byId("checkpointError").textContent = "";
-    renderKatex(byId("checkpointBeforePreview"), byId("checkpointBeforeKatex").value);
-    renderKatex(byId("checkpointAfterPreview"), byId("checkpointAfterKatex").value);
-    byId("checkpointBackdrop").hidden = false;
-    byId("checkpointInstruction").focus();
-    return true;
-  }
+    const candidates = [];
+    let currentExpression = draft.initial.expression;
+    let actionStartIndex = 0;
+    const occurrences = new Map();
 
-  function saveCheckpoint() {
-    const instruction = byId("checkpointInstruction").value.trim();
-    const beforeKatex = byId("checkpointBeforeKatex").value.trim();
-    const afterKatex = byId("checkpointAfterKatex").value.trim();
-    if (!instruction || !beforeKatex || !afterKatex) {
-      byId("checkpointError").textContent = "Complete the before notation, instruction, and after notation.";
-      return;
-    }
-    const backdrop = byId("checkpointBackdrop");
-    const checkpoint = {
-      beforeExpression: backdrop.dataset.beforeExpression,
-      afterExpression: backdrop.dataset.afterExpression,
-      beforeKatex,
-      instruction,
-      afterKatex,
-      actionStartIndex: Number(backdrop.dataset.actionStartIndex),
-      actionEndIndex: Number(backdrop.dataset.actionEndIndex)
+    const addCandidate = (nextExpression, actionEndIndex) => {
+      const expression = String(nextExpression || "").trim();
+      if (!expression || sameExpressionText(expression, currentExpression)) return;
+      const expressionKey = expression.replace(/\s+/g, "");
+      const occurrence = (occurrences.get(expressionKey) || 0) + 1;
+      occurrences.set(expressionKey, occurrence);
+      const key = `${expressionKey}::${occurrence}`;
+      const generatedKatex = api.generateKatex(expression);
+      const priorList = previousByExpression.get(expressionKey) || [];
+      const prior = priorList.shift();
+      const rangeActions = actions.slice(actionStartIndex, actionEndIndex);
+      candidates.push({
+        key,
+        expression,
+        beforeExpression: currentExpression,
+        beforeKatex: prior && prior.beforeKatex || generatedKatex,
+        afterKatex: prior && prior.afterKatex || generatedKatex,
+        instruction: prior && prior.instruction || "",
+        actionStartIndex,
+        actionEndIndex,
+        actionSummary: summarizeActionRange(rangeActions),
+        included: prior ? prior.included !== false : true,
+        required: false
+      });
+      currentExpression = expression;
+      actionStartIndex = actionEndIndex;
     };
-    if (checkpointEditIndex >= 0) draft.recording.checkpoints[checkpointEditIndex] = checkpoint;
-    else draft.recording.checkpoints.push(checkpoint);
-    backdrop.hidden = true;
-    renderCheckpointList();
-    scheduleSave();
-    if (finishAfterCheckpoint) finalizeRecording();
+
+    actions.forEach((action, index) => {
+      addCandidate(action && action.beforeExpression, index);
+      addCandidate(action && action.afterExpression, index + 1);
+    });
+    addCandidate(snapshot && snapshot.currentExpression, actions.length);
+    if (candidates.length) {
+      candidates.forEach(candidate => { candidate.required = false; });
+      candidates[candidates.length - 1].required = true;
+      candidates[candidates.length - 1].included = true;
+    }
+    return candidates;
+  }
+
+  function updateCurationSummary() {
+    const candidates = draft.recording.candidates || [];
+    const included = candidates.filter(candidate => candidate.included !== false).length;
+    const hidden = candidates.length - included;
+    byId("curationSummary").textContent = `${included} major step${included === 1 ? "" : "s"} kept · ${hidden} minor step${hidden === 1 ? "" : "s"} hidden`;
+    byId("showAllStepsButton").disabled = hidden === 0;
+  }
+
+  function renderCurationTable() {
+    const container = byId("curationTable");
+    const candidates = draft.recording.candidates || [];
+    if (!candidates.length) {
+      container.innerHTML = '<p class="card empty-curation">No expression changes were recorded.</p>';
+      updateCurationSummary();
+      return;
+    }
+    let visibleNumber = 0;
+    container.innerHTML = candidates.map((candidate, index) => {
+      const included = candidate.included !== false;
+      if (included) visibleNumber += 1;
+      const stepLabel = included ? `Major step ${visibleNumber}` : `Recorded step ${index + 1}`;
+      const toggleLabel = candidate.required ? "Required" : included ? "Hide Step" : "Keep Step";
+      return `
+        <article class="step-editor-row card ${included ? "is-included" : "is-hidden"}" data-candidate-index="${index}">
+          <div class="step-row-heading">
+            <span class="step-number">${index + 1}</span>
+            <div class="step-row-summary">
+              <h4>${escapeHtml(stepLabel)}</h4>
+              <p>${escapeHtml(candidate.actionSummary || "Recorded expression change")}</p>
+              ${included ? "" : `<small>${escapeHtml(candidate.afterKatex)}</small>`}
+            </div>
+            <button type="button" class="step-visibility-button" data-toggle-step="${index}" aria-pressed="${included}" ${candidate.required ? "disabled" : ""}>${toggleLabel}</button>
+          </div>
+          ${included ? `
+            <div class="step-editor-fields">
+              <div class="notation-field">
+                <label>Before completion
+                  <textarea rows="2" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
+                </label>
+                <div class="math-preview compact" data-step-preview="beforeKatex"></div>
+              </div>
+              <label class="instruction-field">Instruction or hint <span class="optional">optional</span>
+                <textarea rows="3" data-step-field="instruction" placeholder="Explain what the student should do in this major step.">${escapeHtml(candidate.instruction)}</textarea>
+              </label>
+              <div class="notation-field">
+                <label>After completion
+                  <textarea rows="2" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
+                </label>
+                <div class="math-preview compact" data-step-preview="afterKatex"></div>
+              </div>
+            </div>
+            <p class="step-range">Recorded actions ${candidate.actionStartIndex + 1}–${candidate.actionEndIndex}${candidate.required ? " · Final step is always included" : ""}</p>
+          ` : ""}
+        </article>`;
+    }).join("");
+    container.querySelectorAll(".step-editor-row.is-included").forEach(row => {
+      const candidate = candidates[Number(row.dataset.candidateIndex)];
+      renderKatex(row.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
+      renderKatex(row.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
+    });
+    updateCurationSummary();
+  }
+
+  async function renderCuration() {
+    await waitForApi();
+    byId("initialKatexInput").value = draft.initial.katex || "";
+    renderKatex(byId("initialKatexPreview"), draft.initial.katex || "");
+    renderCurationTable();
   }
 
   async function finishRecording() {
@@ -443,59 +531,20 @@
     draft.recording.workspaceSnapshot = snapshot;
     const actions = snapshot.recorder ? snapshot.recorder.actions || [] : [];
     if (!actions.length) {
-      window.alert("Record at least one solution action before finishing.");
+      window.alert("Perform at least one solution action before choosing All Done.");
       return;
     }
-    const lastCheckpoint = draft.recording.checkpoints.at(-1);
-    if (!lastCheckpoint || lastCheckpoint.afterExpression !== snapshot.currentExpression || lastCheckpoint.actionEndIndex !== actions.length) {
-      await openCheckpointEditor(-1, true);
+    const candidates = deriveStepCandidates(snapshot, api);
+    if (!candidates.length) {
+      window.alert("The final expression is unchanged. Complete at least one expression-changing step before choosing All Done.");
       return;
     }
-    finalizeRecording();
-  }
-
-  function finalizeRecording() {
-    const snapshot = draft.recording.workspaceSnapshot;
-    const lastCheckpoint = draft.recording.checkpoints.at(-1);
+    draft.recording.candidates = candidates;
     draft.recording.finalExpression = snapshot.currentExpression;
-    draft.recording.finalKatex = lastCheckpoint.afterKatex;
+    draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
     saveDraftNow();
     setPhase(4, true);
-  }
-
-  function summarizeActions(actions) {
-    const counts = new Map();
-    actions.forEach(action => counts.set(action.type || "unknown", (counts.get(action.type || "unknown") || 0) + 1));
-    return Array.from(counts.entries()).map(([type, count]) => `<span class="action-chip">${escapeHtml(type)}: ${count}</span>`).join("");
-  }
-
-  async function renderReview() {
-    const api = await waitForApi();
-    const level = buildExportLevel();
-    const actions = level.recordedActions || [];
-    const settings = level.numericalRewrite;
-    const checkpointItems = level.steps.slice(1).map((step, index) => `<li><strong>Step ${index + 1}:</strong> ${escapeHtml(step.guidance)}<br><small>${escapeHtml(step.beforeKatex)} → ${escapeHtml(step.afterKatex)} · actions ${step.actionStartIndex + 1}–${step.actionEndIndex}</small></li>`).join("");
-    byId("reviewContent").innerHTML = `
-      <section class="card review-card"><h3>Metadata and settings</h3>
-        <ul class="review-list"><li><strong>${escapeHtml(level.title)}</strong></li><li>ID: ${escapeHtml(level.id)}</li>
-        <li>Addition: ${escapeHtml(settings.addition)}</li><li>Multiplication: ${escapeHtml(settings.multiplication)}</li>
-        <li>Negative one: ${settings.allowNegativeOne ? "allowed" : "not allowed"}</li><li>Inverses: ${settings.allowInverses ? "allowed" : "not allowed"}</li>
-        <li>Undo actions: ${level.includeUndoActions ? "included" : "removed from the surviving path"}</li></ul></section>
-      <section class="card review-card"><h3>Initial expression</h3>
-        <div class="review-expression">${api.renderExpression(level.startExpression)}</div>
-        <div class="math-preview compact" data-review-katex="${escapeHtml(level.initialKatex)}"></div>
-        <small>${escapeHtml(level.initialKatex)}</small></section>
-      <section class="card review-card full"><h3>Recorded action stream</h3>
-        <div class="action-summary">${summarizeActions(actions)}</div>
-        <ol class="action-stream">${actions.map(action => `<li>${escapeHtml(actionLabel(action))}</li>`).join("")}</ol></section>
-      <section class="card review-card full"><h3>Pedagogical checkpoints</h3><ol class="review-list">${checkpointItems}</ol></section>
-      <section class="card review-card"><h3>Final expression</h3>
-        <div class="review-expression">${api.renderExpression(level.finalExpression)}</div>
-        <div class="math-preview compact" data-review-katex="${escapeHtml(level.finalKatex)}"></div>
-        <small>${escapeHtml(level.finalKatex)}</small></section>
-      <section class="card review-card"><h3>Compatibility</h3><ul class="review-list"><li>Format version ${level.formatVersion}</li><li>${level.demo.steps.length} deterministic guided actions</li><li>${level.steps.length - 1} meaningful solution steps</li><li>High, Medium, and Low assistance use this one definition.</li></ul></section>`;
-    document.querySelectorAll("[data-review-katex]").forEach(node => renderKatex(node, node.dataset.reviewKatex));
   }
 
   async function validateExportLevel() {
@@ -550,7 +599,7 @@
     if (number === 1) return true;
     if (number === 2) return validateSetup(false);
     if (number === 3) return draft.initial.eaLocked && draft.initial.conventionalLocked;
-    return draft.recording.finished;
+    return draft.recording.finished && (draft.recording.candidates || []).length > 0;
   }
 
   async function setPhase(number, force = false) {
@@ -560,7 +609,7 @@
     if (currentPhase === 3 && loadedWorkspacePhase === 3) captureWorkspaceSnapshot();
     currentPhase = target;
     draft.phase = target;
-    if (target !== 2) document.body.classList.remove("phase2-expression-building");
+    document.body.classList.remove("phase2-expression-building", "phase3-recording");
     phases.forEach(section => { section.hidden = Number(section.dataset.phase) !== target; });
     phaseButtons.forEach(button => {
       const phase = Number(button.dataset.goPhase);
@@ -569,10 +618,10 @@
       button.disabled = !phaseIsAvailable(phase);
     });
     workspaceShell.style.display = "none";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: target >= 3 ? "auto" : "smooth" });
     if (target === 2) await preparePhase2();
     else if (target === 3) await preparePhase3();
-    else if (target === 4) await renderReview();
+    else if (target === 4) await renderCuration();
     scheduleSave();
   }
 
@@ -583,31 +632,63 @@
     const fingerprint = JSON.stringify(snapshot);
     const changed = fingerprint !== lastWorkspaceSnapshotFingerprint;
     lastWorkspaceSnapshotFingerprint = fingerprint;
-    if (loadedWorkspacePhase === 2) {
-      draft.initial.workspaceSnapshot = snapshot;
-      refreshInitialControls(snapshot);
-    } else if (loadedWorkspacePhase === 3) {
-      draft.recording.workspaceSnapshot = snapshot;
-      refreshRecordingUi(snapshot);
-    }
+    if (loadedWorkspacePhase === 2) draft.initial.workspaceSnapshot = snapshot;
+    else if (loadedWorkspacePhase === 3) draft.recording.workspaceSnapshot = snapshot;
     return changed;
   }
 
   function resetDownstreamRecording() {
     draft.recording = {
       workspaceSnapshot: null,
-      checkpoints: [],
+      candidates: [],
       finalExpression: "",
       finalKatex: "",
       finished: false
     };
   }
 
+  async function acceptInitialExpressionAndSolve() {
+    if (initialCommitInProgress || currentPhase !== 2) return;
+    const api = await waitForApi();
+    const snapshot = api.getSnapshot();
+    if (!snapshot.initialCommitted || snapshot.builderActive || !snapshot.currentExpression) return;
+    initialCommitInProgress = true;
+    const changed = draft.initial.expression && !sameExpressionText(draft.initial.expression, snapshot.currentExpression);
+    if (changed || draft.recording.workspaceSnapshot) resetDownstreamRecording();
+    draft.initial.expression = snapshot.currentExpression;
+    draft.initial.katex = snapshot.currentKatex || api.generateKatex(snapshot.currentExpression);
+    draft.initial.eaLocked = true;
+    draft.initial.conventionalLocked = true;
+    draft.initial.workspaceSnapshot = snapshot;
+    loadedWorkspacePhase = 0;
+    saveDraftNow();
+    try {
+      await setPhase(3, true);
+    } finally {
+      initialCommitInProgress = false;
+    }
+  }
+
+  async function editStartingExpression() {
+    const recorder = draft.recording.workspaceSnapshot && draft.recording.workspaceSnapshot.recorder;
+    const hasRecording = !!(recorder && recorder.actions && recorder.actions.length);
+    if (hasRecording && !window.confirm("Editing the starting expression will clear the recorded solution and curated steps. Continue?")) return;
+    resetDownstreamRecording();
+    draft.initial.eaLocked = false;
+    draft.initial.conventionalLocked = false;
+    loadedWorkspacePhase = 0;
+    await setPhase(2, true);
+  }
+
+  async function resumeRecording() {
+    draft.recording.finished = false;
+    await setPhase(3, true);
+  }
+
   function hydrateAll() {
     hydrateSetup();
     byId("initialKatexInput").value = draft.initial.katex || "";
     renderKatex(byId("initialKatexPreview"), draft.initial.katex || "");
-    renderCheckpointList();
   }
 
   function installEventHandlers() {
@@ -631,61 +712,46 @@
     });
     document.addEventListener("click", event => {
       const phaseButton = event.target.closest("[data-go-phase]");
-      if (phaseButton && !phaseButton.disabled) setPhase(Number(phaseButton.dataset.goPhase));
+      if (!phaseButton || phaseButton.disabled) return;
+      const target = Number(phaseButton.dataset.goPhase);
+      if (target === 2 && currentPhase > 2) editStartingExpression();
+      else if (target === 3 && currentPhase === 4) resumeRecording();
+      else setPhase(target);
     });
 
-    byId("editInitialExpressionButton").addEventListener("click", async () => {
-      if (draft.recording.workspaceSnapshot && !window.confirm("Editing the starting expression will clear the recorded solution and checkpoints. Continue?")) return;
-      const api = await waitForApi();
-      resetDownstreamRecording();
-      draft.initial.eaLocked = false;
-      draft.initial.conventionalLocked = false;
-      api.startInitialExpressionBuilder();
-      captureWorkspaceSnapshot();
-      scheduleSave();
-    });
-    byId("lockInitialExpressionButton").addEventListener("click", async () => {
-      const api = await waitForApi();
-      const snapshot = api.getSnapshot();
-      if (!snapshot.initialCommitted || snapshot.builderActive) return;
-      const changed = draft.initial.expression && draft.initial.expression !== snapshot.currentExpression;
-      if (changed) resetDownstreamRecording();
-      draft.initial.expression = snapshot.currentExpression;
-      draft.initial.eaLocked = true;
-      draft.initial.conventionalLocked = false;
-      draft.initial.katex = snapshot.currentKatex;
-      byId("initialKatexInput").value = draft.initial.katex;
-      byId("initialConventionalCard").hidden = false;
-      renderKatex(byId("initialKatexPreview"), draft.initial.katex);
-      refreshInitialControls(snapshot);
-      scheduleSave();
-    });
+    byId("finishRecordingButton").addEventListener("click", finishRecording);
+    byId("resumeRecordingButton").addEventListener("click", resumeRecording);
+    byId("editInitialExpressionButton").addEventListener("click", editStartingExpression);
     byId("initialKatexInput").addEventListener("input", event => {
       draft.initial.katex = event.target.value;
-      draft.initial.conventionalLocked = false;
-      byId("phase2NextButton").disabled = true;
       renderKatex(byId("initialKatexPreview"), event.target.value);
       scheduleSave();
     });
-    byId("acceptInitialKatexButton").addEventListener("click", () => {
-      const value = byId("initialKatexInput").value.trim();
-      if (!value) return;
-      draft.initial.katex = value;
-      draft.initial.conventionalLocked = true;
-      byId("phase2NextButton").disabled = false;
+    byId("curationTable").addEventListener("input", event => {
+      const field = event.target.dataset.stepField;
+      if (!field) return;
+      const row = event.target.closest("[data-candidate-index]");
+      const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
+      if (!candidate) return;
+      candidate[field] = event.target.value;
+      const preview = row.querySelector(`[data-step-preview="${field}"]`);
+      if (preview) renderKatex(preview, event.target.value);
       scheduleSave();
     });
-    byId("phase2NextButton").addEventListener("click", () => setPhase(3, true));
-    byId("markStepButton").addEventListener("click", () => openCheckpointEditor());
-    byId("finishRecordingButton").addEventListener("click", finishRecording);
-    byId("checkpointList").addEventListener("click", event => {
-      const button = event.target.closest("[data-edit-checkpoint]");
-      if (button) openCheckpointEditor(Number(button.dataset.editCheckpoint));
+    byId("curationTable").addEventListener("click", event => {
+      const button = event.target.closest("[data-toggle-step]");
+      if (!button) return;
+      const candidate = draft.recording.candidates[Number(button.dataset.toggleStep)];
+      if (!candidate || candidate.required) return;
+      candidate.included = candidate.included === false;
+      renderCurationTable();
+      scheduleSave();
     });
-    byId("checkpointBeforeKatex").addEventListener("input", event => renderKatex(byId("checkpointBeforePreview"), event.target.value));
-    byId("checkpointAfterKatex").addEventListener("input", event => renderKatex(byId("checkpointAfterPreview"), event.target.value));
-    byId("cancelCheckpointButton").addEventListener("click", () => { byId("checkpointBackdrop").hidden = true; finishAfterCheckpoint = false; });
-    byId("saveCheckpointButton").addEventListener("click", saveCheckpoint);
+    byId("showAllStepsButton").addEventListener("click", () => {
+      draft.recording.candidates.forEach(candidate => { candidate.included = true; });
+      renderCurationTable();
+      scheduleSave();
+    });
     byId("testLevelButton").addEventListener("click", testLevel);
     byId("downloadJsonButton").addEventListener("click", downloadJson);
 
@@ -702,7 +768,10 @@
       if (saved) draft = saved;
       byId("resumeBackdrop").hidden = true;
       hydrateAll();
-      setPhase(Math.max(1, Math.min(4, draft.phase || 1)), true);
+      let resumePhase = Math.max(1, Math.min(4, draft.phase || 1));
+      if (resumePhase === 2 && draft.initial.eaLocked) resumePhase = 3;
+      if (resumePhase === 4 && !phaseIsAvailable(4)) resumePhase = phaseIsAvailable(3) ? 3 : 1;
+      setPhase(resumePhase, true);
     });
     byId("startFreshButton").addEventListener("click", () => {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -719,8 +788,15 @@
         const api = getApi();
         if (api) populateToolPermissions(api.getToolCatalog());
       }
-      if (event.data.type === "initial-expression-committed" || event.data.type === "state-change") {
+      if (event.data.type === "initial-expression-committed") {
+        acceptInitialExpressionAndSolve();
+      } else if (event.data.type === "state-change") {
         captureWorkspaceSnapshot();
+        const api = getApi();
+        const snapshot = api && api.getSnapshot();
+        if (currentPhase === 2 && snapshot && !snapshot.builderActive && !snapshot.initialCommitted) {
+          setPhase(1, true);
+        }
       }
     });
     window.addEventListener("beforeunload", () => {

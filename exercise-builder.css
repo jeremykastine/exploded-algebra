@@ -76,7 +76,7 @@ main { width: min(100%, 1120px); margin: 0 auto; padding: 28px 20px 70px; }
 .eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 
 .card { border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(30,30,30,.05); }
-.form-card, .author-controls, .conventional-card, .recording-toolbar, .checkpoint-list-card, .export-card { padding: clamp(16px, 3vw, 26px); }
+.form-card, .initial-step-card, .export-card { padding: clamp(16px, 3vw, 26px); }
 .form-card { display: grid; gap: 20px; }
 .field-grid { display: grid; gap: 16px; }
 .two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -103,15 +103,11 @@ legend { padding: 0 7px; font-weight: 800; }
 .workspace-shell { height: min(68vh, 720px); min-height: 470px; overflow: hidden; padding: 0; }
 .workspace-shell iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 #workspaceShell { display: none; }
-.author-controls, .recording-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; }
-.recording-toolbar { margin: 0 0 14px; }
-.recording-toolbar div:first-child { display: grid; gap: 3px; }
-#undoRecordingLabel { color: var(--muted); font-size: 12px; }
 .status-line { margin: 0; color: var(--muted); }
-.conventional-card { margin-top: 14px; }
-.conventional-card h3, .checkpoint-list-card h3, .export-card h3 { margin-top: 0; }
+.initial-step-card h3, .export-card h3 { margin-top: 0; }
 .math-preview { display: flex; min-height: 78px; align-items: center; justify-content: center; margin: 12px 0; padding: 14px; overflow: auto; border: 1px dashed #b7b9bd; border-radius: 8px; background: var(--soft); font-size: clamp(20px, 4vw, 32px); }
 .math-preview.compact { min-height: 54px; margin: 7px 0 14px; font-size: 21px; }
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .button-row, .phase-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .button-row.end, .phase-actions.end { justify-content: flex-end; }
@@ -129,25 +125,32 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #8bb9dd; outline-offset: 2px; }
 .form-error { min-height: 1.2em; margin: 0; color: var(--danger); font-weight: 700; }
 
-.checkpoint-list-card { margin-top: 14px; }
-.checkpoint-list { display: grid; gap: 10px; }
-.checkpoint-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
-.checkpoint-number { display: flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; background: #eee5f6; color: var(--accent-dark); font-weight: 800; }
-.checkpoint-item p { margin: 0; }
-.checkpoint-item small { display: block; margin-top: 4px; }
-.checkpoint-item button { min-height: 38px; padding: 7px 10px; border: 1px solid #999; border-radius: 6px; background: #fff; }
-
-.review-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.review-card { padding: 20px; min-width: 0; }
-.review-card h3 { margin: 0 0 12px; }
-.review-card.full { grid-column: 1 / -1; }
-.review-list { margin: 0; padding-left: 20px; }
-.review-list li { margin: 5px 0; overflow-wrap: anywhere; }
-.review-expression { overflow: auto; padding: 12px; text-align: center; background: var(--soft); border-radius: 8px; }
-.review-expression svg { max-width: 100%; height: auto; }
-.action-summary { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
-.action-chip { padding: 5px 8px; border-radius: 999px; background: #eee5f6; color: var(--accent-dark); font-size: 12px; font-weight: 700; }
-.action-stream { max-height: 280px; overflow: auto; margin: 0; padding-left: 28px; font-size: 13px; }
+.step-card-heading, .curation-heading, .step-row-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.step-card-heading { margin-bottom: 16px; }
+.step-card-heading > div { display: flex; align-items: center; gap: 10px; }
+.step-card-heading h3, .curation-heading h3, .step-row-heading h4 { margin: 0; }
+.step-number { display: inline-flex; flex: 0 0 auto; min-width: 32px; height: 32px; padding: 0 7px; align-items: center; justify-content: center; border-radius: 999px; background: #eee5f6; color: var(--accent-dark); font-size: 12px; font-weight: 800; }
+.required-step-label { color: var(--good); font-size: 12px; font-weight: 800; }
+.step-curation-section { margin-top: 24px; }
+.curation-heading { align-items: end; margin-bottom: 12px; }
+.curation-heading p { margin-top: 4px; }
+.step-table-heading { display: grid; grid-template-columns: 54px minmax(0, 1fr) 116px; gap: 12px; padding: 0 16px 7px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.step-table-heading span:last-child { text-align: right; }
+.curation-table { display: grid; gap: 12px; }
+.step-editor-row { min-width: 0; overflow: hidden; }
+.step-editor-row.is-hidden { border-style: dashed; background: var(--soft); box-shadow: none; }
+.step-row-heading { padding: 14px 16px; }
+.step-row-summary { flex: 1 1 auto; min-width: 0; }
+.step-row-summary p, .step-row-summary small { display: block; margin: 2px 0 0; overflow: hidden; color: var(--muted); font-size: 12px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+.step-visibility-button { flex: 0 0 104px; min-height: 40px; padding: 7px 10px; border: 1px solid #85898e; border-radius: 7px; background: #fff; color: var(--ink); font-size: 13px; font-weight: 800; }
+.step-visibility-button[aria-pressed="false"] { border-color: var(--accent); color: var(--accent-dark); }
+.step-visibility-button:disabled { border-color: transparent; background: #eef6ef; color: var(--good); opacity: 1; }
+.step-editor-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, .8fr) minmax(0, 1fr); gap: 14px; padding: 16px; border-top: 1px solid var(--line); background: #fff; }
+.notation-field, .instruction-field { min-width: 0; }
+.notation-field .math-preview { margin-bottom: 0; }
+.instruction-field textarea { min-height: 100%; }
+.step-range { margin: 0; padding: 0 16px 12px; color: var(--muted); font-size: 11px; }
+.empty-curation { margin: 0; padding: 20px; color: var(--muted); }
 .export-card { display: grid; grid-template-columns: minmax(0, 1fr) 190px auto; align-items: end; gap: 18px; margin-top: 14px; }
 .export-card p { margin-bottom: 0; color: var(--muted); }
 .export-card .status-line { grid-column: 1 / -1; }
@@ -156,16 +159,35 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .modal-backdrop[hidden] { display: none; }
 .modal-card { width: min(100%, 560px); max-height: calc(100dvh - 36px); overflow: auto; padding: 24px; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
 .modal-card h2 { margin-top: 0; }
-.checkpoint-editor { width: min(100%, 720px); }
-.checkpoint-editor label { margin-top: 13px; }
+
+.all-done-button {
+  position: fixed;
+  z-index: 100;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  min-width: 112px;
+  min-height: 48px;
+  padding: 10px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(0,0,0,.22);
+  font-weight: 800;
+}
+.all-done-button:hover { background: var(--accent-dark); }
 
 /* While the starting expression is being entered, Phase 2 is the shared
    Expression Builder itself. The surrounding authoring workflow returns as
    soon as the expression is submitted or the builder is cancelled. */
-body.phase2-expression-building { overflow: hidden; }
+body.phase2-expression-building,
+body.phase3-recording { overflow: hidden; }
 body.phase2-expression-building > .builder-header,
-body.phase2-expression-building > .phase-nav { display: none; }
-body.phase2-expression-building > main {
+body.phase2-expression-building > .phase-nav,
+body.phase3-recording > .builder-header,
+body.phase3-recording > .phase-nav { display: none; }
+body.phase2-expression-building > main,
+body.phase3-recording > main {
   width: 100%;
   height: 100dvh;
   margin: 0;
@@ -173,20 +195,19 @@ body.phase2-expression-building > main {
 }
 body.phase2-expression-building .phase[data-phase="2"],
 body.phase2-expression-building #phase2WorkspaceSlot,
+body.phase3-recording .phase[data-phase="3"],
+body.phase3-recording #phase3WorkspaceSlot,
+body.phase3-recording #workspaceShell,
 body.phase2-expression-building #workspaceShell {
   width: 100%;
   height: 100%;
   min-height: 0;
 }
-body.phase2-expression-building #workspaceShell {
+body.phase2-expression-building #workspaceShell,
+body.phase3-recording #workspaceShell {
   border: 0;
   border-radius: 0;
   box-shadow: none;
-}
-body.phase2-expression-building .phase[data-phase="2"] > .author-controls,
-body.phase2-expression-building .phase[data-phase="2"] > .conventional-card,
-body.phase2-expression-building .phase[data-phase="2"] > .phase-actions {
-  display: none;
 }
 
 @media (max-width: 760px) {
@@ -199,15 +220,18 @@ body.phase2-expression-building .phase[data-phase="2"] > .phase-actions {
   main { padding: 20px 10px 50px; }
   .phase-heading { display: block; }
   .phase-heading p { margin-top: 8px; }
-  .two-columns, .review-grid { grid-template-columns: 1fr; }
-  .review-card.full { grid-column: auto; }
+  .two-columns { grid-template-columns: 1fr; }
   .tool-permission-list { grid-template-columns: 1fr; }
   .workspace-shell { height: 66vh; min-height: 430px; border-radius: 8px; }
-  .author-controls, .recording-toolbar { align-items: stretch; flex-direction: column; }
-  .author-controls .button-row, .recording-toolbar .button-row { width: 100%; }
-  .author-controls button, .recording-toolbar button { flex: 1 1 auto; }
+  .step-table-heading { display: none; }
+  .step-editor-fields { grid-template-columns: 1fr; }
+  .instruction-field textarea { min-height: 92px; }
   .export-card { grid-template-columns: 1fr; align-items: stretch; }
   .export-card .status-line { grid-column: auto; }
-  .checkpoint-item { grid-template-columns: auto minmax(0, 1fr); }
-  .checkpoint-item button { grid-column: 1 / -1; }
+  .curation-heading { align-items: stretch; flex-direction: column; }
+  .curation-heading button { align-self: flex-start; }
+  .step-row-heading { gap: 9px; padding: 12px 10px; }
+  .step-visibility-button { flex-basis: 84px; padding-inline: 6px; }
+  .step-editor-fields { padding: 14px 10px; }
+  .all-done-button { min-width: 100px; min-height: 44px; padding: 8px 14px; }
 }

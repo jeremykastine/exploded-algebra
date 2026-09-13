@@ -3926,6 +3926,7 @@ Promise.resolve().then(() => {
 
         function loadInitialAuthoringSession(config = {}, resume = null) {
             authoringPhase = "initial";
+            document.body.classList.remove("authoring-recording-session");
             document.body.classList.add("authoring-initial-session");
             authoringVariableOptions = Array.isArray(config.variables) && config.variables.length
                 ? config.variables.slice()
@@ -3976,6 +3977,7 @@ Promise.resolve().then(() => {
         function loadRecordingAuthoringSession(level, resume = null) {
             authoringPhase = "recording";
             document.body.classList.remove("authoring-initial-session");
+            document.body.classList.add("authoring-recording-session");
             const recordingLevel = clonePlainData(level);
             recordingLevel.kind = "interactive";
             recordingLevel.includeUndoActions = level.includeUndoActions !== false;
