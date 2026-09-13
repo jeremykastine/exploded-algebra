@@ -9,7 +9,9 @@ const assert = (condition, message) => {
 };
 
 const builderHtml = read("exercise-builder.html");
+const builderCss = read("exercise-builder.css");
 const builderJs = read("exercise-builder.js");
+const playerHtml = read("exploded-algebra.html");
 const playerJs = read("exploded-algebra-tool.js");
 
 const htmlIds = new Set(Array.from(builderHtml.matchAll(/\bid="([^"]+)"/g), match => match[1]));
@@ -22,9 +24,14 @@ for (const phase of ["1", "2", "3", "4"]) {
 }
 
 assert(builderHtml.includes("exploded-algebra.html?authoring=builder"), "Builder must embed the real player in authoring mode");
+assert(!/<section class="phase" data-phase="2" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 2 must not include explanatory heading chrome");
+assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
+assert(playerHtml.includes("authoring-initial-session.expression-builder-active"), "Initial authoring must collapse the conventional-notation row");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
+assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
+assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 

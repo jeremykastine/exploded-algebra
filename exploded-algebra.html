@@ -3561,6 +3561,21 @@
         body.authoring-session .quadrant-tools {
             margin-right: max(8px, env(safe-area-inset-right));
         }
+        body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
+        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container {
+            grid-template-rows: minmax(0, 1fr);
+        }
+        body.authoring-session.authoring-initial-session.expression-builder-active .main,
+        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main {
+            grid-row: 1;
+        }
+        body.expression-builder-active .builder-rewrite-preview.single-expression .builder-rewrite-content {
+            display: block;
+        }
+        body.expression-builder-active .builder-rewrite-preview.single-expression .builder-rewrite-proposal {
+            grid-column: auto;
+            grid-row: auto;
+        }
         .builder-keypad-panel .authoring-variable-select {
             grid-column: 1;
             grid-row: 3;
@@ -3726,7 +3741,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260912-exercise-builder-2"></script>
-    <script src="exploded-algebra-tool.js?v=20260912-exercise-builder-2"></script>
+    <script src="exploded-algebra-tool.js?v=20260913-phase2-single"></script>
 
 </body>
 </html>

@@ -314,6 +314,7 @@
   function refreshInitialControls(snapshot) {
     if (!snapshot) return;
     const ready = snapshot.initialCommitted && !snapshot.builderActive;
+    document.body.classList.toggle("phase2-expression-building", currentPhase === 2 && snapshot.builderActive);
     byId("lockInitialExpressionButton").disabled = !ready;
     byId("editInitialExpressionButton").disabled = snapshot.builderActive;
     if (snapshot.builderActive) {
@@ -559,6 +560,7 @@
     if (currentPhase === 3 && loadedWorkspacePhase === 3) captureWorkspaceSnapshot();
     currentPhase = target;
     draft.phase = target;
+    if (target !== 2) document.body.classList.remove("phase2-expression-building");
     phases.forEach(section => { section.hidden = Number(section.dataset.phase) !== target; });
     phaseButtons.forEach(button => {
       const phase = Number(button.dataset.goPhase);
@@ -717,7 +719,9 @@
         const api = getApi();
         if (api) populateToolPermissions(api.getToolCatalog());
       }
-      if (event.data.type === "initial-expression-committed") captureWorkspaceSnapshot();
+      if (event.data.type === "initial-expression-committed" || event.data.type === "state-change") {
+        captureWorkspaceSnapshot();
+      }
     });
     window.addEventListener("beforeunload", () => {
       captureWorkspaceSnapshot();

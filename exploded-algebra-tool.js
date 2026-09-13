@@ -3926,6 +3926,7 @@ Promise.resolve().then(() => {
 
         function loadInitialAuthoringSession(config = {}, resume = null) {
             authoringPhase = "initial";
+            document.body.classList.add("authoring-initial-session");
             authoringVariableOptions = Array.isArray(config.variables) && config.variables.length
                 ? config.variables.slice()
                 : ["x", "y", "z", "a", "b", "c"];
@@ -3974,6 +3975,7 @@ Promise.resolve().then(() => {
 
         function loadRecordingAuthoringSession(level, resume = null) {
             authoringPhase = "recording";
+            document.body.classList.remove("authoring-initial-session");
             const recordingLevel = clonePlainData(level);
             recordingLevel.kind = "interactive";
             recordingLevel.includeUndoActions = level.includeUndoActions !== false;
@@ -8501,6 +8503,18 @@ ctx.font = SETTINGS.textFont;
             }
 
             const proposal = makeBuilderInsertionRoot(builder);
+            const isInitialExpression = builder.tool === "authorInitial";
+            builderRewritePreview.classList.toggle("single-expression", isInitialExpression);
+            if (isInitialExpression) {
+                builderRewritePreview.innerHTML = `
+                    <div class="builder-rewrite-content">
+                        <div class="builder-rewrite-proposal" aria-label="Starting expression">${renderBuilderProposalSvg(proposal)}</div>
+                    </div>
+                `;
+                builderRewritePreview.classList.remove("hidden");
+                fitBuilderRewritePreview();
+                return;
+            }
             const originalDisplay = cloneBuilderRootForDisplay(builder.originalSelectedNode);
             const originalMarkup = renderBuilderProposalSvg(originalDisplay);
             builderRewritePreview.innerHTML = `
@@ -8525,8 +8539,27 @@ ctx.font = SETTINGS.textFont;
 
         function fitBuilderRewritePreview() {
             const content = builderRewritePreview.querySelector(".builder-rewrite-content");
-            const originalContainer = builderRewritePreview.querySelector(".builder-rewrite-original");
             const proposalContainer = builderRewritePreview.querySelector(".builder-rewrite-proposal");
+            if (builderRewritePreview.classList.contains("single-expression")) {
+                if (!content || !proposalContainer) {
+                    return;
+                }
+                const proposalSize = getBuilderPreviewSvgSize(proposalContainer);
+                const previewStyle = window.getComputedStyle(builderRewritePreview);
+                const availableWidth = Math.max(1, builderRewritePreview.clientWidth - (Number.parseFloat(previewStyle.paddingLeft) || 0) - (Number.parseFloat(previewStyle.paddingRight) || 0));
+                const keypadExclusion = builderKeypadPanel && !builderKeypadPanel.classList.contains("hidden")
+                    ? builderKeypadPanel.offsetHeight + 16
+                    : 0;
+                const availableHeight = Math.max(1, builderRewritePreview.clientHeight - (Number.parseFloat(previewStyle.paddingTop) || 0) - (Number.parseFloat(previewStyle.paddingBottom) || 0) - keypadExclusion);
+                const scale = Math.max(0.01, Math.min(1, availableWidth / proposalSize.width, availableHeight / proposalSize.height) * 0.98);
+                content.style.gap = "0px";
+                if (proposalSize.svg) {
+                    proposalSize.svg.style.width = `${proposalSize.width * scale}px`;
+                    proposalSize.svg.style.height = `${proposalSize.height * scale}px`;
+                }
+                return;
+            }
+            const originalContainer = builderRewritePreview.querySelector(".builder-rewrite-original");
             const arrowElement = builderRewritePreview.querySelector(".builder-rewrite-arrow");
             if (!content || !originalContainer || !proposalContainer || !arrowElement) {
                 return;
@@ -8635,12 +8668,16 @@ ctx.font = SETTINGS.textFont;
         }
 
         function cancelExpressionBuilder() {
+            const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
             if (uiState.expressionBuilder && uiState.expressionBuilder.originalRoot) {
                 expressionRoot = uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
             }
             uiState.expressionBuilder = null;
             finishOperation();
+            if (cancelledInitialAuthoring) {
+                notifyAuthoringHost("state-change");
+            }
         }
 
         function replaceBuilderCurrentNode(replacement, autoAdvance = false) {
