@@ -364,7 +364,7 @@
     }
     draft.initial.workspaceSnapshot = snapshot;
     document.body.classList.add("phase2-expression-building");
-    byId("initialExpressionStatus").textContent = "Build the starting expression, then press Next / Enter.";
+    byId("initialExpressionStatus").textContent = "Enter the values, press All Done, then group them into one expression.";
   }
 
   async function preparePhase3() {

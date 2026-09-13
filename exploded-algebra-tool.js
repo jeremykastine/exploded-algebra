@@ -8836,6 +8836,11 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "entry") return false;
             if (!builder.entryText) {
+                if ((builder.entries || []).length) {
+                    uiState.message = "";
+                    refreshExpressionBuilderPreview();
+                    return true;
+                }
                 uiState.message = "Enter a number before starting a new entry.";
                 renderToolArea();
                 return false;

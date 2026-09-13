@@ -32,6 +32,7 @@ assert(builderJs.includes("Before completion") && builderJs.includes("After comp
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
 assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
+assert(builderJs.includes("press All Done, then group them"), "Initial-expression guidance must describe the two-phase flow");
 assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states must be converted into curation candidates");
 assert(builderJs.includes('candidate.included !== false'), "Hidden candidate steps must be omitted from export");
 assert(builderJs.includes("candidates[candidates.length - 1].required = true"), "The final expression must remain an included completion target");
