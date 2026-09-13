@@ -23,7 +23,7 @@ for (const phase of ["1", "2", "3", "4"]) {
   assert(builderHtml.includes(`data-phase="${phase}"`), `Missing builder phase ${phase}`);
 }
 
-assert(builderHtml.includes("exploded-algebra.html?authoring=builder"), "Builder must embed the real player in authoring mode");
+assert(builderHtml.includes("exploded-algebra.html?authoring=builder&amp;v="), "Builder must embed the versioned real player in authoring mode");
 assert(!/<section class="phase" data-phase="2" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 2 must not include explanatory heading chrome");
 assert(!/<section class="phase" data-phase="3" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 3 must not include explanatory heading chrome");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
