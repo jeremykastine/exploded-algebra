@@ -10821,7 +10821,7 @@ function renderToolArea() {
                 }
                 return;
             }
-            const html = buildToolAreaHtml();
+            const html = builderEntryMode ? buildExpressionBuilderHtml() : buildToolAreaHtml();
             document.body.classList.toggle("tool-area-active", !!html);
             if (builderActive && builderCommandPanel) {
                 builderCommandPanel.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
