@@ -1391,10 +1391,23 @@ Promise.resolve().then(() => {
             cloned.isBuilderPlaceholder = !!node.isBuilderPlaceholder;
             cloned.isBuilderOuter = !!node.isBuilderOuter;
             cloned.isBuilderActive = !!node.isBuilderActive;
+            cloned.isBuilderSequence = !!node.isBuilderSequence;
             return cloned;
         }
 
+        function isTwoPhaseExpressionBuilder(builder = uiState.expressionBuilder) {
+            return !!builder && builder.flowVersion === 2;
+        }
+
         function getBuilderUndoSnapshot(builder) {
+            if (isTwoPhaseExpressionBuilder(builder)) {
+                return {
+                    mode: builder.mode,
+                    entries: (builder.entries || []).map(cloneBuilderNodeForHistory),
+                    entryText: builder.entryText || "",
+                    root: cloneBuilderNodeForHistory(builder.root)
+                };
+            }
             return {
                 root: cloneBuilderNodeForHistory(builder.root),
                 currentPath: builder.currentPath.slice()
@@ -1423,6 +1436,17 @@ Promise.resolve().then(() => {
                 return false;
             }
             const snapshot = builder.history.pop();
+            if (isTwoPhaseExpressionBuilder(builder)) {
+                builder.mode = snapshot.mode || "entry";
+                builder.entries = (snapshot.entries || []).map(cloneBuilderNodeForHistory);
+                builder.entryText = snapshot.entryText || "";
+                builder.root = cloneBuilderNodeForHistory(snapshot.root);
+                expressionRoot = builder.root;
+                clearSelection();
+                uiState.message = "";
+                refreshExpressionBuilderPreview();
+                return true;
+            }
             builder.root = snapshot.root;
             builder.currentPath = snapshot.currentPath;
             uiState.message = "";
@@ -2201,6 +2225,10 @@ Promise.resolve().then(() => {
         }
 
         function getExpressionTextForTrace() {
+            const builder = uiState.expressionBuilder;
+            if (isTwoPhaseExpressionBuilder(builder) && builder.mainRoot) {
+                return expressionToFullyParenthesizedText(builder.mainRoot);
+            }
             return expressionRoot ? expressionToFullyParenthesizedText(expressionRoot) : "";
         }
 
@@ -3846,7 +3874,8 @@ Promise.resolve().then(() => {
                 args: (node.args || []).map(serializeBuilderNode),
                 isBuilderPlaceholder: !!node.isBuilderPlaceholder,
                 isBuilderOuter: !!node.isBuilderOuter,
-                isBuilderActive: !!node.isBuilderActive
+                isBuilderActive: !!node.isBuilderActive,
+                isBuilderSequence: !!node.isBuilderSequence
             };
         }
 
@@ -3862,6 +3891,7 @@ Promise.resolve().then(() => {
             node.isBuilderPlaceholder = !!data.isBuilderPlaceholder;
             node.isBuilderOuter = !!data.isBuilderOuter;
             node.isBuilderActive = !!data.isBuilderActive;
+            node.isBuilderSequence = !!data.isBuilderSequence;
             return node;
         }
 
@@ -3908,16 +3938,24 @@ Promise.resolve().then(() => {
             }
             authoringInitialExpressionCommitted = false;
             if (builderDraft && builderDraft.root) {
-                uiState.expressionBuilder.root = reviveBuilderNode(builderDraft.root);
-                uiState.expressionBuilder.currentPath = Array.isArray(builderDraft.currentPath)
-                    ? builderDraft.currentPath.slice()
-                    : [];
-                uiState.expressionBuilder.history = Array.isArray(builderDraft.history)
-                    ? builderDraft.history.map(snapshot => ({
-                        root: reviveBuilderNode(snapshot.root),
-                        currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : []
-                    }))
-                    : [];
+                const builder = uiState.expressionBuilder;
+                if (builderDraft.flowVersion === 2 && isTwoPhaseExpressionBuilder(builder)) {
+                    builder.mode = builderDraft.mode === "grouping" ? "grouping" : "entry";
+                    builder.entries = Array.isArray(builderDraft.entries)
+                        ? builderDraft.entries.map(reviveBuilderNode)
+                        : [];
+                    builder.entryText = builderDraft.entryText || "";
+                    builder.root = reviveBuilderNode(builderDraft.root);
+                    builder.history = Array.isArray(builderDraft.history)
+                        ? builderDraft.history.map(snapshot => ({
+                            mode: snapshot.mode || "entry",
+                            entries: Array.isArray(snapshot.entries) ? snapshot.entries.map(reviveBuilderNode) : [],
+                            entryText: snapshot.entryText || "",
+                            root: reviveBuilderNode(snapshot.root)
+                        }))
+                        : [];
+                    expressionRoot = builder.root;
+                }
                 refreshExpressionBuilderPreview();
             }
             notifyAuthoringHost("state-change");
@@ -3999,15 +4037,24 @@ Promise.resolve().then(() => {
             return {
                 phase: authoringPhase,
                 currentExpression: getExpressionTextForTrace(),
-                currentKatex: expressionRoot ? ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) : "",
+                currentKatex: builder && isTwoPhaseExpressionBuilder(builder) && builder.mainRoot
+                    ? ExplodedAlgebraRenderer.expressionToKatex(builder.mainRoot)
+                    : expressionRoot ? ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) : "",
                 initialCommitted: authoringInitialExpressionCommitted,
                 builderActive: !!builder,
                 builderDraft: builder ? {
+                    flowVersion: builder.flowVersion || 1,
+                    mode: builder.mode || null,
+                    entries: (builder.entries || []).map(serializeBuilderNode),
+                    entryText: builder.entryText || "",
                     root: serializeBuilderNode(builder.root),
-                    currentPath: builder.currentPath.slice(),
+                    currentPath: Array.isArray(builder.currentPath) ? builder.currentPath.slice() : [],
                     history: (builder.history || []).map(snapshot => ({
+                        mode: snapshot.mode || null,
+                        entries: (snapshot.entries || []).map(serializeBuilderNode),
+                        entryText: snapshot.entryText || "",
                         root: serializeBuilderNode(snapshot.root),
-                        currentPath: snapshot.currentPath.slice()
+                        currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : []
                     }))
                 } : null,
                 recorder: solutionRecorder ? clonePlainData(solutionRecorder) : null,
@@ -4106,7 +4153,12 @@ Promise.resolve().then(() => {
                         return;
                     }
                     if (button.dataset.workspaceAction === "undoExpression") {
-                        undoExpressionStep();
+                        const builder = uiState.expressionBuilder;
+                        if (isTwoPhaseExpressionBuilder(builder) && builder.mode === "grouping") {
+                            undoExpressionBuilderStep();
+                        } else {
+                            undoExpressionStep();
+                        }
                         return;
                     }
                     const mode = button.dataset.workspaceMode;
@@ -4366,7 +4418,7 @@ Promise.resolve().then(() => {
             ctx.font = SETTINGS.textFont;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            layoutExpressionWithSettings(expressionRoot, ctx, SETTINGS, SETTINGS.marginX, SETTINGS.marginY);
+            layoutExpression(expressionRoot);
             applyWorkspaceZoomSizing();
         }
 
@@ -4558,7 +4610,12 @@ ctx.font = SETTINGS.textFont;
             });
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
             if (undoExpressionButton) {
-                undoExpressionButton.disabled = expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
+                const builder = uiState.expressionBuilder;
+                const builderUndoAvailable = isTwoPhaseExpressionBuilder(builder) &&
+                    builder.mode === "grouping" && builder.history.length > 0;
+                undoExpressionButton.disabled = builderUndoAvailable
+                    ? false
+                    : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
             }
             workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
                 button.classList.remove("demo-target-button", "demo-blocked-button");
@@ -4756,6 +4813,10 @@ ctx.font = SETTINGS.textFont;
                     panX: workspacePanX,
                     panY: workspacePanY
                 };
+                workspaceZoom = 1;
+                workspacePanX = 0;
+                workspacePanY = 0;
+                applyWorkspaceZoomSizing();
                 builderWorkspaceViewActive = true;
                 return;
             }
@@ -5124,7 +5185,62 @@ ctx.font = SETTINGS.textFont;
         }
 
         function layoutExpression(root) {
+            if (root && root.isBuilderSequence) {
+                layoutBuilderSequence(root);
+                return;
+            }
             layoutExpressionWithSettings(root, ctx, SETTINGS, SETTINGS.marginX, SETTINGS.marginY);
+        }
+
+        function layoutBuilderSequence(root) {
+            const items = root.args || [];
+            let x = SETTINGS.marginX + 18;
+            let y = SETTINGS.marginY + 18;
+            let right = x + 1;
+            let bottom = y + 1;
+            items.forEach(item => {
+                layoutExpressionWithSettings(item, ctx, SETTINGS, x, y);
+                right = Math.max(right, item.right());
+                bottom = Math.max(bottom, item.bottom());
+                x = item.right() + Math.max(38, SETTINGS.padding * 2.4);
+                y += Math.max(34, Math.min(72, item.layout.height * 0.35 + 28));
+            });
+            root.layout.x = SETTINGS.marginX;
+            root.layout.y = SETTINGS.marginY;
+            root.layout.width = Math.max(1, right - SETTINGS.marginX + 18);
+            root.layout.height = Math.max(1, bottom - SETTINGS.marginY + 18);
+            root.layout.childBoxes = items.map(item => ({
+                x: item.left(), y: item.top(), width: item.layout.width, height: item.layout.height
+            }));
+            root.layout.vLines = [];
+            root.layout.hLines = [];
+        }
+
+        function drawBuilderSequence(builder) {
+            const items = builder.root.args || [];
+            items.forEach(drawNodeRecursive);
+            if (builder.mode === "entry") {
+                const active = items.find(item => item.isBuilderActive);
+                if (active) {
+                    drawRoundedNodeHighlight(active, "rgba(10, 70, 210, 0.95)", 3, 6);
+                }
+                return;
+            }
+            if (selection.node === builder.root && selection.firstPart >= 0) {
+                for (let index = selection.firstPart; index <= selection.lastPart; index++) {
+                    const item = items[index];
+                    if (!item) continue;
+                    fillOverlayRect(item.left() - 7, item.top() - 7, item.layout.width + 14, item.layout.height + 14, SETTINGS.selectionBlue);
+                    drawRoundedNodeHighlight(item, SETTINGS.selectionBlue, 3, 7);
+                }
+            }
+            const demoStep = getCurrentDemoStep();
+            if (isDemoModeActive() && demoStep && demoStep.type === "builder" && demoStep.action === "selectItem") {
+                const target = items[Number(demoStep.value)];
+                if (target) {
+                    drawRoundedNodeHighlight(target, "rgb(255, 196, 0)", 5, 10);
+                }
+            }
         }
 
         function drawExpression() {
@@ -5143,11 +5259,20 @@ ctx.font = SETTINGS.textFont;
             resizeSvgToFitContent();
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
-            drawNodeRecursive(expressionRoot);
+            const twoPhaseBuilder = isTwoPhaseExpressionBuilder(uiState.expressionBuilder);
+            if (twoPhaseBuilder && expressionRoot.isBuilderSequence) {
+                drawBuilderSequence(uiState.expressionBuilder);
+            } else {
+                drawNodeRecursive(expressionRoot);
+            }
 
             if (uiState.expressionBuilder && uiState.stage === "builder") {
-                drawExpressionBuilderContext();
-                renderBuilderRewritePreview();
+                if (twoPhaseBuilder) {
+                    hideBuilderRewritePreview();
+                } else {
+                    drawExpressionBuilderContext();
+                    renderBuilderRewritePreview();
+                }
             } else {
                 hideBuilderRewritePreview();
                 drawExpressionBuilderHighlights();
@@ -8643,18 +8768,214 @@ ctx.font = SETTINGS.textFont;
             drawExpression();
         }
 
+        function shouldUseLegacyBuilderFlow() {
+            if (!isDemoModeActive()) {
+                return false;
+            }
+            const steps = getCurrentDemoSteps();
+            for (let index = demoStepIndex; index < steps.length; index++) {
+                const step = steps[index];
+                if (!step || step.type !== "builder") {
+                    break;
+                }
+                if (["operation", "next", "submit"].includes(step.action)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function makeBuilderSequence(items) {
+            const root = new ExprNode("sum", items, null);
+            root.isBuilderSequence = true;
+            return root;
+        }
+
+        function syncTwoPhaseBuilderSequence(builder) {
+            const items = (builder.entries || []).map(item => item);
+            if (builder.mode === "entry" && builder.entryText) {
+                const active = valueNode(builder.entryText);
+                active.isBuilderActive = true;
+                items.push(active);
+            }
+            builder.root = makeBuilderSequence(items);
+            expressionRoot = builder.root;
+        }
+
+        function commitTwoPhaseEntry(builder) {
+            if (!builder.entryText) {
+                return false;
+            }
+            builder.entries.push(valueNode(builder.entryText));
+            builder.entryText = "";
+            return true;
+        }
+
+        function appendTwoPhaseBuilderDigit(digit) {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "entry") return false;
+            pushExpressionBuilderUndoState();
+            builder.entryText += String(digit);
+            syncTwoPhaseBuilderSequence(builder);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function enterTwoPhaseBuilderValue(value) {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "entry") return false;
+            pushExpressionBuilderUndoState();
+            commitTwoPhaseEntry(builder);
+            builder.entries.push(valueNode(String(value)));
+            syncTwoPhaseBuilderSequence(builder);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function addTwoPhaseBuilderEntry() {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "entry") return false;
+            if (!builder.entryText) {
+                uiState.message = "Enter a number before starting a new entry.";
+                renderToolArea();
+                return false;
+            }
+            pushExpressionBuilderUndoState();
+            commitTwoPhaseEntry(builder);
+            syncTwoPhaseBuilderSequence(builder);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function backspaceTwoPhaseBuilder() {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder)) return false;
+            if (builder.mode === "grouping") {
+                return undoExpressionBuilderStep();
+            }
+            if (!builder.entryText && !(builder.entries || []).length) {
+                uiState.message = "There is nothing to delete yet.";
+                renderToolArea();
+                return false;
+            }
+            pushExpressionBuilderUndoState();
+            if (builder.entryText) {
+                builder.entryText = builder.entryText.slice(0, -1);
+            } else {
+                const previous = builder.entries.pop();
+                if (previous && previous.type === "value" && /^\d+$/.test(previous.value)) {
+                    builder.entryText = previous.value.slice(0, -1);
+                }
+            }
+            syncTwoPhaseBuilderSequence(builder);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function finishTwoPhaseEntry() {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "entry") return false;
+            if (!builder.entryText && !(builder.entries || []).length) {
+                uiState.message = "Enter at least one number, variable, or negative one.";
+                renderToolArea();
+                return false;
+            }
+            pushExpressionBuilderUndoState();
+            commitTwoPhaseEntry(builder);
+            builder.mode = "grouping";
+            syncTwoPhaseBuilderSequence(builder);
+            clearSelection();
+            setWorkspaceMode("select");
+            refreshExpressionBuilderPreview();
+            if (builder.root.args.length === 1) {
+                return submitExpressionBuilder();
+            }
+            return true;
+        }
+
+        function getBuilderSequenceItemIndex(x, y, pointerType = "mouse") {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "grouping") return -1;
+            const margin = pointerType === "mouse" ? 12 : 22;
+            let closest = -1;
+            let closestDistance = Infinity;
+            (builder.root.args || []).forEach((item, index) => {
+                const dx = x < item.left() ? item.left() - x : x > item.right() ? x - item.right() : 0;
+                const dy = y < item.top() ? item.top() - y : y > item.bottom() ? y - item.bottom() : 0;
+                const distance = Math.hypot(dx, dy);
+                if (distance <= margin && distance < closestDistance) {
+                    closest = index;
+                    closestDistance = distance;
+                }
+            });
+            return closest;
+        }
+
+        function selectTwoPhaseBuilderItem(index) {
+            const builder = uiState.expressionBuilder;
+            const count = builder && builder.root && builder.root.args ? builder.root.args.length : 0;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "grouping" || index < 0 || index >= count) {
+                return false;
+            }
+            if (selection.node !== builder.root || selection.firstPart < 0) {
+                selection.status = "yes";
+                selection.node = builder.root;
+                selection.firstPart = index;
+                selection.lastPart = index;
+            } else {
+                selection.firstPart = Math.min(selection.firstPart, index);
+                selection.lastPart = Math.max(selection.lastPart, index);
+            }
+            uiState.message = "";
+            renderToolArea();
+            refreshStatus();
+            drawExpression();
+            return true;
+        }
+
+        function groupTwoPhaseBuilderSelection(type) {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "grouping" || selection.node !== builder.root) return false;
+            const first = selection.firstPart;
+            const last = selection.lastPart;
+            const count = last - first + 1;
+            if ((count === 1 && type !== "inv") || (count > 1 && !["sum", "prod"].includes(type))) {
+                return false;
+            }
+            pushExpressionBuilderUndoState();
+            const chosen = builder.root.args.slice(first, last + 1).map(cloneNode);
+            const grouped = type === "inv"
+                ? new ExprNode("inv", [chosen[0]], null)
+                : new ExprNode(type, chosen, null);
+            const nextItems = [
+                ...builder.root.args.slice(0, first),
+                grouped,
+                ...builder.root.args.slice(last + 1)
+            ];
+            builder.entries = nextItems;
+            builder.entryText = "";
+            builder.root = makeBuilderSequence(nextItems);
+            expressionRoot = builder.root;
+            clearSelection();
+            refreshExpressionBuilderPreview();
+            if (nextItems.length === 1) {
+                return submitExpressionBuilder();
+            }
+            return true;
+        }
+
         function beginExpressionBuilder(toolName) {
             const selectedNode = cloneSelectedRangeNode();
             if (!selectedNode) {
                 return false;
             }
+            const mainRoot = expressionRoot;
             const originalRoot = cloneExpressionTree(expressionRoot);
             const placeholder = makePlaceholderNode();
-            uiState.expressionBuilder = {
+            const common = {
                 tool: toolName,
-                root: placeholder,
-                currentPath: [],
                 insertionId: selection.node ? selection.node.id : -1,
+                mainRoot,
                 originalRoot,
                 originalSelectedNode: selectedNode,
                 originalSelection: {
@@ -8665,14 +8986,33 @@ ctx.font = SETTINGS.textFont;
                 zeroProductOrientation: uiState.zeroProductOrientation || "left",
                 history: []
             };
+            if (shouldUseLegacyBuilderFlow()) {
+                uiState.expressionBuilder = {
+                    ...common,
+                    root: placeholder,
+                    currentPath: []
+                };
+            } else {
+                uiState.expressionBuilder = {
+                    ...common,
+                    flowVersion: 2,
+                    mode: "entry",
+                    entries: [],
+                    entryText: "",
+                    root: makeBuilderSequence([]),
+                    currentPath: []
+                };
+                expressionRoot = uiState.expressionBuilder.root;
+                clearSelection();
+            }
             refreshExpressionBuilderPreview();
             return true;
         }
 
         function cancelExpressionBuilder() {
             const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
-            if (uiState.expressionBuilder && uiState.expressionBuilder.originalRoot) {
-                expressionRoot = uiState.expressionBuilder.originalRoot;
+            if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
+                expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
             }
             uiState.expressionBuilder = null;
@@ -8882,7 +9222,13 @@ ctx.font = SETTINGS.textFont;
             if (!builder) {
                 return false;
             }
-            const completed = normalizeExpressionTree(fillBuilderPlaceholders(builder.root, null, builder.tool));
+            const proposedRoot = isTwoPhaseExpressionBuilder(builder) && builder.root.isBuilderSequence
+                ? (builder.root.args.length === 1 ? builder.root.args[0] : null)
+                : builder.root;
+            if (!proposedRoot) {
+                return builderValidationFailed("Group the entries until one expression remains.");
+            }
+            const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
             if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
                 uiState.message = "That expression is always 0, so its inverse would be undefined. Choose a nonzero expression.";
                 renderToolArea();
@@ -8985,6 +9331,9 @@ ctx.font = SETTINGS.textFont;
                 replacement = completed;
             }
             replacement = normalizeExpressionTree(replacement);
+            if (isTwoPhaseExpressionBuilder(builder) && builder.mainRoot) {
+                expressionRoot = builder.mainRoot;
+            }
             if (builder.originalSelection) {
                 selection.status = "yes";
                 selection.node = builder.originalSelection.node;
@@ -9787,6 +10136,23 @@ ctx.font = SETTINGS.textFont;
         }
 
         function buildExpressionBuilderHtml() {
+            const builder = uiState.expressionBuilder;
+            if (isTwoPhaseExpressionBuilder(builder)) {
+                if (builder.mode !== "entry") {
+                    return "";
+                }
+                const negativeOneButton = `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`;
+                return `<div class="expression-builder-panel two-phase-entry-panel">
+                    ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
+                    <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
+                        <button class="builder-new-entry-button" data-builder-action="newEntry">New Entry</button>
+                        <button class="builder-all-done-button" data-builder-action="allDone" title="Keyboard shortcut: Enter">All Done</button>
+                        <button class="builder-undo-button" data-builder-action="undoBackspace" aria-label="Backspace" title="Keyboard shortcut: Backspace or Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+                        <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
+                        ${negativeOneButton}
+                    </div></div>
+                </div>`;
+            }
             const toolName = uiState.activeTool;
             const operationTypes = getBuilderOperationTypes(toolName);
             const operationShortcuts = { sum: "+", prod: "*", inv: "/" };
@@ -9803,7 +10169,6 @@ ctx.font = SETTINGS.textFont;
             const negativeOneButton = builderAllowsNegativeOne(toolName)
                 ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`
                 : `<button class="builder-negative-one-button" aria-label="Insert negative one" disabled>${getBuilderSymbolIcon("value", "−1")}</button>`;
-            const builder = uiState.expressionBuilder;
             const hasNextPlaceholder = !!(builder && findNextPlaceholderPath(builder.root, builder.currentPath));
             const nextOrSubmitAction = hasNextPlaceholder ? "next" : "submit";
             const nextOrSubmitTitle = hasNextPlaceholder
@@ -9825,6 +10190,26 @@ ctx.font = SETTINGS.textFont;
                     </div>
                 </div>
             </div>`;
+        }
+
+        function buildTwoPhaseGroupingHtml() {
+            const builder = uiState.expressionBuilder;
+            if (!isTwoPhaseExpressionBuilder(builder) || builder.mode !== "grouping" || selection.node !== builder.root) {
+                return "";
+            }
+            const count = selection.lastPart - selection.firstPart + 1;
+            const buttons = [];
+            if (count === 1) {
+                buttons.push(`<button class="builder-group-button builder-inv-button" data-builder-action="group" data-value="inv" aria-label="Make inverse">${getBuilderSymbolIcon("inv")}</button>`);
+            }
+            if (count > 1) {
+                buttons.push(`<button class="builder-group-button builder-sum-button builder-plain-operator-button" data-builder-action="group" data-value="sum" aria-label="Group as sum">+</button>`);
+                buttons.push(`<button class="builder-group-button builder-prod-button builder-plain-operator-button" data-builder-action="group" data-value="prod" aria-label="Group as product">·</button>`);
+            }
+            if (!buttons.length) {
+                return `<div class="small-note builder-grouping-message">That selection has no available grouping operation.</div>`;
+            }
+            return `<div class="builder-grouping-actions" aria-label="Grouping operations">${buttons.join("")}</div>`;
         }
 
         function buildToolModeHtml() {
@@ -10089,10 +10474,29 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            const beforeExpression = getExpressionTextForTrace();
+            const builderAtStart = uiState.expressionBuilder;
+            const beforeExpression = isTwoPhaseExpressionBuilder(builderAtStart) && builderAtStart.mainRoot
+                ? expressionToFullyParenthesizedText(builderAtStart.mainRoot)
+                : getExpressionTextForTrace();
             uiState.message = "";
             let result = true;
-            if (action === "digit") {
+            if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "digit") {
+                result = appendTwoPhaseBuilderDigit(value);
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "negativeOne") {
+                result = enterTwoPhaseBuilderValue("-1");
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "value") {
+                result = enterTwoPhaseBuilderValue(value);
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "newEntry") {
+                result = addTwoPhaseBuilderEntry();
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "allDone") {
+                result = finishTwoPhaseEntry();
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "selectItem") {
+                result = selectTwoPhaseBuilderItem(Number(value));
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "group") {
+                result = groupTwoPhaseBuilderSelection(value);
+            } else if (isTwoPhaseExpressionBuilder(builderAtStart) && action === "undoBackspace") {
+                result = backspaceTwoPhaseBuilder();
+            } else if (action === "digit") {
                 result = appendBuilderDigit(value);
             } else if (action === "negativeOne") {
                 result = enterBuilderValue("-1", true);
@@ -10118,7 +10522,8 @@ ctx.font = SETTINGS.textFont;
                 // action is appended. Keep the stable state's recorder cursor
                 // aligned so a later undo-without-history preserves the Submit
                 // needed to replay this surviving Expression Builder rewrite.
-                if (action === "submit" && stableExpressionState && solutionRecorder) {
+                const builderCompleted = !uiState.expressionBuilder;
+                if ((action === "submit" || builderCompleted) && stableExpressionState && solutionRecorder) {
                     stableExpressionState.recorderActionCount = solutionRecorder.actions.length;
                     stableExpressionState.recorderDemoStepCount = solutionRecorder.demoSteps.length;
                 }
@@ -10140,26 +10545,30 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
+            const builder = uiState.expressionBuilder;
+            const twoPhase = isTwoPhaseExpressionBuilder(builder);
             let action = "";
             let value = "";
             if (/^[0-9]$/.test(event.key)) {
                 action = "digit";
                 value = event.key;
             } else if (event.key === "+") {
-                action = "operation";
+                action = twoPhase && builder.mode === "grouping" ? "group" : "operation";
                 value = "sum";
             } else if (event.key === "*") {
-                action = "operation";
+                action = twoPhase && builder.mode === "grouping" ? "group" : "operation";
                 value = "prod";
             } else if (event.key === "/") {
-                action = "operation";
+                action = twoPhase && builder.mode === "grouping" ? "group" : "operation";
                 value = "inv";
             } else if (event.key === "-") {
                 action = "negativeOne";
             } else if (event.key === "Enter") {
-                action = "submit";
+                if (twoPhase && builder.mode === "grouping") return false;
+                action = twoPhase ? "allDone" : "submit";
             } else if (event.key === "ArrowRight") {
-                action = "next";
+                if (twoPhase && builder.mode === "grouping") return false;
+                action = twoPhase ? "newEntry" : "next";
             } else if (event.key === "Backspace" || event.key === "Delete") {
                 action = "undoBackspace";
             } else if (event.key === "Escape") {
@@ -10184,7 +10593,7 @@ ctx.font = SETTINGS.textFont;
                 performBuilderAction(action, value);
                 return true;
             }
-            const matchingButton = panel.querySelector(selector);
+            const matchingButton = (builder.mode === "grouping" ? mainActionPanel : panel).querySelector(selector);
             if (!matchingButton || matchingButton.disabled) {
                 return false;
             }
@@ -10353,6 +10762,10 @@ function renderToolArea() {
             hideFloatingMenu();
             hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
+            const twoPhaseBuilder = builderActive && isTwoPhaseExpressionBuilder(uiState.expressionBuilder);
+            const builderEntryMode = twoPhaseBuilder && uiState.expressionBuilder.mode === "entry";
+            const builderGroupingMode = twoPhaseBuilder && uiState.expressionBuilder.mode === "grouping";
+            const builderGroupingSelection = builderGroupingMode && selection.node === uiState.expressionBuilder.root;
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
             const exitingBuilder = !builderActive && builderWorkspaceViewActive;
             if (builderActive) {
@@ -10360,12 +10773,15 @@ function renderToolArea() {
                 syncBuilderWorkspaceView(true);
             }
             document.body.classList.toggle("expression-builder-active", builderActive);
+            document.body.classList.toggle("builder-entry-mode", builderEntryMode);
+            document.body.classList.toggle("builder-grouping-mode", builderGroupingMode);
+            document.body.classList.toggle("builder-grouping-selection", builderGroupingSelection);
             document.body.classList.toggle("selection-active", selectionActive);
             if (builderKeypadPanel) {
-                builderKeypadPanel.classList.toggle("hidden", !builderActive);
+                builderKeypadPanel.classList.toggle("hidden", !builderActive || (twoPhaseBuilder && !builderEntryMode));
             }
             if (builderInputRail) {
-                builderInputRail.classList.toggle("hidden", !builderActive);
+                builderInputRail.classList.toggle("hidden", !builderActive || (twoPhaseBuilder && !builderEntryMode));
             }
             if (exitingBuilder) {
                 // Restore only after the normal workspace dimensions are back.
@@ -10374,11 +10790,11 @@ function renderToolArea() {
             if (!builderActive && builderCommandPanel) {
                 builderCommandPanel.replaceChildren();
             }
-            if (mainActionPanel && builderActive) {
+            if (mainActionPanel && builderActive && !builderGroupingSelection) {
                 mainActionPanel.replaceChildren();
                 mainActionPanel.classList.add("hidden");
             }
-            renderBuilderVariableRail(builderActive);
+            renderBuilderVariableRail(builderActive && (!twoPhaseBuilder || builderEntryMode));
             requestAnimationFrame(updateSidePanelColumns);
 
             if (uiState.mode !== "edit") {
@@ -10392,6 +10808,19 @@ function renderToolArea() {
 
             applyDemoInputForCurrentStep();
             syncToolListToDemoStep();
+            if (builderGroupingMode) {
+                const groupingHtml = buildTwoPhaseGroupingHtml();
+                document.body.classList.toggle("tool-area-active", !!groupingHtml);
+                if (mainActionPanel) {
+                    mainActionPanel.innerHTML = groupingHtml ? `<div class="panel-tool-menu">${groupingHtml}</div>` : "";
+                    mainActionPanel.classList.toggle("hidden", !groupingHtml);
+                    if (groupingHtml) {
+                        attachToolListeners(mainActionPanel);
+                        applyDemoButtonHighlights(mainActionPanel);
+                    }
+                }
+                return;
+            }
             const html = buildToolAreaHtml();
             document.body.classList.toggle("tool-area-active", !!html);
             if (builderActive && builderCommandPanel) {
@@ -11068,6 +11497,15 @@ function renderToolArea() {
                     }
                 } else if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
+                } else if (pointerStart.mode === "builderSelection") {
+                    const index = getBuilderSequenceItemIndex(point.x, point.y, pointerStart.pointerType);
+                    if (index >= 0) {
+                        performBuilderAction("selectItem", String(index));
+                    } else if (!isDemoModeActive()) {
+                        clearSelection();
+                        renderToolArea();
+                        drawExpression();
+                    }
                 } else {
                     selectFromWorkspaceTap(point.x, point.y, pointerStart.pointerType);
                 }
@@ -11076,6 +11514,13 @@ function renderToolArea() {
                 const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
                 selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType);
                 selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType);
+            } else if (pointerStart.mode === "builderSelection") {
+                const startPoint = workspaceClientPointToSvg(pointerStart.clientX, pointerStart.clientY);
+                const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
+                const firstIndex = getBuilderSequenceItemIndex(startPoint.x, startPoint.y, pointerStart.pointerType);
+                const lastIndex = getBuilderSequenceItemIndex(endPoint.x, endPoint.y, pointerStart.pointerType);
+                if (firstIndex >= 0) performBuilderAction("selectItem", String(firstIndex));
+                if (lastIndex >= 0 && lastIndex !== firstIndex) performBuilderAction("selectItem", String(lastIndex));
             }
             releaseWorkspacePointer();
         }
@@ -11101,8 +11546,11 @@ function renderToolArea() {
                 return;
             }
 
-            const cancelingBuilder = uiState.stage === "builder" && !!uiState.expressionBuilder;
-            const panningView = !cancelingBuilder && uiState.workspaceMode === "pan";
+            const activeBuilder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
+            const groupingBuilder = isTwoPhaseExpressionBuilder(activeBuilder) && activeBuilder.mode === "grouping";
+            const entryBuilder = isTwoPhaseExpressionBuilder(activeBuilder) && activeBuilder.mode === "entry";
+            const cancelingBuilder = !!activeBuilder && !isTwoPhaseExpressionBuilder(activeBuilder);
+            const panningView = groupingBuilder && uiState.workspaceMode === "pan" || !activeBuilder && uiState.workspaceMode === "pan";
             const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
             const pointerX = pointerPoint.x;
             const pointerY = pointerPoint.y;
@@ -11121,12 +11569,17 @@ function renderToolArea() {
                 if (clearingSelectionFromEmptySpace) {
                     return;
                 }
-                if (!cancelingBuilder && !clearingSelectionFromEmptySpace && !selectingExpression && !choosingDemoCommuteOrder) {
+                const selectingBuilderItem = groupingBuilder && !!step && step.type === "builder" && step.action === "selectItem";
+                if (!cancelingBuilder && !selectingBuilderItem && !clearingSelectionFromEmptySpace && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!cancelingBuilder && !clearingSelectionFromEmptySpace && !panningView && !choosingCommuteOrder && uiState.activeTool) {
+            if (!groupingBuilder && !entryBuilder && !cancelingBuilder && !clearingSelectionFromEmptySpace && !panningView && !choosingCommuteOrder && uiState.activeTool) {
+                return;
+            }
+
+            if (entryBuilder) {
                 return;
             }
 
@@ -11141,6 +11594,8 @@ function renderToolArea() {
                     ? "cancelBuilder"
                     : panningView
                         ? "pan"
+                    : groupingBuilder
+                        ? "builderSelection"
                     : clearingSelectionFromEmptySpace
                         ? "selection"
                         : choosingCommuteOrder

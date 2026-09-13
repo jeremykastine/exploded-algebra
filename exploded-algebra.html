@@ -3556,7 +3556,7 @@
             grid-row: 1;
         }
         body.authoring-session .left-panel,
-        body.authoring-session.authoring-initial-session .quadrant-menu {
+        body.authoring-session.authoring-initial-session:not(.builder-grouping-mode) .quadrant-menu {
             display: none !important;
         }
         body.authoring-session .quadrant-tools {
@@ -3576,6 +3576,91 @@
         body.expression-builder-active .builder-rewrite-preview.single-expression .builder-rewrite-proposal {
             grid-column: auto;
             grid-row: auto;
+        }
+
+        /* Two-phase expression building: values are entered on a clean canvas,
+           then grouped with the same workspace controls used before selection. */
+        body.expression-builder-active.builder-entry-mode #expressionWorkspaceSvg,
+        body.expression-builder-active.builder-grouping-mode #expressionWorkspaceSvg {
+            opacity: 1;
+        }
+        body.expression-builder-active.builder-entry-mode .builder-rewrite-preview,
+        body.expression-builder-active.builder-grouping-mode .builder-rewrite-preview {
+            display: none !important;
+        }
+        body.expression-builder-active.builder-entry-mode .left-panel,
+        body.expression-builder-active.builder-grouping-mode .left-panel {
+            display: none !important;
+        }
+        body.expression-builder-active.builder-entry-mode .app-container,
+        body.expression-builder-active.builder-grouping-mode .app-container,
+        body.expression-builder-active.builder-entry-mode.left-handed .app-container,
+        body.expression-builder-active.builder-grouping-mode.left-handed .app-container {
+            grid-template-rows: minmax(0, 1fr);
+        }
+        body.expression-builder-active.builder-entry-mode .main,
+        body.expression-builder-active.builder-grouping-mode .main,
+        body.expression-builder-active.builder-grouping-mode .quadrant-menu,
+        body.expression-builder-active.builder-grouping-mode .quadrant-tools {
+            grid-row: 1;
+        }
+        body.expression-builder-active.builder-entry-mode .divider,
+        body.expression-builder-active.builder-grouping-mode .divider {
+            display: none;
+        }
+        body.expression-builder-active.builder-grouping-mode:not(.builder-grouping-selection) .quadrant-menu,
+        body.expression-builder-active.builder-grouping-mode:not(.builder-grouping-selection) .quadrant-tools {
+            display: flex;
+        }
+        body.expression-builder-active.builder-grouping-mode:not(.builder-grouping-selection) .quadrant-tools,
+        body.expression-builder-active.builder-grouping-mode:not(.builder-grouping-selection) .workspace-toolbar {
+            display: grid;
+        }
+        body.expression-builder-active.builder-grouping-selection .quadrant-menu,
+        body.expression-builder-active.builder-grouping-selection .quadrant-tools {
+            display: none !important;
+        }
+        body.expression-builder-active.builder-grouping-selection .main-action-panel {
+            display: grid;
+        }
+        .builder-keypad-panel .builder-new-entry-button {
+            grid-column: 1 / span 2;
+            grid-row: 2;
+        }
+        .builder-keypad-panel .builder-all-done-button {
+            grid-column: 4 / span 2;
+            grid-row: 2;
+        }
+        body.left-handed .builder-keypad-panel .builder-new-entry-button {
+            grid-column: 4 / span 2;
+        }
+        body.left-handed .builder-keypad-panel .builder-all-done-button {
+            grid-column: 1 / span 2;
+        }
+        .builder-grouping-actions {
+            display: flex;
+            gap: var(--main-key-gap);
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .builder-grouping-actions button {
+            width: var(--main-key-size);
+            height: var(--main-key-size);
+            min-width: var(--main-key-size);
+            min-height: var(--main-key-size);
+            padding: 8px;
+            border-radius: 7px;
+            background: #fff;
+            font-size: clamp(24px, calc(var(--main-key-size) * 0.68), 38px);
+            font-weight: 800;
+        }
+        .builder-grouping-actions .builder-symbol-icon {
+            width: 100%;
+            height: 100%;
+        }
+        body.left-handed .builder-grouping-actions {
+            flex-direction: row-reverse;
+            justify-content: flex-start;
         }
         .builder-keypad-panel .authoring-variable-select {
             grid-column: 1;

@@ -36,12 +36,21 @@ assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states m
 assert(builderJs.includes('candidate.included !== false'), "Hidden candidate steps must be omitted from export");
 assert(builderJs.includes("candidates[candidates.length - 1].required = true"), "The final expression must remain an included completion target");
 assert(playerHtml.includes("authoring-initial-session.expression-builder-active"), "Initial authoring must collapse the conventional-notation row");
-assert(playerHtml.includes("body.authoring-session.authoring-initial-session .quadrant-menu"), "Recording authoring must preserve the student settings control");
+assert(playerHtml.includes("authoring-initial-session:not(.builder-grouping-mode) .quadrant-menu"), "Initial entry may hide settings until grouping begins");
+assert(playerHtml.includes("builder-grouping-mode:not(.builder-grouping-selection) .quadrant-menu"), "Grouping must expose the familiar settings control");
+assert(playerHtml.includes("builder-grouping-mode:not(.builder-grouping-selection) .quadrant-tools"), "Grouping must expose the familiar workspace tools");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
 assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
+assert(playerJs.includes('flowVersion: 2'), "Shared Expression Builder must use the two-phase flow");
+assert(playerJs.includes('data-builder-action="newEntry"'), "Entry phase must provide New Entry");
+assert(playerJs.includes('data-builder-action="allDone"'), "Entry phase must provide All Done");
+assert(playerJs.includes('data-builder-action="group" data-value="sum"'), "Grouping phase must provide Sum for multi-item selections");
+assert(playerJs.includes('data-builder-action="group" data-value="prod"'), "Grouping phase must provide Product for multi-item selections");
+assert(playerJs.includes('data-builder-action="group" data-value="inv"'), "Grouping phase must provide Inverse for single-item selections");
+assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
