@@ -2852,6 +2852,7 @@
             --builder-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --builder-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --main-control-edge: max(12px, env(safe-area-inset-right));
+            --main-control-bottom: max(12px, env(safe-area-inset-bottom));
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows:
                 calc(100% - var(--workspace-panel-split) - var(--divider-half-size))
@@ -2910,7 +2911,7 @@
             height: var(--main-keypad-height);
             min-width: 0;
             min-height: 0;
-            margin: 0 var(--main-control-edge) max(12px, env(safe-area-inset-bottom)) 0;
+            margin: 0 var(--main-control-edge) var(--main-control-bottom) 0;
             padding: 0;
             overflow: visible;
             border: 0;
@@ -2979,7 +2980,7 @@
             display: flex;
             width: var(--main-key-size);
             height: var(--main-key-size);
-            margin: 0 var(--main-control-edge) max(12px, env(safe-area-inset-bottom)) 0;
+            margin: 0 var(--main-control-edge) var(--main-control-bottom) 0;
             border: 0;
             background: transparent;
             pointer-events: none;
@@ -3019,7 +3020,7 @@
             position: absolute;
             z-index: 65;
             right: var(--main-control-edge);
-            bottom: max(12px, env(safe-area-inset-bottom));
+            bottom: var(--main-control-bottom);
             display: flex;
             align-items: flex-end;
             justify-content: flex-end;
@@ -3285,12 +3286,7 @@
                 --main-key-gap: 5px;
                 --main-icon-size: 26px;
                 --main-control-edge: max(8px, env(safe-area-inset-right));
-            }
-            .quadrant-tools,
-            body.left-handed .quadrant-tools { margin-bottom: max(8px, env(safe-area-inset-bottom)); }
-            .quadrant-menu,
-            body.left-handed .quadrant-menu {
-                margin-bottom: max(8px, env(safe-area-inset-bottom));
+                --main-control-bottom: max(8px, env(safe-area-inset-bottom));
             }
             .main-action-panel { width: calc(100% - 16px); }
             .main-action-panel button,

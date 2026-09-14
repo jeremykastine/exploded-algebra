@@ -10,9 +10,10 @@ assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 4
 assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1; }'));
 assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 5; grid-row: 2; }'));
 assert(
-    /\.quadrant-menu,[\s\S]*?margin: 0 var\(--main-control-edge\) max\(12px, env\(safe-area-inset-bottom\)\) 0;/.test(playerHtml),
+    /\.quadrant-menu,[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
     "Settings must occupy the bottom corner beside the view controls"
 );
+assert(playerHtml.includes('bottom: var(--main-control-bottom);'));
 assert(
     !/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu/.test(playerHtml),
     "Settings must remain visible after an expression selection"
@@ -35,5 +36,12 @@ expectedPostSelectionPositions.forEach(([child, column, row]) => {
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
+
+const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
+assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
+assert(playerJs.includes("const columns = builderActive ? 7 : 5;"));
+assert(playerJs.includes("const rows = builderActive ? 6 : (selectionActive ? 4 : 3);"));
+assert(playerJs.includes("Math.min(mainButtonSize, widthLimit, heightLimit)"));
+assert(playerJs.includes('document.body.classList.toggle("selection-active", selectionActive);\n            applyResponsiveMainButtonSize();'));
 
 console.log("Control layout checks passed.");

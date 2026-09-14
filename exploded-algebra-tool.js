@@ -1280,6 +1280,7 @@ Promise.resolve().then(() => {
         const MAIN_BUTTON_SIZE_MIN = 34;
         const MAIN_BUTTON_SIZE_MAX = 62;
         const MAIN_BUTTON_SIZE_STEP = 4;
+        const MAIN_BUTTON_FORCED_MIN = 20;
         const MAIN_BUTTON_SIZE_STORAGE_KEY = "explodedAlgebraMainButtonSizeV1";
         const STEPS_FONT_SIZE_MIN = 11;
         const STEPS_FONT_SIZE_MAX = 26;
@@ -1330,14 +1331,36 @@ Promise.resolve().then(() => {
         function setMainButtonSize(size, persist = false) {
             const boundedSize = Math.max(MAIN_BUTTON_SIZE_MIN, Math.min(MAIN_BUTTON_SIZE_MAX, Number(size) || mainButtonSize));
             mainButtonSize = boundedSize;
-            appContainer.style.setProperty("--main-key-size", `${boundedSize}px`);
-            appContainer.style.setProperty("--main-icon-size", `${Math.max(18, boundedSize - 16)}px`);
+            applyResponsiveMainButtonSize();
             if (persist) {
                 try {
                     window.localStorage.setItem(MAIN_BUTTON_SIZE_STORAGE_KEY, String(boundedSize));
                 } catch (error) {}
             }
             updateLayoutSizeControls();
+        }
+
+        function applyResponsiveMainButtonSize() {
+            const builderActive = document.body.classList.contains("expression-builder-active");
+            const selectionActive = document.body.classList.contains("selection-active") && !builderActive;
+            const columns = builderActive ? 7 : 5;
+            const rows = builderActive ? 6 : (selectionActive ? 4 : 3);
+            const compactViewport = window.innerWidth <= 520;
+            const gap = compactViewport ? 5 : 6;
+            const edge = compactViewport ? 8 : 12;
+            const viewportWidth = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
+            const widthLimit = Math.floor((viewportWidth - edge * 2 - gap * (columns - 1)) / columns);
+            const mainArea = document.getElementById("mainArea");
+            const availableHeight = mainArea ? mainArea.clientHeight : 0;
+            const heightLimit = availableHeight > 0
+                ? Math.floor((availableHeight - edge * 2 - gap * (rows - 1)) / rows)
+                : mainButtonSize;
+            const effectiveSize = Math.max(
+                MAIN_BUTTON_FORCED_MIN,
+                Math.min(mainButtonSize, widthLimit, heightLimit)
+            );
+            appContainer.style.setProperty("--main-key-size", `${effectiveSize}px`);
+            appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
         }
 
         function loadSavedStepsFontSize() {
@@ -4845,6 +4868,7 @@ ctx.font = SETTINGS.textFont;
             }
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
+                applyResponsiveMainButtonSize();
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
                     drawExpression();
@@ -10882,6 +10906,7 @@ function renderToolArea() {
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
             document.body.classList.remove("builder-grouping-mode", "builder-grouping-selection");
             document.body.classList.toggle("selection-active", selectionActive);
+            applyResponsiveMainButtonSize();
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
             }
