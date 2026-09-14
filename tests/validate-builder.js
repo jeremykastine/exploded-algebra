@@ -29,7 +29,14 @@ assert(!/<section class="phase" data-phase="2" hidden>\s*<div class="phase-headi
 assert(!/<section class="phase" data-phase="3" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 3 must not include explanatory heading chrome");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
 assert(builderHtml.includes('id="curationTable"'), "Review phase must include the recorded-step curation table");
-assert(builderJs.includes("Before completion") && builderJs.includes("After completion"), "Each candidate step must have editable pre/post notation");
+assert(!/<section class="phase" data-phase="4" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 4 must not include explanatory heading chrome");
+assert(builderJs.includes("Pre-completion expression") && builderJs.includes("Post-completion expression") && builderJs.includes("Instructions or hints"), "Each candidate step must have the three plain editing fields");
+assert(builderJs.includes('type="checkbox" data-toggle-step'), "Each review step must use an inclusion checkbox");
+assert(builderJs.includes('fieldset class="step-editor-fields"${included ? "" : " disabled"}'), "Unchecked steps must remain visible with disabled fields");
+assert(builderCss.includes(".step-editor-row.is-disabled .step-editor-fields"), "Unchecked step fields must be visibly grayed out");
+assert(!builderJs.includes("data-step-preview") && !builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit previews and recorded-action details");
+assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
+assert(builderJs.includes("generatedBeforeKatex") && builderJs.includes("generatedAfterKatex"), "Pre/post fields must be autofilled from their respective expression states");
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
 assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");

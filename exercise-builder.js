@@ -316,19 +316,6 @@
     });
   }
 
-  function renderKatex(target, source) {
-    target.replaceChildren();
-    if (!source) {
-      target.textContent = "Enter KaTeX source to preview it.";
-      return;
-    }
-    if (!window.katex) {
-      target.textContent = source;
-      return;
-    }
-    window.katex.render(source, target, { throwOnError: false, displayMode: true });
-  }
-
   function moveWorkspaceTo(slotId) {
     const slot = byId(slotId);
     if (slot && workspaceShell.parentElement !== slot) slot.appendChild(workspaceShell);
@@ -377,26 +364,6 @@
     api.refreshLayout();
   }
 
-  function actionLabel(action) {
-    if (!action) return "Unknown action";
-    if (action.type === "select") return `Select ${action.expression || "expression"}`;
-    if (action.type === "tool") return `Use ${action.tool || "tool"}`;
-    if (action.type === "builder") return action.action === "submit"
-      ? "Submit Expression Builder rewrite"
-      : `Expression Builder ${action.action}${action.value ? ` ${action.value}` : ""}`;
-    if (action.type === "action") return `${action.action}${action.value ? ` ${action.value}` : ""}`;
-    if (action.type === "commuteChoice") return "Choose commute position";
-    if (action.type === "undo") return "Undo";
-    return action.type;
-  }
-
-  function summarizeActionRange(actions) {
-    const labels = actions.map(actionLabel);
-    if (!labels.length) return "Expression changed";
-    if (labels.length <= 3) return labels.join(" · ");
-    return `${labels[0]} · ${labels[1]} · ${labels.length - 2} more actions`;
-  }
-
   function deriveStepCandidates(snapshot, api) {
     const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [] };
     const actions = Array.isArray(recorder.actions) ? recorder.actions : [];
@@ -420,20 +387,19 @@
       const occurrence = (occurrences.get(expressionKey) || 0) + 1;
       occurrences.set(expressionKey, occurrence);
       const key = `${expressionKey}::${occurrence}`;
-      const generatedKatex = api.generateKatex(expression);
+      const generatedBeforeKatex = api.generateKatex(currentExpression);
+      const generatedAfterKatex = api.generateKatex(expression);
       const priorList = previousByExpression.get(expressionKey) || [];
       const prior = priorList.shift();
-      const rangeActions = actions.slice(actionStartIndex, actionEndIndex);
       candidates.push({
         key,
         expression,
         beforeExpression: currentExpression,
-        beforeKatex: prior && prior.beforeKatex || generatedKatex,
-        afterKatex: prior && prior.afterKatex || generatedKatex,
+        beforeKatex: prior && prior.beforeKatex || generatedBeforeKatex,
+        afterKatex: prior && prior.afterKatex || generatedAfterKatex,
         instruction: prior && prior.instruction || "",
         actionStartIndex,
         actionEndIndex,
-        actionSummary: summarizeActionRange(rangeActions),
         included: prior ? prior.included !== false : true,
         required: false
       });
@@ -454,73 +420,42 @@
     return candidates;
   }
 
-  function updateCurationSummary() {
-    const candidates = draft.recording.candidates || [];
-    const included = candidates.filter(candidate => candidate.included !== false).length;
-    const hidden = candidates.length - included;
-    byId("curationSummary").textContent = `${included} major step${included === 1 ? "" : "s"} kept · ${hidden} minor step${hidden === 1 ? "" : "s"} hidden`;
-    byId("showAllStepsButton").disabled = hidden === 0;
-  }
-
   function renderCurationTable() {
     const container = byId("curationTable");
     const candidates = draft.recording.candidates || [];
     if (!candidates.length) {
-      container.innerHTML = '<p class="card empty-curation">No expression changes were recorded.</p>';
-      updateCurationSummary();
+      container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
       return;
     }
-    let visibleNumber = 0;
     container.innerHTML = candidates.map((candidate, index) => {
       const included = candidate.included !== false;
-      if (included) visibleNumber += 1;
-      const stepLabel = included ? `Major step ${visibleNumber}` : `Recorded step ${index + 1}`;
-      const toggleLabel = candidate.required ? "Required" : included ? "Hide Step" : "Keep Step";
       return `
-        <article class="step-editor-row card ${included ? "is-included" : "is-hidden"}" data-candidate-index="${index}">
-          <div class="step-row-heading">
-            <span class="step-number">${index + 1}</span>
-            <div class="step-row-summary">
-              <h4>${escapeHtml(stepLabel)}</h4>
-              <p>${escapeHtml(candidate.actionSummary || "Recorded expression change")}</p>
-              ${included ? "" : `<small>${escapeHtml(candidate.afterKatex)}</small>`}
-            </div>
-            <button type="button" class="step-visibility-button" data-toggle-step="${index}" aria-pressed="${included}" ${candidate.required ? "disabled" : ""}>${toggleLabel}</button>
-          </div>
-          ${included ? `
-            <div class="step-editor-fields">
-              <div class="notation-field">
-                <label>Before completion
-                  <textarea rows="2" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
-                </label>
-                <div class="math-preview compact" data-step-preview="beforeKatex"></div>
-              </div>
-              <label class="instruction-field">Instruction or hint <span class="optional">optional</span>
-                <textarea rows="3" data-step-field="instruction" placeholder="Explain what the student should do in this major step.">${escapeHtml(candidate.instruction)}</textarea>
-              </label>
-              <div class="notation-field">
-                <label>After completion
-                  <textarea rows="2" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
-                </label>
-                <div class="math-preview compact" data-step-preview="afterKatex"></div>
-              </div>
-            </div>
-            <p class="step-range">Recorded actions ${candidate.actionStartIndex + 1}–${candidate.actionEndIndex}${candidate.required ? " · Final step is always included" : ""}</p>
-          ` : ""}
+        <article class="step-editor-row ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}">
+          <label class="step-include-label">
+            <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
+            <span>Step ${index + 1}</span>
+          </label>
+          <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
+            <label>Pre-completion expression
+              <textarea rows="2" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
+            </label>
+            <label>Post-completion expression
+              <textarea rows="2" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
+            </label>
+            <label>Instructions or hints <span class="optional">optional</span>
+              <textarea rows="3" data-step-field="instruction"></textarea>
+            </label>
+          </fieldset>
         </article>`;
     }).join("");
-    container.querySelectorAll(".step-editor-row.is-included").forEach(row => {
+    container.querySelectorAll('[data-step-field="instruction"]').forEach(textarea => {
+      const row = textarea.closest("[data-candidate-index]");
       const candidate = candidates[Number(row.dataset.candidateIndex)];
-      renderKatex(row.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
-      renderKatex(row.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
+      textarea.value = candidate.instruction || "";
     });
-    updateCurationSummary();
   }
 
-  async function renderCuration() {
-    await waitForApi();
-    byId("initialKatexInput").value = draft.initial.katex || "";
-    renderKatex(byId("initialKatexPreview"), draft.initial.katex || "");
+  function renderCuration() {
     renderCurationTable();
   }
 
@@ -686,8 +621,6 @@
 
   function hydrateAll() {
     hydrateSetup();
-    byId("initialKatexInput").value = draft.initial.katex || "";
-    renderKatex(byId("initialKatexPreview"), draft.initial.katex || "");
   }
 
   function installEventHandlers() {
@@ -721,11 +654,6 @@
     byId("finishRecordingButton").addEventListener("click", finishRecording);
     byId("resumeRecordingButton").addEventListener("click", resumeRecording);
     byId("editInitialExpressionButton").addEventListener("click", editStartingExpression);
-    byId("initialKatexInput").addEventListener("input", event => {
-      draft.initial.katex = event.target.value;
-      renderKatex(byId("initialKatexPreview"), event.target.value);
-      scheduleSave();
-    });
     byId("curationTable").addEventListener("input", event => {
       const field = event.target.dataset.stepField;
       if (!field) return;
@@ -733,21 +661,14 @@
       const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
       if (!candidate) return;
       candidate[field] = event.target.value;
-      const preview = row.querySelector(`[data-step-preview="${field}"]`);
-      if (preview) renderKatex(preview, event.target.value);
       scheduleSave();
     });
-    byId("curationTable").addEventListener("click", event => {
-      const button = event.target.closest("[data-toggle-step]");
-      if (!button) return;
-      const candidate = draft.recording.candidates[Number(button.dataset.toggleStep)];
+    byId("curationTable").addEventListener("change", event => {
+      const checkbox = event.target.closest("[data-toggle-step]");
+      if (!checkbox) return;
+      const candidate = draft.recording.candidates[Number(checkbox.dataset.toggleStep)];
       if (!candidate || candidate.required) return;
-      candidate.included = candidate.included === false;
-      renderCurationTable();
-      scheduleSave();
-    });
-    byId("showAllStepsButton").addEventListener("click", () => {
-      draft.recording.candidates.forEach(candidate => { candidate.included = true; });
+      candidate.included = checkbox.checked;
       renderCurationTable();
       scheduleSave();
     });

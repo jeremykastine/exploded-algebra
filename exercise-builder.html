@@ -4,10 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260914-integrated-builder">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260914-integrated-builder"></script>
+  <link rel="stylesheet" href="exercise-builder.css?v=20260914-austere-review">
+  <script defer src="exercise-builder.js?v=20260914-austere-review"></script>
 </head>
 <body>
   <header class="builder-header">
@@ -114,41 +112,12 @@
     </section>
 
     <section class="phase" data-phase="4" hidden>
-      <div class="phase-heading">
-        <div><span class="eyebrow">Phase 4</span><h2>Choose the major steps</h2></div>
-        <p>Every expression state from the recorded solution is included below. Hide the minor ones, then edit the notation and guidance students should see.</p>
-      </div>
-      <section class="card initial-step-card">
-        <div class="step-card-heading">
-          <div><span class="step-number">Start</span><h3>Starting expression</h3></div>
-          <span class="required-step-label">Always shown</span>
-        </div>
-        <label>Conventional notation
-          <textarea id="initialKatexInput" rows="2" spellcheck="false"></textarea>
-        </label>
-        <div class="math-preview compact" id="initialKatexPreview" aria-label="Rendered starting expression"></div>
-      </section>
-
-      <section class="step-curation-section" aria-labelledby="stepCurationTitle">
-        <div class="curation-heading">
-          <div>
-            <h3 id="stepCurationTitle">Recorded expression steps</h3>
-            <p id="curationSummary" class="status-line"></p>
-          </div>
-          <button id="showAllStepsButton" type="button" class="secondary-button">Keep All Steps</button>
-        </div>
-        <div class="step-table-heading" aria-hidden="true">
-          <span>Step</span><span>Student display</span><span>Include</span>
-        </div>
+      <section class="step-curation-section" aria-label="Exercise steps">
         <div id="curationTable" class="curation-table"></div>
       </section>
 
-      <section class="card export-card">
-        <div>
-          <h3>Test in the student player</h3>
-          <p>The current draft opens in a new tab through local browser storage; no download or repository edit is needed.</p>
-        </div>
-        <label>Assistance level
+      <section class="phase4-controls">
+        <label class="phase4-assistance">Test assistance
           <select id="testAssistanceLevel">
             <option value="high">High</option>
             <option value="medium" selected>Medium</option>
@@ -161,7 +130,7 @@
         </div>
         <p id="exportStatus" class="status-line" aria-live="polite"></p>
       </section>
-      <div class="phase-actions">
+      <div class="phase-actions phase4-navigation">
         <button id="resumeRecordingButton" type="button" class="secondary-button">Back to Solving</button>
         <button id="editInitialExpressionButton" type="button" class="secondary-button">Edit Starting Expression</button>
         <button type="button" class="secondary-button" data-go-phase="1">Edit Setup</button>
