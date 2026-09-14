@@ -4531,7 +4531,14 @@ ctx.font = SETTINGS.textFont;
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
         const OPERATION_BAR_GRADIENT_STORAGE_KEY = "explodedAlgebraOperationBarGradientV1";
-        const OPERATOR_BAR_STYLES = new Set(["thick", "flared", "midline", "nested-parentheses", "outward-parentheses"]);
+        const OPERATOR_BAR_STYLES = new Set([
+            "thick",
+            "flared",
+            "midline",
+            "nested-parentheses",
+            "nested-operator-parentheses",
+            "outward-parentheses"
+        ]);
 
         function normalizeOperationBarStyle(style) {
             if (style === "gradient") {
@@ -6059,6 +6066,7 @@ ctx.font = SETTINGS.textFont;
                 const centerY = (node.top() + node.bottom()) / 2;
                 const hasConnectorFlares = nodeNeedsSeparatorFlares(node) ||
                     SETTINGS.productBeamStyle === "nested-parentheses" ||
+                    SETTINGS.productBeamStyle === "nested-operator-parentheses" ||
                     SETTINGS.productBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
@@ -6074,6 +6082,7 @@ ctx.font = SETTINGS.textFont;
                 const centerX = (node.left() + node.right()) / 2;
                 const hasConnectorFlares = nodeNeedsSeparatorFlares(node) ||
                     SETTINGS.sumBeamStyle === "nested-parentheses" ||
+                    SETTINGS.sumBeamStyle === "nested-operator-parentheses" ||
                     SETTINGS.sumBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
