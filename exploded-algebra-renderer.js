@@ -1013,7 +1013,6 @@ function drawNodeRecursiveToContext(
         drawingContext.textBaseline = "middle";
         (node.layout.builderOperatorBoxes || []).forEach(box => {
             drawingContext.setLineDash([]);
-            drawingContext.strokeRect(box.x, box.y, box.width, box.height);
             drawingContext.fillText(box.operator === "prod" ? "·" : "+", box.x + box.width / 2, box.y + box.height / 2);
         });
         const placeholder = node.layout.builderPlaceholderBox;

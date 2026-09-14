@@ -13,6 +13,7 @@ const builderCss = read("exercise-builder.css");
 const builderJs = read("exercise-builder.js");
 const playerHtml = read("exploded-algebra.html");
 const playerJs = read("exploded-algebra-tool.js");
+const rendererJs = read("exploded-algebra-renderer.js");
 
 const htmlIds = new Set(Array.from(builderHtml.matchAll(/\bid="([^"]+)"/g), match => match[1]));
 const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/g), match => match[1]));
@@ -59,12 +60,13 @@ assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The sha
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
 assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
 assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
+assert(!rendererJs.includes('strokeRect(box.x, box.y, box.width, box.height)'), "Builder operation symbols must not have visible boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
 const rendererContext = { window: {}, console };
 vm.createContext(rendererContext);
-vm.runInContext(read("exploded-algebra-renderer.js"), rendererContext);
+vm.runInContext(rendererJs, rendererContext);
 const renderer = rendererContext.window.ExplodedAlgebraRenderer;
 const value = text => new renderer.ExprNode("value", [], text);
 const cases = [
