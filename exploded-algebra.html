@@ -1218,8 +1218,12 @@
             user-select: none;
         }
 
-        body.workspace-pan-active #expressionWorkspaceSvg { cursor: grab; }
-        body.workspace-pan-active.workspace-panning #expressionWorkspaceSvg { cursor: grabbing; }
+        body.workspace-pan-active #svgContainer {
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+        }
+        body.workspace-pan-active.workspace-panning #svgContainer { cursor: grabbing; }
 
         dialog {
             box-sizing: border-box;

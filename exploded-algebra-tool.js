@@ -11616,6 +11616,43 @@ function renderToolArea() {
             releaseWorkspacePointer();
         }
 
+        svgContainer.addEventListener("pointerdown", e => {
+            if (e.target !== svgContainer) {
+                return;
+            }
+            if (e.pointerType === "mouse" && e.button !== 0) {
+                return;
+            }
+            if (
+                activeWorkspacePointerId !== null ||
+                uiState.mode !== "edit" ||
+                uiState.stage === "postview" ||
+                uiState.stage === "builder" ||
+                uiState.workspaceMode !== "pan"
+            ) {
+                return;
+            }
+
+            activeWorkspacePointerId = e.pointerId;
+            workspacePointerStart = {
+                clientX: e.clientX,
+                clientY: e.clientY,
+                pointerType: e.pointerType || "mouse",
+                panX: workspacePanX,
+                panY: workspacePanY,
+                mode: "pan"
+            };
+            if (svgContainer.setPointerCapture) {
+                try {
+                    svgContainer.setPointerCapture(e.pointerId);
+                } catch (error) {
+                    // The document-level pointerup fallback still completes
+                    // the gesture when capture is unavailable.
+                }
+            }
+            e.preventDefault();
+        });
+
         workspaceSvg.addEventListener("pointerdown", e => {
             if (e.pointerType === "mouse" && e.button !== 0) {
                 return;
@@ -11694,7 +11731,7 @@ function renderToolArea() {
             }
         });
 
-        workspaceSvg.addEventListener("pointermove", e => {
+        svgContainer.addEventListener("pointermove", e => {
             if (
                 e.pointerId !== activeWorkspacePointerId ||
                 !workspacePointerStart ||
@@ -11714,15 +11751,19 @@ function renderToolArea() {
             e.preventDefault();
         });
 
-        workspaceSvg.addEventListener("pointerup", e => {
+        svgContainer.addEventListener("pointerup", e => {
             finishWorkspaceTap(e);
         });
 
-        workspaceSvg.addEventListener("pointercancel", e => {
+        svgContainer.addEventListener("pointercancel", e => {
             cancelWorkspaceTap(e);
         });
 
         workspaceSvg.addEventListener("lostpointercapture", e => {
+            cancelWorkspaceTap(e);
+        });
+
+        svgContainer.addEventListener("lostpointercapture", e => {
             cancelWorkspaceTap(e);
         });
 
