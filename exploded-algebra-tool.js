@@ -662,7 +662,7 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            // The fixed keypad is ordered from its full bottom row upward.
+            // CSS maps these semantic categories into the handedness-aware keypad.
             const categoryIds = ["numericalRewrite", "insert", "delete", "separate", "consolidate", "commute"];
             const cancelDisabled = isDemoModeActive() ? " disabled" : "";
             return `<div class="panel-menu-title">Choose an action</div>

@@ -2847,8 +2847,8 @@
             --main-icon-size: 28px;
             --steps-font-size: 15px;
             --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
-            --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
-            --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-gap));
+            --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
+            --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
             --builder-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --builder-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --main-control-edge: max(12px, env(safe-area-inset-right));
@@ -2921,8 +2921,8 @@
         .quadrant-tools .workspace-toolbar,
         .quadrant-tools.two-column-tools .workspace-toolbar {
             display: grid;
-            grid-template-columns: repeat(4, var(--main-key-size));
-            grid-template-rows: repeat(2, var(--main-key-size));
+            grid-template-columns: repeat(5, var(--main-key-size));
+            grid-template-rows: repeat(3, var(--main-key-size));
             gap: var(--main-key-gap);
             width: var(--workspace-keypad-width);
             height: var(--main-keypad-height);
@@ -2944,18 +2944,18 @@
             background: #fff;
             pointer-events: auto;
         }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 2; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 4; grid-row: 2; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 3; grid-row: 1; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 2; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 4; grid-row: 3; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5; grid-row: 2; }
 
-        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; }
-        body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 1; }
-        body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; }
+        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 5; }
+        body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 4; }
+        body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; }
+        body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; }
+        body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; }
         body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
 
         .workspace-undo-label {
@@ -2979,7 +2979,7 @@
             display: flex;
             width: var(--main-key-size);
             height: var(--main-key-size);
-            margin: 0 var(--main-control-edge) calc(max(12px, env(safe-area-inset-bottom)) + var(--main-keypad-height) + var(--main-key-gap)) 0;
+            margin: 0 var(--main-control-edge) max(12px, env(safe-area-inset-bottom)) 0;
             border: 0;
             background: transparent;
             pointer-events: none;
@@ -3088,22 +3088,22 @@
         }
         .main-action-panel .intent-category-actions {
             display: grid;
-            grid-template-columns: repeat(3, var(--main-key-size));
+            grid-template-columns: repeat(5, var(--main-key-size));
             grid-template-rows: repeat(4, var(--main-key-size));
             grid-auto-flow: row;
         }
-        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 3; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; grid-row: 3; }
-        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 3; grid-row: 3; }
-        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 3; grid-row: 2; }
-        .main-action-panel .cancel-selection-button { grid-column: 3; grid-row: 1; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(1) { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(2) { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(3) { grid-column: 1; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(5) { grid-column: 1; }
+        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 5; grid-row: 2; }
+        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 3; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 4; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 1; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 2; grid-row: 4; }
+        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 5; grid-row: 1; }
+        .main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(2) { grid-column: 3; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(3) { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 5; }
+        body.left-handed .main-action-panel .intent-category-button:nth-child(5) { grid-column: 4; }
         body.left-handed .main-action-panel .intent-category-button:nth-child(6) { grid-column: 1; }
         body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
         .main-action-panel .tool-grid {
@@ -3210,7 +3210,6 @@
         body.expression-builder-active.left-handed .quadrant-tools,
         body.expression-builder-active .main-action-panel { display: none; }
 
-        body.selection-active:not(.expression-builder-active) .quadrant-menu,
         body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }
 
         body.expression-builder-active .app-container,
@@ -3291,7 +3290,7 @@
             body.left-handed .quadrant-tools { margin-bottom: max(8px, env(safe-area-inset-bottom)); }
             .quadrant-menu,
             body.left-handed .quadrant-menu {
-                margin-bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--main-keypad-height) + var(--main-key-gap));
+                margin-bottom: max(8px, env(safe-area-inset-bottom));
             }
             .main-action-panel { width: calc(100% - 16px); }
             .main-action-panel button,
