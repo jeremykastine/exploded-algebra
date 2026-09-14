@@ -124,12 +124,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .step-curation-section { margin: 0; }
 .curation-table { display: grid; }
-.step-editor-row { min-width: 0; padding: 16px 0 20px; border-bottom: 1px solid var(--line); }
+.step-editor-row { min-width: 0; padding: 12px 0 14px; border-bottom: 1px solid var(--line); }
 .step-editor-row:first-child { padding-top: 0; }
 .step-include-label { display: flex; align-items: center; gap: 9px; font-size: 16px; }
 .step-include-label input { width: 20px; height: 20px; margin: 0; }
-.step-editor-fields { display: grid; gap: 12px; min-width: 0; margin: 12px 0 0 29px; padding: 0; border: 0; }
-.step-editor-fields label { min-width: 0; }
+.step-editor-fields { display: grid; gap: 8px; min-width: 0; margin: 8px 0 0 29px; padding: 0; border: 0; }
+.step-expression-row { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(0, 1.2fr); gap: 8px; min-width: 0; }
+.step-expression-row textarea { min-height: 48px; }
+.step-math-preview { display: flex; min-width: 0; min-height: 48px; align-items: center; justify-content: center; padding: 4px 7px; overflow: auto; border-radius: 6px; background: var(--soft); font-size: 17px; }
+.step-math-preview .katex-display { margin: 0; }
+.step-editor-fields > textarea[data-step-field="instruction"] { min-height: 48px; }
 .step-editor-row.is-disabled .step-editor-fields { opacity: .46; }
 .step-editor-fields:disabled textarea { border-color: #c7c9cc; background: #eef0f2; color: #70747a; cursor: not-allowed; }
 .empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }

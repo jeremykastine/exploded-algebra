@@ -34,7 +34,9 @@ assert(builderJs.includes("Pre-completion expression") && builderJs.includes("Po
 assert(builderJs.includes('type="checkbox" data-toggle-step'), "Each review step must use an inclusion checkbox");
 assert(builderJs.includes('fieldset class="step-editor-fields"${included ? "" : " disabled"}'), "Unchecked steps must remain visible with disabled fields");
 assert(builderCss.includes(".step-editor-row.is-disabled .step-editor-fields"), "Unchecked step fields must be visibly grayed out");
-assert(!builderJs.includes("data-step-preview") && !builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit previews and recorded-action details");
+assert(builderJs.includes('data-step-preview="beforeKatex"') && builderJs.includes('data-step-preview="afterKatex"') && builderJs.includes("renderKatex(preview"), "Phase 4 must provide live pre/post previews");
+assert(builderCss.includes(".step-expression-row") && builderCss.includes(".step-math-preview"), "Phase 4 previews must use the compact row layout");
+assert(!builderJs.includes("<label>Pre-completion") && !builderJs.includes("<label>Post-completion") && !builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit visible field labels and recorded-action details");
 assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
 assert(builderJs.includes("generatedBeforeKatex") && builderJs.includes("generatedAfterKatex"), "Pre/post fields must be autofilled from their respective expression states");
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");

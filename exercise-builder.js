@@ -316,6 +316,17 @@
     });
   }
 
+  function renderKatex(target, source) {
+    if (!target) return;
+    target.replaceChildren();
+    if (!source) return;
+    if (!window.katex) {
+      target.textContent = source;
+      return;
+    }
+    window.katex.render(source, target, { throwOnError: false, displayMode: true });
+  }
+
   function moveWorkspaceTo(slotId) {
     const slot = byId(slotId);
     if (slot && workspaceShell.parentElement !== slot) slot.appendChild(workspaceShell);
@@ -436,22 +447,23 @@
             <span>Step ${index + 1}</span>
           </label>
           <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
-            <label>Pre-completion expression
-              <textarea rows="2" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
-            </label>
-            <label>Post-completion expression
-              <textarea rows="2" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
-            </label>
-            <label>Instructions or hints <span class="optional">optional</span>
-              <textarea rows="3" data-step-field="instruction"></textarea>
-            </label>
+            <div class="step-expression-row">
+              <textarea rows="2" spellcheck="false" data-step-field="beforeKatex" aria-label="Pre-completion expression for step ${index + 1}" placeholder="Pre-completion expression">${escapeHtml(candidate.beforeKatex)}</textarea>
+              <div class="step-math-preview" data-step-preview="beforeKatex" aria-label="Pre-completion preview for step ${index + 1}"></div>
+            </div>
+            <div class="step-expression-row">
+              <textarea rows="2" spellcheck="false" data-step-field="afterKatex" aria-label="Post-completion expression for step ${index + 1}" placeholder="Post-completion expression">${escapeHtml(candidate.afterKatex)}</textarea>
+              <div class="step-math-preview" data-step-preview="afterKatex" aria-label="Post-completion preview for step ${index + 1}"></div>
+            </div>
+            <textarea rows="2" data-step-field="instruction" aria-label="Instructions or hints for step ${index + 1}" placeholder="Instructions or hints (optional)"></textarea>
           </fieldset>
         </article>`;
     }).join("");
-    container.querySelectorAll('[data-step-field="instruction"]').forEach(textarea => {
-      const row = textarea.closest("[data-candidate-index]");
+    container.querySelectorAll("[data-candidate-index]").forEach(row => {
       const candidate = candidates[Number(row.dataset.candidateIndex)];
-      textarea.value = candidate.instruction || "";
+      row.querySelector('[data-step-field="instruction"]').value = candidate.instruction || "";
+      renderKatex(row.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
+      renderKatex(row.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
     });
   }
 
@@ -661,6 +673,8 @@
       const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
       if (!candidate) return;
       candidate[field] = event.target.value;
+      const preview = row.querySelector(`[data-step-preview="${field}"]`);
+      if (preview) renderKatex(preview, event.target.value);
       scheduleSave();
     });
     byId("curationTable").addEventListener("change", event => {
