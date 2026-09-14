@@ -1425,11 +1425,28 @@ Promise.resolve().then(() => {
             }
         }
 
+        function expressionBuilderIsEmpty(builder = uiState.expressionBuilder) {
+            if (!builder || !builder.root) return true;
+            if (isIntegratedExpressionBuilder(builder)) {
+                return builder.currentPath.length === 0 &&
+                    builder.root.isBuilderSequence &&
+                    builder.root.args.length === 0 &&
+                    builder.root.builderOperators.length === 0;
+            }
+            return isBuilderPlaceholder(builder.root);
+        }
+
         function undoExpressionBuilderStep() {
             const builder = uiState.expressionBuilder;
             if (!builder || !Array.isArray(builder.history) || !builder.history.length) {
-                uiState.message = "There is nothing to undo yet.";
-                renderToolArea();
+                if (builder && expressionBuilderIsEmpty(builder)) {
+                    cancelExpressionBuilder();
+                    return true;
+                }
+                if (builder) {
+                    uiState.message = "There is nothing to undo yet.";
+                    renderToolArea();
+                }
                 return false;
             }
             const snapshot = builder.history.pop();
@@ -4284,6 +4301,46 @@ Promise.resolve().then(() => {
                     performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
                 });
             }
+            if (builderCommandPanel) {
+                builderCommandPanel.addEventListener("pointerdown", event => {
+                    const button = event.target.closest("button[data-builder-review]");
+                    if (!button || button.disabled || (event.pointerType === "mouse" && event.button !== 0)) {
+                        return;
+                    }
+                    activeBuilderReviewPointerId = event.pointerId;
+                    if (showBuilderOriginalReview()) {
+                        event.preventDefault();
+                    }
+                });
+                builderCommandPanel.addEventListener("keydown", event => {
+                    const button = event.target.closest("button[data-builder-review]");
+                    if (!button || ![" ", "Enter"].includes(event.key) || event.repeat) return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    showBuilderOriginalReview();
+                });
+                builderCommandPanel.addEventListener("keyup", event => {
+                    if (event.target.closest("button[data-builder-review]") && [" ", "Enter"].includes(event.key)) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        hideBuilderOriginalReview();
+                    }
+                });
+                builderCommandPanel.addEventListener("contextmenu", event => {
+                    if (event.target.closest("button[data-builder-review]")) {
+                        event.preventDefault();
+                    }
+                });
+            }
+            const finishBuilderReview = event => {
+                if (builderReviewActive && event.pointerId === activeBuilderReviewPointerId) {
+                    event.preventDefault();
+                    hideBuilderOriginalReview();
+                }
+            };
+            document.addEventListener("pointerup", finishBuilderReview, true);
+            document.addEventListener("pointercancel", finishBuilderReview, true);
+            window.addEventListener("blur", hideBuilderOriginalReview);
             updateWorkspaceToolbar();
             if (authoringSessionActive) {
                 showNoLevelSelectedState("Preparing the Exercise Builder workspace…");
@@ -4375,7 +4432,7 @@ Promise.resolve().then(() => {
             const expressionWidth = expressionRoot.layout.width;
             const expressionHeight = expressionRoot.layout.height;
 
-            if (isIntegratedExpressionBuilder()) {
+            if (isIntegratedExpressionBuilder() && !builderReviewActive) {
                 const neededWidth = Math.max(1, Math.ceil(expressionWidth + padding * 2));
                 const neededHeight = Math.max(1, Math.ceil(expressionHeight + padding * 2));
                 if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
@@ -4423,6 +4480,8 @@ ctx.font = SETTINGS.textFont;
 
         let activeWorkspacePointerId = null;
         let workspacePointerStart = null;
+        let builderReviewActive = false;
+        let activeBuilderReviewPointerId = null;
         const selection = {
             status: "no",
             node: null,
@@ -5231,7 +5290,12 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (uiState.expressionBuilder && uiState.stage === "builder") {
-                if (integratedBuilder) {
+                if (builderReviewActive) {
+                    hideBuilderRewritePreview();
+                    if (selection.node) {
+                        drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
+                    }
+                } else if (integratedBuilder) {
                     hideBuilderRewritePreview();
                 } else {
                     drawExpressionBuilderContext();
@@ -9008,6 +9072,9 @@ ctx.font = SETTINGS.textFont;
 
         function cancelExpressionBuilder() {
             const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
+            builderReviewActive = false;
+            activeBuilderReviewPointerId = null;
+            document.body.classList.remove("builder-review-active");
             if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
                 expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
@@ -9017,6 +9084,38 @@ ctx.font = SETTINGS.textFont;
             if (cancelledInitialAuthoring) {
                 notifyAuthoringHost("state-change");
             }
+        }
+
+        function showBuilderOriginalReview() {
+            const builder = uiState.expressionBuilder;
+            if (!isIntegratedExpressionBuilder(builder) || !builder.mainRoot || builderReviewActive) {
+                return false;
+            }
+            builderReviewActive = true;
+            expressionRoot = builder.mainRoot;
+            if (builder.originalSelection) {
+                selection.status = "yes";
+                selection.node = builder.originalSelection.node;
+                selection.firstPart = builder.originalSelection.firstPart;
+                selection.lastPart = builder.originalSelection.lastPart;
+            }
+            document.body.classList.add("builder-review-active");
+            drawExpression();
+            return true;
+        }
+
+        function hideBuilderOriginalReview() {
+            if (!builderReviewActive) return false;
+            const builder = uiState.expressionBuilder;
+            builderReviewActive = false;
+            activeBuilderReviewPointerId = null;
+            document.body.classList.remove("builder-review-active");
+            if (isIntegratedExpressionBuilder(builder)) {
+                expressionRoot = builder.root;
+            }
+            clearSelection();
+            refreshExpressionBuilderPreview();
+            return true;
         }
 
         function replaceBuilderCurrentNode(replacement, autoAdvance = false) {
@@ -10162,16 +10261,17 @@ ctx.font = SETTINGS.textFont;
                 const inverseDisabled = !operationTypes.includes("inv") || !expectsValue;
                 const exitDisabled = !builder.currentPath.length;
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
+                const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
-                        ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
+                        ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        <button class="builder-operator-button builder-exit-inv-button" data-builder-action="exitInverse" aria-label="Exit inverse" title="Keyboard shortcut: Right Arrow"${exitDisabled ? " disabled" : ""}><span class="builder-exit-inverse-icon">${getBuilderSymbolIcon("inv")}<span aria-hidden="true">↗</span></span></button>
+                        <button class="builder-operator-button builder-exit-inv-button" data-builder-action="exitInverse" aria-label="Exit inverse" title="Keyboard shortcut: Right Arrow"${exitDisabled ? " disabled" : ""}><span class="builder-exit-inverse-icon">${getBuilderSymbolIcon("inv")}<svg class="builder-exit-arrow" viewBox="0 0 32 32" aria-hidden="true"><path class="builder-exit-arrow-halo" d="M14 18 27 29M20 29h7v-7"/><path class="builder-exit-arrow-line" d="M14 18 27 29M20 29h7v-7"/></svg></span></button>
+                        <button type="button" class="builder-review-button" data-builder-review aria-label="Hold to review original expression" title="Hold to review original expression"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
-                        <button class="builder-undo-button" data-builder-action="undo" aria-label="Undo" title="Keyboard shortcut: Backspace or Delete"${builder.history.length ? "" : " disabled"}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 7.2A9 9 0 1 1 4 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                        <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
+                        <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 7.2A9 9 0 1 1 4 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
                     </div></div>
                 </div>`;
@@ -10205,7 +10305,6 @@ ctx.font = SETTINGS.textFont;
                     <div class="builder-action-row" aria-label="Expression builder actions">
                         ${nextOrSubmitButton}
                         <button class="builder-undo-button" data-builder-action="undoBackspace" aria-label="Backspace" title="Keyboard shortcut: Backspace or Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-                        <button class="builder-cancel-button" data-builder-action="cancel" title="Keyboard shortcut: Escape">Cancel</button>
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
@@ -10761,6 +10860,11 @@ function renderToolArea() {
             const integratedBuilder = builderActive && isIntegratedExpressionBuilder(uiState.expressionBuilder);
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
             const exitingBuilder = !builderActive && builderWorkspaceViewActive;
+            if (!builderActive && builderReviewActive) {
+                builderReviewActive = false;
+                activeBuilderReviewPointerId = null;
+                document.body.classList.remove("builder-review-active");
+            }
             if (builderActive) {
                 // Save the main view before the builder layout changes the page.
                 syncBuilderWorkspaceView(true);

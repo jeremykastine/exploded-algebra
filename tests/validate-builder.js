@@ -58,6 +58,15 @@ assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated 
 assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
 assert(playerJs.includes('data-builder-action="exitInverse"'), "Integrated entry must provide Exit Inverse");
 assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must provide a unified Undo control");
+assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder must not render a separate Cancel button");
+assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
+assert(playerJs.includes('class="builder-review-button" data-builder-review') && playerJs.includes("showBuilderOriginalReview") && playerJs.includes("hideBuilderOriginalReview"), "Expression Builder must provide press-and-hold original-expression review");
+assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
+assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 4; grid-row: 2; }'), "The x button must sit above 8");
+assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 5; grid-row: 1; }') && playerHtml.includes('.builder-keypad-panel .builder-exit-inv-button { grid-column: 5; grid-row: 2; }'), "Inverse controls must stack above 9");
+assert(playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 5; }') && playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 6; }'), "Addition and multiplication positions must be switched");
+assert(playerHtml.includes("button.builder-submit-button") && playerHtml.includes("position: fixed") && playerHtml.includes("button.builder-review-button"), "Submit and Review must be isolated on the opposite side of the screen");
+assert(playerJs.includes('builder-exit-arrow-line') && playerJs.includes('M14 18 27 29'), "Exit Inverse must use a down-right arrow from the denominator");
 assert(playerJs.includes('getIntegratedBuilderOperatorTarget') && playerJs.includes('groupIntegratedBuilderOperator(value)'), "Canvas operation taps must resolve grouping");
 assert(playerJs.includes('visitIntegratedBuilderSequences(builder.root'), "Operation taps must search every unresolved scope");
 assert(playerJs.includes('flattenIntegratedBuilderOperation(type, left, right)'), "Consecutive sums and products must flatten as they are grouped");
