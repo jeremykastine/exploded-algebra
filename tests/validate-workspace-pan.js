@@ -22,5 +22,9 @@ assert(
     /body\.workspace-pan-active #svgContainer\s*\{[\s\S]*?touch-action: none;/.test(playerHtml),
     "The entire workspace must suppress native touch scrolling while Pan is active"
 );
+assert(
+    /\.quadrant-tools,\s*body\.left-handed \.quadrant-tools,\s*\.quadrant-menu,\s*body\.left-handed \.quadrant-menu\s*\{\s*grid-row: 2;\s*\}/.test(playerHtml),
+    "Button clusters must overlay the workspace row instead of creating a clipping row"
+);
 
 console.log("Workspace pan checks passed.");
