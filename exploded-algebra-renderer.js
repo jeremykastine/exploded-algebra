@@ -355,54 +355,29 @@ function drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, halfThickne
 
 function getNestedOperatorParenthesisPattern(start, end, halfThickness, singlePair = false) {
     const center = (start + end) / 2;
-    const { depth, operatorClearance } = getParenthesisMetrics(halfThickness);
-    const innerCenter = center - operatorClearance - depth;
+    const { depth } = getParenthesisMetrics(halfThickness);
+    const operatorHalfSize = halfThickness / 2;
+    const innerCenter = center - operatorHalfSize - depth;
     if (singlePair) {
-        return { center, depth, parenthesisCenters: [innerCenter], operatorGroups: [] };
+        return { center, depth, parenthesisCenters: [innerCenter], operatorCenters: [] };
     }
 
     const outerCenter = start + depth;
     const availableSpan = innerCenter - outerCenter;
-    const operatorWidth = Math.max(halfThickness * 0.9, 4);
-    const itemGap = Math.max(depth * 0.65, 1.5);
-    const operatorGap = Math.max(depth, 2);
-    const intervalWidths = [];
-    let usedSpan = 0;
-
-    for (let operatorCount = 1; operatorCount < 100; operatorCount++) {
-        const intervalWidth = depth * 2 + itemGap * 2 +
-            operatorWidth * operatorCount + operatorGap * Math.max(0, operatorCount - 1);
-        if (usedSpan + intervalWidth > availableSpan) {
-            break;
-        }
-        intervalWidths.push(intervalWidth);
-        usedSpan += intervalWidth;
+    const idealInterval = depth * 2 + operatorHalfSize * 2;
+    if (availableSpan < idealInterval * 0.75) {
+        return { center, depth, parenthesisCenters: [outerCenter], operatorCenters: [] };
     }
 
-    if (intervalWidths.length === 0) {
-        return { center, depth, parenthesisCenters: [outerCenter], operatorGroups: [] };
-    }
+    const intervalCount = Math.max(1, Math.round(availableSpan / idealInterval));
+    const parenthesisCenters = Array.from({ length: intervalCount + 1 }, (_, index) => (
+        innerCenter - availableSpan * index / intervalCount
+    ));
+    const operatorCenters = parenthesisCenters.slice(0, -1).map((parenthesisCenter, index) => (
+        (parenthesisCenter + parenthesisCenters[index + 1]) / 2
+    ));
 
-    const extraPerInterval = (availableSpan - usedSpan) / intervalWidths.length;
-    const parenthesisCenters = [innerCenter];
-    const operatorGroups = [];
-    let currentInnerCenter = innerCenter;
-
-    intervalWidths.forEach((intervalWidth, index) => {
-        const operatorCount = index + 1;
-        const nextOuterCenter = currentInnerCenter - intervalWidth - extraPerInterval;
-        const openInnerEdge = currentInnerCenter - depth;
-        const openOuterEdge = nextOuterCenter + depth;
-        const openSpan = openInnerEdge - openOuterEdge;
-        const operatorCenters = Array.from({ length: operatorCount }, (_, operatorIndex) => (
-            openOuterEdge + openSpan * (operatorIndex + 1) / (operatorCount + 1)
-        ));
-        operatorGroups.push(operatorCenters);
-        parenthesisCenters.push(nextOuterCenter);
-        currentInnerCenter = nextOuterCenter;
-    });
-
-    return { center, depth, parenthesisCenters, operatorGroups };
+    return { center, depth, parenthesisCenters, operatorCenters };
 }
 
 function drawPlusMark(drawingContext, x, y, halfSize) {
@@ -422,7 +397,7 @@ function drawNestedOperatorParenthesesSumBeam(
     operatorColor,
     singlePair = false
 ) {
-    const { center, depth, parenthesisCenters, operatorGroups } =
+    const { center, depth, parenthesisCenters, operatorCenters } =
         getNestedOperatorParenthesisPattern(x1, x2, halfThickness, singlePair);
 
     drawingContext.save();
@@ -440,11 +415,9 @@ function drawNestedOperatorParenthesesSumBeam(
 
     drawingContext.strokeStyle = operatorColor;
     drawingContext.beginPath();
-    operatorGroups.forEach(operatorCenters => {
-        operatorCenters.forEach(leftCenter => {
-            drawPlusMark(drawingContext, leftCenter, y, halfThickness / 2);
-            drawPlusMark(drawingContext, center * 2 - leftCenter, y, halfThickness / 2);
-        });
+    operatorCenters.forEach(leftCenter => {
+        drawPlusMark(drawingContext, leftCenter, y, halfThickness / 2);
+        drawPlusMark(drawingContext, center * 2 - leftCenter, y, halfThickness / 2);
     });
     drawingContext.stroke();
     drawingContext.restore();
@@ -460,7 +433,7 @@ function drawNestedOperatorParenthesesProductBeam(
     operatorColor,
     singlePair = false
 ) {
-    const { center, depth, parenthesisCenters, operatorGroups } =
+    const { center, depth, parenthesisCenters, operatorCenters } =
         getNestedOperatorParenthesisPattern(y1, y2, halfThickness, singlePair);
 
     drawingContext.save();
@@ -477,19 +450,17 @@ function drawNestedOperatorParenthesesProductBeam(
     drawingContext.stroke();
 
     drawingContext.fillStyle = operatorColor;
-    operatorGroups.forEach(operatorCenters => {
-        operatorCenters.forEach(topCenter => {
-            [topCenter, center * 2 - topCenter].forEach(operatorCenter => {
-                drawingContext.beginPath();
-                drawingContext.arc(
-                    x,
-                    operatorCenter,
-                    getOperatorDotRadius({ operatorThickness: halfThickness * 2 }),
-                    0,
-                    Math.PI * 2
-                );
-                drawingContext.fill();
-            });
+    operatorCenters.forEach(topCenter => {
+        [topCenter, center * 2 - topCenter].forEach(operatorCenter => {
+            drawingContext.beginPath();
+            drawingContext.arc(
+                x,
+                operatorCenter,
+                getOperatorDotRadius({ operatorThickness: halfThickness * 2 }),
+                0,
+                Math.PI * 2
+            );
+            drawingContext.fill();
         });
     });
     drawingContext.restore();
@@ -1307,7 +1278,9 @@ function drawNodeToContext(
             const beamPaint = useGradientPaint
                 ? createProductBeamGradient(drawingContext, x, y1, y2, gradientBeamColor)
                 : gradientBeamColor;
-            const operatorIconColor = useGradientPaint ? gradientBeamColor : operatorColor;
+            const operatorIconColor = useNestedOperatorParenthesesBeam
+                ? "black"
+                : (useGradientPaint ? gradientBeamColor : operatorColor);
             drawingContext.strokeStyle = beamPaint;
             drawingContext.fillStyle = beamPaint;
 
@@ -1329,7 +1302,7 @@ function drawNodeToContext(
                     y2,
                     flare,
                     beamPaint,
-                    operatorIconColor,
+                    beamPaint,
                     !needsBeam
                 );
             } else if (useOutwardParenthesesBeam) {
@@ -1402,7 +1375,9 @@ function drawNodeToContext(
             const beamPaint = useGradientPaint
                 ? createSumBeamGradient(drawingContext, x1, x2, y, gradientBeamColor)
                 : gradientBeamColor;
-            const operatorIconColor = useGradientPaint ? gradientBeamColor : operatorColor;
+            const operatorIconColor = useNestedOperatorParenthesesBeam
+                ? "black"
+                : (useGradientPaint ? gradientBeamColor : operatorColor);
             drawingContext.strokeStyle = beamPaint;
             drawingContext.fillStyle = beamPaint;
 
@@ -1424,7 +1399,7 @@ function drawNodeToContext(
                     y,
                     flare,
                     beamPaint,
-                    operatorIconColor,
+                    beamPaint,
                     !needsBeam
                 );
             } else if (useOutwardParenthesesBeam) {
