@@ -48,8 +48,11 @@ assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated 
 assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
 assert(playerJs.includes('data-builder-action="exitInverse"'), "Integrated entry must provide Exit Inverse");
 assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must provide a unified Undo control");
-assert(playerJs.includes('performBuilderAction("groupOperator"'), "Canvas operation taps must resolve grouping");
-assert(playerJs.includes('new ExprNode(type, [left, right], null)'), "Grouping must resolve only the tapped operation without flattening neighboring groups");
+assert(playerJs.includes('getIntegratedBuilderOperatorTarget') && playerJs.includes('groupIntegratedBuilderOperator(value)'), "Canvas operation taps must resolve grouping");
+assert(playerJs.includes('visitIntegratedBuilderSequences(builder.root'), "Operation taps must search every unresolved scope");
+assert(playerJs.includes('flattenIntegratedBuilderOperation(type, left, right)'), "Consecutive sums and products must flatten as they are grouped");
+assert(!playerJs.includes('sequence.args.length !== 1 || sequence.builderOperators.length'), "Exit Inverse must not require its contents to be grouped first");
+assert(playerJs.includes('collapseCompletedIntegratedBuilderNode'), "Submit must validate unresolved sequences nested inside inverses");
 assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
@@ -85,12 +88,13 @@ const fakeContext = {
 };
 renderer.layoutExpressionWithSettings(pending, fakeContext, renderer.SETTINGS, 20, 20);
 assert(pending.layout.builderOperatorBoxes.length === 1, "Pending builder operations must receive tappable layout boxes");
-assert(pending.args[1].left() > pending.args[0].right(), "Each pending value must be fully to the right of the previous value");
-assert(pending.args[1].top() > pending.args[0].bottom(), "Each pending value must be fully below the previous value");
-assert(pending.layout.builderOperatorBoxes[0].x > pending.args[0].right(), "A pending operator must remain after the previous value");
-assert(pending.layout.builderOperatorBoxes[0].x + pending.layout.builderOperatorBoxes[0].width < pending.args[1].left(), "A pending operator must remain before the next value");
-assert(pending.layout.builderOperatorBoxes[0].y > pending.args[0].bottom(), "A pending operator must remain below the previous value");
-assert(pending.layout.builderOperatorBoxes[0].y + pending.layout.builderOperatorBoxes[0].height < pending.args[1].top(), "A pending operator must remain above the next value");
+const nearlyEqual = (left, right) => Math.abs(left - right) < 0.001;
+const pendingPadding = pending.layout.builderItemPadding;
+const pendingOperator = pending.layout.builderOperatorBoxes[0];
+assert(nearlyEqual(pendingOperator.x, pending.args[0].right() + pendingPadding), "The previous entry's lower-right box corner must touch the operator's upper-left corner horizontally");
+assert(nearlyEqual(pendingOperator.y, pending.args[0].bottom() + pendingPadding), "The previous entry's lower-right box corner must touch the operator's upper-left corner vertically");
+assert(nearlyEqual(pendingOperator.x + pendingOperator.width, pending.args[1].left() - pendingPadding), "The operator's lower-right corner must touch the next entry's upper-left corner horizontally");
+assert(nearlyEqual(pendingOperator.y + pendingOperator.height, pending.args[1].top() - pendingPadding), "The operator's lower-right corner must touch the next entry's upper-left corner vertically");
 const inversePending = new renderer.ExprNode("inv", [pending]);
 inversePending.isBuilderInverseOpen = true;
 const outerPending = new renderer.ExprNode("sum", [inversePending]);
@@ -103,14 +107,19 @@ const inverseDiagonal = new renderer.ExprNode("sum", [value("2"), inversePending
 inverseDiagonal.isBuilderSequence = true;
 inverseDiagonal.builderOperators = ["sum", "prod"];
 renderer.layoutExpressionWithSettings(inverseDiagonal, fakeContext, renderer.SETTINGS, 20, 20);
-assert(inversePending.left() > inverseDiagonal.args[0].right() && inversePending.top() > inverseDiagonal.args[0].bottom(), "An inverse must sit fully below and to the right of its previous entry");
-assert(inverseDiagonal.args[2].left() > inversePending.right() && inverseDiagonal.args[2].top() > inversePending.bottom(), "The entry after an inverse must sit fully below and to its right");
+const inversePadding = inverseDiagonal.layout.builderItemPadding;
+const beforeInverseOperator = inverseDiagonal.layout.builderOperatorBoxes[0];
+const afterInverseOperator = inverseDiagonal.layout.builderOperatorBoxes[1];
+assert(nearlyEqual(beforeInverseOperator.x + beforeInverseOperator.width, inversePending.left() - inversePadding) && nearlyEqual(beforeInverseOperator.y + beforeInverseOperator.height, inversePending.top() - inversePadding), "An inverse's entry box must touch the preceding operator corner");
+assert(nearlyEqual(afterInverseOperator.x, inversePending.right() + inversePadding) && nearlyEqual(afterInverseOperator.y, inversePending.bottom() + inversePadding), "An inverse's entry box must touch the following operator corner");
 const dangling = new renderer.ExprNode("sum", [value("2")]);
 dangling.isBuilderSequence = true;
 dangling.builderOperators = ["sum"];
 renderer.layoutExpressionWithSettings(dangling, fakeContext, renderer.SETTINGS, 20, 20);
 assert(dangling.layout.builderPlaceholderBox, "A dangling operation must show the dotted box for its next value");
 assert(dangling.layout.builderOperatorBoxes[0].groupable === false, "A dangling operation must not group before its next value exists");
+const danglingOperator = dangling.layout.builderOperatorBoxes[0];
+assert(nearlyEqual(danglingOperator.x + danglingOperator.width, dangling.layout.builderPlaceholderBox.x) && nearlyEqual(danglingOperator.y + danglingOperator.height, dangling.layout.builderPlaceholderBox.y), "A dangling operation must touch the dotted next-entry box corner");
 
 for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
   const level = JSON.parse(read(path.join("levels", file)));

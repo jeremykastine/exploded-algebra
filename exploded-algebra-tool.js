@@ -5192,15 +5192,16 @@ ctx.font = SETTINGS.textFont;
 
         function drawBuilderSequence(builder) {
             drawNodeRecursive(builder.root);
-            const activeSequence = getIntegratedBuilderSequence(builder);
             const demoStep = getCurrentDemoStep();
-            if (isDemoModeActive() && demoStep && demoStep.type === "builder" && demoStep.action === "groupOperator" && activeSequence) {
-                const target = (activeSequence.layout.builderOperatorBoxes || [])[Number(demoStep.value)];
-                if (target) {
+            if (isDemoModeActive() && demoStep && demoStep.type === "builder" && demoStep.action === "groupOperator") {
+                const targetSpec = parseIntegratedBuilderOperatorTarget(demoStep.value, builder);
+                const targetSequence = targetSpec ? getNodeAtPath(builder.root, targetSpec.path) : null;
+                const targetBox = targetSequence && (targetSequence.layout.builderOperatorBoxes || [])[targetSpec.index];
+                if (targetBox) {
                     ctx.save();
                     ctx.strokeStyle = "rgb(255, 196, 0)";
                     ctx.lineWidth = 4;
-                    ctx.strokeRect(target.x - 5, target.y - 5, target.width + 10, target.height + 10);
+                    ctx.strokeRect(targetBox.x - 5, targetBox.y - 5, targetBox.width + 10, targetBox.height + 10);
                     ctx.restore();
                 }
             }
@@ -8829,8 +8830,8 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence || builder.currentPath.length < 2) return false;
-            if (builderSequenceExpectsValue(sequence) || sequence.args.length !== 1 || sequence.builderOperators.length) {
-                uiState.message = "Resolve everything inside the inverse before exiting it.";
+            if (builderSequenceExpectsValue(sequence)) {
+                uiState.message = "Finish the current entry inside the inverse before exiting it.";
                 renderToolArea();
                 return false;
             }
@@ -8838,56 +8839,127 @@ ctx.font = SETTINGS.textFont;
             finalizeIntegratedBuilderValue(sequence);
             const inversePath = builder.currentPath.slice(0, -1);
             const inverse = getNodeAtPath(builder.root, inversePath);
-            inverse.args[0] = sequence.args[0];
+            if (!inverse || inverse.type !== "inv") return false;
             inverse.isBuilderInverseOpen = false;
-            inverse.isBuilderActive = true;
-            builder.currentPath = builder.currentPath.slice(0, -2);
+            inverse.isBuilderActive = false;
+            let parentSequencePath = inversePath.slice(0, -1);
+            while (parentSequencePath.length && !(getNodeAtPath(builder.root, parentSequencePath) || {}).isBuilderSequence) {
+                parentSequencePath = parentSequencePath.slice(0, -1);
+            }
+            const parentSequence = getNodeAtPath(builder.root, parentSequencePath);
+            if (!parentSequence || !parentSequence.isBuilderSequence) return false;
+            const activeEntryIndex = inversePath[parentSequencePath.length];
+            const activeEntry = parentSequence.args[activeEntryIndex];
+            if (activeEntry) activeEntry.isBuilderActive = true;
+            builder.currentPath = parentSequencePath;
             refreshExpressionBuilderPreview();
             return true;
         }
 
-        function getIntegratedBuilderOperatorIndex(x, y, pointerType = "mouse") {
-            const builder = uiState.expressionBuilder;
-            const sequence = getIntegratedBuilderSequence(builder);
-            if (!sequence) return -1;
-            const margin = (pointerType === "mouse" ? 8 : 18) / Math.max(0.12, workspaceZoom);
-            let closestIndex = -1;
-            let closestDistance = Infinity;
-            (sequence.layout.builderOperatorBoxes || []).forEach((box, index) => {
-                if (!box.groupable) return;
-                const left = box.x - margin;
-                const right = box.x + box.width + margin;
-                const top = box.y - margin;
-                const bottom = box.y + box.height + margin;
-                const dx = x < left ? left - x : x > right ? x - right : 0;
-                const dy = y < top ? top - y : y > bottom ? y - bottom : 0;
-                const inside = dx === 0 && dy === 0;
-                const distance = inside
-                    ? Math.hypot(x - (box.x + box.width / 2), y - (box.y + box.height / 2))
-                    : Infinity;
-                if (distance < closestDistance) {
-                    closestIndex = index;
-                    closestDistance = distance;
-                }
+        function visitIntegratedBuilderSequences(node, path, visit) {
+            if (!node) return;
+            if (node.isBuilderSequence) {
+                visit(node, path);
+            }
+            (node.args || []).forEach((child, index) => {
+                visitIntegratedBuilderSequences(child, path.concat(index), visit);
             });
-            return closestIndex;
         }
 
-        function groupIntegratedBuilderOperator(index) {
+        function encodeIntegratedBuilderOperatorTarget(path, index, builder = uiState.expressionBuilder) {
+            if (pathsEqual(path, builder && builder.currentPath)) {
+                return String(index);
+            }
+            return `${path.join(".")}|${index}`;
+        }
+
+        function parseIntegratedBuilderOperatorTarget(value, builder = uiState.expressionBuilder) {
+            const text = String(value ?? "");
+            if (/^\d+$/.test(text)) {
+                return {
+                    path: builder && Array.isArray(builder.currentPath) ? builder.currentPath.slice() : [],
+                    index: Number(text)
+                };
+            }
+            const separator = text.lastIndexOf("|");
+            if (separator < 0 || !/^\d+$/.test(text.slice(separator + 1))) return null;
+            const pathText = text.slice(0, separator);
+            if (pathText && !/^\d+(\.\d+)*$/.test(pathText)) return null;
+            return {
+                path: pathText ? pathText.split(".").map(Number) : [],
+                index: Number(text.slice(separator + 1))
+            };
+        }
+
+        function getIntegratedBuilderOperatorTarget(x, y, pointerType = "mouse") {
             const builder = uiState.expressionBuilder;
-            const sequence = getIntegratedBuilderSequence(builder);
-            if (!sequence || !Number.isInteger(index) || index < 0 || index >= sequence.builderOperators.length) return false;
+            if (!isIntegratedExpressionBuilder(builder)) return null;
+            const margin = (pointerType === "mouse" ? 8 : 18) / Math.max(0.12, workspaceZoom);
+            let closestTarget = null;
+            let closestDistance = Infinity;
+            visitIntegratedBuilderSequences(builder.root, [], (sequence, path) => {
+                (sequence.layout.builderOperatorBoxes || []).forEach((box, index) => {
+                    if (!box.groupable) return;
+                    const left = box.x - margin;
+                    const right = box.x + box.width + margin;
+                    const top = box.y - margin;
+                    const bottom = box.y + box.height + margin;
+                    const dx = x < left ? left - x : x > right ? x - right : 0;
+                    const dy = y < top ? top - y : y > bottom ? y - bottom : 0;
+                    const inside = dx === 0 && dy === 0;
+                    const distance = inside
+                        ? Math.hypot(x - (box.x + box.width / 2), y - (box.y + box.height / 2))
+                        : Infinity;
+                    if (distance < closestDistance) {
+                        closestTarget = { path: path.slice(), index };
+                        closestDistance = distance;
+                    }
+                });
+            });
+            return closestTarget;
+        }
+
+        function findNodePathByReference(node, target, path = []) {
+            if (node === target) return path;
+            for (let index = 0; node && index < node.args.length; index++) {
+                const found = findNodePathByReference(node.args[index], target, path.concat(index));
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function flattenIntegratedBuilderOperation(type, left, right) {
+            const args = [];
+            [left, right].forEach(node => {
+                if (node && node.type === type && !node.isBuilderSequence) {
+                    args.push(...node.args);
+                } else {
+                    args.push(node);
+                }
+            });
+            return new ExprNode(type, args, null);
+        }
+
+        function groupIntegratedBuilderOperator(value) {
+            const builder = uiState.expressionBuilder;
+            const activeSequence = getIntegratedBuilderSequence(builder);
+            const target = parseIntegratedBuilderOperatorTarget(value, builder);
+            const sequence = target ? getNodeAtPath(builder.root, target.path) : null;
+            const index = target ? target.index : -1;
+            if (!sequence || !sequence.isBuilderSequence || !Number.isInteger(index) || index < 0 || index >= sequence.builderOperators.length) return false;
             const type = sequence.builderOperators[index];
             const left = sequence.args[index];
             const right = sequence.args[index + 1];
-            if (!left || !right || left.isBuilderInverseOpen || right.isBuilderInverseOpen) return false;
+            if (!left || !right) return false;
             pushExpressionBuilderUndoState();
-            finalizeIntegratedBuilderValue(sequence);
-            // Resolve only the separator that was tapped. Keeping the two
-            // neighboring blocks intact prevents an earlier sum/product from
-            // being flattened and redrawn as part of this grouping action.
-            sequence.args.splice(index, 2, new ExprNode(type, [left, right], null));
+            left.isBuilderActive = false;
+            right.isBuilderActive = false;
+            sequence.args.splice(index, 2, flattenIntegratedBuilderOperation(type, left, right));
             sequence.builderOperators.splice(index, 1);
+            const relocatedActivePath = findNodePathByReference(builder.root, activeSequence);
+            if (relocatedActivePath) {
+                builder.currentPath = relocatedActivePath;
+            }
             refreshExpressionBuilderPreview();
             return true;
         }
@@ -9142,16 +9214,29 @@ ctx.font = SETTINGS.textFont;
             return evaluateBuilderWholeNumberExpression(builder.originalSelectedNode);
         }
 
+        function collapseCompletedIntegratedBuilderNode(node) {
+            if (!node || node.isBuilderInverseOpen) return null;
+            if (node.isBuilderSequence) {
+                if (builderSequenceExpectsValue(node) || node.builderOperators.length || node.args.length !== 1) {
+                    return null;
+                }
+                return collapseCompletedIntegratedBuilderNode(node.args[0]);
+            }
+            const completedArgs = [];
+            for (const child of node.args) {
+                const completed = collapseCompletedIntegratedBuilderNode(child);
+                if (!completed) return null;
+                completedArgs.push(completed);
+            }
+            node.args = completedArgs;
+            return node;
+        }
+
         function getIntegratedBuilderCompletedRoot(builder = uiState.expressionBuilder) {
             if (!isIntegratedExpressionBuilder(builder) || builder.currentPath.length || !builder.root.isBuilderSequence) {
                 return null;
             }
-            const sequence = builder.root;
-            if (builderSequenceExpectsValue(sequence) || sequence.builderOperators.length || sequence.args.length !== 1) {
-                return null;
-            }
-            const root = sequence.args[0];
-            return root && !root.isBuilderInverseOpen ? root : null;
+            return collapseCompletedIntegratedBuilderNode(cloneBuilderNodeForHistory(builder.root));
         }
 
         function submitExpressionBuilder() {
@@ -10411,7 +10496,7 @@ ctx.font = SETTINGS.textFont;
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "exitInverse") {
                 result = exitIntegratedBuilderInverse();
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "groupOperator") {
-                result = groupIntegratedBuilderOperator(Number(value));
+                result = groupIntegratedBuilderOperator(value);
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "undo") {
                 result = undoExpressionBuilderStep();
             } else if (action === "digit") {
@@ -11392,9 +11477,12 @@ function renderToolArea() {
                 } else if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
                 } else if (pointerStart.mode === "builderOperator") {
-                    const index = getIntegratedBuilderOperatorIndex(point.x, point.y, pointerStart.pointerType);
-                    if (index >= 0) {
-                        performBuilderAction("groupOperator", String(index));
+                    const target = getIntegratedBuilderOperatorTarget(point.x, point.y, pointerStart.pointerType);
+                    if (target) {
+                        performBuilderAction(
+                            "groupOperator",
+                            encodeIntegratedBuilderOperatorTarget(target.path, target.index)
+                        );
                     }
                 } else {
                     selectFromWorkspaceTap(point.x, point.y, pointerStart.pointerType);

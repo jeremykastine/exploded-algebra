@@ -700,8 +700,7 @@ function measureNodeWithContext(node, drawingContext, settings) {
             measureNodeWithContext(child, drawingContext, settings);
         }
         const itemPadding = Math.max(7, gap * 0.45);
-        const diagonalGapX = Math.max(58, gap * 3.6);
-        const diagonalGapY = Math.max(58, gap * 3.6);
+        const operatorSize = Math.max(30, parseFontSize(settings.textFont) * 1.5);
         const minimumHeight = Math.max(28, parseFontSize(settings.textFont) * 1.4);
         const offsets = [];
         let cursorX = itemPadding;
@@ -712,16 +711,16 @@ function measureNodeWithContext(node, drawingContext, settings) {
             offsets.push({ x: cursorX, y: cursorY });
             right = Math.max(right, cursorX + child.layout.width + itemPadding);
             bottom = Math.max(bottom, cursorY + child.layout.height + itemPadding);
-            cursorX += child.layout.width + itemPadding * 2 + diagonalGapX;
-            cursorY += child.layout.height + itemPadding * 2 + diagonalGapY;
+            cursorX += child.layout.width + itemPadding * 2 + operatorSize;
+            cursorY += child.layout.height + itemPadding * 2 + operatorSize;
         });
         const expectsValue = node.args.length === 0 || (node.builderOperators || []).length >= node.args.length;
         const placeholderWidth = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
         const placeholderHeight = minimumHeight;
         const placeholder = expectsValue
             ? {
-                x: node.args.length ? cursorX : itemPadding,
-                y: node.args.length ? cursorY : itemPadding,
+                x: node.args.length ? cursorX - itemPadding : itemPadding,
+                y: node.args.length ? cursorY - itemPadding : itemPadding,
                 width: placeholderWidth,
                 height: placeholderHeight
             }
@@ -733,6 +732,7 @@ function measureNodeWithContext(node, drawingContext, settings) {
         node.layout.width = Math.max(32 + itemPadding * 2, right);
         node.layout.height = Math.max(minimumHeight + itemPadding * 2, bottom);
         node.layout.builderItemPadding = itemPadding;
+        node.layout.builderOperatorSize = operatorSize;
         node.layout.builderItemOffsets = offsets;
         node.layout.builderPlaceholderBox = placeholder;
         node.layout.childBoxes = [];
@@ -889,7 +889,7 @@ function placeNodeWithSettings(node, x, y, settings) {
             node.layout.childBoxes.push(childBox(child));
         });
         const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
-        const operatorSize = Math.max(30, parseFontSize(settings.textFont) * 1.5);
+        const operatorSize = node.layout.builderOperatorSize || Math.max(30, parseFontSize(settings.textFont) * 1.5);
         const placeholder = node.layout.builderPlaceholderBox
             ? {
                 ...node.layout.builderPlaceholderBox,
@@ -901,19 +901,12 @@ function placeNodeWithSettings(node, x, y, settings) {
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
             const right = node.args[index + 1];
-            const nextBox = right
-                ? { left: right.left() - itemPadding, top: right.top() - itemPadding }
-                : placeholder && index === node.args.length - 1
-                    ? { left: placeholder.x, top: placeholder.y }
-                    : null;
-            if (!left || !nextBox) {
+            if (!left || (!right && !(placeholder && index === node.args.length - 1))) {
                 return null;
             }
-            const centerX = (left.right() + itemPadding + nextBox.left) / 2;
-            const centerY = (left.bottom() + itemPadding + nextBox.top) / 2;
             return {
-                x: centerX - operatorSize / 2,
-                y: centerY - operatorSize / 2,
+                x: left.right() + itemPadding,
+                y: left.bottom() + itemPadding,
                 width: operatorSize,
                 height: operatorSize,
                 operator,
