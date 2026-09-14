@@ -32,25 +32,28 @@ assert(builderJs.includes("Before completion") && builderJs.includes("After comp
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
 assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
-assert(builderJs.includes("press All Done, then group them"), "Initial-expression guidance must describe the two-phase flow");
+assert(builderJs.includes("tap each operation in the expression"), "Initial-expression guidance must describe integrated grouping");
 assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states must be converted into curation candidates");
 assert(builderJs.includes('candidate.included !== false'), "Hidden candidate steps must be omitted from export");
 assert(builderJs.includes("candidates[candidates.length - 1].required = true"), "The final expression must remain an included completion target");
 assert(playerHtml.includes("authoring-initial-session.expression-builder-active"), "Initial authoring must collapse the conventional-notation row");
-assert(playerHtml.includes("authoring-initial-session:not(.builder-grouping-mode) .quadrant-menu"), "Initial entry may hide settings until grouping begins");
-assert(playerHtml.includes("builder-grouping-mode:not(.builder-grouping-selection) .quadrant-menu"), "Grouping must expose the familiar settings control");
-assert(playerHtml.includes("builder-grouping-mode:not(.builder-grouping-selection) .quadrant-tools"), "Grouping must expose the familiar workspace tools");
+assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
 assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
-assert(playerJs.includes('flowVersion: 2'), "Shared Expression Builder must use the two-phase flow");
-assert(playerJs.includes('data-builder-action="newEntry"'), "Entry phase must provide New Entry");
-assert(playerJs.includes('data-builder-action="allDone"'), "Entry phase must provide All Done");
-assert(playerJs.includes('data-builder-action="group" data-value="sum"'), "Grouping phase must provide Sum for multi-item selections");
-assert(playerJs.includes('data-builder-action="group" data-value="prod"'), "Grouping phase must provide Product for multi-item selections");
-assert(playerJs.includes('data-builder-action="group" data-value="inv"'), "Grouping phase must provide Inverse for single-item selections");
+assert(playerJs.includes('flowVersion: 3'), "Shared Expression Builder must use the integrated flow");
+assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated entry must provide pending Sum and Product operations");
+assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
+assert(playerJs.includes('data-builder-action="exitInverse"'), "Integrated entry must provide Exit Inverse");
+assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must provide a unified Undo control");
+assert(playerJs.includes('performBuilderAction("groupOperator"'), "Canvas operation taps must resolve grouping");
+assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
+assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
+assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
+assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
+assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
 assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
@@ -69,6 +72,27 @@ const cases = [
 for (const [expression, expected] of cases) {
   assert(renderer.expressionToKatex(expression) === expected, `Unexpected KaTeX generation for ${expected}`);
 }
+
+const pending = new renderer.ExprNode("sum", [value("2"), value("x")]);
+pending.isBuilderSequence = true;
+pending.builderOperators = ["prod"];
+const fakeContext = {
+  font: "20px Verdana",
+  measureText(text) {
+    return { width: String(text).length * 12, actualBoundingBoxLeft: 0, actualBoundingBoxRight: String(text).length * 12, actualBoundingBoxAscent: 15, actualBoundingBoxDescent: 5 };
+  }
+};
+renderer.layoutExpressionWithSettings(pending, fakeContext, renderer.SETTINGS, 20, 20);
+assert(pending.layout.builderOperatorBoxes.length === 1, "Pending builder operations must receive tappable layout boxes");
+assert(pending.args[1].top() > pending.args[0].top(), "Pending builder values must retain the diagonal layout");
+const inversePending = new renderer.ExprNode("inv", [pending]);
+inversePending.isBuilderInverseOpen = true;
+const outerPending = new renderer.ExprNode("sum", [inversePending]);
+outerPending.isBuilderSequence = true;
+outerPending.builderOperators = [];
+renderer.layoutExpressionWithSettings(outerPending, fakeContext, renderer.SETTINGS, 20, 20);
+assert(inversePending.args[0].layout.builderOperatorBoxes.length === 1, "Open inverses must retain a nested tappable builder sequence");
+assert(inversePending.layout.width > inversePending.args[0].layout.width, "The inverse template must surround its pending contents");
 
 for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
   const level = JSON.parse(read(path.join("levels", file)));

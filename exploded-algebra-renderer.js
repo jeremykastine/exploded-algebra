@@ -695,6 +695,34 @@ function measureNodeWithContext(node, drawingContext, settings) {
     const gap = getComponentGap(settings);
     const operatorHalf = getOperatorHalfSize(settings);
 
+    if (node.isBuilderSequence) {
+        for (const child of node.args) {
+            measureNodeWithContext(child, drawingContext, settings);
+        }
+        const diagonalGap = Math.max(48, gap * 3);
+        const minimumHeight = Math.max(28, parseFontSize(settings.textFont) * 1.4);
+        const offsets = [];
+        let cursorX = 0;
+        let cursorY = 0;
+        let right = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
+        let bottom = minimumHeight;
+        node.args.forEach(child => {
+            offsets.push({ x: cursorX, y: cursorY });
+            right = Math.max(right, cursorX + child.layout.width);
+            bottom = Math.max(bottom, cursorY + child.layout.height);
+            cursorX += child.layout.width + diagonalGap;
+            cursorY += Math.max(34, Math.min(72, child.layout.height * 0.35 + 28));
+        });
+        node.layout.width = Math.max(32, right);
+        node.layout.height = Math.max(minimumHeight, bottom);
+        node.layout.builderItemOffsets = offsets;
+        node.layout.childBoxes = [];
+        node.layout.builderOperatorBoxes = [];
+        node.layout.vLines = [0, node.layout.width];
+        node.layout.hLines = [0, node.layout.height];
+        return;
+    }
+
     if (node.type === "value") {
         if (node.isBuilderPlaceholder) {
             node.layout.textWidth = Math.max(1, Number(settings.builderPlaceholderWidth) || 24);
@@ -834,6 +862,33 @@ function placeNodeWithSettings(node, x, y, settings) {
     node.layout.y = y;
     node.layout.childBoxes = [];
 
+    if (node.isBuilderSequence) {
+        const offsets = node.layout.builderItemOffsets || [];
+        node.args.forEach((child, index) => {
+            const offset = offsets[index] || { x: 0, y: 0 };
+            placeNodeWithSettings(child, x + offset.x, y + offset.y, settings);
+            node.layout.childBoxes.push(childBox(child));
+        });
+        const operatorSize = Math.max(26, parseFontSize(settings.textFont) * 1.35);
+        node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
+            const left = node.args[index];
+            const right = node.args[index + 1];
+            if (!left || !right) {
+                return null;
+            }
+            const centerX = (left.right() + right.left()) / 2;
+            const centerY = (left.top() + left.bottom() + right.top() + right.bottom()) / 4;
+            return {
+                x: centerX - operatorSize / 2,
+                y: centerY - operatorSize / 2,
+                width: operatorSize,
+                height: operatorSize,
+                operator
+            };
+        }).filter(Boolean);
+        return;
+    }
+
     if (node.type === "value") {
         return;
     }
@@ -899,6 +954,36 @@ function drawNodeRecursiveToContext(
     nodeForeground = () => null,
     separatorForeground = () => null
 ) {
+    if (node.isBuilderSequence) {
+        for (const child of node.args) {
+            drawNodeRecursiveToContext(
+                child,
+                drawingContext,
+                settings,
+                separatorHidden,
+                separatorFill,
+                nodeForeground,
+                separatorForeground
+            );
+        }
+        const foreground = nodeForeground(node) || settings.expressionStrokeFill || "black";
+        drawingContext.save();
+        drawingContext.fillStyle = foreground;
+        drawingContext.font = settings.textFont;
+        drawingContext.textAlign = "center";
+        drawingContext.textBaseline = "middle";
+        (node.layout.builderOperatorBoxes || []).forEach(box => {
+            drawingContext.fillText(box.operator === "prod" ? "·" : "+", box.x + box.width / 2, box.y + box.height / 2);
+        });
+        if (!node.args.length) {
+            drawingContext.strokeStyle = foreground;
+            drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings));
+            drawingContext.setLineDash([4, 4]);
+            drawingContext.strokeRect(node.left(), node.top(), node.layout.width, node.layout.height);
+        }
+        drawingContext.restore();
+        return;
+    }
     if (node.type === "inv") {
         drawInverseBackgroundToContext(node, drawingContext, settings);
         const denominatorColor = settings.inverseDenominatorColor || "black";

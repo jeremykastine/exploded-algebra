@@ -6,7 +6,7 @@
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
   const FORMAT_VERSION = 1;
   const DRAFT_VERSION = 2;
-  const VARIABLES = ["x", "y", "z", "a", "b", "c"];
+  const VARIABLES = ["x"];
 
   const byId = id => document.getElementById(id);
   const workspace = byId("eaWorkspace");
@@ -239,8 +239,7 @@
   }
 
   function inferVariables(expression) {
-    return Array.from(new Set((String(expression || "").match(/[A-Za-z][A-Za-z0-9_]*/g) || [])
-      .filter(value => !value.startsWith("__ea_")))).sort();
+    return /(^|[^A-Za-z])x([^A-Za-z]|$)/.test(String(expression || "")) ? ["x"] : [];
   }
 
   function getLevelBase() {
@@ -364,7 +363,7 @@
     }
     draft.initial.workspaceSnapshot = snapshot;
     document.body.classList.add("phase2-expression-building");
-    byId("initialExpressionStatus").textContent = "Enter the values, press All Done, then group them into one expression.";
+    byId("initialExpressionStatus").textContent = "Enter values and operations, then tap each operation in the expression to resolve its grouping.";
   }
 
   async function preparePhase3() {
