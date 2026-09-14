@@ -5193,13 +5193,6 @@ ctx.font = SETTINGS.textFont;
         function drawBuilderSequence(builder) {
             drawNodeRecursive(builder.root);
             const activeSequence = getIntegratedBuilderSequence(builder);
-            const active = activeSequence && activeSequence.args.find(item => item.isBuilderActive);
-            if (active) {
-                drawRoundedNodeHighlight(active, "rgba(10, 70, 210, 0.95)", 3, 6);
-            }
-            if (activeSequence && activeSequence.args.length === 0) {
-                drawRoundedNodeHighlight(activeSequence, "rgba(10, 70, 210, 0.95)", 2, 4);
-            }
             const demoStep = getCurrentDemoStep();
             if (isDemoModeActive() && demoStep && demoStep.type === "builder" && demoStep.action === "groupOperator" && activeSequence) {
                 const target = (activeSequence.layout.builderOperatorBoxes || [])[Number(demoStep.value)];
@@ -8789,7 +8782,9 @@ ctx.font = SETTINGS.textFont;
             }
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
-            sequence.args.push(valueNode(String(value)));
+            const active = valueNode(String(value));
+            active.isBuilderActive = true;
+            sequence.args.push(active);
             refreshExpressionBuilderPreview();
             return true;
         }
@@ -8845,6 +8840,7 @@ ctx.font = SETTINGS.textFont;
             const inverse = getNodeAtPath(builder.root, inversePath);
             inverse.args[0] = sequence.args[0];
             inverse.isBuilderInverseOpen = false;
+            inverse.isBuilderActive = true;
             builder.currentPath = builder.currentPath.slice(0, -2);
             refreshExpressionBuilderPreview();
             return true;
@@ -8858,6 +8854,7 @@ ctx.font = SETTINGS.textFont;
             let closestIndex = -1;
             let closestDistance = Infinity;
             (sequence.layout.builderOperatorBoxes || []).forEach((box, index) => {
+                if (!box.groupable) return;
                 const left = box.x - margin;
                 const right = box.x + box.width + margin;
                 const top = box.y - margin;
@@ -8886,8 +8883,10 @@ ctx.font = SETTINGS.textFont;
             if (!left || !right || left.isBuilderInverseOpen || right.isBuilderInverseOpen) return false;
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
-            const groupedArgs = [left, right].flatMap(node => node.type === type && !node.isBuilderSequence ? node.args : [node]);
-            sequence.args.splice(index, 2, new ExprNode(type, groupedArgs, null));
+            // Resolve only the separator that was tapped. Keeping the two
+            // neighboring blocks intact prevents an earlier sum/product from
+            // being flattened and redrawn as part of this grouping action.
+            sequence.args.splice(index, 2, new ExprNode(type, [left, right], null));
             sequence.builderOperators.splice(index, 1);
             refreshExpressionBuilderPreview();
             return true;

@@ -699,23 +699,42 @@ function measureNodeWithContext(node, drawingContext, settings) {
         for (const child of node.args) {
             measureNodeWithContext(child, drawingContext, settings);
         }
-        const diagonalGap = Math.max(48, gap * 3);
+        const itemPadding = Math.max(7, gap * 0.45);
+        const diagonalGapX = Math.max(58, gap * 3.6);
+        const diagonalGapY = Math.max(58, gap * 3.6);
         const minimumHeight = Math.max(28, parseFontSize(settings.textFont) * 1.4);
         const offsets = [];
-        let cursorX = 0;
-        let cursorY = 0;
-        let right = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
-        let bottom = minimumHeight;
+        let cursorX = itemPadding;
+        let cursorY = itemPadding;
+        let right = 0;
+        let bottom = 0;
         node.args.forEach(child => {
             offsets.push({ x: cursorX, y: cursorY });
-            right = Math.max(right, cursorX + child.layout.width);
-            bottom = Math.max(bottom, cursorY + child.layout.height);
-            cursorX += child.layout.width + diagonalGap;
-            cursorY += Math.max(34, Math.min(72, child.layout.height * 0.35 + 28));
+            right = Math.max(right, cursorX + child.layout.width + itemPadding);
+            bottom = Math.max(bottom, cursorY + child.layout.height + itemPadding);
+            cursorX += child.layout.width + itemPadding * 2 + diagonalGapX;
+            cursorY += child.layout.height + itemPadding * 2 + diagonalGapY;
         });
-        node.layout.width = Math.max(32, right);
-        node.layout.height = Math.max(minimumHeight, bottom);
+        const expectsValue = node.args.length === 0 || (node.builderOperators || []).length >= node.args.length;
+        const placeholderWidth = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
+        const placeholderHeight = minimumHeight;
+        const placeholder = expectsValue
+            ? {
+                x: node.args.length ? cursorX : itemPadding,
+                y: node.args.length ? cursorY : itemPadding,
+                width: placeholderWidth,
+                height: placeholderHeight
+            }
+            : null;
+        if (placeholder) {
+            right = Math.max(right, placeholder.x + placeholder.width + itemPadding);
+            bottom = Math.max(bottom, placeholder.y + placeholder.height + itemPadding);
+        }
+        node.layout.width = Math.max(32 + itemPadding * 2, right);
+        node.layout.height = Math.max(minimumHeight + itemPadding * 2, bottom);
+        node.layout.builderItemPadding = itemPadding;
         node.layout.builderItemOffsets = offsets;
+        node.layout.builderPlaceholderBox = placeholder;
         node.layout.childBoxes = [];
         node.layout.builderOperatorBoxes = [];
         node.layout.vLines = [0, node.layout.width];
@@ -869,21 +888,36 @@ function placeNodeWithSettings(node, x, y, settings) {
             placeNodeWithSettings(child, x + offset.x, y + offset.y, settings);
             node.layout.childBoxes.push(childBox(child));
         });
-        const operatorSize = Math.max(26, parseFontSize(settings.textFont) * 1.35);
+        const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
+        const operatorSize = Math.max(30, parseFontSize(settings.textFont) * 1.5);
+        const placeholder = node.layout.builderPlaceholderBox
+            ? {
+                ...node.layout.builderPlaceholderBox,
+                x: x + node.layout.builderPlaceholderBox.x,
+                y: y + node.layout.builderPlaceholderBox.y
+            }
+            : null;
+        node.layout.builderPlaceholderBox = placeholder;
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
             const right = node.args[index + 1];
-            if (!left || !right) {
+            const nextBox = right
+                ? { left: right.left() - itemPadding, top: right.top() - itemPadding }
+                : placeholder && index === node.args.length - 1
+                    ? { left: placeholder.x, top: placeholder.y }
+                    : null;
+            if (!left || !nextBox) {
                 return null;
             }
-            const centerX = (left.right() + right.left()) / 2;
-            const centerY = (left.top() + left.bottom() + right.top() + right.bottom()) / 4;
+            const centerX = (left.right() + itemPadding + nextBox.left) / 2;
+            const centerY = (left.bottom() + itemPadding + nextBox.top) / 2;
             return {
                 x: centerX - operatorSize / 2,
                 y: centerY - operatorSize / 2,
                 width: operatorSize,
                 height: operatorSize,
-                operator
+                operator,
+                groupable: !!right
             };
         }).filter(Boolean);
         return;
@@ -967,19 +1001,32 @@ function drawNodeRecursiveToContext(
             );
         }
         const foreground = nodeForeground(node) || settings.expressionStrokeFill || "black";
+        const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
         drawingContext.save();
         drawingContext.fillStyle = foreground;
+        drawingContext.strokeStyle = foreground;
+        drawingContext.lineWidth = Math.max(1.25, getStructuralStrokeWidth(settings));
+        node.args.forEach(child => {
+            drawingContext.setLineDash(child.isBuilderActive ? [4, 4] : []);
+            drawingContext.strokeRect(
+                child.left() - itemPadding,
+                child.top() - itemPadding,
+                child.layout.width + itemPadding * 2,
+                child.layout.height + itemPadding * 2
+            );
+        });
         drawingContext.font = settings.textFont;
         drawingContext.textAlign = "center";
         drawingContext.textBaseline = "middle";
         (node.layout.builderOperatorBoxes || []).forEach(box => {
+            drawingContext.setLineDash([]);
+            drawingContext.strokeRect(box.x, box.y, box.width, box.height);
             drawingContext.fillText(box.operator === "prod" ? "·" : "+", box.x + box.width / 2, box.y + box.height / 2);
         });
-        if (!node.args.length) {
-            drawingContext.strokeStyle = foreground;
-            drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings));
+        const placeholder = node.layout.builderPlaceholderBox;
+        if (placeholder) {
             drawingContext.setLineDash([4, 4]);
-            drawingContext.strokeRect(node.left(), node.top(), node.layout.width, node.layout.height);
+            drawingContext.strokeRect(placeholder.x, placeholder.y, placeholder.width, placeholder.height);
         }
         drawingContext.restore();
         return;

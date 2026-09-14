@@ -49,6 +49,7 @@ assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entr
 assert(playerJs.includes('data-builder-action="exitInverse"'), "Integrated entry must provide Exit Inverse");
 assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must provide a unified Undo control");
 assert(playerJs.includes('performBuilderAction("groupOperator"'), "Canvas operation taps must resolve grouping");
+assert(playerJs.includes('new ExprNode(type, [left, right], null)'), "Grouping must resolve only the tapped operation without flattening neighboring groups");
 assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
@@ -84,7 +85,12 @@ const fakeContext = {
 };
 renderer.layoutExpressionWithSettings(pending, fakeContext, renderer.SETTINGS, 20, 20);
 assert(pending.layout.builderOperatorBoxes.length === 1, "Pending builder operations must receive tappable layout boxes");
-assert(pending.args[1].top() > pending.args[0].top(), "Pending builder values must retain the diagonal layout");
+assert(pending.args[1].left() > pending.args[0].right(), "Each pending value must be fully to the right of the previous value");
+assert(pending.args[1].top() > pending.args[0].bottom(), "Each pending value must be fully below the previous value");
+assert(pending.layout.builderOperatorBoxes[0].x > pending.args[0].right(), "A pending operator must remain after the previous value");
+assert(pending.layout.builderOperatorBoxes[0].x + pending.layout.builderOperatorBoxes[0].width < pending.args[1].left(), "A pending operator must remain before the next value");
+assert(pending.layout.builderOperatorBoxes[0].y > pending.args[0].bottom(), "A pending operator must remain below the previous value");
+assert(pending.layout.builderOperatorBoxes[0].y + pending.layout.builderOperatorBoxes[0].height < pending.args[1].top(), "A pending operator must remain above the next value");
 const inversePending = new renderer.ExprNode("inv", [pending]);
 inversePending.isBuilderInverseOpen = true;
 const outerPending = new renderer.ExprNode("sum", [inversePending]);
@@ -93,6 +99,18 @@ outerPending.builderOperators = [];
 renderer.layoutExpressionWithSettings(outerPending, fakeContext, renderer.SETTINGS, 20, 20);
 assert(inversePending.args[0].layout.builderOperatorBoxes.length === 1, "Open inverses must retain a nested tappable builder sequence");
 assert(inversePending.layout.width > inversePending.args[0].layout.width, "The inverse template must surround its pending contents");
+const inverseDiagonal = new renderer.ExprNode("sum", [value("2"), inversePending, value("x")]);
+inverseDiagonal.isBuilderSequence = true;
+inverseDiagonal.builderOperators = ["sum", "prod"];
+renderer.layoutExpressionWithSettings(inverseDiagonal, fakeContext, renderer.SETTINGS, 20, 20);
+assert(inversePending.left() > inverseDiagonal.args[0].right() && inversePending.top() > inverseDiagonal.args[0].bottom(), "An inverse must sit fully below and to the right of its previous entry");
+assert(inverseDiagonal.args[2].left() > inversePending.right() && inverseDiagonal.args[2].top() > inversePending.bottom(), "The entry after an inverse must sit fully below and to its right");
+const dangling = new renderer.ExprNode("sum", [value("2")]);
+dangling.isBuilderSequence = true;
+dangling.builderOperators = ["sum"];
+renderer.layoutExpressionWithSettings(dangling, fakeContext, renderer.SETTINGS, 20, 20);
+assert(dangling.layout.builderPlaceholderBox, "A dangling operation must show the dotted box for its next value");
+assert(dangling.layout.builderOperatorBoxes[0].groupable === false, "A dangling operation must not group before its next value exists");
 
 for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
   const level = JSON.parse(read(path.join("levels", file)));
