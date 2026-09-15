@@ -8861,15 +8861,22 @@ ctx.font = SETTINGS.textFont;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
-            if (!builderSequenceExpectsValue(sequence) && !(last && last.isBuilderActive && /^\d+$/.test(last.value))) {
+            const extendingNumber = last && last.isBuilderActive && /^\d+$/.test(last.value);
+            const autoMultiplyAfterNegativeOne = !builderSequenceExpectsValue(sequence) &&
+                last && String(last.value) === "-1";
+            if (!builderSequenceExpectsValue(sequence) && !extendingNumber && !autoMultiplyAfterNegativeOne) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
-            if (last && last.isBuilderActive && /^\d+$/.test(last.value)) {
+            if (extendingNumber) {
                 last.value += String(digit);
             } else {
+                if (autoMultiplyAfterNegativeOne) {
+                    finalizeIntegratedBuilderValue(sequence);
+                    sequence.builderOperators.push("prod");
+                }
                 const active = valueNode(String(digit));
                 active.isBuilderActive = true;
                 sequence.args.push(active);
@@ -8882,13 +8889,20 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            if (!builderSequenceExpectsValue(sequence)) {
+            const last = sequence.args[sequence.args.length - 1];
+            const autoMultiply = !builderSequenceExpectsValue(sequence) && (
+                String(value) === "x" || last && String(last.value) === "-1"
+            );
+            if (!builderSequenceExpectsValue(sequence) && !autoMultiply) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
+            if (autoMultiply) {
+                sequence.builderOperators.push("prod");
+            }
             const active = valueNode(String(value));
             active.isBuilderActive = true;
             sequence.args.push(active);

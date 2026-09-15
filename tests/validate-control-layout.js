@@ -17,6 +17,7 @@ assert(
     /\.main-action-panel \{[\s\S]*?position: relative;[\s\S]*?grid-row: 3;[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
     "Post-selection controls must use the same grid baseline and bottom margin as Settings"
 );
+assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
     playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="mainArea"'),
     "Post-selection controls must be a direct app-grid item rather than an independently positioned child of the workspace"

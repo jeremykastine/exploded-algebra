@@ -633,7 +633,7 @@
         if (api) populateToolPermissions(api.getToolCatalog());
       }
       if (event.data.type === "interaction-state") {
-        syncFinishRecordingButton(event.data);
+        syncFinishRecordingButton(event.data.detail);
       }
       if (event.data.type === "initial-expression-committed") {
         acceptInitialExpressionAndSolve();

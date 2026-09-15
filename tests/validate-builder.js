@@ -63,6 +63,7 @@ assert(builderJs.includes("candidates[candidates.length - 1].required = true"), 
 assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 4 must replace separate test/export controls with one All Done button");
 assert(builderHtml.includes('class="primary-button complete-exercise-button" hidden') && builderJs.includes('byId("completeExerciseButton").hidden = !isFinalSlide'), "Phase 4 All Done must appear only on the final carousel slide");
 assert(builderJs.includes("function syncFinishRecordingButton(snapshot)") && builderJs.includes("snapshot.preselectionActive !== true") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "Phase 3 All Done must appear only while the workspace is in preselection");
+assert(builderJs.includes("syncFinishRecordingButton(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
 assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 4 All Done must download the completed JSON");
 assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 4 All Done must automatically open a preview tab");
 assert(/const previewUrl = `exploded-algebra\.html\?source=builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
@@ -96,6 +97,8 @@ assert(playerJs.includes('visitIntegratedBuilderSequences(builder.root'), "Opera
 assert(playerJs.includes('flattenIntegratedBuilderOperation(type, left, right)'), "Consecutive sums and products must flatten as they are grouped");
 assert(!playerJs.includes('sequence.args.length !== 1 || sequence.builderOperators.length'), "Exit Inverse must not require its contents to be grouped first");
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode'), "Submit must validate unresolved sequences nested inside inverses");
+assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.includes('String(last.value) === "-1"'), "A digit entered after -1 must insert an implicit product");
+assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence.builderOperators.push("prod")'), "Entering x after a completed value must insert an implicit product");
 assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
