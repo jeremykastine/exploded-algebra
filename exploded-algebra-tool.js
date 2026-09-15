@@ -2011,7 +2011,7 @@ Promise.resolve().then(() => {
                     ? normalizeTextBlocks(level.instruction)
                     : normalizeTextBlocks(level.introduction);
                 return {
-                    title: "Original expression",
+                    title: "Problem statement",
                     descriptions,
                     expression: level.initialKatex || (
                         firstStep
@@ -2024,13 +2024,41 @@ Promise.resolve().then(() => {
             if (!step) {
                 return null;
             }
-            const cardExpression = levelContent.querySelector(`.step-hold-target[data-step-index="${stepIndex}"] .katex-placeholder`);
             return {
                 title: "Step guidance",
                 descriptions: getStepGuidanceForDisplay(step),
-                expression: (cardExpression && cardExpression.getAttribute("data-expr")) ||
-                    step.afterKatex || step.katex || step.beforeKatex || step.expression || ""
+                expression: ""
             };
+        }
+
+        function getMixedInstructionHtml(source) {
+            const text = String(source || "");
+            let cursor = 0;
+            let html = "";
+            while (cursor < text.length) {
+                const starts = [
+                    { index: text.indexOf("\\(", cursor), close: "\\)", displayMode: false },
+                    { index: text.indexOf("\\[", cursor), close: "\\]", displayMode: true }
+                ].filter(item => item.index >= 0).sort((left, right) => left.index - right.index);
+                if (!starts.length) {
+                    html += escapeHtml(text.slice(cursor));
+                    break;
+                }
+                const match = starts[0];
+                html += escapeHtml(text.slice(cursor, match.index));
+                const mathStart = match.index + 2;
+                const mathEnd = text.indexOf(match.close, mathStart);
+                if (mathEnd < 0) {
+                    html += escapeHtml(text.slice(match.index));
+                    break;
+                }
+                const expression = text.slice(mathStart, mathEnd);
+                const tag = match.displayMode ? "div" : "span";
+                const className = match.displayMode ? "instruction-math-display" : "instruction-math-inline";
+                html += `<${tag} class="${className} katex-placeholder" data-display-mode="${match.displayMode}" data-expr="${escapeHtml(expression)}"></${tag}>`;
+                cursor = mathEnd + 2;
+            }
+            return html;
         }
 
         function getStepGuidanceHtml(stepIndex) {
@@ -2039,8 +2067,8 @@ Promise.resolve().then(() => {
                 return "";
             }
             const paragraphs = details.descriptions.length
-                ? details.descriptions.map(text => `<p>${escapeHtml(text)}</p>`).join("")
-                : "<p>No additional instruction is provided for this step.</p>";
+                ? details.descriptions.map(text => `<div class="step-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")
+                : "<p>None given</p>";
             const expression = details.expression
                 ? `<div class="step-guidance-expression"><span class="katex-placeholder" data-expr="${escapeHtml(details.expression)}"></span></div>`
                 : "";
@@ -2057,7 +2085,10 @@ Promise.resolve().then(() => {
                     node.textContent = expression;
                     return;
                 }
-                katex.render(expression, node, { throwOnError: false, displayMode: false });
+                katex.render(expression, node, {
+                    throwOnError: false,
+                    displayMode: node.dataset.displayMode === "true"
+                });
             });
         }
 

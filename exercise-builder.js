@@ -96,6 +96,12 @@
       .replace(/^-+|-+$/g, "");
   }
 
+  function initializeSetupDefaults() {
+    const timestamp = String(Date.now());
+    byId("exerciseTitle").value = timestamp;
+    byId("exerciseId").value = slugify(timestamp);
+  }
+
   function sameExpressionText(first, second) {
     return String(first || "").replace(/\s+/g, "") === String(second || "").replace(/\s+/g, "");
   }
@@ -649,6 +655,7 @@
     });
   }
 
+  initializeSetupDefaults();
   installEventHandlers();
   waitForApi().catch(error => window.alert(error.message));
   setPhase(1);

@@ -3544,6 +3544,17 @@
             font-size: clamp(20px, 4vw, 34px);
             font-weight: 700;
         }
+        .press-hold-popover .step-guidance-instruction {
+            width: 100%;
+            text-align: center;
+            white-space: pre-wrap;
+        }
+        .press-hold-popover .instruction-math-inline { white-space: normal; }
+        .press-hold-popover .instruction-math-display {
+            display: block;
+            margin: 6px 0;
+            white-space: normal;
+        }
         body.step-guidance-active #svgContainer,
         body.step-guidance-active .quadrant-menu,
         body.step-guidance-active .quadrant-tools,
@@ -3787,7 +3798,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260915-operation-appearance"></script>
-    <script src="exploded-algebra-tool.js?v=20260915-implicit-products"></script>
+    <script src="exploded-algebra-tool.js?v=20260915-guidance-math"></script>
 
 </body>
 </html>

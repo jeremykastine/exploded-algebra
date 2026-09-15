@@ -32,6 +32,7 @@ assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraf
 assert(builderHtml.includes('<option value="expression-terms" selected>') && builderHtml.includes('<option value="unrestricted" selected>'), "Setup must select the most generous numerical rewrite levels by default");
 assert(builderHtml.includes('id="allowNegativeOne" type="checkbox" checked') && builderHtml.includes('id="allowInverses" type="checkbox" checked'), "Negative-one and inverse numerical rewrites must be enabled by default");
 assert(builderJs.includes('addition: "expression-terms"') && builderJs.includes('multiplication: "unrestricted"') && builderJs.includes('allowNegativeOne: true') && builderJs.includes('allowInverses: true'), "In-memory setup defaults must match the fully permissive form defaults");
+assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("exerciseTitle").value = timestamp'), "The exercise name must default to a timestamp");
 assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes('id="evaluationLevel"') && !builderJs.includes("evaluationLevel"), "The Exercise Builder must not expose or export the legacy evaluation level");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
 assert(builderHtml.includes('id="finishRecordingButton" type="button" class="all-done-button" hidden'), "Phase 3 All Done must start hidden until preselection is confirmed");
@@ -83,6 +84,11 @@ assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder 
 assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
 assert(playerJs.includes('class="builder-review-button" data-builder-review') && playerJs.includes("showBuilderOriginalReview") && playerJs.includes("hideBuilderOriginalReview"), "Expression Builder must provide press-and-hold original-expression review");
 assert(playerJs.includes('const reviewDisabled = builder.tool === "authorInitial"') && playerJs.includes('${reviewDisabled ? " disabled" : ""}'), "Starting-expression authoring must disable the eye review button");
+assert(playerJs.includes('title: "Problem statement"') && !playerJs.includes('title: "Original expression"'), "Student guidance must call the original expression the Problem statement");
+assert(playerJs.includes('title: "Step guidance"') && playerJs.includes('expression: ""'), "Step Guidance must omit the expression");
+assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Student instructions must recognize mixed plain text and KaTeX");
+assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.includes(".press-hold-popover .instruction-math-display"), "Student instruction KaTeX must render in inline or display mode as authored");
+assert(playerJs.includes('"<p>None given</p>"'), "Empty student Step Guidance must say None given");
 assert(playerHtml.includes(".builder-keypad-panel .builder-review-button:disabled"), "The unavailable starting-expression eye button must be visibly grayed out");
 assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
 assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 2; }'), "The x button must sit above 8");
