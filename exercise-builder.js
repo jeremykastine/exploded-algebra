@@ -21,6 +21,7 @@
   let initialCommitInProgress = false;
   let lastWorkspaceSnapshotFingerprint = "";
   let currentCurationIndex = 0;
+  let currentCurationMode = "view";
   let draft = makeFreshDraft();
 
   function makeFreshDraft() {
@@ -442,19 +443,45 @@
     const index = currentCurationIndex;
     const candidate = candidates[index];
     const included = candidate.included !== false;
+    const editing = currentCurationMode === "edit";
     container.innerHTML = `
       <article class="step-carousel-slide card ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${index + 1} of ${candidates.length}" tabindex="-1">
-        <label class="step-include-label">
-          <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
-          <span>Step ${index + 1}</span>
-        </label>
-        <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
-          <textarea rows="2" spellcheck="false" data-step-field="beforeKatex" aria-label="Pre-version for step ${index + 1}" placeholder="Pre-version">${escapeHtml(candidate.beforeKatex)}</textarea>
-          <div class="step-math-preview" data-step-preview="beforeKatex" aria-label="Rendered pre-version for step ${index + 1}"></div>
-          <textarea rows="2" data-step-field="instruction" aria-label="Instruction for step ${index + 1}" placeholder="Instruction (optional)"></textarea>
-          <textarea rows="2" spellcheck="false" data-step-field="afterKatex" aria-label="Post-version for step ${index + 1}" placeholder="Post-version">${escapeHtml(candidate.afterKatex)}</textarea>
-          <div class="step-math-preview" data-step-preview="afterKatex" aria-label="Rendered post-version for step ${index + 1}"></div>
-        </fieldset>
+        <header class="step-slide-header">
+          <label class="step-include-label">
+            <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
+            <span>Step ${index + 1}</span>
+          </label>
+          <div class="step-mode-toggle" role="group" aria-label="Step display mode">
+            <button type="button" data-curation-mode="view" aria-pressed="${editing ? "false" : "true"}">View</button>
+            <button type="button" data-curation-mode="edit" aria-pressed="${editing ? "true" : "false"}">Edit</button>
+          </div>
+        </header>
+        ${editing ? `
+          <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
+            <label class="step-edit-field"><span>Pre-completion</span>
+              <textarea rows="3" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
+            </label>
+            <label class="step-edit-field"><span>Instructions</span>
+              <textarea rows="3" data-step-field="instruction"></textarea>
+            </label>
+            <label class="step-edit-field"><span>Post-completion</span>
+              <textarea rows="3" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
+            </label>
+          </fieldset>` : `
+          <section class="step-view-fields">
+            <div class="step-view-field">
+              <h3>Pre-completion</h3>
+              <div class="step-math-view" data-step-view="beforeKatex" aria-label="Pre-completion expression for step ${index + 1}"></div>
+            </div>
+            <div class="step-view-field">
+              <h3>Instructions</h3>
+              <p class="step-instruction-view">${escapeHtml(candidate.instruction || "")}</p>
+            </div>
+            <div class="step-view-field">
+              <h3>Post-completion</h3>
+              <div class="step-math-view" data-step-view="afterKatex" aria-label="Post-completion expression for step ${index + 1}"></div>
+            </div>
+          </section>`}
       </article>
       <nav class="step-carousel-navigation" aria-label="Step carousel navigation">
         <button type="button" class="secondary-button" data-carousel-direction="previous"${index === 0 ? " disabled" : ""}>Previous</button>
@@ -462,9 +489,10 @@
         <button type="button" class="secondary-button" data-carousel-direction="next"${index === candidates.length - 1 ? " disabled" : ""}>Next</button>
       </nav>`;
     const slide = container.querySelector("[data-candidate-index]");
-    slide.querySelector('[data-step-field="instruction"]').value = candidate.instruction || "";
-    renderKatex(slide.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
-    renderKatex(slide.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
+    const instructionField = slide.querySelector('[data-step-field="instruction"]');
+    if (instructionField) instructionField.value = candidate.instruction || "";
+    renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
+    renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
   }
 
   function renderCuration() {
@@ -487,6 +515,7 @@
     }
     draft.recording.candidates = candidates;
     currentCurationIndex = 0;
+    currentCurationMode = "view";
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
@@ -674,8 +703,6 @@
       const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
       if (!candidate) return;
       candidate[field] = event.target.value;
-      const preview = row.querySelector(`[data-step-preview="${field}"]`);
-      if (preview) renderKatex(preview, event.target.value);
       scheduleSave();
     });
     byId("curationTable").addEventListener("change", event => {
@@ -688,6 +715,13 @@
       scheduleSave();
     });
     byId("curationTable").addEventListener("click", event => {
+      const modeButton = event.target.closest("[data-curation-mode]");
+      if (modeButton) {
+        currentCurationMode = modeButton.dataset.curationMode;
+        renderCurationTable();
+        byId("curationTable").querySelector(`[data-curation-mode="${currentCurationMode}"]`)?.focus({ preventScroll: true });
+        return;
+      }
       const button = event.target.closest("[data-carousel-direction]");
       if (!button || button.disabled) return;
       const offset = button.dataset.carouselDirection === "next" ? 1 : -1;
