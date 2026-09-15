@@ -2005,7 +2005,6 @@ Promise.resolve().then(() => {
             if (!level) {
                 return null;
             }
-            const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
             if (stepIndex < 0) {
                 const descriptions = normalizeTextBlocks(level.instruction).length
                     ? normalizeTextBlocks(level.instruction)
@@ -2013,11 +2012,7 @@ Promise.resolve().then(() => {
                 return {
                     title: "Problem statement",
                     descriptions,
-                    expression: level.initialKatex || (
-                        firstStep
-                            ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
-                            : level.startExpression
-                    )
+                    expression: ""
                 };
             }
             const step = level.steps && level.steps[stepIndex];
@@ -6617,9 +6612,14 @@ ctx.font = SETTINGS.textFont;
                 return null;
             }
             const selectedTerms = getSelectedTerms();
-            const commonCount = direction === "left"
+            const matchedCommonCount = direction === "left"
                 ? getCommonLeftFactorCount(selectedTerms)
                 : getCommonRightFactorCount(selectedTerms);
+            const maximumExplicitCommonCount = Math.max(
+                0,
+                Math.min(...selectedTerms.map(term => getTermFactors(term).length)) - 1
+            );
+            const commonCount = Math.min(matchedCommonCount, maximumExplicitCommonCount);
 
             return { selectedTerms, commonCount };
         }
@@ -8921,18 +8921,23 @@ ctx.font = SETTINGS.textFont;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
-            const autoMultiply = !builderSequenceExpectsValue(sequence) && (
-                String(value) === "x" || last && String(last.value) === "-1"
-            );
-            if (!builderSequenceExpectsValue(sequence) && !autoMultiply) {
+            const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
+            const implicitOperation = !needsImplicitOperation
+                ? null
+                : String(value) === "-1"
+                    ? "sum"
+                    : String(value) === "x" || last && String(last.value) === "-1"
+                        ? "prod"
+                        : null;
+            if (needsImplicitOperation && !implicitOperation) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
-            if (autoMultiply) {
-                sequence.builderOperators.push("prod");
+            if (implicitOperation) {
+                sequence.builderOperators.push(implicitOperation);
             }
             const active = valueNode(String(value));
             active.isBuilderActive = true;

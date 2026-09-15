@@ -65,7 +65,6 @@
         const api = getApi();
         if (api) {
           iframeReady = true;
-          populateToolPermissions(api.getToolCatalog());
           resolve(api);
           return;
         }
@@ -110,8 +109,8 @@
     draft.metadata = {
       title: byId("exerciseTitle").value.trim(),
       id: byId("exerciseId").value.trim(),
-      instruction: byId("exerciseInstruction").value.trim(),
-      completionMessage: byId("completionMessage").value.trim()
+      instruction: "",
+      completionMessage: ""
     };
     draft.settings.numericalRewrite = {
       addition: byId("additionPermission").value,
@@ -120,9 +119,7 @@
       allowInverses: byId("allowInverses").checked
     };
     draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
-    draft.settings.excludedDefaultTools = Array.from(document.querySelectorAll("#toolPermissionList input[data-tool-key]"))
-      .filter(input => !input.checked)
-      .map(input => input.dataset.toolKey);
+    draft.settings.excludedDefaultTools = [];
   }
 
   function validateSetup(showError = true) {
@@ -197,21 +194,6 @@
     if (initialInstruction) level.instruction = initialInstruction;
     else delete level.instruction;
     return level;
-  }
-
-  function populateToolPermissions(catalog) {
-    const container = byId("toolPermissionList");
-    if (!container || container.dataset.loaded === "yes") return;
-    container.dataset.loaded = "yes";
-    container.innerHTML = catalog.map(tool => `<label><input type="checkbox" data-tool-key="${escapeHtml(tool.key)}" checked> ${escapeHtml(tool.label)}</label>`).join("");
-    applyToolExclusions();
-  }
-
-  function applyToolExclusions() {
-    const excluded = new Set(draft.settings.excludedDefaultTools || []);
-    document.querySelectorAll("#toolPermissionList input[data-tool-key]").forEach(input => {
-      input.checked = !excluded.has(input.dataset.toolKey);
-    });
   }
 
   function renderKatex(target, source) {
@@ -635,8 +617,6 @@
       if (event.source !== workspace.contentWindow || !event.data || event.data.source !== "exploded-algebra-authoring") return;
       if (event.data.type === "ready") {
         iframeReady = true;
-        const api = getApi();
-        if (api) populateToolPermissions(api.getToolCatalog());
       }
       if (event.data.type === "interaction-state") {
         syncFinishRecordingButton(event.data.detail);

@@ -34,6 +34,8 @@ assert(builderHtml.includes('id="allowNegativeOne" type="checkbox" checked') && 
 assert(builderJs.includes('addition: "expression-terms"') && builderJs.includes('multiplication: "unrestricted"') && builderJs.includes('allowNegativeOne: true') && builderJs.includes('allowInverses: true'), "In-memory setup defaults must match the fully permissive form defaults");
 assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("exerciseTitle").value = timestamp'), "The exercise name must default to a timestamp");
 assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes('id="evaluationLevel"') && !builderJs.includes("evaluationLevel"), "The Exercise Builder must not expose or export the legacy evaluation level");
+assert(!builderHtml.includes('id="exerciseInstruction"') && !builderHtml.includes('id="completionMessage"'), "Phase 1 must omit opening-instruction and completion-message fields");
+assert(!builderHtml.includes("Advanced tool permissions") && !builderHtml.includes('id="toolPermissionList"'), "Phase 1 must omit advanced tool permissions");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
 assert(builderHtml.includes('id="finishRecordingButton" type="button" class="all-done-button" hidden'), "Phase 3 All Done must start hidden until preselection is confirmed");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
@@ -85,6 +87,7 @@ assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(buil
 assert(playerJs.includes('class="builder-review-button" data-builder-review') && playerJs.includes("showBuilderOriginalReview") && playerJs.includes("hideBuilderOriginalReview"), "Expression Builder must provide press-and-hold original-expression review");
 assert(playerJs.includes('const reviewDisabled = builder.tool === "authorInitial"') && playerJs.includes('${reviewDisabled ? " disabled" : ""}'), "Starting-expression authoring must disable the eye review button");
 assert(playerJs.includes('title: "Problem statement"') && !playerJs.includes('title: "Original expression"'), "Student guidance must call the original expression the Problem statement");
+assert(/if \(stepIndex < 0\)[\s\S]*?title: "Problem statement",[\s\S]*?expression: ""/.test(playerJs), "Problem Statement must show instructions without repeating the expression");
 assert(playerJs.includes('title: "Step guidance"') && playerJs.includes('expression: ""'), "Step Guidance must omit the expression");
 assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Student instructions must recognize mixed plain text and KaTeX");
 assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.includes(".press-hold-popover .instruction-math-display"), "Student instruction KaTeX must render in inline or display mode as authored");
@@ -105,6 +108,8 @@ assert(!playerJs.includes('sequence.args.length !== 1 || sequence.builderOperato
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode'), "Submit must validate unresolved sequences nested inside inverses");
 assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.includes('String(last.value) === "-1"'), "A digit entered after -1 must insert an implicit product");
 assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence.builderOperators.push("prod")'), "Entering x after a completed value must insert an implicit product");
+assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
+assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
