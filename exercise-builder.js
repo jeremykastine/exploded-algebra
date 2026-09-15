@@ -329,6 +329,50 @@
     window.katex.render(source, target, { throwOnError: false, displayMode: true });
   }
 
+  function renderMixedInstruction(target, source) {
+    if (!target) return;
+    target.replaceChildren();
+    const text = String(source || "");
+    let cursor = 0;
+
+    const appendText = value => {
+      if (value) target.appendChild(document.createTextNode(value));
+    };
+
+    while (cursor < text.length) {
+      const inlineStart = text.indexOf("\\(", cursor);
+      const displayStart = text.indexOf("\\[", cursor);
+      const starts = [
+        { index: inlineStart, close: "\\)", displayMode: false },
+        { index: displayStart, close: "\\]", displayMode: true }
+      ].filter(item => item.index >= 0).sort((left, right) => left.index - right.index);
+      if (!starts.length) {
+        appendText(text.slice(cursor));
+        break;
+      }
+
+      const match = starts[0];
+      appendText(text.slice(cursor, match.index));
+      const mathStart = match.index + 2;
+      const mathEnd = text.indexOf(match.close, mathStart);
+      if (mathEnd < 0) {
+        appendText(text.slice(match.index));
+        break;
+      }
+
+      const math = text.slice(mathStart, mathEnd);
+      const mathTarget = document.createElement(match.displayMode ? "div" : "span");
+      mathTarget.className = match.displayMode ? "instruction-math-display" : "instruction-math-inline";
+      if (window.katex) {
+        window.katex.render(math, mathTarget, { throwOnError: false, displayMode: match.displayMode });
+      } else {
+        mathTarget.textContent = `${match.displayMode ? "\\[" : "\\("}${math}${match.close}`;
+      }
+      target.appendChild(mathTarget);
+      cursor = mathEnd + 2;
+    }
+  }
+
   function moveWorkspaceTo(slotId) {
     const slot = byId(slotId);
     if (slot && workspaceShell.parentElement !== slot) slot.appendChild(workspaceShell);
@@ -475,7 +519,7 @@
             </div>
             <div class="step-view-field">
               <h3>Instructions</h3>
-              <p class="step-instruction-view">${escapeHtml(candidate.instruction || "")}</p>
+              <div class="step-instruction-view"></div>
             </div>
             <div class="step-view-field">
               <h3>Post-completion</h3>
@@ -493,6 +537,7 @@
     if (instructionField) instructionField.value = candidate.instruction || "";
     renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
     renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
+    renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction);
   }
 
   function renderCuration() {

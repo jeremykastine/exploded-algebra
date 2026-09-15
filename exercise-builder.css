@@ -141,6 +141,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-math-view .katex-display { margin: 0; }
 .step-instruction-view { min-height: 72px; margin: 0; padding: 12px; border-radius: 7px; background: var(--soft); white-space: pre-wrap; }
 .step-instruction-view:empty::before { color: var(--muted); content: "No instruction"; font-style: italic; }
+.instruction-math-inline { white-space: normal; }
+.instruction-math-display { display: block; white-space: normal; }
+.instruction-math-display .katex-display { margin: .35em 0; }
 .step-carousel-slide.is-disabled .step-view-fields,
 .step-carousel-slide.is-disabled .step-editor-fields { opacity: .46; }
 .step-editor-fields:disabled textarea { border-color: #c7c9cc; background: #eef0f2; color: #70747a; cursor: not-allowed; }
