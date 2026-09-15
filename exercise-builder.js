@@ -157,25 +157,25 @@
     const snapshot = draft.recording.workspaceSnapshot;
     const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [], demoSteps: [] };
     const includedCandidates = (draft.recording.candidates || []).filter(candidate => candidate.included !== false);
-    const steps = [{
-      expression: draft.initial.expression,
-      katex: draft.initial.katex,
-      afterKatex: draft.initial.katex
-    }, ...includedCandidates.map(candidate => {
+    const initialCandidate = includedCandidates.find(candidate => candidate.isInitial);
+    const steps = includedCandidates.map(candidate => {
       const step = {
         expression: candidate.expression,
         explodedExpression: candidate.expression,
         katex: candidate.afterKatex,
         beforeKatex: candidate.beforeKatex,
-        afterKatex: candidate.afterKatex,
-        actionStartIndex: candidate.actionStartIndex,
-        actionEndIndex: candidate.actionEndIndex
+        afterKatex: candidate.afterKatex
       };
+      if (!candidate.isInitial) {
+        step.actionStartIndex = candidate.actionStartIndex;
+        step.actionEndIndex = candidate.actionEndIndex;
+      }
       if (candidate.instruction && candidate.instruction.trim()) step.guidance = candidate.instruction.trim();
       return step;
-    })];
-    return {
+    });
+    const level = {
       ...getLevelBase(),
+      initialKatex: initialCandidate && initialCandidate.afterKatex || draft.initial.katex,
       steps,
       demo: {
         format: "exploded-algebra-guided-actions-v1",
@@ -185,6 +185,12 @@
       finalExpression: draft.recording.finalExpression || includedCandidates.at(-1)?.expression || draft.initial.expression,
       finalKatex: includedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
     };
+    const initialInstruction = initialCandidate && initialCandidate.instruction
+      ? initialCandidate.instruction.trim()
+      : "";
+    if (initialInstruction) level.instruction = initialInstruction;
+    else delete level.instruction;
+    return level;
   }
 
   function populateToolPermissions(catalog) {
@@ -302,7 +308,28 @@
       loadedWorkspacePhase = 3;
     }
     document.body.classList.add("phase3-recording");
+    syncFinishRecordingButton(api.getSnapshot());
     api.refreshLayout();
+  }
+
+  function syncFinishRecordingButton(snapshot) {
+    byId("finishRecordingButton").hidden = currentPhase !== 3 || !snapshot || snapshot.preselectionActive !== true;
+  }
+
+  function makeInitialCurationCandidate(api) {
+    const prior = (draft.recording.candidates || []).find(candidate => candidate.isInitial);
+    const generatedKatex = draft.initial.katex || api.generateKatex(draft.initial.expression);
+    return {
+      key: "initial-expression",
+      expression: draft.initial.expression,
+      beforeExpression: draft.initial.expression,
+      beforeKatex: prior && prior.beforeKatex || generatedKatex,
+      afterKatex: prior && prior.afterKatex || generatedKatex,
+      instruction: prior ? prior.instruction || "" : draft.metadata.instruction || "",
+      included: true,
+      required: true,
+      isInitial: true
+    };
   }
 
   function deriveStepCandidates(snapshot, api) {
@@ -310,7 +337,7 @@
     const actions = Array.isArray(recorder.actions) ? recorder.actions : [];
     const previous = Array.isArray(draft.recording.candidates) ? draft.recording.candidates : [];
     const previousByExpression = new Map();
-    previous.forEach(candidate => {
+    previous.filter(candidate => !candidate.isInitial).forEach(candidate => {
       const key = String(candidate.expression || "").replace(/\s+/g, "");
       if (!previousByExpression.has(key)) previousByExpression.set(key, []);
       previousByExpression.get(key).push(candidate);
@@ -365,6 +392,7 @@
     const candidates = draft.recording.candidates || [];
     if (!candidates.length) {
       container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
+      byId("completeExerciseButton").hidden = true;
       return;
     }
     currentCurationIndex = Math.max(0, Math.min(currentCurationIndex, candidates.length - 1));
@@ -372,12 +400,14 @@
     const candidate = candidates[index];
     const included = candidate.included !== false;
     const editing = currentCurationMode === "edit";
+    const stepNumber = candidate.isInitial ? 0 : index;
+    const isFinalSlide = index === candidates.length - 1;
     container.innerHTML = `
-      <article class="step-carousel-slide card ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${index + 1} of ${candidates.length}" tabindex="-1">
+      <article class="step-carousel-slide card ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${stepNumber}, slide ${index + 1} of ${candidates.length}" tabindex="-1">
         <header class="step-slide-header">
           <label class="step-include-label">
             <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
-            <span>Step ${index + 1}</span>
+            <span>Step ${stepNumber}</span>
           </label>
           <div class="step-mode-toggle" role="group" aria-label="Step display mode">
             <button type="button" data-curation-mode="view" aria-pressed="${editing ? "false" : "true"}">View</button>
@@ -399,7 +429,7 @@
           <section class="step-view-fields">
             <div class="step-view-field">
               <h3>Pre-completion</h3>
-              <div class="step-math-view" data-step-view="beforeKatex" aria-label="Pre-completion expression for step ${index + 1}"></div>
+              <div class="step-math-view" data-step-view="beforeKatex" aria-label="Pre-completion expression for step ${stepNumber}"></div>
             </div>
             <div class="step-view-field">
               <h3>Instructions</h3>
@@ -407,7 +437,7 @@
             </div>
             <div class="step-view-field">
               <h3>Post-completion</h3>
-              <div class="step-math-view" data-step-view="afterKatex" aria-label="Post-completion expression for step ${index + 1}"></div>
+              <div class="step-math-view" data-step-view="afterKatex" aria-label="Post-completion expression for step ${stepNumber}"></div>
             </div>
           </section>`}
       </article>
@@ -422,6 +452,7 @@
     renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
     renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
     renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction);
+    byId("completeExerciseButton").hidden = !isFinalSlide;
   }
 
   function renderCuration() {
@@ -442,7 +473,7 @@
       window.alert("The final expression is unchanged. Complete at least one expression-changing step before choosing All Done.");
       return;
     }
-    draft.recording.candidates = candidates;
+    draft.recording.candidates = [makeInitialCurationCandidate(api), ...candidates];
     currentCurationIndex = 0;
     currentCurationMode = "view";
     draft.recording.finalExpression = snapshot.currentExpression;
@@ -601,12 +632,16 @@
         const api = getApi();
         if (api) populateToolPermissions(api.getToolCatalog());
       }
+      if (event.data.type === "interaction-state") {
+        syncFinishRecordingButton(event.data);
+      }
       if (event.data.type === "initial-expression-committed") {
         acceptInitialExpressionAndSolve();
       } else if (event.data.type === "state-change") {
         captureWorkspaceSnapshot();
         const api = getApi();
         const snapshot = api && api.getSnapshot();
+        if (currentPhase === 3) syncFinishRecordingButton(snapshot);
         if (currentPhase === 2 && snapshot && !snapshot.builderActive && !snapshot.initialCommitted) {
           api.startInitialExpressionBuilder(null);
         }

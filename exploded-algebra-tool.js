@@ -4068,6 +4068,8 @@ Promise.resolve().then(() => {
                     : expressionRoot ? ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) : "",
                 initialCommitted: authoringInitialExpressionCommitted,
                 builderActive: !!builder,
+                preselectionActive: authoringPhase === "recording" && uiState.mode === "edit" &&
+                    uiState.stage === "idle" && !selection.node && !builder,
                 builderDraft: builder ? {
                     flowVersion: builder.flowVersion || 1,
                     root: serializeBuilderNode(builder.root),
@@ -10901,6 +10903,12 @@ function renderToolArea() {
             const integratedBuilder = builderActive && isIntegratedExpressionBuilder(uiState.expressionBuilder);
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
             const exitingBuilder = !builderActive && builderWorkspaceViewActive;
+            if (authoringSessionActive && authoringPhase === "recording") {
+                notifyAuthoringHost("interaction-state", {
+                    preselectionActive: uiState.mode === "edit" && uiState.stage === "idle" &&
+                        !selection.node && !builderActive
+                });
+            }
             if (!builderActive && builderReviewActive) {
                 builderReviewActive = false;
                 activeBuilderReviewPointerId = null;

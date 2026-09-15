@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260915-all-done">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260915-step-zero">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260915-no-legacy-evaluation"></script>
+  <script defer src="exercise-builder.js?v=20260915-conditional-done"></script>
 </head>
 <body>
   <main>
@@ -82,7 +82,7 @@
 
     <section class="phase" data-phase="3" hidden>
       <div id="phase3WorkspaceSlot"></div>
-      <button id="finishRecordingButton" type="button" class="all-done-button">All Done</button>
+      <button id="finishRecordingButton" type="button" class="all-done-button" hidden>All Done</button>
     </section>
 
     <section class="phase" data-phase="4" hidden>
@@ -91,14 +91,14 @@
       </section>
 
       <section class="phase4-controls">
-        <button id="completeExerciseButton" type="button" class="primary-button complete-exercise-button">All Done</button>
+        <button id="completeExerciseButton" type="button" class="primary-button complete-exercise-button" hidden>All Done</button>
         <p id="exportStatus" class="status-line" aria-live="polite"></p>
       </section>
     </section>
   </main>
 
   <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260915-initial-review-disabled"></iframe>
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260915-conditional-done"></iframe>
   </div>
 </body>
 </html>

@@ -3004,15 +3004,18 @@
         body.settings-active .quadrant-menu { z-index: 130; }
 
         .main-action-panel {
-            position: absolute;
+            position: relative;
             z-index: 65;
-            right: var(--main-control-edge);
-            bottom: var(--main-control-bottom);
+            grid-column: 1;
+            grid-row: 3;
+            align-self: end;
+            justify-self: end;
             display: flex;
             align-items: flex-end;
             justify-content: flex-end;
             width: min(720px, calc(100% - 24px));
             max-height: calc(100% - 24px);
+            margin: 0 var(--main-control-edge) var(--main-control-bottom) 0;
             overflow: auto;
             box-sizing: border-box;
             padding: 0;
@@ -3166,7 +3169,10 @@
         }
         body.left-handed .main-action-panel {
             right: auto;
-            left: max(12px, env(safe-area-inset-left));
+            left: auto;
+            justify-self: start;
+            margin-right: 0;
+            margin-left: max(12px, env(safe-area-inset-left));
             align-items: flex-start;
             justify-content: flex-start;
         }
@@ -3314,7 +3320,9 @@
         .quadrant-tools,
         body.left-handed .quadrant-tools,
         .quadrant-menu,
-        body.left-handed .quadrant-menu {
+        body.left-handed .quadrant-menu,
+        .main-action-panel,
+        body.left-handed .main-action-panel {
             grid-row: 2;
         }
         .divider { display: none !important; }
@@ -3674,6 +3682,7 @@
                 </div>
             </div>
         </div>
+        <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
         <div class="main" id="mainArea">
             <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Settings">
                 <h2 class="level-menu-title">Settings</h2>
@@ -3743,7 +3752,6 @@
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
-            <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
             <div id="builderKeypadPanel" class="builder-keypad-panel hidden" role="group" aria-label="Expression builder keypad">
                 <div id="builderInputRail" class="builder-input-rail hidden">
                     <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>
@@ -3778,8 +3786,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260914-builder-unboxed-operators"></script>
-    <script src="exploded-algebra-tool.js?v=20260915-initial-review-disabled"></script>
+    <script src="exploded-algebra-renderer.js?v=20260915-operation-appearance"></script>
+    <script src="exploded-algebra-tool.js?v=20260915-conditional-done"></script>
 
 </body>
 </html>

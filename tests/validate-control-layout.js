@@ -13,7 +13,18 @@ assert(
     /\.quadrant-menu,[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
     "Settings must occupy the bottom corner beside the view controls"
 );
-assert(playerHtml.includes('bottom: var(--main-control-bottom);'));
+assert(
+    /\.main-action-panel \{[\s\S]*?position: relative;[\s\S]*?grid-row: 3;[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
+    "Post-selection controls must use the same grid baseline and bottom margin as Settings"
+);
+assert(
+    playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="mainArea"'),
+    "Post-selection controls must be a direct app-grid item rather than an independently positioned child of the workspace"
+);
+assert(
+    /\.quadrant-menu,[\s\S]*?\.main-action-panel,[\s\S]*?grid-row: 2;/.test(playerHtml),
+    "Settings and post-selection controls must resolve to the same final grid row"
+);
 assert(
     !/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu/.test(playerHtml),
     "Settings must remain visible after an expression selection"
