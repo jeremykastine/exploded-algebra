@@ -29,6 +29,9 @@ assert(!builderHtml.includes("builder-header") && !builderHtml.includes("phase-n
 assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to Solving") && !builderHtml.includes("Edit Starting Expression") && !builderHtml.includes("Edit Setup"), "The builder must not provide backward phase navigation");
 assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
 assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraftNow") && !builderJs.includes("scheduleSave") && !builderJs.includes("readSavedDraft"), "The streamlined builder must not save or resume drafts");
+assert(builderHtml.includes('<option value="expression-terms" selected>') && builderHtml.includes('<option value="unrestricted" selected>') && builderHtml.includes('<option value="3" selected>'), "Setup must select the most generous numerical and legacy evaluation levels by default");
+assert(builderHtml.includes('id="allowNegativeOne" type="checkbox" checked') && builderHtml.includes('id="allowInverses" type="checkbox" checked'), "Negative-one and inverse numerical rewrites must be enabled by default");
+assert(builderJs.includes('evaluationLevel: 3') && builderJs.includes('addition: "expression-terms"') && builderJs.includes('multiplication: "unrestricted"') && builderJs.includes('allowNegativeOne: true') && builderJs.includes('allowInverses: true'), "In-memory setup defaults must match the fully permissive form defaults");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
 assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)"), "The builder must advance directly through setup, expression entry, solving, and review");
@@ -54,6 +57,10 @@ assert(builderJs.includes("tap each operation in the expression"), "Initial-expr
 assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states must be converted into curation candidates");
 assert(builderJs.includes('candidate.included !== false'), "Hidden candidate steps must be omitted from export");
 assert(builderJs.includes("candidates[candidates.length - 1].required = true"), "The final expression must remain an included completion target");
+assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 4 must replace separate test/export controls with one All Done button");
+assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 4 All Done must download the completed JSON");
+assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 4 All Done must automatically open a preview tab");
+assert(/const previewUrl = `exploded-algebra\.html\?source=builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
 assert(playerHtml.includes("authoring-initial-session.expression-builder-active"), "Initial authoring must collapse the conventional-notation row");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");

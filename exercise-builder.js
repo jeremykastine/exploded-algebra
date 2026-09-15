@@ -23,12 +23,12 @@
     return {
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
       settings: {
-        evaluationLevel: 2,
+        evaluationLevel: 3,
         numericalRewrite: {
-          addition: "no-carry",
-          multiplication: "one-significant-figure",
-          allowNegativeOne: false,
-          allowInverses: false
+          addition: "expression-terms",
+          multiplication: "unrestricted",
+          allowNegativeOne: true,
+          allowInverses: true
         },
         includeUndoActions: true,
         excludedDefaultTools: [],
@@ -459,10 +459,24 @@
     return api.validateLevel(buildExportLevel());
   }
 
-  async function testLevel() {
+  function downloadLevel(level) {
+    const blob = new Blob([`${JSON.stringify(level, null, 2)}\n`], { type: "application/json" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `${level.id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+  }
+
+  async function finishExercise() {
     const status = byId("exportStatus");
+    const previewWindow = window.open("about:blank", "_blank");
     try {
       const level = await validateExportLevel();
+      downloadLevel(level);
       const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const storageKey = TEST_STORAGE_PREFIX + token;
       const payloadText = JSON.stringify({
@@ -471,34 +485,17 @@
         text: JSON.stringify(level)
       });
       try { localStorage.setItem(storageKey, payloadText); } catch (error) { /* window.name is the fallback */ }
-      const assistance = byId("testAssistanceLevel").value;
-      const url = `exploded-algebra.html?source=builder&draftKey=${encodeURIComponent(storageKey)}&level=${encodeURIComponent(`${level.id}.json`)}&assistance=${encodeURIComponent(assistance)}`;
-      const testWindow = window.open("about:blank", "_blank");
-      if (!testWindow) throw new Error("The browser blocked the test tab. Allow pop-ups for this site and try again.");
-      testWindow.name = LEVEL_WINDOW_NAME_PREFIX + payloadText;
-      testWindow.location.href = url;
-      status.textContent = `Opened the current draft with ${assistance} assistance.`;
+      if (!previewWindow) {
+        status.textContent = `Downloaded ${level.id}.json, but the browser blocked the preview tab.`;
+        return;
+      }
+      const previewUrl = `exploded-algebra.html?source=builder&draftKey=${encodeURIComponent(storageKey)}&level=${encodeURIComponent(`${level.id}.json`)}`;
+      previewWindow.name = LEVEL_WINDOW_NAME_PREFIX + payloadText;
+      previewWindow.location.href = previewUrl;
+      status.textContent = `Downloaded ${level.id}.json and opened its preview.`;
     } catch (error) {
-      status.textContent = error.message || "The level could not be tested.";
-    }
-  }
-
-  async function downloadJson() {
-    const status = byId("exportStatus");
-    try {
-      const level = await validateExportLevel();
-      const blob = new Blob([`${JSON.stringify(level, null, 2)}\n`], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${level.id}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      status.textContent = `Downloaded ${level.id}.json.`;
-    } catch (error) {
-      status.textContent = error.message || "The JSON could not be downloaded.";
+      if (previewWindow) previewWindow.close();
+      status.textContent = error.message || "The exercise could not be completed.";
     }
   }
 
@@ -598,8 +595,7 @@
       renderCurationTable();
       byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
     });
-    byId("testLevelButton").addEventListener("click", testLevel);
-    byId("downloadJsonButton").addEventListener("click", downloadJson);
+    byId("completeExerciseButton").addEventListener("click", finishExercise);
 
     window.addEventListener("message", event => {
       if (event.source !== workspace.contentWindow || !event.data || event.data.source !== "exploded-algebra-authoring") return;
