@@ -10295,6 +10295,7 @@ ctx.font = SETTINGS.textFont;
                 const exitDisabled = !builder.currentPath.length;
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
                 const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
+                const reviewDisabled = builder.tool === "authorInitial";
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
@@ -10302,7 +10303,7 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
                         <button class="builder-operator-button builder-exit-inv-button" data-builder-action="exitInverse" aria-label="Exit inverse" title="Keyboard shortcut: Right Arrow"${exitDisabled ? " disabled" : ""}><span class="builder-exit-inverse-icon">${getBuilderSymbolIcon("inv")}<svg class="builder-exit-arrow" viewBox="0 0 32 32" aria-hidden="true"><path class="builder-exit-arrow-halo" d="M14 18 27 29M20 29h7v-7"/><path class="builder-exit-arrow-line" d="M14 18 27 29M20 29h7v-7"/></svg></span></button>
-                        <button type="button" class="builder-review-button" data-builder-review aria-label="Hold to review original expression" title="Hold to review original expression"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
+                        <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Original-expression review is unavailable while building the starting expression" : "Hold to review original expression"}" title="${reviewDisabled ? "No previous expression to review" : "Hold to review original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
                         <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 7.2A9 9 0 1 1 4 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}

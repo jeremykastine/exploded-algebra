@@ -21,63 +21,10 @@ body {
 button, input, textarea, select { font: inherit; }
 button, select, input[type="checkbox"], input[type="radio"] { touch-action: manipulation; }
 
-.builder-header {
-  display: grid;
-  grid-template-columns: minmax(100px, 1fr) auto minmax(100px, 1fr);
-  align-items: center;
-  gap: 16px;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 22px 20px 14px;
-}
-.builder-header h1 { margin: 0; font-size: clamp(1.5rem, 4vw, 2.2rem); text-align: center; }
-.save-status { margin: 4px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
-.home-link { color: var(--accent-dark); font-weight: 700; text-decoration: none; justify-self: start; }
-.quiet-button { justify-self: end; border: 0; background: transparent; color: var(--danger); font-weight: 700; padding: 10px; }
-
-.phase-nav {
-  position: sticky;
-  z-index: 20;
-  top: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 0 20px;
-  background: rgba(255,255,255,.96);
-  border-bottom: 1px solid var(--line);
-}
-.phase-nav button {
-  min-height: 54px;
-  border: 0;
-  border-bottom: 4px solid transparent;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
-}
-.phase-nav button span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-right: 5px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-}
-.phase-nav button.is-active { color: var(--accent); border-bottom-color: var(--accent); }
-.phase-nav button.is-complete { color: var(--good); }
-
-main { width: min(100%, 1120px); margin: 0 auto; padding: 28px 20px 70px; }
-.phase-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin-bottom: 20px; }
-.phase-heading h2 { margin: 2px 0 0; font-size: clamp(1.35rem, 3vw, 1.85rem); }
-.phase-heading p { max-width: 570px; margin: 0; color: var(--muted); }
-.eyebrow { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+main { width: min(100%, 1120px); margin: 0 auto; padding: 16px 20px 40px; }
 
 .card { border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(30,30,30,.05); }
-.form-card { padding: clamp(16px, 3vw, 26px); }
-.form-card { display: grid; gap: 20px; }
+.form-card { display: grid; gap: 20px; max-width: 960px; margin: 0 auto; padding: clamp(16px, 3vw, 26px); }
 .field-grid { display: grid; gap: 16px; }
 .two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 label { display: grid; gap: 6px; font-size: 14px; font-weight: 700; }
@@ -155,12 +102,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .phase4-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; padding-top: 20px; }
 .phase4-assistance { width: 190px; }
 .phase4-controls .status-line { flex: 1 0 100%; }
-.phase4-navigation { padding-top: 4px; border-top: 1px solid var(--line); }
-
-.modal-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(0,0,0,.48); }
-.modal-backdrop[hidden] { display: none; }
-.modal-card { width: min(100%, 560px); max-height: calc(100dvh - 36px); overflow: auto; padding: 24px; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
-.modal-card h2 { margin-top: 0; }
 
 .all-done-button {
   position: fixed;
@@ -184,10 +125,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    soon as the expression is submitted or the builder is cancelled. */
 body.phase2-expression-building,
 body.phase3-recording { overflow: hidden; }
-body.phase2-expression-building > .builder-header,
-body.phase2-expression-building > .phase-nav,
-body.phase3-recording > .builder-header,
-body.phase3-recording > .phase-nav { display: none; }
 body.phase2-expression-building > main,
 body.phase3-recording > main {
   width: 100%;
@@ -213,15 +150,7 @@ body.phase3-recording #workspaceShell {
 }
 
 @media (max-width: 760px) {
-  .builder-header { grid-template-columns: auto minmax(0, 1fr) auto; padding: 14px 10px 8px; }
-  .home-link { font-size: 12px; }
-  .quiet-button { padding: 6px; font-size: 12px; }
-  .phase-nav { padding: 0; }
-  .phase-nav button { min-height: 50px; font-size: 0; }
-  .phase-nav button span { margin: 0; font-size: 12px; }
-  main { padding: 20px 10px 50px; }
-  .phase-heading { display: block; }
-  .phase-heading p { margin-top: 8px; }
+  main { padding: 10px 10px 32px; }
   .two-columns { grid-template-columns: 1fr; }
   .tool-permission-list { grid-template-columns: 1fr; }
   .workspace-shell { height: 66vh; min-height: 430px; border-radius: 8px; }

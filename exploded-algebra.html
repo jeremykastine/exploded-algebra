@@ -3234,6 +3234,12 @@
             height: var(--builder-keypad-height);
             min-height: 0;
         }
+        .builder-keypad-panel .builder-review-button:disabled {
+            border-color: #d0d0d0;
+            background: #f5f5f5;
+            color: #aaa;
+            opacity: .65;
+        }
         .builder-keypad-panel button,
         .builder-keypad-panel .panel-tool-menu button,
         .builder-keypad-panel .builder-action-row button {
@@ -3791,7 +3797,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260914-builder-unboxed-operators"></script>
-    <script src="exploded-algebra-tool.js?v=20260914-builder-controls"></script>
+    <script src="exploded-algebra-tool.js?v=20260915-initial-review-disabled"></script>
 
 </body>
 </html>

@@ -1,34 +1,26 @@
 (() => {
   "use strict";
 
-  const DRAFT_STORAGE_KEY = "explodedAlgebra.exerciseBuilderDraft.v1";
   const TEST_STORAGE_PREFIX = "explodedAlgebra.builderTest.";
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
   const FORMAT_VERSION = 1;
-  const DRAFT_VERSION = 2;
   const VARIABLES = ["x"];
 
   const byId = id => document.getElementById(id);
   const workspace = byId("eaWorkspace");
   const workspaceShell = byId("workspaceShell");
   const phases = Array.from(document.querySelectorAll(".phase"));
-  const phaseButtons = Array.from(document.querySelectorAll(".phase-nav [data-go-phase]"));
   let currentPhase = 1;
   let loadedWorkspacePhase = 0;
   let iframeReady = false;
   let idWasEdited = false;
-  let saveTimer = null;
   let initialCommitInProgress = false;
-  let lastWorkspaceSnapshotFingerprint = "";
   let currentCurationIndex = 0;
   let currentCurationMode = "view";
   let draft = makeFreshDraft();
 
   function makeFreshDraft() {
     return {
-      draftVersion: DRAFT_VERSION,
-      updatedAt: null,
-      phase: 1,
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
       settings: {
         evaluationLevel: 2,
@@ -57,49 +49,6 @@
         finished: false
       }
     };
-  }
-
-  function normalizeSavedDraft(saved) {
-    if (!saved || (saved.draftVersion !== 1 && saved.draftVersion !== DRAFT_VERSION)) return null;
-    const normalized = makeFreshDraft();
-    normalized.updatedAt = saved.updatedAt || null;
-    normalized.phase = Number(saved.phase) || 1;
-    normalized.metadata = { ...normalized.metadata, ...(saved.metadata || {}) };
-    normalized.settings = {
-      ...normalized.settings,
-      ...(saved.settings || {}),
-      numericalRewrite: {
-        ...normalized.settings.numericalRewrite,
-        ...(saved.settings && saved.settings.numericalRewrite || {})
-      },
-      excludedDefaultTools: Array.isArray(saved.settings && saved.settings.excludedDefaultTools)
-        ? saved.settings.excludedDefaultTools.slice()
-        : [],
-      allowedUnavailableTools: Array.isArray(saved.settings && saved.settings.allowedUnavailableTools)
-        ? saved.settings.allowedUnavailableTools.slice()
-        : []
-    };
-    normalized.initial = { ...normalized.initial, ...(saved.initial || {}) };
-    normalized.recording = { ...normalized.recording, ...(saved.recording || {}) };
-    normalized.recording.candidates = Array.isArray(saved.recording && saved.recording.candidates)
-      ? saved.recording.candidates.map(candidate => ({ ...candidate }))
-      : Array.isArray(saved.recording && saved.recording.checkpoints)
-        ? saved.recording.checkpoints.map((checkpoint, index, checkpoints) => ({
-          key: `legacy-${index}`,
-          expression: checkpoint.afterExpression,
-          beforeExpression: checkpoint.beforeExpression,
-          beforeKatex: checkpoint.beforeKatex || checkpoint.afterKatex,
-          afterKatex: checkpoint.afterKatex,
-          instruction: checkpoint.instruction || "",
-          actionStartIndex: checkpoint.actionStartIndex,
-          actionEndIndex: checkpoint.actionEndIndex,
-          included: true,
-          required: index === checkpoints.length - 1
-        }))
-        : [];
-    delete normalized.recording.checkpoints;
-    normalized.draftVersion = DRAFT_VERSION;
-    return normalized;
   }
 
   function getApi() {
@@ -152,47 +101,6 @@
     return String(first || "").replace(/\s+/g, "") === String(second || "").replace(/\s+/g, "");
   }
 
-  function readSavedDraft() {
-    try {
-      return normalizeSavedDraft(JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || "null"));
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function draftHasWork(saved) {
-    return !!saved && !!(
-      saved.metadata && (saved.metadata.title || saved.metadata.id) ||
-      saved.initial && (saved.initial.expression || saved.initial.workspaceSnapshot) ||
-      saved.recording && saved.recording.workspaceSnapshot && saved.recording.workspaceSnapshot.recorder &&
-      saved.recording.workspaceSnapshot.recorder.actions.length
-    );
-  }
-
-  function updateSaveStatus(message) {
-    byId("saveStatus").textContent = message;
-  }
-
-  function saveDraftNow() {
-    clearTimeout(saveTimer);
-    saveTimer = null;
-    draft.phase = currentPhase;
-    draft.updatedAt = new Date().toISOString();
-    try {
-      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      const time = new Date(draft.updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-      updateSaveStatus(`Draft saved locally at ${time}.`);
-    } catch (error) {
-      updateSaveStatus("Local autosave is unavailable in this browser.");
-    }
-  }
-
-  function scheduleSave() {
-    updateSaveStatus("Saving draft…");
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveDraftNow, 250);
-  }
-
   function collectSetup() {
     draft.metadata = {
       title: byId("exerciseTitle").value.trim(),
@@ -211,23 +119,6 @@
     draft.settings.excludedDefaultTools = Array.from(document.querySelectorAll("#toolPermissionList input[data-tool-key]"))
       .filter(input => !input.checked)
       .map(input => input.dataset.toolKey);
-  }
-
-  function hydrateSetup() {
-    byId("exerciseTitle").value = draft.metadata.title || "";
-    byId("exerciseId").value = draft.metadata.id || "";
-    byId("exerciseInstruction").value = draft.metadata.instruction || "";
-    byId("completionMessage").value = draft.metadata.completionMessage || "";
-    byId("evaluationLevel").value = String(draft.settings.evaluationLevel ?? 2);
-    byId("additionPermission").value = draft.settings.numericalRewrite.addition || "no-carry";
-    byId("multiplicationPermission").value = draft.settings.numericalRewrite.multiplication || "one-significant-figure";
-    byId("allowNegativeOne").checked = !!draft.settings.numericalRewrite.allowNegativeOne;
-    byId("allowInverses").checked = !!draft.settings.numericalRewrite.allowInverses;
-    const undoValue = draft.settings.includeUndoActions === false ? "no" : "yes";
-    const undoRadio = document.querySelector(`input[name="includeUndo"][value="${undoValue}"]`);
-    if (undoRadio) undoRadio.checked = true;
-    idWasEdited = !!draft.metadata.id;
-    applyToolExclusions();
   }
 
   function validateSetup(showError = true) {
@@ -304,10 +195,6 @@
     if (!container || container.dataset.loaded === "yes") return;
     container.dataset.loaded = "yes";
     container.innerHTML = catalog.map(tool => `<label><input type="checkbox" data-tool-key="${escapeHtml(tool.key)}" checked> ${escapeHtml(tool.label)}</label>`).join("");
-    container.addEventListener("change", () => {
-      collectSetup();
-      scheduleSave();
-    });
     applyToolExclusions();
   }
 
@@ -564,8 +451,7 @@
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
-    saveDraftNow();
-    setPhase(4, true);
+    setPhase(4);
   }
 
   async function validateExportLevel() {
@@ -616,46 +502,27 @@
     }
   }
 
-  function phaseIsAvailable(number) {
-    if (number === 1) return true;
-    if (number === 2) return validateSetup(false);
-    if (number === 3) return draft.initial.eaLocked && draft.initial.conventionalLocked;
-    return draft.recording.finished && (draft.recording.candidates || []).length > 0;
-  }
-
-  async function setPhase(number, force = false) {
+  async function setPhase(number) {
     const target = Number(number);
-    if (!force && !phaseIsAvailable(target)) return;
     if (currentPhase === 2 && loadedWorkspacePhase === 2) captureWorkspaceSnapshot();
     if (currentPhase === 3 && loadedWorkspacePhase === 3) captureWorkspaceSnapshot();
     currentPhase = target;
-    draft.phase = target;
     document.body.classList.remove("phase2-expression-building", "phase3-recording");
     phases.forEach(section => { section.hidden = Number(section.dataset.phase) !== target; });
-    phaseButtons.forEach(button => {
-      const phase = Number(button.dataset.goPhase);
-      button.classList.toggle("is-active", phase === target);
-      button.classList.toggle("is-complete", phase < target && phaseIsAvailable(phase + 1));
-      button.disabled = !phaseIsAvailable(phase);
-    });
     workspaceShell.style.display = "none";
     window.scrollTo({ top: 0, behavior: target >= 3 ? "auto" : "smooth" });
     if (target === 2) await preparePhase2();
     else if (target === 3) await preparePhase3();
     else if (target === 4) await renderCuration();
-    scheduleSave();
   }
 
   function captureWorkspaceSnapshot() {
     const api = getApi();
     if (!api) return false;
     const snapshot = api.getSnapshot();
-    const fingerprint = JSON.stringify(snapshot);
-    const changed = fingerprint !== lastWorkspaceSnapshotFingerprint;
-    lastWorkspaceSnapshotFingerprint = fingerprint;
     if (loadedWorkspacePhase === 2) draft.initial.workspaceSnapshot = snapshot;
     else if (loadedWorkspacePhase === 3) draft.recording.workspaceSnapshot = snapshot;
-    return changed;
+    return true;
   }
 
   function resetDownstreamRecording() {
@@ -682,32 +549,11 @@
     draft.initial.conventionalLocked = true;
     draft.initial.workspaceSnapshot = snapshot;
     loadedWorkspacePhase = 0;
-    saveDraftNow();
     try {
-      await setPhase(3, true);
+      await setPhase(3);
     } finally {
       initialCommitInProgress = false;
     }
-  }
-
-  async function editStartingExpression() {
-    const recorder = draft.recording.workspaceSnapshot && draft.recording.workspaceSnapshot.recorder;
-    const hasRecording = !!(recorder && recorder.actions && recorder.actions.length);
-    if (hasRecording && !window.confirm("Editing the starting expression will clear the recorded solution and curated steps. Continue?")) return;
-    resetDownstreamRecording();
-    draft.initial.eaLocked = false;
-    draft.initial.conventionalLocked = false;
-    loadedWorkspacePhase = 0;
-    await setPhase(2, true);
-  }
-
-  async function resumeRecording() {
-    draft.recording.finished = false;
-    await setPhase(3, true);
-  }
-
-  function hydrateAll() {
-    hydrateSetup();
   }
 
   function installEventHandlers() {
@@ -715,32 +561,12 @@
       if (!idWasEdited) byId("exerciseId").value = slugify(event.target.value);
     });
     byId("exerciseId").addEventListener("input", () => { idWasEdited = true; });
-    byId("setupForm").addEventListener("input", () => {
-      collectSetup();
-      loadedWorkspacePhase = 0;
-      scheduleSave();
-    });
-    byId("setupForm").addEventListener("change", () => {
-      collectSetup();
-      loadedWorkspacePhase = 0;
-      scheduleSave();
-    });
     byId("setupForm").addEventListener("submit", event => {
       event.preventDefault();
-      if (validateSetup(true)) setPhase(2, true);
-    });
-    document.addEventListener("click", event => {
-      const phaseButton = event.target.closest("[data-go-phase]");
-      if (!phaseButton || phaseButton.disabled) return;
-      const target = Number(phaseButton.dataset.goPhase);
-      if (target === 2 && currentPhase > 2) editStartingExpression();
-      else if (target === 3 && currentPhase === 4) resumeRecording();
-      else setPhase(target);
+      if (validateSetup(true)) setPhase(2);
     });
 
     byId("finishRecordingButton").addEventListener("click", finishRecording);
-    byId("resumeRecordingButton").addEventListener("click", resumeRecording);
-    byId("editInitialExpressionButton").addEventListener("click", editStartingExpression);
     byId("curationTable").addEventListener("input", event => {
       const field = event.target.dataset.stepField;
       if (!field) return;
@@ -748,7 +574,6 @@
       const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
       if (!candidate) return;
       candidate[field] = event.target.value;
-      scheduleSave();
     });
     byId("curationTable").addEventListener("change", event => {
       const checkbox = event.target.closest("[data-toggle-step]");
@@ -757,7 +582,6 @@
       if (!candidate || candidate.required) return;
       candidate.included = checkbox.checked;
       renderCurationTable();
-      scheduleSave();
     });
     byId("curationTable").addEventListener("click", event => {
       const modeButton = event.target.closest("[data-curation-mode]");
@@ -777,32 +601,6 @@
     byId("testLevelButton").addEventListener("click", testLevel);
     byId("downloadJsonButton").addEventListener("click", downloadJson);
 
-    byId("discardDraftButton").addEventListener("click", () => {
-      if (!window.confirm("Discard the entire unfinished exercise draft?")) return;
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-      draft = makeFreshDraft();
-      loadedWorkspacePhase = 0;
-      hydrateAll();
-      setPhase(1, true);
-    });
-    byId("resumeDraftButton").addEventListener("click", () => {
-      const saved = readSavedDraft();
-      if (saved) draft = saved;
-      byId("resumeBackdrop").hidden = true;
-      hydrateAll();
-      let resumePhase = Math.max(1, Math.min(4, draft.phase || 1));
-      if (resumePhase === 2 && draft.initial.eaLocked) resumePhase = 3;
-      if (resumePhase === 4 && !phaseIsAvailable(4)) resumePhase = phaseIsAvailable(3) ? 3 : 1;
-      setPhase(resumePhase, true);
-    });
-    byId("startFreshButton").addEventListener("click", () => {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
-      draft = makeFreshDraft();
-      byId("resumeBackdrop").hidden = true;
-      hydrateAll();
-      setPhase(1, true);
-    });
-
     window.addEventListener("message", event => {
       if (event.source !== workspace.contentWindow || !event.data || event.data.source !== "exploded-algebra-authoring") return;
       if (event.data.type === "ready") {
@@ -817,30 +615,13 @@
         const api = getApi();
         const snapshot = api && api.getSnapshot();
         if (currentPhase === 2 && snapshot && !snapshot.builderActive && !snapshot.initialCommitted) {
-          setPhase(1, true);
+          api.startInitialExpressionBuilder(null);
         }
       }
     });
-    window.addEventListener("beforeunload", () => {
-      captureWorkspaceSnapshot();
-      saveDraftNow();
-    });
-    setInterval(() => {
-      if (iframeReady && (currentPhase === 2 || currentPhase === 3)) {
-        if (captureWorkspaceSnapshot()) scheduleSave();
-      }
-    }, 800);
   }
 
   installEventHandlers();
-  hydrateAll();
-  waitForApi().catch(error => updateSaveStatus(error.message));
-  const saved = readSavedDraft();
-  if (draftHasWork(saved)) {
-    const updated = saved.updatedAt ? new Date(saved.updatedAt).toLocaleString() : "an earlier visit";
-    byId("resumeDescription").textContent = `A draft saved ${updated} is available on this device.`;
-    byId("resumeBackdrop").hidden = false;
-  } else {
-    setPhase(1, true);
-  }
+  waitForApi().catch(error => window.alert(error.message));
+  setPhase(1);
 })();

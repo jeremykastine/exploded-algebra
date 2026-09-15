@@ -25,11 +25,13 @@ for (const phase of ["1", "2", "3", "4"]) {
 }
 
 assert(builderHtml.includes("exploded-algebra.html?authoring=builder&amp;v="), "Builder must embed the versioned real player in authoring mode");
-assert(!/<section class="phase" data-phase="2" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 2 must not include explanatory heading chrome");
-assert(!/<section class="phase" data-phase="3" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 3 must not include explanatory heading chrome");
+assert(!builderHtml.includes("builder-header") && !builderHtml.includes("phase-nav") && !builderHtml.includes("phase-heading"), "The linear builder must not include title, phase-navigation, or explanatory header chrome");
+assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to Solving") && !builderHtml.includes("Edit Starting Expression") && !builderHtml.includes("Edit Setup"), "The builder must not provide backward phase navigation");
+assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
+assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraftNow") && !builderJs.includes("scheduleSave") && !builderJs.includes("readSavedDraft"), "The streamlined builder must not save or resume drafts");
 assert(builderHtml.includes('id="finishRecordingButton"') && builderHtml.includes("All Done"), "Clean solving mode must provide an All Done control");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
-assert(!/<section class="phase" data-phase="4" hidden>\s*<div class="phase-heading">/.test(builderHtml), "Phase 4 must not include explanatory heading chrome");
+assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)"), "The builder must advance directly through setup, expression entry, solving, and review");
 assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Instructions</span>') && builderJs.includes('<span>Post-completion</span>'), "Each candidate step must have pre-completion, instructions, and post-completion editing fields");
 assert(builderJs.includes('type="checkbox" data-toggle-step'), "Each review step must use an inclusion checkbox");
 assert(builderJs.includes('fieldset class="step-editor-fields"${included ? "" : " disabled"}'), "Unchecked carousel steps must remain visible with disabled fields");
@@ -46,8 +48,7 @@ assert(builderCss.includes(".instruction-math-inline") && builderCss.includes(".
 assert(!builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit recorded-action details");
 assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
 assert(builderJs.includes("const generatedStepKatex = api.generateKatex(expression)") && builderJs.includes("beforeKatex: prior && prior.beforeKatex || generatedStepKatex") && builderJs.includes("afterKatex: prior && prior.afterKatex || generatedStepKatex"), "Each step's pre/post fields must default to the same recorded expression while preserving creator edits");
-assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
-assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
+assert(builderCss.includes("body.phase2-expression-building > main") && builderCss.includes("body.phase3-recording > main"), "Expression entry and solving must fill the viewport");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
 assert(builderJs.includes("tap each operation in the expression"), "Initial-expression guidance must describe integrated grouping");
 assert(builderJs.includes("deriveStepCandidates"), "Recorded expression states must be converted into curation candidates");
@@ -68,6 +69,8 @@ assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must p
 assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder must not render a separate Cancel button");
 assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
 assert(playerJs.includes('class="builder-review-button" data-builder-review') && playerJs.includes("showBuilderOriginalReview") && playerJs.includes("hideBuilderOriginalReview"), "Expression Builder must provide press-and-hold original-expression review");
+assert(playerJs.includes('const reviewDisabled = builder.tool === "authorInitial"') && playerJs.includes('${reviewDisabled ? " disabled" : ""}'), "Starting-expression authoring must disable the eye review button");
+assert(playerHtml.includes(".builder-keypad-panel .builder-review-button:disabled"), "The unavailable starting-expression eye button must be visibly grayed out");
 assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
 assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 2; }'), "The x button must sit above 8");
 assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 7; grid-row: 1; }') && playerHtml.includes('.builder-keypad-panel .builder-exit-inv-button { grid-column: 7; grid-row: 2; }'), "Inverse controls must stack above 9");
