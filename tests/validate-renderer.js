@@ -54,7 +54,19 @@ assert.equal(singlePairPattern.operatorCenters.length, 0);
 const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.join(projectRoot, "exploded-algebra-tool.js"), "utf8");
 assert(playerHtml.includes('value="nested-operator-parentheses"'));
+assert(playerHtml.includes('id="operationBarStyleSelect"'));
+assert(!playerHtml.includes('id="sumBarStyleSelect"'));
+assert(!playerHtml.includes('id="productBarStyleSelect"'));
+assert(playerHtml.includes('value="endpoint-operators"'));
+assert(playerHtml.includes('id="operationBarShadingSelect"'));
+["black", "gray", "light-gray", "gradient"].forEach(shading => {
+    assert(playerHtml.includes(`value="${shading}"`), `Missing ${shading} bar shading option`);
+});
 assert(playerJs.includes('"nested-operator-parentheses"'));
+assert(playerJs.includes('"endpoint-operators"'));
+assert(playerJs.includes("SETTINGS.sumBeamStyle = normalizedStyle"));
+assert(playerJs.includes("SETTINGS.productBeamStyle = normalizedStyle"));
+assert(!playerJs.includes("operationBarGradientCheckbox"));
 assert(
     /const operatorIconColor = useNestedOperatorParenthesesBeam\s*\? "black"/.test(rendererSource),
     "The central operator must remain black"
@@ -62,6 +74,27 @@ assert(
 assert(
     /drawNestedOperatorParenthesesSumBeam\([\s\S]*?beamPaint,\s*beamPaint,/.test(rendererSource),
     "The optional gradient must apply to both the outer parentheses and outer operators"
+);
+assert.equal(vm.runInContext('getOperationBarSolidColor("black")', rendererContext), "black");
+assert.equal(vm.runInContext('getOperationBarSolidColor("gray")', rendererContext), "#666666");
+assert.equal(vm.runInContext('getOperationBarSolidColor("light-gray")', rendererContext), "#bdbdbd");
+assert.deepEqual(
+    Array.from(vm.runInContext("getEndpointOperatorCenters(0, 100, 6)", rendererContext)),
+    [6, 94],
+    "Endpoint operators should be inset just enough to remain visible inside the bar"
+);
+assert(
+    /drawEndpointProductOperators\(drawingContext, x, y1, y2, flare, "white"\)/.test(rendererSource),
+    "The endpoint multiplication symbols must be white"
+);
+assert(
+    /drawEndpointSumOperators\(drawingContext, x1, x2, y, flare, "white"\)/.test(rendererSource),
+    "The endpoint addition symbols must be white"
+);
+assert(
+    /useEndpointOperatorsBeam[\s\S]*?createProductBeamGradient/.test(rendererSource) &&
+        /useEndpointOperatorsBeam[\s\S]*?createSumBeamGradient/.test(rendererSource),
+    "The endpoint-operator style must support gradient shading"
 );
 
 console.log("Exploded Algebra renderer checks passed.");

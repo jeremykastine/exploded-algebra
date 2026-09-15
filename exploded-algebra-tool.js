@@ -1214,9 +1214,8 @@ Promise.resolve().then(() => {
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const settingsButton = document.getElementById("settingsButton");
         const levelMenuPanel = document.getElementById("levelMenuPanel");
-        const sumBarStyleSelect = document.getElementById("sumBarStyleSelect");
-        const productBarStyleSelect = document.getElementById("productBarStyleSelect");
-        const operationBarGradientCheckbox = document.getElementById("operationBarGradientCheckbox");
+        const operationBarStyleSelect = document.getElementById("operationBarStyleSelect");
+        const operationBarShadingSelect = document.getElementById("operationBarShadingSelect");
         const buttonSizeValue = document.getElementById("buttonSizeValue");
         const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
         const settingsExpressionSample = document.getElementById("settingsExpressionSample");
@@ -4137,22 +4136,16 @@ Promise.resolve().then(() => {
             setMainButtonSize(loadSavedMainButtonSize());
             setStepsFontSize(loadSavedStepsFontSize());
             renderSettingsExpressionSample();
-            setOperationBarStyle("sum", getSavedOperationBarStyle(SUM_BAR_STYLE_STORAGE_KEY, SETTINGS.sumBeamStyle));
-            setOperationBarStyle("product", getSavedOperationBarStyle(PRODUCT_BAR_STYLE_STORAGE_KEY, SETTINGS.productBeamStyle));
-            setOperationBarGradient(getSavedOperationBarGradient(SETTINGS.operationBarGradientEnabled));
-            if (sumBarStyleSelect) {
-                sumBarStyleSelect.addEventListener("change", () => {
-                    setOperationBarStyle("sum", sumBarStyleSelect.value, true);
+            setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
+            setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
+            if (operationBarStyleSelect) {
+                operationBarStyleSelect.addEventListener("change", () => {
+                    setOperationBarStyle(operationBarStyleSelect.value, true);
                 });
             }
-            if (productBarStyleSelect) {
-                productBarStyleSelect.addEventListener("change", () => {
-                    setOperationBarStyle("product", productBarStyleSelect.value, true);
-                });
-            }
-            if (operationBarGradientCheckbox) {
-                operationBarGradientCheckbox.addEventListener("change", () => {
-                    setOperationBarGradient(operationBarGradientCheckbox.checked, true);
+            if (operationBarShadingSelect) {
+                operationBarShadingSelect.addEventListener("change", () => {
+                    setOperationBarShading(operationBarShadingSelect.value, true);
                 });
             }
             if (workspaceToolbar) {
@@ -4554,14 +4547,18 @@ ctx.font = SETTINGS.textFont;
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
         const OPERATION_BAR_GRADIENT_STORAGE_KEY = "explodedAlgebraOperationBarGradientV1";
+        const OPERATION_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperationBarStyleV3";
+        const OPERATION_BAR_SHADING_STORAGE_KEY = "explodedAlgebraOperationBarShadingV1";
         const OPERATOR_BAR_STYLES = new Set([
             "thick",
+            "endpoint-operators",
             "flared",
             "midline",
             "nested-parentheses",
             "nested-operator-parentheses",
             "outward-parentheses"
         ]);
+        const OPERATION_BAR_SHADINGS = new Set(["black", "gray", "light-gray", "gradient"]);
 
         function normalizeOperationBarStyle(style) {
             if (style === "gradient") {
@@ -4570,12 +4567,18 @@ ctx.font = SETTINGS.textFont;
             return OPERATOR_BAR_STYLES.has(style) ? style : null;
         }
 
-        function getSavedOperationBarStyle(storageKey, fallbackStyle) {
+        function getSavedOperationBarStyle(fallbackStyle) {
             try {
-                const savedStyle = window.localStorage.getItem(storageKey);
+                const savedStyle = window.localStorage.getItem(OPERATION_BAR_STYLE_STORAGE_KEY);
                 const normalizedSavedStyle = normalizeOperationBarStyle(savedStyle);
                 if (normalizedSavedStyle) {
                     return normalizedSavedStyle;
+                }
+                const previousStyle = window.localStorage.getItem(SUM_BAR_STYLE_STORAGE_KEY) ||
+                    window.localStorage.getItem(PRODUCT_BAR_STYLE_STORAGE_KEY);
+                const normalizedPreviousStyle = normalizeOperationBarStyle(previousStyle);
+                if (normalizedPreviousStyle) {
+                    return normalizedPreviousStyle;
                 }
                 const legacyStyle = window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY);
                 return normalizeOperationBarStyle(legacyStyle) ||
@@ -4586,11 +4589,21 @@ ctx.font = SETTINGS.textFont;
             }
         }
 
-        function getSavedOperationBarGradient(fallbackEnabled) {
+        function normalizeOperationBarShading(shading) {
+            return OPERATION_BAR_SHADINGS.has(shading) ? shading : null;
+        }
+
+        function getSavedOperationBarShading(fallbackShading) {
             try {
+                const savedShading = normalizeOperationBarShading(
+                    window.localStorage.getItem(OPERATION_BAR_SHADING_STORAGE_KEY)
+                );
+                if (savedShading) {
+                    return savedShading;
+                }
                 const savedValue = window.localStorage.getItem(OPERATION_BAR_GRADIENT_STORAGE_KEY);
                 if (savedValue === "1" || savedValue === "0") {
-                    return savedValue === "1";
+                    return savedValue === "1" ? "gradient" : "black";
                 }
 
                 const previousStyles = [
@@ -4599,29 +4612,26 @@ ctx.font = SETTINGS.textFont;
                     window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY)
                 ].filter(Boolean);
                 if (previousStyles.includes("gradient")) {
-                    return true;
+                    return "gradient";
                 }
                 if (previousStyles.some(style => OPERATOR_BAR_STYLES.has(style))) {
-                    return false;
+                    return "black";
                 }
             } catch (error) {}
-            return !!fallbackEnabled;
+            return normalizeOperationBarShading(fallbackShading) || "gradient";
         }
 
-        function setOperationBarStyle(operation, style, persist = false) {
+        function setOperationBarStyle(style, persist = false) {
             const normalizedStyle = normalizeOperationBarStyle(style) || "thick";
-            const isSum = operation === "sum";
-            const select = isSum ? sumBarStyleSelect : productBarStyleSelect;
-            SETTINGS[isSum ? "sumBeamStyle" : "productBeamStyle"] = normalizedStyle;
-            if (select) {
-                select.value = normalizedStyle;
+            SETTINGS.operationBarStyle = normalizedStyle;
+            SETTINGS.sumBeamStyle = normalizedStyle;
+            SETTINGS.productBeamStyle = normalizedStyle;
+            if (operationBarStyleSelect) {
+                operationBarStyleSelect.value = normalizedStyle;
             }
             if (persist) {
                 try {
-                    window.localStorage.setItem(
-                        isSum ? SUM_BAR_STYLE_STORAGE_KEY : PRODUCT_BAR_STYLE_STORAGE_KEY,
-                        normalizedStyle
-                    );
+                    window.localStorage.setItem(OPERATION_BAR_STYLE_STORAGE_KEY, normalizedStyle);
                 } catch (error) {}
             }
             if (expressionRoot) {
@@ -4630,18 +4640,15 @@ ctx.font = SETTINGS.textFont;
             }
         }
 
-        function setOperationBarGradient(enabled, persist = false) {
-            const gradientEnabled = !!enabled;
-            SETTINGS.operationBarGradientEnabled = gradientEnabled;
-            if (operationBarGradientCheckbox) {
-                operationBarGradientCheckbox.checked = gradientEnabled;
+        function setOperationBarShading(shading, persist = false) {
+            const normalizedShading = normalizeOperationBarShading(shading) || "gradient";
+            SETTINGS.operationBarShading = normalizedShading;
+            if (operationBarShadingSelect) {
+                operationBarShadingSelect.value = normalizedShading;
             }
             if (persist) {
                 try {
-                    window.localStorage.setItem(
-                        OPERATION_BAR_GRADIENT_STORAGE_KEY,
-                        gradientEnabled ? "1" : "0"
-                    );
+                    window.localStorage.setItem(OPERATION_BAR_SHADING_STORAGE_KEY, normalizedShading);
                 } catch (error) {}
             }
             if (expressionRoot) {
