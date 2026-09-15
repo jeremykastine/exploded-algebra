@@ -23,7 +23,6 @@
     return {
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
       settings: {
-        evaluationLevel: 3,
         numericalRewrite: {
           addition: "expression-terms",
           multiplication: "unrestricted",
@@ -108,7 +107,6 @@
       instruction: byId("exerciseInstruction").value.trim(),
       completionMessage: byId("completionMessage").value.trim()
     };
-    draft.settings.evaluationLevel = Number(byId("evaluationLevel").value);
     draft.settings.numericalRewrite = {
       addition: byId("additionPermission").value,
       multiplication: byId("multiplicationPermission").value,
@@ -144,7 +142,6 @@
       title: draft.metadata.title,
       startExpression: draft.initial.expression,
       initialKatex: draft.initial.katex,
-      evaluationLevel: draft.settings.evaluationLevel,
       numericalRewrite: { ...draft.settings.numericalRewrite },
       variables: inferVariables(draft.initial.expression),
       excludedDefaultTools: [...draft.settings.excludedDefaultTools],
