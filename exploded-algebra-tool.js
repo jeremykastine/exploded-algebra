@@ -9406,17 +9406,35 @@ ctx.font = SETTINGS.textFont;
             return evaluateBuilderWholeNumberExpression(builder.originalSelectedNode);
         }
 
-        function collapseCompletedIntegratedBuilderNode(node) {
+        function collapseCompletedIntegratedBuilderNode(node, unresolvedOperation = { type: null }) {
             if (!node || node.isBuilderInverseOpen) return null;
             if (node.isBuilderSequence) {
-                if (builderSequenceExpectsValue(node) || node.builderOperators.length || node.args.length !== 1) {
+                if (builderSequenceExpectsValue(node) ||
+                    node.args.length === 0 ||
+                    node.builderOperators.length !== node.args.length - 1) {
                     return null;
                 }
-                return collapseCompletedIntegratedBuilderNode(node.args[0]);
+                for (const type of node.builderOperators) {
+                    if (!["sum", "prod"].includes(type) ||
+                        unresolvedOperation.type && unresolvedOperation.type !== type) {
+                        return null;
+                    }
+                    unresolvedOperation.type = type;
+                }
+                const completedArgs = [];
+                for (const child of node.args) {
+                    const completed = collapseCompletedIntegratedBuilderNode(child, unresolvedOperation);
+                    if (!completed) return null;
+                    completedArgs.push(completed);
+                }
+                if (completedArgs.length === 1) {
+                    return completedArgs[0];
+                }
+                return new ExprNode(node.builderOperators[0], completedArgs, null);
             }
             const completedArgs = [];
             for (const child of node.args) {
-                const completed = collapseCompletedIntegratedBuilderNode(child);
+                const completed = collapseCompletedIntegratedBuilderNode(child, unresolvedOperation);
                 if (!completed) return null;
                 completedArgs.push(completed);
             }

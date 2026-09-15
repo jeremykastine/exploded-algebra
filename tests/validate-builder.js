@@ -110,7 +110,46 @@ assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.inclu
 assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence.builderOperators.push("prod")'), "Entering x after a completed value must insert an implicit product");
 assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
-assert(playerJs.includes('getIntegratedBuilderCompletedRoot'), "Submit must require one completely resolved root");
+assert(playerJs.includes('unresolvedOperation = { type: null }') && playerJs.includes('unresolvedOperation.type !== type'), "Submit must accept only one uniform type of unresolved operation");
+assert(playerJs.includes('return new ExprNode(node.builderOperators[0], completedArgs, null)'), "Submit must collapse uniformly unresolved sums or products");
+
+const collapseMatch = playerJs.match(/function collapseCompletedIntegratedBuilderNode\(node, unresolvedOperation = \{ type: null \}\) \{([\s\S]*?)\n        \}\n\n        function getIntegratedBuilderCompletedRoot/);
+assert(collapseMatch, "Integrated-builder completion logic must remain testable");
+const collapseContext = {
+  ExprNode: class ExprNode {
+    constructor(type, args = [], value = null) {
+      this.type = type;
+      this.args = args;
+      this.value = value;
+    }
+  },
+  builderSequenceExpectsValue(sequence) {
+    return !sequence || sequence.args.length === 0 || sequence.builderOperators.length >= sequence.args.length;
+  }
+};
+vm.createContext(collapseContext);
+vm.runInContext(`function collapseCompletedIntegratedBuilderNode(node, unresolvedOperation = { type: null }) {${collapseMatch[1]}\n}\nthis.collapseCompletedIntegratedBuilderNode = collapseCompletedIntegratedBuilderNode;`, collapseContext);
+const pendingSequence = (args, builderOperators) => ({
+  type: "sum",
+  args,
+  value: null,
+  isBuilderSequence: true,
+  isBuilderInverseOpen: false,
+  builderOperators
+});
+const testValue = value => ({ type: "value", args: [], value });
+const uniformSum = collapseContext.collapseCompletedIntegratedBuilderNode(
+  pendingSequence([testValue("2"), testValue("3"), testValue("4")], ["sum", "sum"])
+);
+assert(uniformSum && uniformSum.type === "sum" && uniformSum.args.length === 3, "Submit must resolve an entirely ungrouped sum");
+const uniformProduct = collapseContext.collapseCompletedIntegratedBuilderNode(
+  pendingSequence([testValue("2"), testValue("3"), testValue("4")], ["prod", "prod"])
+);
+assert(uniformProduct && uniformProduct.type === "prod" && uniformProduct.args.length === 3, "Submit must resolve an entirely ungrouped product");
+const mixedOperations = collapseContext.collapseCompletedIntegratedBuilderNode(
+  pendingSequence([testValue("2"), testValue("3"), testValue("4")], ["sum", "prod"])
+);
+assert(mixedOperations === null, "Submit must still reject mixed unresolved operations");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
