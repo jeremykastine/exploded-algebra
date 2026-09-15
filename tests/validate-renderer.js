@@ -58,12 +58,14 @@ assert(playerHtml.includes('id="operationBarStyleSelect"'));
 assert(!playerHtml.includes('id="sumBarStyleSelect"'));
 assert(!playerHtml.includes('id="productBarStyleSelect"'));
 assert(playerHtml.includes('value="endpoint-operators"'));
+assert(playerHtml.includes('value="ellipse"'));
 assert(playerHtml.includes('id="operationBarShadingSelect"'));
 ["black", "gray", "light-gray", "gradient"].forEach(shading => {
     assert(playerHtml.includes(`value="${shading}"`), `Missing ${shading} bar shading option`);
 });
 assert(playerJs.includes('"nested-operator-parentheses"'));
 assert(playerJs.includes('"endpoint-operators"'));
+assert(playerJs.includes('"ellipse"'));
 assert(playerJs.includes("SETTINGS.sumBeamStyle = normalizedStyle"));
 assert(playerJs.includes("SETTINGS.productBeamStyle = normalizedStyle"));
 assert(!playerJs.includes("operationBarGradientCheckbox"));
@@ -95,6 +97,23 @@ assert(
     /useEndpointOperatorsBeam[\s\S]*?createProductBeamGradient/.test(rendererSource) &&
         /useEndpointOperatorsBeam[\s\S]*?createSumBeamGradient/.test(rendererSource),
     "The endpoint-operator style must support gradient shading"
+);
+assert(
+    /drawFilledEllipse\(drawingContext, x, centerY, flare, Math\.max\(0, y2 - y1\) \/ 2, beamPaint\)/.test(rendererSource),
+    "The product ellipse must be tangent to every side of its separator container"
+);
+assert(
+    /drawFilledEllipse\(drawingContext, centerX, y, Math\.max\(0, x2 - x1\) \/ 2, flare, beamPaint\)/.test(rendererSource),
+    "The sum ellipse must be tangent to every side of its separator container"
+);
+assert(
+    /const centeredOperatorIconColor = useEllipseBeam \? "white" : operatorIconColor/.test(rendererSource),
+    "The ellipse style must keep its centered operation white"
+);
+assert(
+    /useEllipseBeam[\s\S]*?createProductBeamGradient/.test(rendererSource) &&
+        /useEllipseBeam[\s\S]*?createSumBeamGradient/.test(rendererSource),
+    "The ellipse style must support gradient shading"
 );
 
 console.log("Exploded Algebra renderer checks passed.");

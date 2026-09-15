@@ -4580,6 +4580,7 @@ ctx.font = SETTINGS.textFont;
         const OPERATOR_BAR_STYLES = new Set([
             "thick",
             "endpoint-operators",
+            "ellipse",
             "flared",
             "midline",
             "nested-parentheses",

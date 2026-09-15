@@ -278,6 +278,15 @@ function drawThickSumBeam(drawingContext, x1, x2, y, halfThickness, paintStyle) 
     drawingContext.restore();
 }
 
+function drawFilledEllipse(drawingContext, centerX, centerY, radiusX, radiusY, paintStyle) {
+    drawingContext.save();
+    drawingContext.fillStyle = paintStyle;
+    drawingContext.beginPath();
+    drawingContext.ellipse(centerX, centerY, radiusX, radiusY);
+    drawingContext.fill();
+    drawingContext.restore();
+}
+
 function getOperationBarSolidColor(shading) {
     if (shading === "gray") {
         return "#666666";
@@ -696,6 +705,14 @@ class SvgDrawingContext {
         const largeArc = Math.abs(delta) > Math.PI ? 1 : 0;
         const sweep = counterclockwise ? 0 : 1;
         this.pathCommands.push(`M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} ${sweep} ${endX} ${endY}`);
+    }
+
+    ellipse(x, y, radiusX, radiusY) {
+        const rx = Math.max(0, radiusX);
+        const ry = Math.max(0, radiusY);
+        this.pathCommands.push(
+            `M ${x + rx} ${y} A ${rx} ${ry} 0 1 1 ${x - rx} ${y} A ${rx} ${ry} 0 1 1 ${x + rx} ${y}`
+        );
     }
 
     appendSvgElement(element) {
@@ -1314,6 +1331,7 @@ function drawNodeToContext(
             const beamStyle = settings.productBeamStyle;
             const useThickBeam = needsBeam && beamStyle === "thick";
             const useEndpointOperatorsBeam = beamStyle === "endpoint-operators";
+            const useEllipseBeam = beamStyle === "ellipse";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
             const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
@@ -1322,7 +1340,7 @@ function drawNodeToContext(
             const gradientBeamColor = settings.productBeamEdgeColor || "black";
             const operationBarShading = settings.operationBarShading || "gradient";
             const useGradientPaint = operationBarShading === "gradient" &&
-                (needsBeam || useEndpointOperatorsBeam || useNestedParenthesesBeam ||
+                (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
             const beamPaint = useGradientPaint
                 ? createProductBeamGradient(drawingContext, x, y1, y2, gradientBeamColor)
@@ -1330,6 +1348,7 @@ function drawNodeToContext(
             const operatorIconColor = useNestedOperatorParenthesesBeam
                 ? "black"
                 : (useGradientPaint ? gradientBeamColor : operatorColor);
+            const centeredOperatorIconColor = useEllipseBeam ? "white" : operatorIconColor;
             drawingContext.strokeStyle = beamPaint;
             drawingContext.fillStyle = beamPaint;
 
@@ -1337,6 +1356,8 @@ function drawNodeToContext(
                 drawThickProductBeam(drawingContext, x, y1, y2, flare, beamPaint);
             } else if (useEndpointOperatorsBeam) {
                 drawThickProductBeam(drawingContext, x, y1, y2, flare, beamPaint);
+            } else if (useEllipseBeam) {
+                drawFilledEllipse(drawingContext, x, centerY, flare, Math.max(0, y2 - y1) / 2, beamPaint);
             } else if (useMidlineBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(x, y1);
@@ -1388,7 +1409,7 @@ function drawNodeToContext(
                 );
             }
 
-            if (needsBeam || useEndpointOperatorsBeam || useNestedParenthesesBeam ||
+            if (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam) {
                 drawDebugComponentBounds(drawingContext, x - flare, y1, x + flare, y2, settings);
             }
@@ -1396,7 +1417,7 @@ function drawNodeToContext(
             if (useEndpointOperatorsBeam) {
                 drawEndpointProductOperators(drawingContext, x, y1, y2, flare, "white");
             } else {
-                drawingContext.fillStyle = operatorIconColor;
+                drawingContext.fillStyle = centeredOperatorIconColor;
                 drawingContext.beginPath();
                 drawingContext.arc(x, centerY, getOperatorDotRadius(settings), 0, Math.PI * 2);
                 drawingContext.fill();
@@ -1421,6 +1442,7 @@ function drawNodeToContext(
             const beamStyle = settings.sumBeamStyle;
             const useThickBeam = needsBeam && beamStyle === "thick";
             const useEndpointOperatorsBeam = beamStyle === "endpoint-operators";
+            const useEllipseBeam = beamStyle === "ellipse";
             const useFlaredBeam = needsBeam && beamStyle === "flared";
             const useMidlineBeam = needsBeam && beamStyle === "midline";
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
@@ -1429,7 +1451,7 @@ function drawNodeToContext(
             const gradientBeamColor = settings.sumBeamEdgeColor || "black";
             const operationBarShading = settings.operationBarShading || "gradient";
             const useGradientPaint = operationBarShading === "gradient" &&
-                (needsBeam || useEndpointOperatorsBeam || useNestedParenthesesBeam ||
+                (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
             const beamPaint = useGradientPaint
                 ? createSumBeamGradient(drawingContext, x1, x2, y, gradientBeamColor)
@@ -1437,6 +1459,7 @@ function drawNodeToContext(
             const operatorIconColor = useNestedOperatorParenthesesBeam
                 ? "black"
                 : (useGradientPaint ? gradientBeamColor : operatorColor);
+            const centeredOperatorIconColor = useEllipseBeam ? "white" : operatorIconColor;
             drawingContext.strokeStyle = beamPaint;
             drawingContext.fillStyle = beamPaint;
 
@@ -1444,6 +1467,8 @@ function drawNodeToContext(
                 drawThickSumBeam(drawingContext, x1, x2, y, flare, beamPaint);
             } else if (useEndpointOperatorsBeam) {
                 drawThickSumBeam(drawingContext, x1, x2, y, flare, beamPaint);
+            } else if (useEllipseBeam) {
+                drawFilledEllipse(drawingContext, centerX, y, Math.max(0, x2 - x1) / 2, flare, beamPaint);
             } else if (useMidlineBeam) {
                 drawingContext.beginPath();
                 drawingContext.moveTo(x1, y);
@@ -1498,7 +1523,7 @@ function drawNodeToContext(
             if (useEndpointOperatorsBeam) {
                 drawEndpointSumOperators(drawingContext, x1, x2, y, flare, "white");
             } else {
-                drawingContext.strokeStyle = operatorIconColor;
+                drawingContext.strokeStyle = centeredOperatorIconColor;
                 drawingContext.beginPath();
                 drawingContext.moveTo(centerX - flare / 2, y);
                 drawingContext.lineTo(centerX + flare / 2, y);
@@ -1508,7 +1533,7 @@ function drawNodeToContext(
                 drawingContext.stroke();
                 drawingContext.lineWidth = getStructuralStrokeWidth(settings);
             }
-            if (needsBeam || useEndpointOperatorsBeam || useNestedParenthesesBeam ||
+            if (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam) {
                 drawDebugComponentBounds(drawingContext, x1, y - flare, x2, y + flare, settings);
             }
