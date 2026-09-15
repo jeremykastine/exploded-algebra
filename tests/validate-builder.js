@@ -40,7 +40,7 @@ assert(builderCss.includes(".step-carousel-slide") && builderCss.includes(".step
 assert(/beforeKatex[\s\S]*?data-step-preview="beforeKatex"[\s\S]*?data-step-field="instruction"[\s\S]*?afterKatex[\s\S]*?data-step-preview="afterKatex"/.test(builderJs), "Each slide must stack pre-version, rendered pre-version, instruction, post-version, and rendered post-version in order");
 assert(!builderJs.includes("<label>Pre-completion") && !builderJs.includes("<label>Post-completion") && !builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit visible field labels and recorded-action details");
 assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
-assert(builderJs.includes("generatedBeforeKatex") && builderJs.includes("generatedAfterKatex"), "Pre/post fields must be autofilled from their respective expression states");
+assert(builderJs.includes("const generatedStepKatex = api.generateKatex(expression)") && builderJs.includes("beforeKatex: prior && prior.beforeKatex || generatedStepKatex") && builderJs.includes("afterKatex: prior && prior.afterKatex || generatedStepKatex"), "Each step's pre/post fields must default to the same recorded expression while preserving creator edits");
 assert(builderCss.includes("body.phase2-expression-building > .builder-header"), "Active Phase 2 builder must hide the outer page header");
 assert(builderCss.includes("body.phase3-recording > .builder-header"), "Active solving mode must hide the outer page header");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");

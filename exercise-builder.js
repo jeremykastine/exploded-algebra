@@ -399,16 +399,15 @@
       const occurrence = (occurrences.get(expressionKey) || 0) + 1;
       occurrences.set(expressionKey, occurrence);
       const key = `${expressionKey}::${occurrence}`;
-      const generatedBeforeKatex = api.generateKatex(currentExpression);
-      const generatedAfterKatex = api.generateKatex(expression);
+      const generatedStepKatex = api.generateKatex(expression);
       const priorList = previousByExpression.get(expressionKey) || [];
       const prior = priorList.shift();
       candidates.push({
         key,
         expression,
         beforeExpression: currentExpression,
-        beforeKatex: prior && prior.beforeKatex || generatedBeforeKatex,
-        afterKatex: prior && prior.afterKatex || generatedAfterKatex,
+        beforeKatex: prior && prior.beforeKatex || generatedStepKatex,
+        afterKatex: prior && prior.afterKatex || generatedStepKatex,
         instruction: prior && prior.instruction || "",
         actionStartIndex,
         actionEndIndex,
