@@ -20,6 +20,7 @@
   let saveTimer = null;
   let initialCommitInProgress = false;
   let lastWorkspaceSnapshotFingerprint = "";
+  let currentCurationIndex = 0;
   let draft = makeFreshDraft();
 
   function makeFreshDraft() {
@@ -438,33 +439,33 @@
       container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
       return;
     }
-    container.innerHTML = candidates.map((candidate, index) => {
-      const included = candidate.included !== false;
-      return `
-        <article class="step-editor-row ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}">
-          <label class="step-include-label">
-            <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
-            <span>Step ${index + 1}</span>
-          </label>
-          <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
-            <div class="step-expression-row">
-              <textarea rows="2" spellcheck="false" data-step-field="beforeKatex" aria-label="Pre-completion expression for step ${index + 1}" placeholder="Pre-completion expression">${escapeHtml(candidate.beforeKatex)}</textarea>
-              <div class="step-math-preview" data-step-preview="beforeKatex" aria-label="Pre-completion preview for step ${index + 1}"></div>
-            </div>
-            <div class="step-expression-row">
-              <textarea rows="2" spellcheck="false" data-step-field="afterKatex" aria-label="Post-completion expression for step ${index + 1}" placeholder="Post-completion expression">${escapeHtml(candidate.afterKatex)}</textarea>
-              <div class="step-math-preview" data-step-preview="afterKatex" aria-label="Post-completion preview for step ${index + 1}"></div>
-            </div>
-            <textarea rows="2" data-step-field="instruction" aria-label="Instructions or hints for step ${index + 1}" placeholder="Instructions or hints (optional)"></textarea>
-          </fieldset>
-        </article>`;
-    }).join("");
-    container.querySelectorAll("[data-candidate-index]").forEach(row => {
-      const candidate = candidates[Number(row.dataset.candidateIndex)];
-      row.querySelector('[data-step-field="instruction"]').value = candidate.instruction || "";
-      renderKatex(row.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
-      renderKatex(row.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
-    });
+    currentCurationIndex = Math.max(0, Math.min(currentCurationIndex, candidates.length - 1));
+    const index = currentCurationIndex;
+    const candidate = candidates[index];
+    const included = candidate.included !== false;
+    container.innerHTML = `
+      <article class="step-carousel-slide card ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${index + 1} of ${candidates.length}" tabindex="-1">
+        <label class="step-include-label">
+          <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
+          <span>Step ${index + 1}</span>
+        </label>
+        <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
+          <textarea rows="2" spellcheck="false" data-step-field="beforeKatex" aria-label="Pre-version for step ${index + 1}" placeholder="Pre-version">${escapeHtml(candidate.beforeKatex)}</textarea>
+          <div class="step-math-preview" data-step-preview="beforeKatex" aria-label="Rendered pre-version for step ${index + 1}"></div>
+          <textarea rows="2" data-step-field="instruction" aria-label="Instruction for step ${index + 1}" placeholder="Instruction (optional)"></textarea>
+          <textarea rows="2" spellcheck="false" data-step-field="afterKatex" aria-label="Post-version for step ${index + 1}" placeholder="Post-version">${escapeHtml(candidate.afterKatex)}</textarea>
+          <div class="step-math-preview" data-step-preview="afterKatex" aria-label="Rendered post-version for step ${index + 1}"></div>
+        </fieldset>
+      </article>
+      <nav class="step-carousel-navigation" aria-label="Step carousel navigation">
+        <button type="button" class="secondary-button" data-carousel-direction="previous"${index === 0 ? " disabled" : ""}>Previous</button>
+        <p class="step-carousel-position" aria-live="polite">${index + 1} of ${candidates.length}</p>
+        <button type="button" class="secondary-button" data-carousel-direction="next"${index === candidates.length - 1 ? " disabled" : ""}>Next</button>
+      </nav>`;
+    const slide = container.querySelector("[data-candidate-index]");
+    slide.querySelector('[data-step-field="instruction"]').value = candidate.instruction || "";
+    renderKatex(slide.querySelector('[data-step-preview="beforeKatex"]'), candidate.beforeKatex);
+    renderKatex(slide.querySelector('[data-step-preview="afterKatex"]'), candidate.afterKatex);
   }
 
   function renderCuration() {
@@ -486,6 +487,7 @@
       return;
     }
     draft.recording.candidates = candidates;
+    currentCurationIndex = 0;
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
@@ -685,6 +687,14 @@
       candidate.included = checkbox.checked;
       renderCurationTable();
       scheduleSave();
+    });
+    byId("curationTable").addEventListener("click", event => {
+      const button = event.target.closest("[data-carousel-direction]");
+      if (!button || button.disabled) return;
+      const offset = button.dataset.carouselDirection === "next" ? 1 : -1;
+      currentCurationIndex += offset;
+      renderCurationTable();
+      byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
     });
     byId("testLevelButton").addEventListener("click", testLevel);
     byId("downloadJsonButton").addEventListener("click", downloadJson);
