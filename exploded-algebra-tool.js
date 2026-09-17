@@ -11764,7 +11764,6 @@ function renderToolArea() {
                 activeWorkspacePointerId !== null ||
                 uiState.mode !== "edit" ||
                 uiState.stage === "postview" ||
-                uiState.stage === "builder" ||
                 uiState.workspaceMode !== "pan"
             ) {
                 return;
