@@ -61,6 +61,8 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
+    builderPotentialFill: "rgba(112, 64, 160, 0.3)",
+    builderPotentialStroke: "rgba(112, 64, 160, 0.78)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -893,10 +895,12 @@ function measureNodeWithContext(node, drawingContext, settings) {
             cursorY += child.layout.height + itemPadding * 2 + operatorSize;
         });
         const expectsValue = node.args.length === 0 || (node.builderOperators || []).length >= node.args.length;
+        const isCurrentSequence = node.isBuilderCurrentSequence !== false;
         const placeholderWidth = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
         const placeholderHeight = minimumHeight;
-        const placeholder = expectsValue
+        const placeholder = expectsValue && isCurrentSequence
             ? {
+                kind: "value",
                 x: node.args.length ? cursorX - itemPadding : itemPadding,
                 y: node.args.length ? cursorY - itemPadding : itemPadding,
                 width: placeholderWidth,
@@ -907,12 +911,41 @@ function measureNodeWithContext(node, drawingContext, settings) {
             right = Math.max(right, placeholder.x + placeholder.width + itemPadding);
             bottom = Math.max(bottom, placeholder.y + placeholder.height + itemPadding);
         }
+        const potentialBoxes = placeholder ? [placeholder] : [];
+        const lastIndex = node.args.length - 1;
+        const last = node.args[lastIndex];
+        if (!expectsValue && isCurrentSequence && last) {
+            const lastOffset = offsets[lastIndex];
+            if (last.isBuilderActive && last.type === "value" && /^\d+$/.test(String(last.value))) {
+                const digitWidth = Math.max(14, parseFontSize(settings.textFont) * 0.72);
+                const digitHeight = Math.max(18, parseFontSize(settings.textFont) * 1.05);
+                potentialBoxes.push({
+                    kind: "digit",
+                    x: lastOffset.x + last.layout.width + Math.max(3, itemPadding * 0.35),
+                    y: lastOffset.y + (last.layout.height - digitHeight) / 2,
+                    width: digitWidth,
+                    height: digitHeight
+                });
+            }
+            potentialBoxes.push({
+                kind: "operation",
+                x: lastOffset.x + last.layout.width + itemPadding,
+                y: lastOffset.y + last.layout.height + itemPadding,
+                width: operatorSize,
+                height: operatorSize
+            });
+        }
+        potentialBoxes.forEach(box => {
+            right = Math.max(right, box.x + box.width + itemPadding);
+            bottom = Math.max(bottom, box.y + box.height + itemPadding);
+        });
         node.layout.width = Math.max(32 + itemPadding * 2, right);
         node.layout.height = Math.max(minimumHeight + itemPadding * 2, bottom);
         node.layout.builderItemPadding = itemPadding;
         node.layout.builderOperatorSize = operatorSize;
         node.layout.builderItemOffsets = offsets;
         node.layout.builderPlaceholderBox = placeholder;
+        node.layout.builderPotentialBoxes = potentialBoxes;
         node.layout.childBoxes = [];
         node.layout.builderOperatorBoxes = [];
         node.layout.vLines = [0, node.layout.width];
@@ -1068,13 +1101,13 @@ function placeNodeWithSettings(node, x, y, settings) {
         });
         const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
         const operatorSize = node.layout.builderOperatorSize || Math.max(30, parseFontSize(settings.textFont) * 1.5);
-        const placeholder = node.layout.builderPlaceholderBox
-            ? {
-                ...node.layout.builderPlaceholderBox,
-                x: x + node.layout.builderPlaceholderBox.x,
-                y: y + node.layout.builderPlaceholderBox.y
-            }
-            : null;
+        const potentialBoxes = (node.layout.builderPotentialBoxes || []).map(box => ({
+            ...box,
+            x: x + box.x,
+            y: y + box.y
+        }));
+        const placeholder = potentialBoxes.find(box => box.kind === "value") || null;
+        node.layout.builderPotentialBoxes = potentialBoxes;
         node.layout.builderPlaceholderBox = placeholder;
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
@@ -1174,11 +1207,19 @@ function drawNodeRecursiveToContext(
         const foreground = nodeForeground(node) || settings.expressionStrokeFill || "black";
         const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
         drawingContext.save();
+        drawingContext.setLineDash([]);
+        drawingContext.fillStyle = settings.builderPotentialFill || "rgba(112, 64, 160, 0.3)";
+        drawingContext.strokeStyle = settings.builderPotentialStroke || "rgba(112, 64, 160, 0.78)";
+        drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings));
+        (node.layout.builderPotentialBoxes || []).forEach(potential => {
+            drawingContext.fillRect(potential.x, potential.y, potential.width, potential.height);
+            drawingContext.strokeRect(potential.x, potential.y, potential.width, potential.height);
+        });
         drawingContext.fillStyle = foreground;
         drawingContext.strokeStyle = foreground;
         drawingContext.lineWidth = Math.max(1.25, getStructuralStrokeWidth(settings));
         node.args.forEach(child => {
-            drawingContext.setLineDash(child.isBuilderActive ? [4, 4] : []);
+            drawingContext.setLineDash([]);
             drawingContext.strokeRect(
                 child.left() - itemPadding,
                 child.top() - itemPadding,
@@ -1193,11 +1234,6 @@ function drawNodeRecursiveToContext(
             drawingContext.setLineDash([]);
             drawingContext.fillText(box.operator === "prod" ? "·" : "+", box.x + box.width / 2, box.y + box.height / 2);
         });
-        const placeholder = node.layout.builderPlaceholderBox;
-        if (placeholder) {
-            drawingContext.setLineDash([4, 4]);
-            drawingContext.strokeRect(placeholder.x, placeholder.y, placeholder.width, placeholder.height);
-        }
         drawingContext.restore();
         return;
     }

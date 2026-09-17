@@ -8670,7 +8670,7 @@ ctx.font = SETTINGS.textFont;
                         color: current.isBuilderActive ? "#111" : "#92979d",
                         padding: 4,
                         lineWidth: current.isBuilderActive ? 1.8 : 1.5,
-                        dash: [1.5, 3]
+                        dash: []
                     });
                 } else if (current.isBuilderActive) {
                     outlines.push({
@@ -8678,7 +8678,7 @@ ctx.font = SETTINGS.textFont;
                         color: "#111",
                         padding: 4,
                         lineWidth: 1.8,
-                        dash: [1.5, 3]
+                        dash: []
                     });
                 }
                 current.args.forEach((child, index) => collectOutlines(child, path.concat(index)));
@@ -8845,6 +8845,11 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             if (!builder) {
                 return;
+            }
+            if (isIntegratedExpressionBuilder(builder)) {
+                visitIntegratedBuilderSequences(builder.root, [], (sequence, path) => {
+                    sequence.isBuilderCurrentSequence = pathsEqual(path, builder.currentPath || []);
+                });
             }
             // Keep the original expression unchanged until Submit passes validation.
             // Its selected part and the proposed replacement are previewed together

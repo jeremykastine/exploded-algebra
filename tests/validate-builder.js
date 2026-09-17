@@ -219,6 +219,9 @@ assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose
 assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
 assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
 assert(!rendererJs.includes('strokeRect(box.x, box.y, box.width, box.height)'), "Builder operation symbols must not have visible boxes");
+assert(rendererJs.includes('builderPotentialFill: "rgba(112, 64, 160, 0.3)"') && rendererJs.includes('builderPotentialStroke: "rgba(112, 64, 160, 0.78)"'), "Builder next-entry targets must use shaded purple boxes");
+assert(!rendererJs.includes('setLineDash(child.isBuilderActive ? [4, 4] : [])'), "The actively edited Builder entry must retain a solid outline");
+assert(playerJs.includes('sequence.isBuilderCurrentSequence = pathsEqual(path, builder.currentPath || [])'), "Only the currently editable Builder sequence may show potential landing boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
@@ -257,6 +260,27 @@ assert(nearlyEqual(pendingOperator.x, pending.args[0].right() + pendingPadding),
 assert(nearlyEqual(pendingOperator.y, pending.args[0].bottom() + pendingPadding), "The previous entry's lower-right box corner must touch the operator's upper-left corner vertically");
 assert(nearlyEqual(pendingOperator.x + pendingOperator.width, pending.args[1].left() - pendingPadding), "The operator's lower-right corner must touch the next entry's upper-left corner horizontally");
 assert(nearlyEqual(pendingOperator.y + pendingOperator.height, pending.args[1].top() - pendingPadding), "The operator's lower-right corner must touch the next entry's upper-left corner vertically");
+const activeNumber = value("23");
+activeNumber.isBuilderActive = true;
+const activeNumberSequence = new renderer.ExprNode("sum", [activeNumber]);
+activeNumberSequence.isBuilderSequence = true;
+activeNumberSequence.builderOperators = [];
+renderer.layoutExpressionWithSettings(activeNumberSequence, fakeContext, renderer.SETTINGS, 20, 20);
+const digitTarget = activeNumberSequence.layout.builderPotentialBoxes.find(box => box.kind === "digit");
+const operationTarget = activeNumberSequence.layout.builderPotentialBoxes.find(box => box.kind === "operation");
+assert(digitTarget && operationTarget, "An active number must show potential landing boxes for another digit and the next diagonal operation");
+assert(digitTarget.x > activeNumber.right() && nearlyEqual(operationTarget.x, activeNumber.right() + activeNumberSequence.layout.builderItemPadding), "Potential Builder landing boxes must begin after the active number");
+assert(nearlyEqual(operationTarget.y, activeNumber.bottom() + activeNumberSequence.layout.builderItemPadding), "The potential operation box must sit down and to the right of the active entry");
+const activeVariable = value("x");
+activeVariable.isBuilderActive = true;
+const activeVariableSequence = new renderer.ExprNode("sum", [activeVariable]);
+activeVariableSequence.isBuilderSequence = true;
+activeVariableSequence.builderOperators = [];
+renderer.layoutExpressionWithSettings(activeVariableSequence, fakeContext, renderer.SETTINGS, 20, 20);
+assert(activeVariableSequence.layout.builderPotentialBoxes.some(box => box.kind === "operation") && !activeVariableSequence.layout.builderPotentialBoxes.some(box => box.kind === "digit"), "A nonnumeric active entry must show only its valid next diagonal landing box");
+activeVariableSequence.isBuilderCurrentSequence = false;
+renderer.layoutExpressionWithSettings(activeVariableSequence, fakeContext, renderer.SETTINGS, 20, 20);
+assert(activeVariableSequence.layout.builderPotentialBoxes.length === 0, "Closed or inactive nested Builder sequences must not show next-entry targets");
 const inversePending = new renderer.ExprNode("inv", [pending]);
 inversePending.isBuilderInverseOpen = true;
 const outerPending = new renderer.ExprNode("sum", [inversePending]);
@@ -278,10 +302,10 @@ const dangling = new renderer.ExprNode("sum", [value("2")]);
 dangling.isBuilderSequence = true;
 dangling.builderOperators = ["sum"];
 renderer.layoutExpressionWithSettings(dangling, fakeContext, renderer.SETTINGS, 20, 20);
-assert(dangling.layout.builderPlaceholderBox, "A dangling operation must show the dotted box for its next value");
+assert(dangling.layout.builderPlaceholderBox && dangling.layout.builderPotentialBoxes.some(box => box.kind === "value"), "A dangling operation must show a purple landing box for its next value");
 assert(dangling.layout.builderOperatorBoxes[0].groupable === false, "A dangling operation must not group before its next value exists");
 const danglingOperator = dangling.layout.builderOperatorBoxes[0];
-assert(nearlyEqual(danglingOperator.x + danglingOperator.width, dangling.layout.builderPlaceholderBox.x) && nearlyEqual(danglingOperator.y + danglingOperator.height, dangling.layout.builderPlaceholderBox.y), "A dangling operation must touch the dotted next-entry box corner");
+assert(nearlyEqual(danglingOperator.x + danglingOperator.width, dangling.layout.builderPlaceholderBox.x) && nearlyEqual(danglingOperator.y + danglingOperator.height, dangling.layout.builderPlaceholderBox.y), "A dangling operation must touch the purple next-entry box corner");
 
 for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
   const level = JSON.parse(read(path.join("levels", file)));
