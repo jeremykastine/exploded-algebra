@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260915-streamlined-setup">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260917-recorded-checkpoints">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260915-streamlined-setup"></script>
+  <script defer src="exercise-builder.js?v=20260917-recorded-checkpoints"></script>
 </head>
 <body>
   <main>
@@ -51,8 +51,8 @@
           <legend>Recorded undo actions</legend>
           <p class="field-help">Choose whether High assistance should replay failed approaches and their undos.</p>
           <div class="radio-row">
-            <label><input type="radio" name="includeUndo" value="yes" checked> Yes — include undo actions</label>
-            <label><input type="radio" name="includeUndo" value="no"> No — keep the surviving solution path</label>
+            <label><input type="radio" name="includeUndo" value="yes"> Yes — include undo actions</label>
+            <label><input type="radio" name="includeUndo" value="no" checked> No — keep the surviving solution path</label>
           </div>
         </fieldset>
 
@@ -70,7 +70,7 @@
 
     <section class="phase" data-phase="3" hidden>
       <div id="phase3WorkspaceSlot"></div>
-      <button id="finishRecordingButton" type="button" class="all-done-button" hidden>All Done</button>
+      <button id="finishRecordingButton" type="button" class="record-step-button" hidden>Record Step</button>
     </section>
 
     <section class="phase" data-phase="4" hidden>

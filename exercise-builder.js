@@ -29,7 +29,7 @@
           allowNegativeOne: true,
           allowInverses: true
         },
-        includeUndoActions: true,
+        includeUndoActions: false,
         excludedDefaultTools: [],
         allowedUnavailableTools: []
       },
@@ -159,9 +159,9 @@
   function buildExportLevel() {
     const snapshot = draft.recording.workspaceSnapshot;
     const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [], demoSteps: [] };
-    const includedCandidates = (draft.recording.candidates || []).filter(candidate => candidate.included !== false);
-    const initialCandidate = includedCandidates.find(candidate => candidate.isInitial);
-    const steps = includedCandidates.map(candidate => {
+    const recordedCandidates = draft.recording.candidates || [];
+    const initialCandidate = recordedCandidates.find(candidate => candidate.isInitial);
+    const steps = recordedCandidates.map(candidate => {
       const step = {
         expression: candidate.expression,
         explodedExpression: candidate.expression,
@@ -185,8 +185,8 @@
         steps: JSON.parse(JSON.stringify(recorder.demoSteps || []))
       },
       recordedActions: JSON.parse(JSON.stringify(recorder.actions || [])),
-      finalExpression: draft.recording.finalExpression || includedCandidates.at(-1)?.expression || draft.initial.expression,
-      finalKatex: includedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
+      finalExpression: draft.recording.finalExpression || recordedCandidates.at(-1)?.expression || draft.initial.expression,
+      finalKatex: recordedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
     };
     const initialInstruction = initialCandidate && initialCandidate.instruction
       ? initialCandidate.instruction.trim()
@@ -301,7 +301,12 @@
   }
 
   function syncFinishRecordingButton(snapshot) {
-    byId("finishRecordingButton").hidden = currentPhase !== 3 || !snapshot || snapshot.preselectionActive !== true;
+    const button = byId("finishRecordingButton");
+    button.hidden = currentPhase !== 3 || !snapshot || snapshot.preselectionActive !== true;
+    if (button.hidden) return;
+    const fullSnapshot = snapshot.recorder ? snapshot : getApi()?.getSnapshot() || snapshot;
+    reconcileRecordedSteps(fullSnapshot);
+    button.textContent = currentStepIsRecorded(fullSnapshot) ? "All Done" : "Record Step";
   }
 
   function makeInitialCurationCandidate(api) {
@@ -314,65 +319,72 @@
       beforeKatex: prior && prior.beforeKatex || generatedKatex,
       afterKatex: prior && prior.afterKatex || generatedKatex,
       instruction: prior ? prior.instruction || "" : draft.metadata.instruction || "",
-      included: true,
-      required: true,
       isInitial: true
     };
   }
 
-  function deriveStepCandidates(snapshot, api) {
+  function getRecordedActions(snapshot) {
     const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [] };
-    const actions = Array.isArray(recorder.actions) ? recorder.actions : [];
-    const previous = Array.isArray(draft.recording.candidates) ? draft.recording.candidates : [];
-    const previousByExpression = new Map();
-    previous.filter(candidate => !candidate.isInitial).forEach(candidate => {
-      const key = String(candidate.expression || "").replace(/\s+/g, "");
-      if (!previousByExpression.has(key)) previousByExpression.set(key, []);
-      previousByExpression.get(key).push(candidate);
+    return Array.isArray(recorder.actions) ? recorder.actions : [];
+  }
+
+  function getActionPrefix(actions, actionEndIndex) {
+    return JSON.stringify(actions.slice(0, actionEndIndex));
+  }
+
+  function reconcileRecordedSteps(snapshot) {
+    const actions = getRecordedActions(snapshot);
+    draft.recording.candidates = (draft.recording.candidates || []).filter(candidate => {
+      if (candidate.isInitial) return true;
+      return candidate.actionEndIndex <= actions.length &&
+        candidate.actionPrefix === getActionPrefix(actions, candidate.actionEndIndex);
     });
+  }
 
-    const candidates = [];
-    let currentExpression = draft.initial.expression;
-    let actionStartIndex = 0;
-    const occurrences = new Map();
+  function currentStepIsRecorded(snapshot) {
+    const last = (draft.recording.candidates || []).at(-1);
+    const actions = getRecordedActions(snapshot);
+    return !!last && !last.isInitial && last.actionEndIndex === actions.length &&
+      sameExpressionText(last.expression, snapshot && snapshot.currentExpression);
+  }
 
-    const addCandidate = (nextExpression, actionEndIndex) => {
-      const expression = String(nextExpression || "").trim();
-      if (!expression || sameExpressionText(expression, currentExpression)) return;
-      const expressionKey = expression.replace(/\s+/g, "");
-      const occurrence = (occurrences.get(expressionKey) || 0) + 1;
-      occurrences.set(expressionKey, occurrence);
-      const key = `${expressionKey}::${occurrence}`;
-      const generatedStepKatex = api.generateKatex(expression);
-      const priorList = previousByExpression.get(expressionKey) || [];
-      const prior = priorList.shift();
-      candidates.push({
-        key,
-        expression,
-        beforeExpression: currentExpression,
-        beforeKatex: prior && prior.beforeKatex || generatedStepKatex,
-        afterKatex: prior && prior.afterKatex || generatedStepKatex,
-        instruction: prior && prior.instruction || "",
-        actionStartIndex,
-        actionEndIndex,
-        included: prior ? prior.included !== false : true,
-        required: false
-      });
-      currentExpression = expression;
-      actionStartIndex = actionEndIndex;
-    };
-
-    actions.forEach((action, index) => {
-      addCandidate(action && action.beforeExpression, index);
-      addCandidate(action && action.afterExpression, index + 1);
-    });
-    addCandidate(snapshot && snapshot.currentExpression, actions.length);
-    if (candidates.length) {
-      candidates.forEach(candidate => { candidate.required = false; });
-      candidates[candidates.length - 1].required = true;
-      candidates[candidates.length - 1].included = true;
+  function recordCurrentStep(snapshot, api) {
+    reconcileRecordedSteps(snapshot);
+    const actions = getRecordedActions(snapshot);
+    const previous = (draft.recording.candidates || []).at(-1);
+    const beforeExpression = previous && !previous.isInitial ? previous.expression : draft.initial.expression;
+    const actionStartIndex = previous && !previous.isInitial ? previous.actionEndIndex : 0;
+    const expression = String(snapshot && snapshot.currentExpression || "").trim();
+    if (!expression || actions.length <= actionStartIndex || sameExpressionText(expression, beforeExpression)) {
+      window.alert("Complete an expression-changing solution step before recording it.");
+      return false;
     }
-    return candidates;
+    const generatedStepKatex = api.generateKatex(expression);
+    draft.recording.candidates.push({
+      key: `recorded-step-${draft.recording.candidates.length + 1}-${actions.length}`,
+      expression,
+      beforeExpression,
+      beforeKatex: generatedStepKatex,
+      afterKatex: generatedStepKatex,
+      instruction: "",
+      actionStartIndex,
+      actionEndIndex: actions.length,
+      actionPrefix: getActionPrefix(actions, actions.length),
+      isInitial: false
+    });
+    draft.recording.workspaceSnapshot = snapshot;
+    syncFinishRecordingButton(snapshot);
+    return true;
+  }
+
+  async function recordStepOrFinish() {
+    const api = await waitForApi();
+    const snapshot = api.getSnapshot();
+    if (currentStepIsRecorded(snapshot)) {
+      await finishRecording(snapshot, api);
+      return;
+    }
+    recordCurrentStep(snapshot, api);
   }
 
   function renderCurationTable() {
@@ -386,24 +398,20 @@
     currentCurationIndex = Math.max(0, Math.min(currentCurationIndex, candidates.length - 1));
     const index = currentCurationIndex;
     const candidate = candidates[index];
-    const included = candidate.included !== false;
     const editing = currentCurationMode === "edit";
     const stepNumber = candidate.isInitial ? 0 : index;
     const isFinalSlide = index === candidates.length - 1;
     container.innerHTML = `
-      <article class="step-carousel-slide card ${included ? "is-included" : "is-disabled"}" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${stepNumber}, slide ${index + 1} of ${candidates.length}" tabindex="-1">
+      <article class="step-carousel-slide card" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${stepNumber}, slide ${index + 1} of ${candidates.length}" tabindex="-1">
         <header class="step-slide-header">
-          <label class="step-include-label">
-            <input type="checkbox" data-toggle-step="${index}"${included ? " checked" : ""}${candidate.required ? " disabled" : ""}>
-            <span>Step ${stepNumber}</span>
-          </label>
+          <span class="step-number">Step ${stepNumber}</span>
           <div class="step-mode-toggle" role="group" aria-label="Step display mode">
             <button type="button" data-curation-mode="view" aria-pressed="${editing ? "false" : "true"}">View</button>
             <button type="button" data-curation-mode="edit" aria-pressed="${editing ? "true" : "false"}">Edit</button>
           </div>
         </header>
         ${editing ? `
-          <fieldset class="step-editor-fields"${included ? "" : " disabled"}>
+          <fieldset class="step-editor-fields">
             <label class="step-edit-field"><span>Pre-completion</span>
               <textarea rows="3" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
             </label>
@@ -447,21 +455,20 @@
     renderCurationTable();
   }
 
-  async function finishRecording() {
-    const api = await waitForApi();
-    const snapshot = api.getSnapshot();
+  async function finishRecording(providedSnapshot = null, providedApi = null) {
+    const api = providedApi || await waitForApi();
+    const snapshot = providedSnapshot || api.getSnapshot();
     draft.recording.workspaceSnapshot = snapshot;
-    const actions = snapshot.recorder ? snapshot.recorder.actions || [] : [];
-    if (!actions.length) {
-      window.alert("Perform at least one solution action before choosing All Done.");
+    reconcileRecordedSteps(snapshot);
+    if (!draft.recording.candidates.length) {
+      window.alert("Record at least one solution step before choosing All Done.");
       return;
     }
-    const candidates = deriveStepCandidates(snapshot, api);
-    if (!candidates.length) {
-      window.alert("The final expression is unchanged. Complete at least one expression-changing step before choosing All Done.");
+    if (!currentStepIsRecorded(snapshot)) {
+      window.alert("Record the current solution step before choosing All Done.");
       return;
     }
-    draft.recording.candidates = [makeInitialCurationCandidate(api), ...candidates];
+    draft.recording.candidates = [makeInitialCurationCandidate(api), ...draft.recording.candidates];
     currentCurationIndex = 0;
     currentCurationMode = "view";
     draft.recording.finalExpression = snapshot.currentExpression;
@@ -579,7 +586,7 @@
       if (validateSetup(true)) setPhase(2);
     });
 
-    byId("finishRecordingButton").addEventListener("click", finishRecording);
+    byId("finishRecordingButton").addEventListener("click", recordStepOrFinish);
     byId("curationTable").addEventListener("input", event => {
       const field = event.target.dataset.stepField;
       if (!field) return;
@@ -587,14 +594,6 @@
       const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
       if (!candidate) return;
       candidate[field] = event.target.value;
-    });
-    byId("curationTable").addEventListener("change", event => {
-      const checkbox = event.target.closest("[data-toggle-step]");
-      if (!checkbox) return;
-      const candidate = draft.recording.candidates[Number(checkbox.dataset.toggleStep)];
-      if (!candidate || candidate.required) return;
-      candidate.included = checkbox.checked;
-      renderCurationTable();
     });
     byId("curationTable").addEventListener("click", event => {
       const modeButton = event.target.closest("[data-curation-mode]");
