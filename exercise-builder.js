@@ -301,12 +301,16 @@
   }
 
   function syncFinishRecordingButton(snapshot) {
-    const button = byId("finishRecordingButton");
-    button.hidden = currentPhase !== 3 || !snapshot || snapshot.preselectionActive !== true;
-    if (button.hidden) return;
+    const api = getApi();
+    const isAvailable = currentPhase === 3 && !!snapshot && snapshot.preselectionActive === true;
+    if (!api || typeof api.setRecordingCheckpointState !== "function") return;
+    if (!isAvailable) {
+      api.setRecordingCheckpointState(false, false);
+      return;
+    }
     const fullSnapshot = snapshot.recorder ? snapshot : getApi()?.getSnapshot() || snapshot;
     reconcileRecordedSteps(fullSnapshot);
-    button.textContent = currentStepIsRecorded(fullSnapshot) ? "All Done" : "Record Step";
+    api.setRecordingCheckpointState(currentStepIsRecorded(fullSnapshot), true);
   }
 
   function makeInitialCurationCandidate(api) {
@@ -586,7 +590,6 @@
       if (validateSetup(true)) setPhase(2);
     });
 
-    byId("finishRecordingButton").addEventListener("click", recordStepOrFinish);
     byId("curationTable").addEventListener("input", event => {
       const field = event.target.dataset.stepField;
       if (!field) return;
@@ -619,6 +622,9 @@
       }
       if (event.data.type === "interaction-state") {
         syncFinishRecordingButton(event.data.detail);
+      }
+      if (event.data.type === "recording-checkpoint") {
+        recordStepOrFinish();
       }
       if (event.data.type === "initial-expression-committed") {
         acceptInitialExpressionAndSolve();

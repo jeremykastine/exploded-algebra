@@ -1207,6 +1207,7 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
+        const authoringCheckpointButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringCheckpoint"]');
         const mainActionPanel = document.getElementById("mainActionPanel");
         const resetExerciseButton = document.getElementById("resetExerciseButton");
         const handednessInputs = Array.from(document.querySelectorAll('input[name="handedness"]'));
@@ -4136,6 +4137,17 @@ Promise.resolve().then(() => {
                 loadRecordingSession: loadRecordingAuthoringSession,
                 startInitialExpressionBuilder,
                 getSnapshot: getAuthoringSnapshot,
+                setRecordingCheckpointState(recorded, visible = true) {
+                    if (!authoringCheckpointButton) return;
+                    const isRecorded = !!recorded;
+                    authoringCheckpointButton.hidden = !visible;
+                    authoringCheckpointButton.setAttribute("aria-label", isRecorded ? "All done" : "Record step");
+                    authoringCheckpointButton.dataset.holdDescription = isRecorded
+                        ? "Finish recording and continue to step review."
+                        : "Save the current expression as a recorded solution step.";
+                    const label = authoringCheckpointButton.querySelector(".workspace-checkpoint-label");
+                    if (label) label.innerHTML = isRecorded ? "All<br>Done" : "Record<br>Step";
+                },
                 generateKatex(expressionText) {
                     return ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expressionText));
                 },
@@ -4201,6 +4213,10 @@ Promise.resolve().then(() => {
                         } else {
                             undoExpressionStep();
                         }
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "authoringCheckpoint") {
+                        notifyAuthoringHost("recording-checkpoint");
                         return;
                     }
                     const mode = button.dataset.workspaceMode;
