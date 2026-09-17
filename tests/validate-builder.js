@@ -116,7 +116,30 @@ assert(/\.builder-keypad-panel button,[\s\S]*?\.builder-keypad-panel \.builder-a
 assert(!/if \(isIntegratedExpressionBuilder\(\) && !builderReviewActive\)[\s\S]*?workspaceZoom = Math\.max/.test(playerJs), "Integrated Expression Builder must not automatically fit or zoom the expression");
 assert(playerJs.includes('M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11'), "Integrated Expression Builder Undo must use the backspace icon");
 assert(playerJs.includes('builder-exit-arrow-line') && playerJs.includes('M14 18 27 29'), "Exit Inverse must use a down-right arrow from the denominator");
-assert(playerJs.includes('getIntegratedBuilderOperatorTarget') && playerJs.includes('groupIntegratedBuilderOperator(value)'), "Canvas operation taps must resolve grouping");
+assert(playerJs.includes('getClosestIntegratedBuilderOperatorTarget') && playerJs.includes('groupIntegratedBuilderOperator(value)'), "Canvas operation taps must resolve the nearest unresolved operation");
+const closestOperatorMatch = playerJs.match(/function getClosestIntegratedBuilderOperatorTarget\(x, y\) \{([\s\S]*?)\n        \}\n\n        function findNodePathByReference/);
+assert(closestOperatorMatch, "Nearest unresolved operation targeting must remain testable");
+const closestOperatorContext = {
+  uiState: {
+    expressionBuilder: {
+      root: {
+        isBuilderSequence: true,
+        layout: {
+          builderOperatorBoxes: [
+            { x: 10, y: 10, width: 10, height: 10, groupable: true },
+            { x: 100, y: 100, width: 10, height: 10, groupable: true }
+          ]
+        }
+      }
+    }
+  },
+  isIntegratedExpressionBuilder: () => true,
+  visitIntegratedBuilderSequences: (root, path, visit) => visit(root, path)
+};
+vm.createContext(closestOperatorContext);
+vm.runInContext(`function getClosestIntegratedBuilderOperatorTarget(x, y) {${closestOperatorMatch[1]}\n}\nthis.getClosestIntegratedBuilderOperatorTarget = getClosestIntegratedBuilderOperatorTarget;`, closestOperatorContext);
+assert(closestOperatorContext.getClosestIntegratedBuilderOperatorTarget(-1000, -1000).index === 0, "A distant press must choose the nearest unresolved operation rather than no operation");
+assert(closestOperatorContext.getClosestIntegratedBuilderOperatorTarget(1000, 1000).index === 1, "Nearest-operation targeting must work throughout the workspace");
 assert(playerJs.includes('visitIntegratedBuilderSequences(builder.root'), "Operation taps must search every unresolved scope");
 assert(playerJs.includes('flattenIntegratedBuilderOperation(type, left, right)'), "Consecutive sums and products must flatten as they are grouped");
 assert(!playerJs.includes('sequence.args.length !== 1 || sequence.builderOperators.length'), "Exit Inverse must not require its contents to be grouped first");

@@ -9062,25 +9062,18 @@ ctx.font = SETTINGS.textFont;
             };
         }
 
-        function getIntegratedBuilderOperatorTarget(x, y, pointerType = "mouse") {
+        function getClosestIntegratedBuilderOperatorTarget(x, y) {
             const builder = uiState.expressionBuilder;
             if (!isIntegratedExpressionBuilder(builder)) return null;
-            const margin = (pointerType === "mouse" ? 8 : 18) / Math.max(0.12, workspaceZoom);
             let closestTarget = null;
             let closestDistance = Infinity;
             visitIntegratedBuilderSequences(builder.root, [], (sequence, path) => {
                 (sequence.layout.builderOperatorBoxes || []).forEach((box, index) => {
                     if (!box.groupable) return;
-                    const left = box.x - margin;
-                    const right = box.x + box.width + margin;
-                    const top = box.y - margin;
-                    const bottom = box.y + box.height + margin;
-                    const dx = x < left ? left - x : x > right ? x - right : 0;
-                    const dy = y < top ? top - y : y > bottom ? y - bottom : 0;
-                    const inside = dx === 0 && dy === 0;
-                    const distance = inside
-                        ? Math.hypot(x - (box.x + box.width / 2), y - (box.y + box.height / 2))
-                        : Infinity;
+                    const distance = Math.hypot(
+                        x - (box.x + box.width / 2),
+                        y - (box.y + box.height / 2)
+                    );
                     if (distance < closestDistance) {
                         closestTarget = { path: path.slice(), index };
                         closestDistance = distance;
@@ -11727,7 +11720,7 @@ function renderToolArea() {
                 if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
                 } else if (pointerStart.mode === "builderOperator") {
-                    const target = getIntegratedBuilderOperatorTarget(point.x, point.y, pointerStart.pointerType);
+                    const target = getClosestIntegratedBuilderOperatorTarget(point.x, point.y);
                     if (target) {
                         performBuilderAction(
                             "groupOperator",
