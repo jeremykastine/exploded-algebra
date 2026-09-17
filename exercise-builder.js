@@ -391,11 +391,38 @@
     recordCurrentStep(snapshot, api);
   }
 
+  function deleteCurationCandidateAt(candidates, index) {
+    if (!Array.isArray(candidates) || index <= 0 || index >= candidates.length - 1) {
+      return false;
+    }
+    const removed = candidates[index];
+    const next = candidates[index + 1];
+    if (next && !next.isInitial) {
+      if (Number.isInteger(removed.actionStartIndex)) {
+        next.actionStartIndex = removed.actionStartIndex;
+      }
+      if (removed.beforeExpression) {
+        next.beforeExpression = removed.beforeExpression;
+      }
+    }
+    candidates.splice(index, 1);
+    return true;
+  }
+
+  function deleteCurrentCurationStep() {
+    const candidates = draft.recording.candidates || [];
+    if (!deleteCurationCandidateAt(candidates, currentCurationIndex)) return;
+    currentCurationIndex = Math.min(currentCurationIndex, candidates.length - 1);
+    renderCurationTable();
+    byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
+  }
+
   function renderCurationTable() {
     const container = byId("curationTable");
     const candidates = draft.recording.candidates || [];
     if (!candidates.length) {
       container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
+      byId("deleteStepButton").hidden = true;
       byId("completeExerciseButton").hidden = true;
       return;
     }
@@ -459,6 +486,7 @@
     }
     renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
     renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction);
+    byId("deleteStepButton").hidden = index === 0 || isFinalSlide;
     byId("completeExerciseButton").hidden = !isFinalSlide;
   }
 
@@ -620,6 +648,7 @@
       renderCurationTable();
       byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
     });
+    byId("deleteStepButton").addEventListener("click", deleteCurrentCurationStep);
     byId("completeExerciseButton").addEventListener("click", finishExercise);
 
     window.addEventListener("message", event => {

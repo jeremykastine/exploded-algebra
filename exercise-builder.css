@@ -94,7 +94,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-carousel-navigation .step-number { min-width: 52px; text-align: center; }
 .empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }
 .phase4-controls { display: grid; justify-items: center; gap: 10px; padding-top: 20px; }
-.complete-exercise-button { width: min(100%, 320px); }
+.complete-exercise-button, .delete-step-button { width: min(100%, 320px); }
+.delete-step-button { border-color: var(--danger); color: var(--danger); }
 .phase4-controls .status-line { min-height: 1.45em; text-align: center; }
 
 /* While the starting expression is being entered, Phase 2 is the shared

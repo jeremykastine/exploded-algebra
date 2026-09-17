@@ -73,6 +73,22 @@ assert(builderJs.includes("reconcileRecordedSteps(snapshot)") && builderJs.inclu
 assert(builderJs.includes("const recordedCandidates = draft.recording.candidates || []") && !builderJs.includes("includedCandidates"), "Export must contain exactly the steps selected during recording");
 assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 4 must replace separate test/export controls with one All Done button");
 assert(builderHtml.includes('class="primary-button complete-exercise-button" hidden') && builderJs.includes('byId("completeExerciseButton").hidden = !isFinalSlide'), "Phase 4 All Done must appear only on the final carousel slide");
+assert(builderHtml.includes('id="deleteStepButton"') && builderHtml.includes('>Delete Step</button>'), "Phase 4 must provide a Delete Step control");
+assert(builderJs.includes('byId("deleteStepButton").hidden = index === 0 || isFinalSlide') && builderJs.includes('byId("deleteStepButton").addEventListener("click", deleteCurrentCurationStep)'), "Delete Step must appear and act only on intermediate slides");
+const deleteCandidateMatch = builderJs.match(/function deleteCurationCandidateAt\(candidates, index\) \{([\s\S]*?)\n  \}\n\n  function deleteCurrentCurationStep/);
+assert(deleteCandidateMatch, "Phase 4 candidate deletion must remain testable");
+const deleteCandidateContext = {};
+vm.createContext(deleteCandidateContext);
+vm.runInContext(`function deleteCurationCandidateAt(candidates, index) {${deleteCandidateMatch[1]}\n}\nthis.deleteCurationCandidateAt = deleteCurationCandidateAt;`, deleteCandidateContext);
+const deletionCandidates = [
+  { isInitial: true },
+  { actionStartIndex: 0, actionEndIndex: 2, beforeExpression: "initial" },
+  { actionStartIndex: 2, actionEndIndex: 4, beforeExpression: "middle" },
+  { actionStartIndex: 4, actionEndIndex: 6, beforeExpression: "later" }
+];
+assert(deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, 1) === true && deletionCandidates.length === 3, "Deleting an intermediate Phase 4 step must remove it immediately");
+assert(deletionCandidates[1].actionStartIndex === 0 && deletionCandidates[1].beforeExpression === "initial", "The next retained step must absorb the deleted step's action range");
+assert(deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, 0) === false && deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, deletionCandidates.length - 1) === false, "The first and last Phase 4 steps must not be deletable");
 assert(builderJs.includes("function syncFinishRecordingButton(snapshot)") && builderJs.includes("snapshot.preselectionActive === true") && builderJs.includes("api.setRecordingCheckpointState(false, false)") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "The Phase 3 step control must appear only while the workspace is in preselection");
 assert(builderJs.includes("syncFinishRecordingButton(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
 assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 4 All Done must download the completed JSON");

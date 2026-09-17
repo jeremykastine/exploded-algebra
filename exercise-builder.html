@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260917-phase4-top-navigation">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260917-phase4-delete-step">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260917-phase4-top-navigation"></script>
+  <script defer src="exercise-builder.js?v=20260917-phase4-delete-step"></script>
 </head>
 <body>
   <main>
@@ -78,6 +78,7 @@
       </section>
 
       <section class="phase4-controls">
+        <button id="deleteStepButton" type="button" class="secondary-button delete-step-button" hidden>Delete Step</button>
         <button id="completeExerciseButton" type="button" class="primary-button complete-exercise-button" hidden>All Done</button>
         <p id="exportStatus" class="status-line" aria-live="polite"></p>
       </section>
