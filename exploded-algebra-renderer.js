@@ -61,8 +61,7 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
-    builderPotentialFill: "rgba(112, 64, 160, 0.3)",
-    builderPotentialStroke: "rgba(112, 64, 160, 0.78)",
+    builderPotentialFill: "rgb(231, 218, 244)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -916,21 +915,26 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const last = node.args[lastIndex];
         if (!expectsValue && isCurrentSequence && last) {
             const lastOffset = offsets[lastIndex];
+            let nextEdgeX = lastOffset.x + last.layout.width;
+            let nextEdgeY = lastOffset.y + last.layout.height;
             if (last.isBuilderActive && last.type === "value" && /^\d+$/.test(String(last.value))) {
                 const digitWidth = Math.max(14, parseFontSize(settings.textFont) * 0.72);
                 const digitHeight = Math.max(18, parseFontSize(settings.textFont) * 1.05);
-                potentialBoxes.push({
+                const digitBox = {
                     kind: "digit",
                     x: lastOffset.x + last.layout.width + Math.max(3, itemPadding * 0.35),
                     y: lastOffset.y + (last.layout.height - digitHeight) / 2,
                     width: digitWidth,
                     height: digitHeight
-                });
+                };
+                potentialBoxes.push(digitBox);
+                nextEdgeX = Math.max(nextEdgeX, digitBox.x + digitBox.width);
+                nextEdgeY = Math.max(nextEdgeY, digitBox.y + digitBox.height);
             }
             potentialBoxes.push({
                 kind: "operation",
-                x: lastOffset.x + last.layout.width + itemPadding,
-                y: lastOffset.y + last.layout.height + itemPadding,
+                x: nextEdgeX + itemPadding,
+                y: nextEdgeY + itemPadding,
                 width: operatorSize,
                 height: operatorSize
             });
@@ -1107,8 +1111,18 @@ function placeNodeWithSettings(node, x, y, settings) {
             y: y + box.y
         }));
         const placeholder = potentialBoxes.find(box => box.kind === "value") || null;
+        const digitPotential = potentialBoxes.find(box => box.kind === "digit") || null;
         node.layout.builderPotentialBoxes = potentialBoxes;
         node.layout.builderPlaceholderBox = placeholder;
+        node.layout.builderItemOutlineBoxes = node.args.map(child => {
+            const includeDigitPotential = !!digitPotential && child.isBuilderActive &&
+                child.type === "value" && /^\d+$/.test(String(child.value));
+            const left = Math.min(child.left(), includeDigitPotential ? digitPotential.x : child.left()) - itemPadding;
+            const top = Math.min(child.top(), includeDigitPotential ? digitPotential.y : child.top()) - itemPadding;
+            const right = Math.max(child.right(), includeDigitPotential ? digitPotential.x + digitPotential.width : child.right()) + itemPadding;
+            const bottom = Math.max(child.bottom(), includeDigitPotential ? digitPotential.y + digitPotential.height : child.bottom()) + itemPadding;
+            return { x: left, y: top, width: right - left, height: bottom - top };
+        });
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
             const right = node.args[index + 1];
@@ -1205,26 +1219,22 @@ function drawNodeRecursiveToContext(
             );
         }
         const foreground = nodeForeground(node) || settings.expressionStrokeFill || "black";
-        const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
         drawingContext.save();
         drawingContext.setLineDash([]);
-        drawingContext.fillStyle = settings.builderPotentialFill || "rgba(112, 64, 160, 0.3)";
-        drawingContext.strokeStyle = settings.builderPotentialStroke || "rgba(112, 64, 160, 0.78)";
-        drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings));
+        drawingContext.fillStyle = settings.builderPotentialFill || "rgb(231, 218, 244)";
         (node.layout.builderPotentialBoxes || []).forEach(potential => {
             drawingContext.fillRect(potential.x, potential.y, potential.width, potential.height);
-            drawingContext.strokeRect(potential.x, potential.y, potential.width, potential.height);
         });
         drawingContext.fillStyle = foreground;
         drawingContext.strokeStyle = foreground;
         drawingContext.lineWidth = Math.max(1.25, getStructuralStrokeWidth(settings));
-        node.args.forEach(child => {
+        (node.layout.builderItemOutlineBoxes || []).forEach(outline => {
             drawingContext.setLineDash([]);
             drawingContext.strokeRect(
-                child.left() - itemPadding,
-                child.top() - itemPadding,
-                child.layout.width + itemPadding * 2,
-                child.layout.height + itemPadding * 2
+                outline.x,
+                outline.y,
+                outline.width,
+                outline.height
             );
         });
         drawingContext.font = settings.textFont;
