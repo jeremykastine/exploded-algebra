@@ -7,8 +7,8 @@ const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html
 const playerJs = fs.readFileSync(path.join(projectRoot, "exploded-algebra-tool.js"), "utf8");
 
 assert(
-    /svgContainer\.addEventListener\("pointerdown",[\s\S]*?e\.target !== svgContainer[\s\S]*?uiState\.workspaceMode !== "pan"[\s\S]*?mode: "pan"/.test(playerJs),
-    "The blank workspace container must be able to start a pan gesture"
+    /svgContainer\.addEventListener\("pointerdown",[\s\S]*?e\.target !== svgContainer[\s\S]*?const panningView = !integratedBuilder && uiState\.workspaceMode === "pan"[\s\S]*?mode: integratedBuilder \? "builderOperator" : "pan"/.test(playerJs),
+    "The blank workspace container must start either a normal pan or an Expression Builder tap-or-pan gesture"
 );
 assert(
     playerJs.includes('svgContainer.addEventListener("pointermove"'),

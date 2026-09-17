@@ -4368,9 +4368,7 @@ Promise.resolve().then(() => {
                         return;
                     }
                     const action = button.dataset.builderViewAction;
-                    if (action === "pan") {
-                        setWorkspaceMode(uiState.workspaceMode === "pan" ? "select" : "pan");
-                    } else if (action === "zoomIn") {
+                    if (action === "zoomIn") {
                         zoomWorkspaceIn();
                     } else if (action === "zoomOut") {
                         zoomWorkspaceOut();
@@ -10381,7 +10379,6 @@ ctx.font = SETTINGS.textFont;
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
                 const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
                 const reviewDisabled = builder.tool === "authorInitial";
-                const panActive = uiState.workspaceMode === "pan";
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
@@ -10393,7 +10390,6 @@ ctx.font = SETTINGS.textFont;
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
                         <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
-                        <button type="button" class="builder-view-button builder-pan-button${panActive ? " is-active" : ""}" data-builder-view-action="pan" aria-pressed="${panActive}" aria-label="${panActive ? "Resume expression entry" : "Move view"}" title="${panActive ? "Resume expression entry" : "Drag to move the expression view"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                         <button type="button" class="builder-view-button builder-zoom-in-button" data-builder-view-action="zoomIn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                         <button type="button" class="builder-view-button builder-zoom-out-button" data-builder-view-action="zoomOut" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
                         <button type="button" class="builder-view-button builder-reset-view-button" data-builder-view-action="resetZoom" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg></button>
@@ -11700,7 +11696,7 @@ function renderToolArea() {
             }
 
             const pointerStart = workspacePointerStart;
-            if (pointerStart.mode === "pan") {
+            if (pointerStart.mode === "pan" || pointerStart.mode === "builderPan") {
                 releaseWorkspacePointer();
                 return;
             }
@@ -11715,6 +11711,14 @@ function renderToolArea() {
             }
             const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
             const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
+            if (pointerStart.mode === "builderOperator" && movement > tapTolerance) {
+                setWorkspacePan(
+                    pointerStart.panX + e.clientX - pointerStart.clientX,
+                    pointerStart.panY + e.clientY - pointerStart.clientY
+                );
+                releaseWorkspacePointer();
+                return;
+            }
             if (movement <= tapTolerance) {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
                 if (pointerStart.mode === "cancelBuilder") {
@@ -11753,11 +11757,14 @@ function renderToolArea() {
             if (e.pointerType === "mouse" && e.button !== 0) {
                 return;
             }
+            const integratedBuilder = uiState.stage === "builder" &&
+                isIntegratedExpressionBuilder(uiState.expressionBuilder);
+            const panningView = !integratedBuilder && uiState.workspaceMode === "pan";
             if (
                 activeWorkspacePointerId !== null ||
                 uiState.mode !== "edit" ||
                 uiState.stage === "postview" ||
-                uiState.workspaceMode !== "pan"
+                (!integratedBuilder && !panningView)
             ) {
                 return;
             }
@@ -11769,7 +11776,7 @@ function renderToolArea() {
                 pointerType: e.pointerType || "mouse",
                 panX: workspacePanX,
                 panY: workspacePanY,
-                mode: "pan"
+                mode: integratedBuilder ? "builderOperator" : "pan"
             };
             if (svgContainer.setPointerCapture) {
                 try {
@@ -11799,7 +11806,7 @@ function renderToolArea() {
             const activeBuilder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
             const integratedBuilder = isIntegratedExpressionBuilder(activeBuilder);
             const cancelingBuilder = !!activeBuilder && !integratedBuilder;
-            const panningView = uiState.workspaceMode === "pan";
+            const panningView = !integratedBuilder && uiState.workspaceMode === "pan";
             const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
             const pointerX = pointerPoint.x;
             const pointerY = pointerPoint.y;
@@ -11858,7 +11865,7 @@ function renderToolArea() {
                     // the gesture when capture is unavailable.
                 }
             }
-            if (panningView) {
+            if (panningView || integratedBuilder) {
                 e.preventDefault();
             }
         });
@@ -11867,13 +11874,21 @@ function renderToolArea() {
             if (
                 e.pointerId !== activeWorkspacePointerId ||
                 !workspacePointerStart ||
-                workspacePointerStart.mode !== "pan"
+                !["pan", "builderOperator", "builderPan"].includes(workspacePointerStart.mode)
             ) {
                 return;
             }
             const deltaX = e.clientX - workspacePointerStart.clientX;
             const deltaY = e.clientY - workspacePointerStart.clientY;
-            if (Math.hypot(deltaX, deltaY) > 2) {
+            const movement = Math.hypot(deltaX, deltaY);
+            if (workspacePointerStart.mode === "builderOperator") {
+                const tapTolerance = workspacePointerStart.pointerType === "mouse" ? 6 : 12;
+                if (movement <= tapTolerance) {
+                    return;
+                }
+                workspacePointerStart.mode = "builderPan";
+            }
+            if (movement > 2) {
                 document.body.classList.add("workspace-panning");
             }
             setWorkspacePan(

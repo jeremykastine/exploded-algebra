@@ -1224,6 +1224,12 @@
             user-select: none;
         }
         body.workspace-pan-active.workspace-panning #svgContainer { cursor: grabbing; }
+        body.expression-builder-active #svgContainer {
+            cursor: default;
+            touch-action: none;
+            user-select: none;
+        }
+        body.expression-builder-active.workspace-panning #svgContainer { cursor: grabbing; }
 
         dialog {
             box-sizing: border-box;
@@ -2695,7 +2701,6 @@
             grid-row: 6;
             touch-action: none;
         }
-        .builder-keypad-panel .builder-pan-button { grid-column: 3; grid-row: 3; }
         .builder-keypad-panel .builder-zoom-in-button { grid-column: 3; grid-row: 4; }
         .builder-keypad-panel .builder-zoom-out-button { grid-column: 3; grid-row: 5; }
         .builder-keypad-panel .builder-reset-view-button { grid-column: 3; grid-row: 6; }
@@ -2705,11 +2710,6 @@
             height: 72%;
             margin: auto;
             pointer-events: none;
-        }
-        .builder-keypad-panel .builder-pan-button.is-active {
-            border-color: #2f67b2;
-            background: #dcecff;
-            box-shadow: inset 0 0 0 1px #2f67b2;
         }
         .builder-review-button svg {
             display: block;
@@ -3323,7 +3323,6 @@
         body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 5; grid-row: 6; }
         body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 5; grid-row: 5; }
         body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 5; grid-row: 4; }
-        body.left-handed .builder-keypad-panel .builder-pan-button { grid-column: 5; grid-row: 3; }
 
         .builder-rewrite-original,
         .builder-rewrite-proposal {
@@ -3862,7 +3861,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-variable-exponents"></script>
-    <script src="exploded-algebra-tool.js?v=20260917-nearest-builder-operation"></script>
+    <script src="exploded-algebra-tool.js?v=20260917-builder-drag-pan"></script>
 
 </body>
 </html>
