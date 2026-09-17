@@ -414,7 +414,11 @@
     container.innerHTML = `
       <article class="step-carousel-slide card" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${stepNumber}, slide ${index + 1} of ${candidates.length}" tabindex="-1">
         <header class="step-slide-header">
-          <span class="step-number">Step ${stepNumber}</span>
+          <nav class="step-carousel-navigation" aria-label="Step carousel navigation">
+            <button type="button" class="secondary-button" data-carousel-direction="previous"${index === 0 ? " disabled" : ""}>Previous</button>
+            <span class="step-number" aria-live="polite">Step ${stepNumber}</span>
+            <button type="button" class="secondary-button" data-carousel-direction="next"${index === candidates.length - 1 ? " disabled" : ""}>Next</button>
+          </nav>
           <div class="step-mode-toggle" role="group" aria-label="Step display mode">
             <button type="button" data-curation-mode="view" aria-pressed="${editing ? "false" : "true"}">View</button>
             <button type="button" data-curation-mode="edit" aria-pressed="${editing ? "true" : "false"}">Edit</button>
@@ -446,12 +450,7 @@
               <div class="step-math-view" data-step-view="afterKatex" aria-label="Post-completion expression for step ${stepNumber}"></div>
             </div>
           </section>`}
-      </article>
-      <nav class="step-carousel-navigation" aria-label="Step carousel navigation">
-        <button type="button" class="secondary-button" data-carousel-direction="previous"${index === 0 ? " disabled" : ""}>Previous</button>
-        <p class="step-carousel-position" aria-live="polite">${index + 1} of ${candidates.length}</p>
-        <button type="button" class="secondary-button" data-carousel-direction="next"${index === candidates.length - 1 ? " disabled" : ""}>Next</button>
-      </nav>`;
+      </article>`;
     const slide = container.querySelector("[data-candidate-index]");
     const instructionField = slide.querySelector('[data-step-field="instruction"]');
     if (instructionField) instructionField.value = candidate.instruction || "";

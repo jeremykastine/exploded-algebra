@@ -70,7 +70,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-curation-section { margin: 0; }
 .step-carousel { display: grid; gap: 14px; width: min(100%, 780px); margin: 0 auto; }
 .step-carousel-slide { min-width: 0; min-height: 430px; padding: clamp(16px, 3vw, 28px); }
-.step-slide-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.step-slide-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
 .step-number { font-size: 16px; font-weight: 800; }
 .step-mode-toggle { display: inline-flex; overflow: hidden; border: 1px solid #999da2; border-radius: 7px; }
 .step-mode-toggle button { min-height: 38px; padding: 7px 14px; border: 0; border-right: 1px solid #999da2; background: #fff; color: var(--ink); font-weight: 700; }
@@ -89,10 +89,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .instruction-math-inline { white-space: normal; }
 .instruction-math-display { display: block; white-space: normal; }
 .instruction-math-display .katex-display { margin: .35em 0; }
-.step-carousel-navigation { display: grid; grid-template-columns: minmax(110px, 1fr) auto minmax(110px, 1fr); align-items: center; gap: 12px; }
-.step-carousel-navigation button:first-child { justify-self: start; }
-.step-carousel-navigation button:last-child { justify-self: end; }
-.step-carousel-position { margin: 0; color: var(--muted); font-size: 14px; font-weight: 700; text-align: center; }
+.step-carousel-navigation { display: inline-flex; align-items: center; gap: 8px; }
+.step-carousel-navigation .secondary-button { min-height: 38px; padding: 7px 10px; font-size: 13px; }
+.step-carousel-navigation .step-number { min-width: 52px; text-align: center; }
 .empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }
 .phase4-controls { display: grid; justify-items: center; gap: 10px; padding-top: 20px; }
 .complete-exercise-button { width: min(100%, 320px); }
@@ -132,7 +131,8 @@ body.phase3-recording #workspaceShell {
   .two-columns { grid-template-columns: 1fr; }
   .workspace-shell { height: 66vh; min-height: 430px; border-radius: 8px; }
   .step-carousel-slide { min-height: 400px; padding: 14px; }
-  .step-carousel-navigation { grid-template-columns: 1fr auto 1fr; gap: 8px; }
-  .step-carousel-navigation .secondary-button { min-width: 0; padding: 8px 11px; }
+  .step-slide-header { gap: 8px; }
+  .step-carousel-navigation { gap: 5px; }
+  .step-carousel-navigation .secondary-button { min-width: 0; padding: 7px 8px; }
   .step-math-view { font-size: 18px; }
 }
