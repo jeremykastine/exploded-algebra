@@ -82,6 +82,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-editor-fields textarea { min-height: 70px; }
 .step-editor-fields textarea[data-step-field="instruction"] { min-height: 84px; }
 .step-math-view { display: flex; min-width: 0; min-height: 72px; align-items: center; justify-content: center; padding: 10px 12px; overflow: auto; border-radius: 7px; background: var(--soft); font-size: 20px; }
+.step-na-value { display: flex; min-height: 70px; align-items: center; justify-content: center; padding: 10px 12px; border-radius: 7px; background: var(--soft); color: var(--muted); font-size: 18px; font-weight: 800; }
 .step-math-view .katex-display { margin: 0; }
 .step-instruction-view { min-height: 72px; margin: 0; padding: 12px; border-radius: 7px; background: var(--soft); white-space: pre-wrap; }
 .step-instruction-view:empty::before { color: var(--muted); content: "No instruction"; font-style: italic; }

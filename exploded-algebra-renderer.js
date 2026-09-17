@@ -2109,13 +2109,27 @@ function expressionToKatex(rootOrData) {
                 const positive = new ExprNode("prod", node.args.slice(1).map(exprFromData), null);
                 return `-${render(positive, parentType)}`;
             }
-            const factors = node.args.map(factor => render(factor, "prod"));
+            const compactFactors = [];
+            for (const factor of node.args) {
+                const variable = factor.type === "value" && /^[A-Za-z]$/.test(String(factor.value))
+                    ? String(factor.value)
+                    : null;
+                const previous = compactFactors[compactFactors.length - 1];
+                if (variable && previous && previous.variable === variable) {
+                    previous.count += 1;
+                } else {
+                    compactFactors.push({ node: factor, variable, count: 1 });
+                }
+            }
+            const factors = compactFactors.map(item => item.variable && item.count > 1
+                ? `${escapeKatexValue(item.variable)}^{${item.count}}`
+                : render(item.node, "prod"));
             return factors.map((factor, index) => {
                 if (index === 0) {
                     return factor;
                 }
-                const previousNode = node.args[index - 1];
-                const currentNode = node.args[index];
+                const previousNode = compactFactors[index - 1].node;
+                const currentNode = compactFactors[index].node;
                 const canJuxtapose = (
                     previousNode.type === "value" && /^-?\d/.test(String(previousNode.value)) &&
                     (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")

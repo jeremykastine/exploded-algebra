@@ -50,6 +50,7 @@ assert(builderJs.includes('let currentCurationMode = "view"') && builderJs.inclu
 assert(builderJs.includes('data-step-view="beforeKatex"') && builderJs.includes('data-step-view="afterKatex"') && builderJs.includes("renderKatex(slide.querySelector"), "View mode must render pre/post fields with KaTeX");
 assert(builderJs.includes('aria-roledescription="slide"') && builderJs.includes('data-carousel-direction="previous"') && builderJs.includes('data-carousel-direction="next"'), "Phase 4 must render one navigable carousel slide per step");
 assert(builderJs.includes('key: "initial-expression"') && builderJs.includes('const stepNumber = candidate.isInitial ? 0 : index'), "Phase 4 must begin with a Step 0 slide for the original expression");
+assert(builderJs.includes('Pre-completion is not applicable for step 0') && builderJs.includes('>N/A</div>'), "Step 0 pre-completion must be marked N/A in Phase 4");
 assert(builderCss.includes(".step-carousel-slide") && builderCss.includes(".step-carousel-navigation") && builderCss.includes(".step-mode-toggle") && builderCss.includes(".step-math-view"), "Phase 4 must style the carousel and its View/Edit modes");
 assert(/data-step-field="beforeKatex"[\s\S]*?data-step-field="instruction"[\s\S]*?data-step-field="afterKatex"/.test(builderJs), "Edit mode must order the three text fields as pre-completion, instructions, and post-completion");
 assert(/data-step-view="beforeKatex"[\s\S]*?step-instruction-view[\s\S]*?data-step-view="afterKatex"/.test(builderJs), "View mode must order rendered pre-completion, instructions, and rendered post-completion");
@@ -115,6 +116,7 @@ assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.inclu
 assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence.builderOperators.push("prod")'), "Entering x after a completed value must insert an implicit product");
 assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
+assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes('unresolvedOperation = { type: null }') && playerJs.includes('unresolvedOperation.type !== type'), "Submit must accept only one uniform type of unresolved operation");
 assert(playerJs.includes('return new ExprNode(node.builderOperators[0], completedArgs, null)'), "Submit must collapse uniformly unresolved sums or products");
 
@@ -172,6 +174,8 @@ const value = text => new renderer.ExprNode("value", [], text);
 const cases = [
   [new renderer.ExprNode("sum", [value("x"), value("1")]), "x + 1"],
   [new renderer.ExprNode("prod", [value("3"), value("x")]), "3x"],
+  [new renderer.ExprNode("prod", [value("x"), value("x")]), "x^{2}"],
+  [new renderer.ExprNode("prod", [value("2"), value("x"), value("x"), value("x")]), "2x^{3}"],
   [new renderer.ExprNode("inv", [new renderer.ExprNode("sum", [value("x"), value("4")])]), "\\frac{1}{x + 4}"],
   [new renderer.ExprNode("sum", [value("x"), new renderer.ExprNode("prod", [value("-1"), value("3")])]), "x - 3"]
 ];

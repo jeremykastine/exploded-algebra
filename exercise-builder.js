@@ -405,6 +405,12 @@
     const editing = currentCurationMode === "edit";
     const stepNumber = candidate.isInitial ? 0 : index;
     const isFinalSlide = index === candidates.length - 1;
+    const preCompletionEditor = candidate.isInitial
+      ? '<div class="step-na-value" aria-label="Pre-completion is not applicable for step 0">N/A</div>'
+      : `<textarea rows="3" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>`;
+    const preCompletionView = candidate.isInitial
+      ? '<div class="step-math-view step-na-value" aria-label="Pre-completion is not applicable for step 0">N/A</div>'
+      : `<div class="step-math-view" data-step-view="beforeKatex" aria-label="Pre-completion expression for step ${stepNumber}"></div>`;
     container.innerHTML = `
       <article class="step-carousel-slide card" data-candidate-index="${index}" role="group" aria-roledescription="slide" aria-label="Step ${stepNumber}, slide ${index + 1} of ${candidates.length}" tabindex="-1">
         <header class="step-slide-header">
@@ -417,7 +423,7 @@
         ${editing ? `
           <fieldset class="step-editor-fields">
             <label class="step-edit-field"><span>Pre-completion</span>
-              <textarea rows="3" spellcheck="false" data-step-field="beforeKatex">${escapeHtml(candidate.beforeKatex)}</textarea>
+              ${preCompletionEditor}
             </label>
             <label class="step-edit-field"><span>Instructions</span>
               <textarea rows="3" data-step-field="instruction"></textarea>
@@ -429,7 +435,7 @@
           <section class="step-view-fields">
             <div class="step-view-field">
               <h3>Pre-completion</h3>
-              <div class="step-math-view" data-step-view="beforeKatex" aria-label="Pre-completion expression for step ${stepNumber}"></div>
+              ${preCompletionView}
             </div>
             <div class="step-view-field">
               <h3>Instructions</h3>
@@ -449,7 +455,9 @@
     const slide = container.querySelector("[data-candidate-index]");
     const instructionField = slide.querySelector('[data-step-field="instruction"]');
     if (instructionField) instructionField.value = candidate.instruction || "";
-    renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
+    if (!candidate.isInitial) {
+      renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
+    }
     renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
     renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction);
     byId("completeExerciseButton").hidden = !isFinalSlide;

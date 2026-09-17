@@ -10671,14 +10671,10 @@ ctx.font = SETTINGS.textFont;
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
                 uiState.stage === "preview"
             ) {
-                const chosenCount = Array.isArray(uiState.commuteOrder) ? uiState.commuteOrder.length : 0;
-                const totalCount = getSelectedSliceLength();
-                const demoStep = getCurrentDemoStep();
-                const instruction = isDemoModeActive() && demoStep && demoStep.type === "commuteChoice"
-                    ? `Click the yellow-outlined ${selection.node && selection.node.type === "sum" ? "term" : "factor"} next.`
-                    : "Click the colored terms or factors in the order you want them to appear.";
-                html += `<div class="small-note">${instruction} ${chosenCount} of ${totalCount} chosen.</div>`;
-                html += `<div class="tool-row"><button data-action="done">Exit</button></div>`;
+                // Three-or-more-item commute is performed directly on the
+                // colored expression; it does not need a bottom prompt or
+                // action buttons competing with the expression workspace.
+                return "";
             } else if (
                 (uiState.activeTool === "commuteFirstToLast" || uiState.activeTool === "commuteLastToFirst") &&
                 uiState.stage === "preview"
