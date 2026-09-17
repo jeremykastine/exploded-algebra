@@ -11584,44 +11584,52 @@ function renderToolArea() {
             setStatus("");
         }
 
-        function getClickedIndexWithinSelection(x, y) {
+        function getClosestIndexWithinSelection(x, y) {
             if (!selection.node || !selection.node.args) {
                 return -1;
             }
 
+            let closestIndex = -1;
+            let closestDistanceSquared = Infinity;
+            let closestAxisDistance = Infinity;
             for (let i = selection.firstPart; i <= selection.lastPart; i++) {
+                let left;
+                let right;
+                let top;
+                let bottom;
+                let axisDistance;
                 if (selection.node.type === "sum") {
                     const term = selection.node.args[i];
-                    const y1 = term.top() - getSelectionMargin();
-                    const y2 = term.bottom() + getSelectionMargin();
-
-                    if (
-                        x >= selection.node.left() &&
-                        x <= selection.node.right() &&
-                        y >= y1 &&
-                        y <= y2
-                    ) {
-                        return i;
-                    }
+                    left = selection.node.left();
+                    right = selection.node.right();
+                    top = term.top() - getSelectionMargin();
+                    bottom = term.bottom() + getSelectionMargin();
+                    axisDistance = Math.abs(y - (top + bottom) / 2);
+                } else if (selection.node.type === "prod") {
+                    const factor = selection.node.args[i];
+                    left = factor.left() - getSelectionMargin();
+                    right = factor.right() + getSelectionMargin();
+                    top = selection.node.top();
+                    bottom = selection.node.bottom();
+                    axisDistance = Math.abs(x - (left + right) / 2);
+                } else {
+                    continue;
                 }
 
-                if (selection.node.type === "prod") {
-                    const factor = selection.node.args[i];
-                    const x1 = factor.left() - getSelectionMargin();
-                    const x2 = factor.right() + getSelectionMargin();
-
-                    if (
-                        x >= x1 &&
-                        x <= x2 &&
-                        y >= selection.node.top() &&
-                        y <= selection.node.bottom()
-                    ) {
-                        return i;
-                    }
+                const horizontalDistance = x < left ? left - x : x > right ? x - right : 0;
+                const verticalDistance = y < top ? top - y : y > bottom ? y - bottom : 0;
+                const distanceSquared = horizontalDistance * horizontalDistance + verticalDistance * verticalDistance;
+                if (
+                    distanceSquared < closestDistanceSquared ||
+                    (distanceSquared === closestDistanceSquared && axisDistance < closestAxisDistance)
+                ) {
+                    closestIndex = i;
+                    closestDistanceSquared = distanceSquared;
+                    closestAxisDistance = axisDistance;
                 }
             }
 
-            return -1;
+            return closestIndex;
         }
 
         function releaseWorkspacePointer() {
@@ -11700,16 +11708,20 @@ function renderToolArea() {
                 releaseWorkspacePointer();
                 return;
             }
+            if (pointerStart.mode === "commute") {
+                const point = workspaceClientPointToSvg(e.clientX, e.clientY);
+                const releasedIndex = getClosestIndexWithinSelection(point.x, point.y);
+                if (releasedIndex >= 0 && releasedIndex === pointerStart.commuteIndex) {
+                    recordCommutePermutationChoice(releasedIndex);
+                }
+                releaseWorkspacePointer();
+                return;
+            }
             const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
             const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
             if (movement <= tapTolerance) {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
-                if (pointerStart.mode === "commute") {
-                    const clickedIndex = getClickedIndexWithinSelection(point.x, point.y);
-                    if (clickedIndex >= 0) {
-                        recordCommutePermutationChoice(clickedIndex);
-                    }
-                } else if (pointerStart.mode === "cancelBuilder") {
+                if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
                 } else if (pointerStart.mode === "builderOperator") {
                     const target = getIntegratedBuilderOperatorTarget(point.x, point.y, pointerStart.pointerType);
@@ -11828,6 +11840,9 @@ function renderToolArea() {
                 pointerType: e.pointerType || "mouse",
                 panX: workspacePanX,
                 panY: workspacePanY,
+                commuteIndex: choosingCommuteOrder
+                    ? getClosestIndexWithinSelection(pointerX, pointerY)
+                    : -1,
                 mode: cancelingBuilder
                     ? "cancelBuilder"
                     : panningView

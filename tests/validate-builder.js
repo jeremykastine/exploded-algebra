@@ -117,6 +117,8 @@ assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence
 assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
+assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
+assert(/if \(pointerStart\.mode === "commute"\)[\s\S]{0,500}releaseWorkspacePointer\(\);[\s\S]{0,100}return;[\s\S]{0,200}const movement =/.test(playerJs), "Commute choices must bypass the ordinary tap-movement threshold");
 assert(playerJs.includes('unresolvedOperation = { type: null }') && playerJs.includes('unresolvedOperation.type !== type'), "Submit must accept only one uniform type of unresolved operation");
 assert(playerJs.includes('return new ExprNode(node.builderOperators[0], completedArgs, null)'), "Submit must collapse uniformly unresolved sums or products");
 
