@@ -2680,18 +2680,34 @@
         .builder-keypad-panel .builder-negative-one-button { grid-column: 5; grid-row: 6; }
         .builder-keypad-panel .builder-inv-button { grid-column: 7; grid-row: 1; }
         .builder-keypad-panel .builder-exit-inv-button { grid-column: 7; grid-row: 2; }
-        .builder-keypad-panel .builder-sum-button { grid-column: 3; grid-row: 6; }
-        .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 6; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 3; grid-row: 5; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 5; }
         .builder-keypad-panel .builder-undo-button { grid-column: 7; grid-row: 6; }
         .builder-keypad-panel .builder-action-row button.builder-submit-button {
             grid-column: 1;
-            grid-row: 6;
+            grid-row: 5;
             writing-mode: horizontal-tb;
         }
         .builder-keypad-panel .builder-action-row button.builder-review-button {
             grid-column: 2;
-            grid-row: 6;
+            grid-row: 5;
             touch-action: none;
+        }
+        .builder-keypad-panel .builder-pan-button { grid-column: 1; grid-row: 6; }
+        .builder-keypad-panel .builder-zoom-in-button { grid-column: 2; grid-row: 6; }
+        .builder-keypad-panel .builder-zoom-out-button { grid-column: 3; grid-row: 6; }
+        .builder-keypad-panel .builder-reset-view-button { grid-column: 4; grid-row: 6; }
+        .builder-keypad-panel .builder-view-button svg {
+            display: block;
+            width: 72%;
+            height: 72%;
+            margin: auto;
+            pointer-events: none;
+        }
+        .builder-keypad-panel .builder-pan-button.is-active {
+            border-color: #2f67b2;
+            background: #dcecff;
+            box-shadow: inset 0 0 0 1px #2f67b2;
         }
         .builder-review-button svg {
             display: block;
@@ -3286,8 +3302,8 @@
         body.left-handed .builder-keypad-panel .builder-variable-button { grid-column: 2; }
         body.left-handed .builder-keypad-panel .builder-inv-button,
         body.left-handed .builder-keypad-panel .builder-exit-inv-button { grid-column: 3; }
-        body.left-handed .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 6; }
-        body.left-handed .builder-keypad-panel .builder-sum-button { grid-column: 5; grid-row: 6; }
+        body.left-handed .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 5; }
+        body.left-handed .builder-keypad-panel .builder-sum-button { grid-column: 5; grid-row: 5; }
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 1; }
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 2; }
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="9"] { grid-column: 3; }
@@ -3300,8 +3316,12 @@
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 2; }
         body.left-handed .builder-keypad-panel .builder-negative-one-button { grid-column: 1; }
         body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 3; }
-        body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 6; }
-        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 7; grid-row: 6; }
+        body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 5; }
+        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 7; grid-row: 5; }
+        body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 4; grid-row: 6; }
+        body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 5; grid-row: 6; }
+        body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 6; grid-row: 6; }
+        body.left-handed .builder-keypad-panel .builder-pan-button { grid-column: 7; grid-row: 6; }
 
         .builder-rewrite-original,
         .builder-rewrite-proposal {
@@ -3670,7 +3690,7 @@
         }
 
         /* Integrated expression building keeps entry and order-of-operations
-           grouping together on one automatically fitted canvas. */
+           grouping together on one manually navigable canvas. */
         body.expression-builder-active.builder-entry-mode #expressionWorkspaceSvg {
             opacity: 1;
         }
@@ -3840,7 +3860,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-variable-exponents"></script>
-    <script src="exploded-algebra-tool.js?v=20260917-commute-nearest"></script>
+    <script src="exploded-algebra-tool.js?v=20260917-builder-view-controls"></script>
 
 </body>
 </html>

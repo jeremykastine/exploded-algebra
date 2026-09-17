@@ -4362,6 +4362,23 @@ Promise.resolve().then(() => {
                 });
             }
             if (builderCommandPanel) {
+                builderCommandPanel.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-builder-view-action]");
+                    if (!button || button.disabled) {
+                        return;
+                    }
+                    const action = button.dataset.builderViewAction;
+                    if (action === "pan") {
+                        setWorkspaceMode(uiState.workspaceMode === "pan" ? "select" : "pan");
+                    } else if (action === "zoomIn") {
+                        zoomWorkspaceIn();
+                    } else if (action === "zoomOut") {
+                        zoomWorkspaceOut();
+                    } else if (action === "resetZoom") {
+                        resetWorkspaceZoom();
+                    }
+                    renderToolArea();
+                });
                 builderCommandPanel.addEventListener("pointerdown", event => {
                     const button = event.target.closest("button[data-builder-review]");
                     if (!button || button.disabled || (event.pointerType === "mouse" && event.button !== 0)) {
@@ -4491,28 +4508,6 @@ Promise.resolve().then(() => {
             const mainHeight = svgContainer.clientHeight;
             const expressionWidth = expressionRoot.layout.width;
             const expressionHeight = expressionRoot.layout.height;
-
-            if (isIntegratedExpressionBuilder() && !builderReviewActive) {
-                const neededWidth = Math.max(1, Math.ceil(expressionWidth + padding * 2));
-                const neededHeight = Math.max(1, Math.ceil(expressionHeight + padding * 2));
-                if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
-                    setSvgSize(workspaceSvg, neededWidth, neededHeight);
-                }
-                const keypadWidth = builderKeypadPanel && !builderKeypadPanel.classList.contains("hidden")
-                    ? builderKeypadPanel.offsetWidth + 20
-                    : 0;
-                const keypadHeight = builderKeypadPanel && !builderKeypadPanel.classList.contains("hidden")
-                    ? builderKeypadPanel.offsetHeight + 20
-                    : 0;
-                const useSideSpace = mainWidth > mainHeight && mainWidth - keypadWidth >= Math.max(220, mainWidth * 0.38);
-                const availableWidth = Math.max(80, useSideSpace ? mainWidth - keypadWidth : mainWidth - 20);
-                const availableHeight = Math.max(80, useSideSpace ? mainHeight - 20 : mainHeight - keypadHeight);
-                workspaceZoom = Math.max(0.12, Math.min(1, availableWidth / neededWidth, availableHeight / neededHeight));
-                workspacePanX = 0;
-                workspacePanY = 0;
-                applyWorkspaceZoomSizing();
-                return;
-            }
 
             let neededWidth = Math.max(mainWidth, Math.ceil(expressionWidth + padding * 2));
             let neededHeight = Math.max(mainHeight, Math.ceil(expressionHeight + padding * 2));
@@ -4947,12 +4942,14 @@ ctx.font = SETTINGS.textFont;
                 savedMainWorkspaceView = {
                     zoom: workspaceZoom,
                     panX: workspacePanX,
-                    panY: workspacePanY
+                    panY: workspacePanY,
+                    mode: uiState.workspaceMode
                 };
                 workspaceZoom = 1;
                 workspacePanX = 0;
                 workspacePanY = 0;
                 applyWorkspaceZoomSizing();
+                setWorkspaceMode("select");
                 builderWorkspaceViewActive = true;
                 return;
             }
@@ -4966,6 +4963,7 @@ ctx.font = SETTINGS.textFont;
             workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, view.zoom));
             workspacePanX = Number.isFinite(view.panX) ? view.panX : 0;
             workspacePanY = Number.isFinite(view.panY) ? view.panY : 0;
+            setWorkspaceMode(view.mode);
             if (expressionRoot) {
                 drawExpression();
             } else {
@@ -8983,12 +8981,12 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            if (builderSequenceExpectsValue(sequence) === false) {
-                uiState.message = "Choose an operation before inserting an inverse.";
-                renderToolArea();
-                return false;
-            }
+            const needsImplicitProduct = builderSequenceExpectsValue(sequence) === false;
             pushExpressionBuilderUndoState();
+            if (needsImplicitProduct) {
+                finalizeIntegratedBuilderValue(sequence);
+                sequence.builderOperators.push("prod");
+            }
             const inner = makeBuilderSequence();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
@@ -10385,11 +10383,12 @@ ctx.font = SETTINGS.textFont;
                     const disabled = !operationTypes.includes(type) || expectsValue;
                     return `<button class="builder-operator-button builder-${type}-button builder-plain-operator-button" data-builder-action="pendingOperation" data-value="${type}" aria-label="Insert ${type === "sum" ? "addition" : "multiplication"}" title="Keyboard shortcut: ${shortcut}"${disabled ? " disabled" : ""}>${glyph}</button>`;
                 };
-                const inverseDisabled = !operationTypes.includes("inv") || !expectsValue;
+                const inverseDisabled = !operationTypes.includes("inv");
                 const exitDisabled = !builder.currentPath.length;
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
                 const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
                 const reviewDisabled = builder.tool === "authorInitial";
+                const panActive = uiState.workspaceMode === "pan";
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
@@ -10399,8 +10398,12 @@ ctx.font = SETTINGS.textFont;
                         <button class="builder-operator-button builder-exit-inv-button" data-builder-action="exitInverse" aria-label="Exit inverse" title="Keyboard shortcut: Right Arrow"${exitDisabled ? " disabled" : ""}><span class="builder-exit-inverse-icon">${getBuilderSymbolIcon("inv")}<svg class="builder-exit-arrow" viewBox="0 0 32 32" aria-hidden="true"><path class="builder-exit-arrow-halo" d="M14 18 27 29M20 29h7v-7"/><path class="builder-exit-arrow-line" d="M14 18 27 29M20 29h7v-7"/></svg></span></button>
                         <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Original-expression review is unavailable while building the starting expression" : "Hold to review original expression"}" title="${reviewDisabled ? "No previous expression to review" : "Hold to review original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
-                        <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 7.2A9 9 0 1 1 4 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                        <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
+                        <button type="button" class="builder-view-button builder-pan-button${panActive ? " is-active" : ""}" data-builder-view-action="pan" aria-pressed="${panActive}" aria-label="${panActive ? "Resume expression entry" : "Move view"}" title="${panActive ? "Resume expression entry" : "Drag to move the expression view"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        <button type="button" class="builder-view-button builder-zoom-in-button" data-builder-view-action="zoomIn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                        <button type="button" class="builder-view-button builder-zoom-out-button" data-builder-view-action="zoomOut" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                        <button type="button" class="builder-view-button builder-reset-view-button" data-builder-view-action="resetZoom" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg></button>
                     </div></div>
                 </div>`;
             }
@@ -11804,7 +11807,7 @@ function renderToolArea() {
             const activeBuilder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
             const integratedBuilder = isIntegratedExpressionBuilder(activeBuilder);
             const cancelingBuilder = !!activeBuilder && !integratedBuilder;
-            const panningView = !activeBuilder && uiState.workspaceMode === "pan";
+            const panningView = uiState.workspaceMode === "pan";
             const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
             const pointerX = pointerPoint.x;
             const pointerY = pointerPoint.y;
