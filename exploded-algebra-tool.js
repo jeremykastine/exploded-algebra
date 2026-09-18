@@ -10675,11 +10675,8 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             const disabled = !builderAllowsVariables(uiState.activeTool);
-            if (disabled) {
-                builderVariableRail.replaceChildren();
-                return;
-            }
-            builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button" data-builder-action="value" data-value="x" aria-label="Insert x" title="Keyboard shortcut: x">${getBuilderSymbolIcon("value", "x")}</button>`;
+            const availability = disabled ? " unavailable in this expression" : "";
+            builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button" data-builder-action="value" data-value="x" aria-label="Insert x${availability}" title="${disabled ? "x is unavailable in this expression" : "Keyboard shortcut: x"}"${disabled ? " disabled" : ""}>${getBuilderSymbolIcon("value", "x")}</button>`;
         }
 
         function buildExpressionBuilderHtml() {

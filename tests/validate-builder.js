@@ -219,6 +219,8 @@ const mixedOperations = collapseContext.collapseCompletedIntegratedBuilderNode(
 assert(mixedOperations === null, "Submit must still reject mixed unresolved operations");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
+assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activeTool);') && playerJs.includes('${disabled ? " disabled" : ""}'), "The x button must remain visible and become disabled only when variables are unavailable");
+assert(!/if \(disabled\) \{\s*builderVariableRail\.replaceChildren\(\);\s*return;\s*\}/.test(playerJs), "A disallowed x must be disabled rather than removed from the keypad");
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
 assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
 assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
