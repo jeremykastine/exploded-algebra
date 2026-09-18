@@ -733,7 +733,13 @@ Promise.resolve().then(() => {
             return pairNames.map(pairName => `
                 <svg class="reverse-pair-overlay reverse-pair-${pairName}" data-reverse-pair="${pairName}" viewBox="0 0 40 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M20 88 V118 M13 96 L20 88 L27 96 M13 110 L20 118 L27 110"/>
-                </svg>`).join("");
+                </svg>`).join("") + `
+                <svg class="reverse-pair-overlay reverse-pair-horizontal reverse-pair-distribute-left" data-reverse-pair="distribute-left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89"/>
+                </svg>
+                <svg class="reverse-pair-overlay reverse-pair-horizontal reverse-pair-distribute-right" data-reverse-pair="distribute-right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89"/>
+                </svg>`;
         }
 
         function buildIntentCategoryMenuHtml() {

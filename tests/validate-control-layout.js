@@ -133,13 +133,16 @@ assert(!playerHtml.includes('direct-rule-icon.crossed-out'));
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
 assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
 assert(playerJs.includes('function buildReversePairOverlaysHtml()'));
-['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse'].forEach(pair => {
+['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse', 'distribute-left', 'distribute-right'].forEach(pair => {
     assert(playerJs.includes(`"${pair}"`), `${pair} must have a two-way relationship arrow`);
 });
 assert(playerJs.includes('M20 88 V118 M13 96 L20 88 L27 96 M13 110 L20 118 L27 110'));
+assert(playerJs.includes('M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89'));
 assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/\.main-action-panel \.reverse-pair-double-inverse \{ grid-column: 3; grid-row: 1 \/ span 2; \}/.test(playerHtml));
 assert(/\.main-action-panel \.reverse-pair-zero-product \{ grid-column: 3; grid-row: 3 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.reverse-pair-distribute-left \{ grid-column: 5 \/ span 2; grid-row: 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.reverse-pair-distribute-right \{ grid-column: 6 \/ span 2; grid-row: 1; \}/.test(playerHtml));
 assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode)'));
 assert(playerJs.includes('isExactDoubleNegativeProduct(originalNode) && proposedIsOne'));
 assert(playerJs.includes('isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne'));
