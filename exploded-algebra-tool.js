@@ -1223,6 +1223,7 @@ Promise.resolve().then(() => {
         const exitSettingsButton = document.getElementById("exitSettingsButton");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
+        const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
         const svgContainer = document.getElementById("svgContainer");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
@@ -1792,7 +1793,40 @@ Promise.resolve().then(() => {
             });
         }
 
+        const TOP_PANEL_MIN_HEIGHT = 48;
+        const TOP_PANEL_MAX_VIEWPORT_RATIO = 0.25;
         let topPanelHeightFrame = null;
+        let userTopPanelHeight = null;
+        let topPanelResizeState = null;
+
+        function getViewportHeight() {
+            return window.visualViewport && window.visualViewport.height
+                ? window.visualViewport.height
+                : window.innerHeight;
+        }
+
+        function getMaximumTopPanelHeight() {
+            return Math.max(TOP_PANEL_MIN_HEIGHT, Math.floor(getViewportHeight() * TOP_PANEL_MAX_VIEWPORT_RATIO));
+        }
+
+        function setTopPanelHeight(height, rememberUserChoice = false) {
+            if (!appContainer) {
+                return;
+            }
+            const maximumHeight = getMaximumTopPanelHeight();
+            const clampedHeight = Math.max(
+                TOP_PANEL_MIN_HEIGHT,
+                Math.min(Number(height) || TOP_PANEL_MIN_HEIGHT, maximumHeight)
+            );
+            if (rememberUserChoice) {
+                userTopPanelHeight = clampedHeight;
+            }
+            appContainer.style.setProperty("--top-panel-height", `${Math.round(clampedHeight)}px`);
+            if (topPanelResizeHandle) {
+                topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
+                topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
+            }
+        }
 
         function getStepGuidanceForDisplay(step) {
             const explicitGuidance = normalizeTextBlocks(step && step.guidance);
@@ -1872,24 +1906,25 @@ Promise.resolve().then(() => {
             if (!appContainer || !leftPanel || !level) {
                 return;
             }
-            const visibleSteps = Array.from(leftPanel.querySelectorAll(".solution-step"));
-            if (!visibleSteps.length) {
+            if (userTopPanelHeight !== null) {
+                userTopPanelHeight = Math.min(userTopPanelHeight, getMaximumTopPanelHeight());
+                setTopPanelHeight(userTopPanelHeight);
+                return;
+            }
+            const visibleColumns = Array.from(leftPanel.querySelectorAll(".solution-column"));
+            if (!visibleColumns.length) {
                 return;
             }
 
-            const largestStepHeight = visibleSteps.reduce((largest, step) => (
-                Math.max(largest, step.scrollHeight, step.getBoundingClientRect().height)
-            ), 0);
-            const sampleColumn = visibleSteps[0].closest(".solution-column");
             const panelStyle = window.getComputedStyle(leftPanel);
-            const columnStyle = sampleColumn ? window.getComputedStyle(sampleColumn) : null;
             const verticalPadding = style => style
                 ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
                 : 0;
-            const fittedHeight = Math.ceil(
-                largestStepHeight + verticalPadding(panelStyle) + verticalPadding(columnStyle) + 4
-            );
-            appContainer.style.setProperty("--top-panel-height", `${Math.max(48, fittedHeight)}px`);
+            const contentHeight = visibleColumns.reduce((total, column) => (
+                total + Math.max(column.scrollHeight, column.getBoundingClientRect().height)
+            ), 0);
+            const fittedHeight = Math.ceil(contentHeight + verticalPadding(panelStyle) + 4);
+            setTopPanelHeight(fittedHeight);
         }
 
         function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
@@ -1899,6 +1934,57 @@ Promise.resolve().then(() => {
             topPanelHeightFrame = requestAnimationFrame(() => {
                 topPanelHeightFrame = null;
                 updateTopPanelHeight(level);
+            });
+        }
+
+        function installTopPanelResizing() {
+            if (!topPanelResizeHandle || !appContainer) {
+                return;
+            }
+
+            const finishResize = event => {
+                if (!topPanelResizeState || (event && event.pointerId !== topPanelResizeState.pointerId)) {
+                    return;
+                }
+                topPanelResizeState = null;
+            };
+
+            topPanelResizeHandle.addEventListener("pointerdown", event => {
+                if (event.pointerType === "mouse" && event.button !== 0) {
+                    return;
+                }
+                const panelBounds = leftPanel.getBoundingClientRect();
+                topPanelResizeState = {
+                    pointerId: event.pointerId,
+                    panelTop: panelBounds.top
+                };
+                if (topPanelResizeHandle.setPointerCapture) {
+                    topPanelResizeHandle.setPointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+            });
+            topPanelResizeHandle.addEventListener("pointermove", event => {
+                if (!topPanelResizeState || event.pointerId !== topPanelResizeState.pointerId) {
+                    return;
+                }
+                setTopPanelHeight(event.clientY - topPanelResizeState.panelTop, true);
+                event.preventDefault();
+            });
+            topPanelResizeHandle.addEventListener("pointerup", finishResize);
+            topPanelResizeHandle.addEventListener("pointercancel", finishResize);
+            topPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
+            topPanelResizeHandle.addEventListener("keydown", event => {
+                const currentHeight = leftPanel.getBoundingClientRect().height;
+                let nextHeight = null;
+                if (event.key === "ArrowUp") nextHeight = currentHeight - 8;
+                if (event.key === "ArrowDown") nextHeight = currentHeight + 8;
+                if (event.key === "Home") nextHeight = TOP_PANEL_MIN_HEIGHT;
+                if (event.key === "End") nextHeight = getMaximumTopPanelHeight();
+                if (nextHeight === null) {
+                    return;
+                }
+                setTopPanelHeight(nextHeight, true);
+                event.preventDefault();
             });
         }
 
@@ -1922,7 +2008,7 @@ Promise.resolve().then(() => {
 
         function getPressHoldTarget(eventTarget) {
             return eventTarget && eventTarget.closest
-                ? eventTarget.closest("button, .step-hold-target")
+                ? eventTarget.closest("button")
                 : null;
         }
 
@@ -1951,9 +2037,6 @@ Promise.resolve().then(() => {
         }
 
         function getPressHoldDescriptionHtml(button) {
-            if (button.classList.contains("step-hold-target")) {
-                return getStepGuidanceHtml(Number(button.dataset.stepIndex));
-            }
             const name = getButtonVisibleName(button);
             const titleHtml = `<span class="press-hold-popover-title">${escapeHtml(name)}</span>`;
 
@@ -2088,7 +2171,7 @@ Promise.resolve().then(() => {
             });
         }
 
-        function showStepGuidance(stepIndex, source = "hold") {
+        function showStepGuidance(stepIndex, source = "button") {
             const html = getStepGuidanceHtml(stepIndex);
             if (!html || !pressHoldPopover) {
                 return false;
@@ -2104,10 +2187,6 @@ Promise.resolve().then(() => {
 
         function showPressHoldPopover(button) {
             if (!pressHoldPopover || !isPressHoldTargetEligible(button)) {
-                return;
-            }
-            if (button.classList.contains("step-hold-target")) {
-                showStepGuidance(Number(button.dataset.stepIndex), "hold");
                 return;
             }
             activeStepGuidanceIndex = null;
@@ -2226,8 +2305,7 @@ Promise.resolve().then(() => {
                 }
                 const heldButton = pressHoldState.button;
                 const wasShown = pressHoldState.shown;
-                const heldStep = heldButton.classList.contains("step-hold-target");
-                clearPendingPressHold(!(wasShown && heldStep));
+                clearPendingPressHold();
                 if (wasShown) {
                     suppressedPressHoldClick = { button: heldButton, expiresAt: Date.now() + 800 };
                     event.preventDefault();
@@ -3659,7 +3737,7 @@ Promise.resolve().then(() => {
         const STEP_PANEL_SCROLL_DURATION_MS = 520;
         let stepPanelScrollAnimationFrame = null;
 
-        function animateStepPanelScroll(targetLeft) {
+        function animateStepPanelScroll(targetTop) {
             if (!leftPanel) {
                 return;
             }
@@ -3668,13 +3746,13 @@ Promise.resolve().then(() => {
                 stepPanelScrollAnimationFrame = null;
             }
 
-            const maximumLeft = Math.max(0, leftPanel.scrollWidth - leftPanel.clientWidth);
-            const startLeft = leftPanel.scrollLeft;
-            const endLeft = Math.max(0, Math.min(targetLeft, maximumLeft));
+            const maximumTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);
+            const startTop = leftPanel.scrollTop;
+            const endTop = Math.max(0, Math.min(targetTop, maximumTop));
             const reduceMotion = typeof window.matchMedia === "function"
                 && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-            if (Math.abs(endLeft - startLeft) < 1 || reduceMotion) {
-                leftPanel.scrollLeft = endLeft;
+            if (Math.abs(endTop - startTop) < 1 || reduceMotion) {
+                leftPanel.scrollTop = endTop;
                 return;
             }
 
@@ -3687,11 +3765,11 @@ Promise.resolve().then(() => {
                 const easedProgress = progress < 0.5
                     ? 4 * progress * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-                leftPanel.scrollLeft = startLeft + (endLeft - startLeft) * easedProgress;
+                leftPanel.scrollTop = startTop + (endTop - startTop) * easedProgress;
                 if (progress < 1) {
                     stepPanelScrollAnimationFrame = requestAnimationFrame(tick);
                 } else {
-                    leftPanel.scrollLeft = endLeft;
+                    leftPanel.scrollTop = endTop;
                     stepPanelScrollAnimationFrame = null;
                 }
             };
@@ -3747,10 +3825,14 @@ Promise.resolve().then(() => {
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
+                const guidanceHtml = isCurrent && getStepGuidanceForDisplay(step).length
+                    ? `<button type="button" class="view-step-guidance-button" data-step-guidance-index="${index}" data-hold-description="Open the guidance for this step.">View Guidance</button>`
+                    : "";
                 return `
                     <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}"${finalOnlyMode ? ' aria-label="Target final expression"' : ""}>
-                        <div class="solution-step step-card step-hold-target ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                        <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
+                            ${guidanceHtml}
                             ${completedCheckHtml}
                         </div>
                     </div>
@@ -3760,7 +3842,7 @@ Promise.resolve().then(() => {
             levelContent.innerHTML = `
                 <div class="textbook-solution">
                     <section class="solution-section solution-column problem-statement" aria-label="Problem statement">
-                        <div class="solution-step problem-step-card completed-step step-hold-target" data-step-index="-1">
+                        <div class="solution-step problem-step-card completed-step" data-step-index="-1">
                             <div class="problem-expression" aria-label="Initial conventional expression">
                                 <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(initialKatex)}"></span></div>
                             </div>
@@ -3776,8 +3858,17 @@ Promise.resolve().then(() => {
 
             renderLeftPanelMath();
             scheduleTopPanelHeightUpdate(level);
+            levelContent.querySelectorAll(".view-step-guidance-button").forEach(button => {
+                button.addEventListener("click", event => {
+                    event.stopPropagation();
+                    showStepGuidance(Number(button.dataset.stepGuidanceIndex), "button");
+                });
+            });
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
+                    if (event.target.closest(".view-step-guidance-button")) {
+                        return;
+                    }
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
                         // Preview comparison is disabled for now. Leave the listener
                         // here so it can be restored by changing the flag above.
@@ -3805,13 +3896,13 @@ Promise.resolve().then(() => {
             if (currentColumn || isExerciseComplete) {
                 requestAnimationFrame(() => {
                     if (isExerciseComplete) {
-                        animateStepPanelScroll(leftPanel.scrollWidth - leftPanel.clientWidth);
+                        animateStepPanelScroll(leftPanel.scrollHeight - leftPanel.clientHeight);
                         return;
                     }
                     const panelBounds = leftPanel.getBoundingClientRect();
                     const columnBounds = currentColumn.getBoundingClientRect();
-                    const desiredLeft = leftPanel.scrollLeft + columnBounds.right - panelBounds.right + 12;
-                    animateStepPanelScroll(desiredLeft);
+                    const desiredTop = leftPanel.scrollTop + columnBounds.bottom - panelBounds.bottom + 8;
+                    animateStepPanelScroll(desiredTop);
                 });
             }
 
@@ -4227,6 +4318,7 @@ Promise.resolve().then(() => {
                 });
             }
             installPressHoldDescriptions();
+            installTopPanelResizing();
             if (toolOptionMenu) {
                 toolOptionMenu.addEventListener("click", event => {
                     const button = event.target.closest("button[data-tool-option]");

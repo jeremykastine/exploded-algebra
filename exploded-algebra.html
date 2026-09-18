@@ -2228,8 +2228,7 @@
         .press-hold-popover .rule-notation { display: block; }
         .press-hold-popover p { max-width: 720px; margin: 4px 0; }
         .press-hold-popover ul { max-width: 720px; margin: 7px 0 0; padding-left: 22px; text-align: left; }
-        body:not(.expression-builder-active) button,
-        body:not(.expression-builder-active) .step-hold-target {
+        body:not(.expression-builder-active) button {
             -webkit-touch-callout: none;
             user-select: none;
         }
@@ -3361,20 +3360,23 @@
             }
         }
 
-        /* The conventional-expression strip always fits its contents and is not user-resizable. */
+        /* Vertically scrolling conventional steps with a user-adjustable panel. */
         .app-container,
         body.left-handed .app-container,
         body.expression-builder-active .app-container,
         body.expression-builder-active.left-handed .app-container {
-            grid-template-rows: var(--top-panel-height) minmax(0, 1fr);
+            grid-template-rows: min(var(--top-panel-height), 25dvh) var(--divider-size) minmax(0, 1fr);
         }
         .left-panel,
         body.left-handed .left-panel {
             grid-row: 1;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scroll-behavior: auto;
         }
         .main,
         body.left-handed .main {
-            grid-row: 2;
+            grid-row: 3;
         }
         .quadrant-tools,
         body.left-handed .quadrant-tools,
@@ -3382,9 +3384,72 @@
         body.left-handed .quadrant-menu,
         .main-action-panel,
         body.left-handed .main-action-panel {
-            grid-row: 2;
+            grid-row: 3;
         }
-        .divider { display: none !important; }
+        .top-panel-resize-handle {
+            grid-column: 1;
+            grid-row: 2;
+            display: block !important;
+            width: 100%;
+            height: var(--divider-size);
+            min-height: var(--divider-size);
+            cursor: row-resize;
+            touch-action: none;
+        }
+        #levelContent {
+            flex: 1 0 auto;
+            width: 100%;
+            height: auto;
+        }
+        .textbook-solution {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-width: 0;
+            min-height: 0;
+            height: auto;
+        }
+        .running-solution {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .solution-column,
+        .solution-column:first-child {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            padding: 3px 6px;
+            border-right: 0;
+            box-sizing: border-box;
+        }
+        .solution-step,
+        .solution-step.completed-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .solution-step .math-block,
+        .problem-expression {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .view-step-guidance-button {
+            flex: 0 0 auto;
+            min-height: 32px;
+            padding: 5px 9px;
+            border: 1px solid #7650a5;
+            border-radius: 5px;
+            background: #f2ebfa;
+            color: #4d2877;
+            font: inherit;
+            font-size: 0.78em;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: pointer;
+        }
 
         /* Full-canvas settings view. */
         body.settings-active .app-container,
@@ -3397,6 +3462,7 @@
             grid-row: 1;
         }
         body.settings-active .left-panel,
+        body.settings-active .top-panel-resize-handle,
         body.settings-active .quadrant-menu,
         body.settings-active .quadrant-tools,
         body.settings-active .main-action-panel,
@@ -3668,6 +3734,7 @@
             grid-row: 1;
         }
         body.authoring-session .left-panel,
+        body.authoring-session .top-panel-resize-handle,
         body.authoring-session.authoring-initial-session .quadrant-menu {
             display: none !important;
         }
@@ -3709,7 +3776,7 @@
             grid-row: 1;
         }
         body.expression-builder-active.builder-entry-mode .divider {
-            display: none;
+            display: none !important;
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
@@ -3726,6 +3793,7 @@
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
         </div>
+        <div id="topPanelResizeHandle" class="divider top-panel-resize-handle" role="separator" aria-label="Resize conventional steps panel" aria-orientation="horizontal" aria-valuemin="48" tabindex="0"></div>
         <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <button type="button" data-workspace-action="authoringCheckpoint" aria-label="Record step" data-hold-description="Save the current expression as a recorded solution step." hidden>
