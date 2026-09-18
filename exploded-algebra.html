@@ -3158,36 +3158,84 @@
         }
         .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 8; grid-row: 2; }
         .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 8; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 4; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 4; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 5; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 6; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 7; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 6; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityAddZeroBottom"] { grid-column: 7; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityMultiplyByOneRight"] { grid-column: 6; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="cancelOpposites"] { grid-column: 5; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="replaceOneWithInverseProduct"] { grid-column: 4; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="eliminateIdentities"][data-direct-rule-variant="additive"] { grid-column: 7; grid-row: 4; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="eliminateIdentities"][data-direct-rule-variant="multiplicative"] { grid-column: 6; grid-row: 4; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="cancelOpposites"] { grid-column: 5; grid-row: 4; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="cancelProductWithInverse"] { grid-column: 4; grid-row: 4; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-slot="double-inverse-insert"] { grid-column: 3; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-slot="double-inverse-cancel"] { grid-column: 3; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-slot="zero-product-insert"] { grid-column: 3; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-rule-slot="zero-product-cancel"] { grid-column: 3; grid-row: 4; }
+        .main-action-panel .split-rule-button-inverse { grid-column: 4; grid-row: 1 / span 2; }
+        .main-action-panel .split-rule-button-distribute-left { grid-column: 5 / span 2; grid-row: 2; }
+        .main-action-panel .split-rule-button-distribute-right { grid-column: 6 / span 2; grid-row: 1; }
+        .main-action-panel .split-rule-button-additive-identity { grid-column: 7; grid-row: 3 / span 2; }
+        .main-action-panel .split-rule-button-multiplicative-identity { grid-column: 6; grid-row: 3 / span 2; }
+        .main-action-panel .split-rule-button-additive-inverse { grid-column: 5; grid-row: 3 / span 2; }
+        .main-action-panel .split-rule-button-multiplicative-inverse { grid-column: 4; grid-row: 3 / span 2; }
+        .main-action-panel .split-rule-button-double-inverse { grid-column: 3; grid-row: 1 / span 2; }
+        .main-action-panel .split-rule-button-zero-product { grid-column: 3; grid-row: 3 / span 2; }
         .main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }
         .main-action-panel .intent-category-actions > button {
             position: relative;
             z-index: 1;
         }
-        .main-action-panel .branch-pair-overlay {
-            z-index: 2;
-            align-self: stretch;
-            justify-self: stretch;
+        .main-action-panel .split-rule-button {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            box-sizing: border-box;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            border: 1px solid #999;
+            border-radius: 7px;
+            background: #fff;
+            pointer-events: auto;
+        }
+        .main-action-panel .split-rule-button-horizontal {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: minmax(0, 1fr);
+        }
+        .main-action-panel .split-rule-button-vertical {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+        }
+        .main-action-panel .intent-category-actions .split-rule-button > button.intent-category-button {
+            position: relative;
+            z-index: 1;
             width: 100%;
             height: 100%;
-            overflow: visible;
+            min-width: 0;
+            min-height: 0;
+            max-height: none;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+        .main-action-panel .intent-category-actions .split-rule-button > button.intent-category-button.demo-target-button {
+            background: #fff3bf;
+            box-shadow: inset 0 0 0 3px rgba(240, 196, 0, 0.45);
+        }
+        .main-action-panel .intent-category-actions .split-rule-button > button.intent-category-button.tool-not-applicable {
+            background: #ffecec;
+            color: #9c0000;
+        }
+        .main-action-panel .intent-category-actions .split-rule-button > button.intent-category-button:disabled {
+            background: #f5f5f5;
+            color: #999;
+        }
+        .main-action-panel .split-rule-button-horizontal > button.intent-category-button + button.intent-category-button {
+            border-left: 1px solid #c7cbd1;
+        }
+        .main-action-panel .split-rule-button-vertical > button.intent-category-button + button.intent-category-button {
+            border-top: 1px solid #c7cbd1;
+        }
+        .main-action-panel .split-rule-button > button.intent-category-button:focus-visible {
+            z-index: 4;
+            outline: 2px solid #315f9f;
+            outline-offset: -3px;
+        }
+        .main-action-panel .branch-pair-overlay {
+            position: absolute;
+            z-index: 2;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             color: #252525;
             pointer-events: none;
         }
@@ -3198,16 +3246,13 @@
             vector-effect: non-scaling-stroke;
         }
         .main-action-panel .branch-pair-overlay circle { fill: currentColor; }
-        .main-action-panel .branch-pair-left { grid-column: 5 / span 2; grid-row: 2; }
-        .main-action-panel .branch-pair-right { grid-column: 6 / span 2; grid-row: 1; }
-        .main-action-panel .branch-pair-inverse { grid-column: 4; grid-row: 1 / span 2; }
         .main-action-panel .reverse-pair-overlay {
+            position: absolute;
             z-index: 3;
-            align-self: stretch;
-            justify-self: stretch;
+            inset: 0;
             width: 100%;
             height: 100%;
-            overflow: visible;
+            overflow: hidden;
             color: #252525;
             pointer-events: none;
         }
@@ -3219,59 +3264,36 @@
             stroke-linejoin: round;
             vector-effect: non-scaling-stroke;
         }
-        .main-action-panel .reverse-pair-double-inverse { grid-column: 3; grid-row: 1 / span 2; }
-        .main-action-panel .reverse-pair-zero-product { grid-column: 3; grid-row: 3 / span 2; }
-        .main-action-panel .reverse-pair-additive-identity { grid-column: 7; grid-row: 3 / span 2; }
-        .main-action-panel .reverse-pair-multiplicative-identity { grid-column: 6; grid-row: 3 / span 2; }
-        .main-action-panel .reverse-pair-additive-inverse { grid-column: 5; grid-row: 3 / span 2; }
-        .main-action-panel .reverse-pair-multiplicative-inverse { grid-column: 4; grid-row: 3 / span 2; }
-        .main-action-panel .reverse-pair-distribute-left { grid-column: 5 / span 2; grid-row: 2; }
-        .main-action-panel .reverse-pair-distribute-right { grid-column: 6 / span 2; grid-row: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 1; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityAddZeroBottom"] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityMultiplyByOneRight"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="cancelOpposites"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="replaceOneWithInverseProduct"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="eliminateIdentities"][data-direct-rule-variant="additive"] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="eliminateIdentities"][data-direct-rule-variant="multiplicative"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="cancelOpposites"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="cancelProductWithInverse"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-slot="double-inverse-insert"],
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-slot="double-inverse-cancel"],
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-slot="zero-product-insert"],
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-slot="zero-product-cancel"] { grid-column: 6; }
         body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
-        body.left-handed .main-action-panel .branch-pair-left {
+        body.left-handed .main-action-panel .split-rule-button-inverse { grid-column: 5; }
+        body.left-handed .main-action-panel .split-rule-button-distribute-left {
             grid-column: 3 / span 2;
-            transform: scaleX(-1);
-            transform-origin: center;
         }
-        body.left-handed .main-action-panel .branch-pair-right {
+        body.left-handed .main-action-panel .split-rule-button-distribute-right {
             grid-column: 2 / span 2;
-            transform: scaleX(-1);
-            transform-origin: center;
         }
-        body.left-handed .main-action-panel .branch-pair-inverse { grid-column: 5; }
-        body.left-handed .main-action-panel .reverse-pair-double-inverse,
-        body.left-handed .main-action-panel .reverse-pair-zero-product { grid-column: 6; }
-        body.left-handed .main-action-panel .reverse-pair-additive-identity { grid-column: 2; }
-        body.left-handed .main-action-panel .reverse-pair-multiplicative-identity { grid-column: 3; }
-        body.left-handed .main-action-panel .reverse-pair-additive-inverse { grid-column: 4; }
-        body.left-handed .main-action-panel .reverse-pair-multiplicative-inverse { grid-column: 5; }
-        body.left-handed .main-action-panel .reverse-pair-distribute-left {
-            grid-column: 3 / span 2;
-            transform: scaleX(-1);
-            transform-origin: center;
+        body.left-handed .main-action-panel .split-rule-button-additive-identity { grid-column: 2; }
+        body.left-handed .main-action-panel .split-rule-button-multiplicative-identity { grid-column: 3; }
+        body.left-handed .main-action-panel .split-rule-button-additive-inverse { grid-column: 4; }
+        body.left-handed .main-action-panel .split-rule-button-multiplicative-inverse { grid-column: 5; }
+        body.left-handed .main-action-panel .split-rule-button-double-inverse,
+        body.left-handed .main-action-panel .split-rule-button-zero-product { grid-column: 6; }
+        body.left-handed .main-action-panel .split-rule-button-horizontal > button.intent-category-button:first-of-type {
+            grid-column: 2;
+            grid-row: 1;
         }
-        body.left-handed .main-action-panel .reverse-pair-distribute-right {
-            grid-column: 2 / span 2;
+        body.left-handed .main-action-panel .split-rule-button-horizontal > button.intent-category-button:nth-of-type(2) {
+            grid-column: 1;
+            grid-row: 1;
+            border-right: 1px solid #c7cbd1;
+            border-left: 0;
+        }
+        body.left-handed .main-action-panel .split-rule-button-distribute-left .branch-pair-overlay,
+        body.left-handed .main-action-panel .split-rule-button-distribute-right .branch-pair-overlay,
+        body.left-handed .main-action-panel .split-rule-button-distribute-left .reverse-pair-overlay,
+        body.left-handed .main-action-panel .split-rule-button-distribute-right .reverse-pair-overlay {
             transform: scaleX(-1);
             transform-origin: center;
         }
@@ -4192,7 +4214,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260918-direct-rule-pairs-v2"></script>
+    <script src="exploded-algebra-tool.js?v=20260918-split-rule-buttons"></script>
 
 </body>
 </html>

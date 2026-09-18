@@ -705,41 +705,69 @@ Promise.resolve().then(() => {
             </button>`;
         }
 
-        function buildSharedBranchPairOverlaysHtml() {
-            return `
-                <svg class="branch-pair-overlay branch-pair-left" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
-                    <circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>
-                </svg>
-                <svg class="branch-pair-overlay branch-pair-right" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
-                    <circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>
-                </svg>
-                <svg class="branch-pair-overlay branch-pair-inverse" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
-                    <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
-                </svg>`;
+        function getDirectRuleByTool(rules, toolName, variant = "") {
+            return rules.find(rule => rule.tool === toolName && (!variant || rule.variant === variant));
         }
 
-        function buildReversePairOverlaysHtml() {
-            const pairNames = [
-                "double-inverse",
-                "zero-product",
-                "additive-identity",
-                "multiplicative-identity",
-                "additive-inverse",
-                "multiplicative-inverse"
-            ];
-            return pairNames.map(pairName => `
-                <svg class="reverse-pair-overlay reverse-pair-${pairName}" data-reverse-pair="${pairName}" viewBox="0 0 40 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M20 88 V118 M13 96 L20 88 L27 96 M13 110 L20 118 L27 110"/>
-                </svg>`).join("") + `
-                <svg class="reverse-pair-overlay reverse-pair-horizontal reverse-pair-distribute-left" data-reverse-pair="distribute-left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89"/>
-                </svg>
-                <svg class="reverse-pair-overlay reverse-pair-horizontal reverse-pair-distribute-right" data-reverse-pair="distribute-right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        function buildBranchPairOverlayHtml(pairName) {
+            if (pairName === "distribute-left") {
+                return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
+                    <circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>
+                </svg>`;
+            }
+            if (pairName === "distribute-right") {
+                return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
+                    <circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>
+                </svg>`;
+            }
+            return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
+                <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
+            </svg>`;
+        }
+
+        function buildReversePairOverlayHtml(orientation) {
+            if (orientation === "horizontal") {
+                return `<svg class="reverse-pair-overlay reverse-pair-horizontal" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89"/>
                 </svg>`;
+            }
+            return `<svg class="reverse-pair-overlay" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                <path d="M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110"/>
+            </svg>`;
+        }
+
+        function buildSplitRulePairHtml(pairName, orientation, buttonsHtml, options = {}) {
+            const pairLabel = options.label || "Related algebra actions";
+            const branchOverlay = options.branch ? buildBranchPairOverlayHtml(pairName) : "";
+            const reverseOverlay = options.reverse ? buildReversePairOverlayHtml(orientation) : "";
+            return `<div class="split-rule-button split-rule-button-${orientation} split-rule-button-${pairName}" data-rule-pair="${pairName}" role="group" aria-label="${escapeHtml(pairLabel)}">
+                ${buttonsHtml}
+                ${branchOverlay}
+                ${reverseOverlay}
+            </div>`;
+        }
+
+        function buildDirectBranchRulePairHtml(pairName, orientation, firstTool, secondTool, options = {}) {
+            const firstRule = getDirectRuleByTool(DIRECT_BRANCH_RULE_BUTTONS, firstTool);
+            const secondRule = getDirectRuleByTool(DIRECT_BRANCH_RULE_BUTTONS, secondTool);
+            return buildSplitRulePairHtml(
+                pairName,
+                orientation,
+                buildDirectBranchRuleButtonHtml(firstRule) + buildDirectBranchRuleButtonHtml(secondRule),
+                options
+            );
+        }
+
+        function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label) {
+            return buildSplitRulePairHtml(
+                pairName,
+                "vertical",
+                buildDirectOptionRuleButtonHtml(firstRule, firstCategory) + buildDirectOptionRuleButtonHtml(secondRule, secondCategory),
+                { reverse: true, label }
+            );
         }
 
         function buildIntentCategoryMenuHtml() {
@@ -752,12 +780,15 @@ Promise.resolve().then(() => {
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
-                        ${DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml).join("")}
-                        ${DIRECT_IDENTITY_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert")).join("")}
-                        ${DIRECT_REVERSE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete")).join("")}
-                        ${DIRECT_EXTRA_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, rule.category)).join("")}
-                        ${buildSharedBranchPairOverlaysHtml()}
-                        ${buildReversePairOverlaysHtml()}
+                        ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, label: "Combine or separate inverses" })}
+                        ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true, label: "Factor or distribute on the left" })}
+                        ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true, label: "Distribute or factor on the right" })}
+                        ${buildDirectOptionRulePairHtml("additive-identity", DIRECT_IDENTITY_RULE_BUTTONS[0], "insert", DIRECT_REVERSE_RULE_BUTTONS[0], "delete", "Introduce or remove an additive identity")}
+                        ${buildDirectOptionRulePairHtml("multiplicative-identity", DIRECT_IDENTITY_RULE_BUTTONS[1], "insert", DIRECT_REVERSE_RULE_BUTTONS[1], "delete", "Introduce or remove a multiplicative identity")}
+                        ${buildDirectOptionRulePairHtml("additive-inverse", DIRECT_IDENTITY_RULE_BUTTONS[2], "insert", DIRECT_REVERSE_RULE_BUTTONS[2], "delete", "Introduce or cancel additive inverses")}
+                        ${buildDirectOptionRulePairHtml("multiplicative-inverse", DIRECT_IDENTITY_RULE_BUTTONS[3], "insert", DIRECT_REVERSE_RULE_BUTTONS[3], "delete", "Introduce or cancel multiplicative inverses")}
+                        ${buildDirectOptionRulePairHtml("double-inverse", DIRECT_EXTRA_RULE_BUTTONS[0], "insert", DIRECT_EXTRA_RULE_BUTTONS[1], "delete", "Introduce or cancel a double inverse")}
+                        ${buildDirectOptionRulePairHtml("zero-product", DIRECT_EXTRA_RULE_BUTTONS[2], "insert", DIRECT_EXTRA_RULE_BUTTONS[3], "delete", "Introduce or cancel a zero product")}
                         <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
                             <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             <span class="intent-category-label">Clear selection</span>
