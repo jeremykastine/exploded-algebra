@@ -3160,10 +3160,10 @@
         .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 8; grid-row: 1; }
         .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 4; grid-row: 1; }
         .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 4; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 6; grid-row: 1; }
+        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 5; grid-row: 2; }
         .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 6; grid-row: 2; }
         .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 7; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 7; grid-row: 2; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 6; grid-row: 1; }
         .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityAddZeroBottom"] { grid-column: 3; grid-row: 3; }
         .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityMultiplyByOneRight"] { grid-column: 4; grid-row: 3; }
         .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertDoubleInverse"] { grid-column: 5; grid-row: 3; }
@@ -3198,17 +3198,17 @@
             vector-effect: non-scaling-stroke;
         }
         .main-action-panel .branch-pair-overlay circle { fill: currentColor; }
-        .main-action-panel .branch-pair-left { grid-column: 6; grid-row: 1 / span 2; }
-        .main-action-panel .branch-pair-right { grid-column: 7; grid-row: 1 / span 2; }
+        .main-action-panel .branch-pair-left { grid-column: 5 / span 2; grid-row: 2; }
+        .main-action-panel .branch-pair-right { grid-column: 6 / span 2; grid-row: 1; }
         .main-action-panel .branch-pair-inverse { grid-column: 4; grid-row: 1 / span 2; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityAddZeroBottom"] { grid-column: 6; }
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertIdentityMultiplyByOneRight"] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="insert"][data-tool="insertDoubleInverse"] { grid-column: 4; }
@@ -3223,10 +3223,14 @@
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-rule-category="delete"][data-tool="cancelOpposites"] { grid-column: 2; }
         body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
         body.left-handed .main-action-panel .branch-pair-left {
-            grid-column: 3;
+            grid-column: 3 / span 2;
+            transform: scaleX(-1);
+            transform-origin: center;
         }
         body.left-handed .main-action-panel .branch-pair-right {
-            grid-column: 2;
+            grid-column: 2 / span 2;
+            transform: scaleX(-1);
+            transform-origin: center;
         }
         body.left-handed .main-action-panel .branch-pair-inverse { grid-column: 5; }
         .main-action-panel .direct-option-label {
@@ -4141,7 +4145,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260918-direct-option-rows"></script>
+    <script src="exploded-algebra-tool.js?v=20260918-restored-top-actions"></script>
 
 </body>
 </html>

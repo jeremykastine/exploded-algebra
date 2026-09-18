@@ -44,10 +44,10 @@ const expectedPostSelectionPositions = [
     ['[data-rule-category="commute"]', 8, 1],
     ['[data-tool="factorProductOfInverses"]', 4, 1],
     ['[data-tool="distributeInverseOverProduct"]', 4, 2],
-    ['[data-tool="factorLeft"]', 6, 1],
+    ['[data-tool="factorLeft"]', 5, 2],
     ['[data-tool="distributeLeftToRight"]', 6, 2],
     ['[data-tool="factorRight"]', 7, 1],
-    ['[data-tool="distributeRightToLeft"]', 7, 2]
+    ['[data-tool="distributeRightToLeft"]', 6, 1]
 ];
 expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
@@ -79,8 +79,8 @@ expectedDirectOptionPositions.forEach(([category, tool, column, row]) => {
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 2; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu \.settings-button \{[\s\S]*?grid-column: 8;[\s\S]*?grid-row: 4;/.test(playerHtml));
@@ -135,13 +135,15 @@ assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.include
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
 assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
+assert(playerJs.includes('M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156'));
+assert(playerJs.includes('M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156'));
 assert(playerJs.includes('M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156'));
 assert(playerJs.includes('<circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>'));
-assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 6; grid-row: 1 \/ span 2; \}/.test(playerHtml));
-assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 7; grid-row: 1 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 5 \/ span 2; grid-row: 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 6 \/ span 2; grid-row: 1; \}/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 4; grid-row: 1 \/ span 2; \}/.test(playerHtml));
-assert(/body\.left-handed \.main-action-panel \.branch-pair-left \{\s*grid-column: 3;\s*\}/.test(playerHtml));
-assert(/body\.left-handed \.main-action-panel \.branch-pair-right \{\s*grid-column: 2;\s*\}/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.branch-pair-left \{[\s\S]*?grid-column: 3 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.branch-pair-right \{[\s\S]*?grid-column: 2 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
