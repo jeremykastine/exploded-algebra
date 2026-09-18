@@ -49,27 +49,50 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
         `Post-selection control ${selector} must occupy column ${column}, row ${row}`
     );
 });
-const expectedSplitPairPositions = [
-    ["inverse", "4", "1 / span 2"],
-    ["distribute-left", "5 / span 2", "2"],
-    ["distribute-right", "6 / span 2", "1"],
-    ["additive-identity", "7", "3 / span 2"],
-    ["multiplicative-identity", "6", "3 / span 2"],
-    ["additive-inverse", "5", "3 / span 2"],
-    ["multiplicative-inverse", "4", "3 / span 2"],
-    ["double-inverse", "3", "1 / span 2"],
-    ["zero-product", "3", "3 / span 2"]
+const expectedPairedButtonPositions = [
+    ['[data-tool="factorProductOfInverses"]', 4, 1],
+    ['[data-tool="distributeInverseOverProduct"]', 4, 2],
+    ['[data-tool="factorLeft"]', 5, 2],
+    ['[data-tool="distributeLeftToRight"]', 6, 2],
+    ['[data-tool="factorRight"]', 7, 1],
+    ['[data-tool="distributeRightToLeft"]', 6, 1]
 ];
-expectedSplitPairPositions.forEach(([pair, column, row]) => {
+expectedPairedButtonPositions.forEach(([selector, column, row]) => {
     assert(
-        playerHtml.includes(`.main-action-panel .split-rule-button-${pair} { grid-column: ${column}; grid-row: ${row}; }`),
-        `${pair} split button must occupy column ${column}, row ${row}`
+        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
+        `Paired control ${selector} must retain column ${column}, row ${row}`
+    );
+});
+const expectedDirectOptionPositions = [
+    ['insert', 'insertIdentityAddZeroBottom', null, 7, 3],
+    ['insert', 'insertIdentityMultiplyByOneRight', null, 6, 3],
+    ['insert', 'cancelOpposites', null, 5, 3],
+    ['insert', 'replaceOneWithInverseProduct', null, 4, 3],
+    ['delete', 'eliminateIdentities', 'additive', 7, 4],
+    ['delete', 'eliminateIdentities', 'multiplicative', 6, 4],
+    ['delete', 'cancelOpposites', null, 5, 4],
+    ['delete', 'cancelProductWithInverse', null, 4, 4]
+];
+expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) => {
+    const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]${variant ? `[data-direct-rule-variant="${variant}"]` : ""}`;
+    assert(
+        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
+        `${category} option ${tool} must retain column ${column}, row ${row}`
     );
 });
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .split-rule-button-inverse { grid-column: 5; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .split-rule-button-distribute-left {'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .split-rule-button-distribute-right {'));
+[
+    ["double-inverse-insert", 1],
+    ["double-inverse-cancel", 2],
+    ["zero-product-insert", 3],
+    ["zero-product-cancel", 4]
+].forEach(([slot, row]) => assert(
+    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 3; grid-row: ${row}; }`),
+    `${slot} must retain column 3, row ${row}`
+));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu \.settings-button \{[\s\S]*?grid-column: 8;[\s\S]*?grid-row: 4;/.test(playerHtml));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .app-container {\n            --workspace-keypad-width: calc(var(--main-key-size) * 8 + var(--main-key-gap) * 7);'));
@@ -115,18 +138,21 @@ assert(!playerJs.includes('data-remaining-actions-menu') && !playerHtml.includes
 assert(!playerHtml.includes('direct-rule-icon.crossed-out'));
 assert(playerJs.includes('function buildDirectBranchRulePairHtml(pairName, orientation, firstTool, secondTool, options = {})'));
 assert(playerJs.includes('function buildBranchPairOverlayHtml(pairName)'));
-assert(playerJs.includes('function buildReversePairOverlayHtml(orientation)'));
+assert(playerJs.includes('function buildReversePairOverlayHtml(pairName, orientation)'));
 ['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse', 'distribute-left', 'distribute-right'].forEach(pair => {
     assert(playerJs.includes(`"${pair}"`), `${pair} must have a two-way relationship arrow`);
 });
 assert(playerJs.includes('M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110'));
 assert(playerJs.includes('M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89'));
 assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
-assert(/\.main-action-panel \.split-rule-button \{[\s\S]*?border: 1px solid #999;[\s\S]*?border-radius: 7px;/.test(playerHtml));
-assert(playerHtml.includes('.main-action-panel .split-rule-button-horizontal > button.intent-category-button + button.intent-category-button {'));
-assert(playerHtml.includes('border-left: 1px solid #c7cbd1;'));
-assert(playerHtml.includes('.main-action-panel .split-rule-button-vertical > button.intent-category-button + button.intent-category-button {'));
-assert(playerHtml.includes('border-top: 1px solid #c7cbd1;'));
+assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 1px solid #999;[\s\S]*?border-radius: 7px;/.test(playerHtml));
+assert(playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
+assert(playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
+assert(playerHtml.includes('background: #c7cbd1;'));
+assert(playerJs.includes('<span class="split-rule-frame split-rule-frame-${orientation} split-rule-frame-${pairName}" data-rule-pair="${pairName}" aria-hidden="true"></span>'));
+assert(!playerJs.includes('<div class="split-rule-button'));
+assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bwidth:/.test(playerHtml));
+assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bheight:/.test(playerHtml));
 assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode)'));
 assert(playerJs.includes('isExactDoubleNegativeProduct(originalNode) && proposedIsOne'));
 assert(playerJs.includes('isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne'));
@@ -135,8 +161,7 @@ assert(playerJs.includes('M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 
 assert(playerJs.includes('M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156'));
 assert(playerJs.includes('M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156'));
 assert(playerJs.includes('<circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .split-rule-button-horizontal > button.intent-category-button:first-of-type'));
-assert(/body\.left-handed \.main-action-panel \.split-rule-button-distribute-left \.branch-pair-overlay,[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));

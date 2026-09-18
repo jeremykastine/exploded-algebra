@@ -728,26 +728,24 @@ Promise.resolve().then(() => {
             </svg>`;
         }
 
-        function buildReversePairOverlayHtml(orientation) {
+        function buildReversePairOverlayHtml(pairName, orientation) {
             if (orientation === "horizontal") {
-                return `<svg class="reverse-pair-overlay reverse-pair-horizontal" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                return `<svg class="reverse-pair-overlay reverse-pair-horizontal" data-reverse-pair="${pairName}" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89"/>
                 </svg>`;
             }
-            return `<svg class="reverse-pair-overlay" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            return `<svg class="reverse-pair-overlay" data-reverse-pair="${pairName}" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                 <path d="M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110"/>
             </svg>`;
         }
 
         function buildSplitRulePairHtml(pairName, orientation, buttonsHtml, options = {}) {
-            const pairLabel = options.label || "Related algebra actions";
             const branchOverlay = options.branch ? buildBranchPairOverlayHtml(pairName) : "";
-            const reverseOverlay = options.reverse ? buildReversePairOverlayHtml(orientation) : "";
-            return `<div class="split-rule-button split-rule-button-${orientation} split-rule-button-${pairName}" data-rule-pair="${pairName}" role="group" aria-label="${escapeHtml(pairLabel)}">
-                ${buttonsHtml}
+            const reverseOverlay = options.reverse ? buildReversePairOverlayHtml(pairName, orientation) : "";
+            return `${buttonsHtml}
+                <span class="split-rule-frame split-rule-frame-${orientation} split-rule-frame-${pairName}" data-rule-pair="${pairName}" aria-hidden="true"></span>
                 ${branchOverlay}
-                ${reverseOverlay}
-            </div>`;
+                ${reverseOverlay}`;
         }
 
         function buildDirectBranchRulePairHtml(pairName, orientation, firstTool, secondTool, options = {}) {
