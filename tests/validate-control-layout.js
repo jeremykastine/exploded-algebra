@@ -27,12 +27,17 @@ assert(
     "All control modes must fill the shared bottom-panel footprint"
 );
 assert(
-    playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="mainArea"'),
-    "Post-selection controls must be a direct app-grid item rather than an independently positioned child of the workspace"
+    playerHtml.indexOf('id="bottomControlsPanel"') < playerHtml.indexOf('class="quadrant-tools"') &&
+        playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('id="mainActionPanel"') &&
+        playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
+        playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('id="bottomPanelResizeHandle"') &&
+        playerHtml.indexOf('id="bottomPanelResizeHandle"') < playerHtml.indexOf('id="mainArea"'),
+    "All three control modes must be children of the shared bottom controls panel"
 );
 assert(
-    /\.quadrant-tools,[\s\S]*?\.main-action-panel,[\s\S]*?grid-row: 5;/.test(playerHtml),
-    "Pre-selection, settings, and post-selection controls must share the bottom panel row"
+    /\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
+        /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
+    "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
 assert(
     playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools {\n            display: grid;') &&
