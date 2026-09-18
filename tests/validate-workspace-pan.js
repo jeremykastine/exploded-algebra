@@ -23,12 +23,12 @@ assert(
     "The entire workspace must suppress native touch scrolling while Pan is active"
 );
 assert(
-    /\.quadrant-tools,\s*body\.left-handed \.quadrant-tools,\s*\.quadrant-menu,\s*body\.left-handed \.quadrant-menu,\s*\.main-action-panel,\s*body\.left-handed \.main-action-panel\s*\{\s*grid-row: 3;\s*\}/.test(playerHtml),
-    "Button clusters must overlay the workspace row instead of creating a clipping row"
+    /\.quadrant-tools,\s*body\.left-handed \.quadrant-tools,\s*\.quadrant-menu,\s*body\.left-handed \.quadrant-menu,\s*\.main-action-panel,\s*body\.left-handed \.main-action-panel\s*\{[\s\S]*?grid-row: 5;/.test(playerHtml),
+    "Button clusters must occupy the dedicated controls row"
 );
 assert(
-    /grid-template-rows: min\(var\(--top-panel-height\), 25dvh\) var\(--divider-size\) minmax\(0, 1fr\);/.test(playerHtml),
-    "The resizable conventional-steps panel must never exceed one quarter of the viewport"
+    /grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 33\.333dvh\);/.test(playerHtml),
+    "The conventional panel must stay below one quarter and controls below one third of the viewport"
 );
 assert(
     /\.textbook-solution \{[\s\S]*?flex-direction: column;/.test(playerHtml)

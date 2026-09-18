@@ -10,32 +10,32 @@ assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 4
 assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1; }'));
 assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 5; grid-row: 2; }'));
 assert(
-    /\.quadrant-menu,[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
-    "Settings must occupy the bottom corner beside the view controls"
+    playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
+    "The app must provide a distinct bottom controls panel and resize handle"
 );
 assert(
-    /\.main-action-panel \{[\s\S]*?position: relative;[\s\S]*?grid-row: 3;[\s\S]*?margin: 0 var\(--main-control-edge\) var\(--main-control-bottom\) 0;/.test(playerHtml),
-    "Post-selection controls must use the same grid baseline and bottom margin as Settings"
+    /grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 33\.333dvh\);/.test(playerHtml),
+    "The student view must use separate top, workspace, and bottom control rows"
 );
 assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
-    /\.main-action-panel \.panel-tool-menu \{[\s\S]*?pointer-events: none;/.test(playerHtml),
-    "The post-selection menu container must let white-space taps reach the workspace"
+    /\.bottom-controls-panel \{[\s\S]*?grid-row: 5;[\s\S]*?pointer-events: auto;/.test(playerHtml),
+    "The controls panel must own bottom-panel white-space taps"
 );
 assert(
-    /\.main-action-panel button,[\s\S]*?\.main-action-panel \.builder-action-row button \{[\s\S]*?pointer-events: auto;/.test(playerHtml),
-    "Post-selection buttons must remain tappable inside the click-through container"
+    /\.main-action-panel \{[\s\S]*?width: var\(--workspace-keypad-width\);[\s\S]*?height: var\(--post-keypad-height\);/.test(playerHtml),
+    "Post-selection controls must fit the shared bottom-panel footprint"
 );
 assert(
     playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="mainArea"'),
     "Post-selection controls must be a direct app-grid item rather than an independently positioned child of the workspace"
 );
 assert(
-    /\.quadrant-menu,[\s\S]*?\.main-action-panel,[\s\S]*?grid-row: 2;/.test(playerHtml),
-    "Settings and post-selection controls must resolve to the same final grid row"
+    /\.quadrant-tools,[\s\S]*?\.main-action-panel,[\s\S]*?grid-row: 5;/.test(playerHtml),
+    "Pre-selection, settings, and post-selection controls must share the bottom panel row"
 );
 assert(
-    !/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu/.test(playerHtml),
+    !/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu\s*\{[^}]*display:\s*none/.test(playerHtml),
     "Settings must remain visible after an expression selection"
 );
 
@@ -56,12 +56,19 @@ expectedPostSelectionPositions.forEach(([child, column, row]) => {
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
+assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button {\n            grid-row: 4;'));
 
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
-assert(playerJs.includes("const columns = builderActive ? 7 : 5;"));
+assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
+assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
+assert(playerJs.includes("const columns = builderActive ? 7 : (authoringRecordingActive ? 6 : 5);"));
 assert(playerJs.includes("const rows = builderActive ? 6 : (selectionActive ? 4 : 3);"));
-assert(playerJs.includes("Math.min(mainButtonSize, widthLimit, heightLimit)"));
+assert(playerJs.includes("Math.min(widthLimit, heightLimit)"));
+assert(!playerJs.includes("mainButtonSize"));
+assert(!playerHtml.includes("Button size"));
+assert(playerJs.includes("function installBottomPanelResizing()"));
+assert(playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;"));
 assert(playerJs.includes('document.body.classList.toggle("selection-active", selectionActive);\n            applyResponsiveMainButtonSize();'));
 
 console.log("Control layout checks passed.");

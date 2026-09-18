@@ -1218,13 +1218,14 @@ Promise.resolve().then(() => {
         const levelMenuPanel = document.getElementById("levelMenuPanel");
         const operationBarStyleSelect = document.getElementById("operationBarStyleSelect");
         const operationBarShadingSelect = document.getElementById("operationBarShadingSelect");
-        const buttonSizeValue = document.getElementById("buttonSizeValue");
         const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
         const settingsExpressionSample = document.getElementById("settingsExpressionSample");
         const exitSettingsButton = document.getElementById("exitSettingsButton");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
+        const bottomControlsPanel = document.getElementById("bottomControlsPanel");
+        const bottomPanelResizeHandle = document.getElementById("bottomPanelResizeHandle");
         const svgContainer = document.getElementById("svgContainer");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
@@ -1277,31 +1278,18 @@ Promise.resolve().then(() => {
         let stableExpressionState = null;
 
         let internalClipboardText = "";
-        let mainButtonSize = window.innerWidth <= 520 ? 42 : 44;
         let stepsFontSize = 15;
-        const MAIN_BUTTON_SIZE_MIN = 34;
-        const MAIN_BUTTON_SIZE_MAX = 62;
-        const MAIN_BUTTON_SIZE_STEP = 4;
-        const MAIN_BUTTON_FORCED_MIN = 20;
-        const MAIN_BUTTON_SIZE_STORAGE_KEY = "explodedAlgebraMainButtonSizeV1";
         const STEPS_FONT_SIZE_MIN = 11;
         const STEPS_FONT_SIZE_MAX = 26;
         const STEPS_FONT_SIZE_STEP = 1;
         const STEPS_FONT_SIZE_STORAGE_KEY = "explodedAlgebraStepsFontSizeV1";
 
         function updateLayoutSizeControls() {
-            if (buttonSizeValue) {
-                buttonSizeValue.textContent = `${Math.round(mainButtonSize)} px`;
-            }
             if (stepsFontSizeValue) {
                 stepsFontSizeValue.textContent = `${Math.round(stepsFontSize)} px`;
             }
-            const buttonSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-smaller"]');
-            const buttonLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="button-larger"]');
             const stepsFontSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-smaller"]');
             const stepsFontLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-larger"]');
-            if (buttonSmaller) buttonSmaller.disabled = mainButtonSize <= MAIN_BUTTON_SIZE_MIN;
-            if (buttonLarger) buttonLarger.disabled = mainButtonSize >= MAIN_BUTTON_SIZE_MAX;
             if (stepsFontSmaller) stepsFontSmaller.disabled = stepsFontSize <= STEPS_FONT_SIZE_MIN;
             if (stepsFontLarger) stepsFontLarger.disabled = stepsFontSize >= STEPS_FONT_SIZE_MAX;
         }
@@ -1319,48 +1307,23 @@ Promise.resolve().then(() => {
             katex.render(expression, settingsExpressionSample, { throwOnError: false, displayMode: false });
         }
 
-        function loadSavedMainButtonSize() {
-            try {
-                const savedSize = Number(window.localStorage.getItem(MAIN_BUTTON_SIZE_STORAGE_KEY));
-                return Number.isFinite(savedSize) && savedSize >= MAIN_BUTTON_SIZE_MIN && savedSize <= MAIN_BUTTON_SIZE_MAX
-                    ? savedSize
-                    : mainButtonSize;
-            } catch (error) {
-                return mainButtonSize;
-            }
-        }
-
-        function setMainButtonSize(size, persist = false) {
-            const boundedSize = Math.max(MAIN_BUTTON_SIZE_MIN, Math.min(MAIN_BUTTON_SIZE_MAX, Number(size) || mainButtonSize));
-            mainButtonSize = boundedSize;
-            applyResponsiveMainButtonSize();
-            if (persist) {
-                try {
-                    window.localStorage.setItem(MAIN_BUTTON_SIZE_STORAGE_KEY, String(boundedSize));
-                } catch (error) {}
-            }
-            updateLayoutSizeControls();
-        }
-
         function applyResponsiveMainButtonSize() {
+            if (!appContainer || !bottomControlsPanel) {
+                return;
+            }
             const builderActive = document.body.classList.contains("expression-builder-active");
             const selectionActive = document.body.classList.contains("selection-active") && !builderActive;
-            const columns = builderActive ? 7 : 5;
+            const authoringRecordingActive = document.body.classList.contains("authoring-recording-session") && !builderActive;
+            const columns = builderActive ? 7 : (authoringRecordingActive ? 6 : 5);
             const rows = builderActive ? 6 : (selectionActive ? 4 : 3);
             const compactViewport = window.innerWidth <= 520;
             const gap = compactViewport ? 5 : 6;
             const edge = compactViewport ? 8 : 12;
-            const viewportWidth = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
-            const widthLimit = Math.floor((viewportWidth - edge * 2 - gap * (columns - 1)) / columns);
-            const mainArea = document.getElementById("mainArea");
-            const availableHeight = mainArea ? mainArea.clientHeight : 0;
-            const heightLimit = availableHeight > 0
-                ? Math.floor((availableHeight - edge * 2 - gap * (rows - 1)) / rows)
-                : mainButtonSize;
-            const effectiveSize = Math.max(
-                MAIN_BUTTON_FORCED_MIN,
-                Math.min(mainButtonSize, widthLimit, heightLimit)
-            );
+            const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);
+            const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);
+            const widthLimit = Math.floor((availableWidth - edge * 2 - gap * (columns - 1)) / columns);
+            const heightLimit = Math.floor((availableHeight - edge * 2 - gap * (rows - 1)) / rows);
+            const effectiveSize = Math.max(10, Math.min(widthLimit, heightLimit));
             appContainer.style.setProperty("--main-key-size", `${effectiveSize}px`);
             appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
         }
@@ -1796,9 +1759,13 @@ Promise.resolve().then(() => {
 
         const TOP_PANEL_MIN_HEIGHT = 48;
         const TOP_PANEL_MAX_VIEWPORT_RATIO = 0.25;
+        const BOTTOM_PANEL_MIN_HEIGHT = 96;
+        const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;
         let topPanelHeightFrame = null;
         let userTopPanelHeight = null;
         let topPanelResizeState = null;
+        let userBottomPanelHeight = null;
+        let bottomPanelResizeState = null;
 
         function getViewportHeight() {
             return window.visualViewport && window.visualViewport.height
@@ -1808,6 +1775,14 @@ Promise.resolve().then(() => {
 
         function getMaximumTopPanelHeight() {
             return Math.max(TOP_PANEL_MIN_HEIGHT, Math.floor(getViewportHeight() * TOP_PANEL_MAX_VIEWPORT_RATIO));
+        }
+
+        function getMaximumBottomPanelHeight() {
+            return Math.max(1, Math.floor(getViewportHeight() * BOTTOM_PANEL_MAX_VIEWPORT_RATIO));
+        }
+
+        function getMinimumBottomPanelHeight() {
+            return Math.min(BOTTOM_PANEL_MIN_HEIGHT, getMaximumBottomPanelHeight());
         }
 
         function setTopPanelHeight(height, rememberUserChoice = false) {
@@ -1827,6 +1802,28 @@ Promise.resolve().then(() => {
                 topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
                 topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
             }
+        }
+
+        function setBottomPanelHeight(height, rememberUserChoice = false) {
+            if (!appContainer) {
+                return;
+            }
+            const maximumHeight = getMaximumBottomPanelHeight();
+            const minimumHeight = getMinimumBottomPanelHeight();
+            const clampedHeight = Math.max(
+                minimumHeight,
+                Math.min(Number(height) || minimumHeight, maximumHeight)
+            );
+            if (rememberUserChoice) {
+                userBottomPanelHeight = clampedHeight;
+            }
+            appContainer.style.setProperty("--bottom-panel-height", `${Math.round(clampedHeight)}px`);
+            if (bottomPanelResizeHandle) {
+                bottomPanelResizeHandle.setAttribute("aria-valuemin", String(minimumHeight));
+                bottomPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
+                bottomPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
+            }
+            applyResponsiveMainButtonSize();
         }
 
         function getStepGuidanceForDisplay(step) {
@@ -1985,6 +1982,56 @@ Promise.resolve().then(() => {
                     return;
                 }
                 setTopPanelHeight(nextHeight, true);
+                event.preventDefault();
+            });
+        }
+
+        function installBottomPanelResizing() {
+            if (!bottomPanelResizeHandle || !bottomControlsPanel || !appContainer) {
+                return;
+            }
+
+            const finishResize = event => {
+                if (!bottomPanelResizeState || (event && event.pointerId !== bottomPanelResizeState.pointerId)) {
+                    return;
+                }
+                bottomPanelResizeState = null;
+            };
+
+            bottomPanelResizeHandle.addEventListener("pointerdown", event => {
+                if (event.pointerType === "mouse" && event.button !== 0) {
+                    return;
+                }
+                bottomPanelResizeState = {
+                    pointerId: event.pointerId,
+                    panelBottom: bottomControlsPanel.getBoundingClientRect().bottom
+                };
+                if (bottomPanelResizeHandle.setPointerCapture) {
+                    bottomPanelResizeHandle.setPointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+            });
+            bottomPanelResizeHandle.addEventListener("pointermove", event => {
+                if (!bottomPanelResizeState || event.pointerId !== bottomPanelResizeState.pointerId) {
+                    return;
+                }
+                setBottomPanelHeight(bottomPanelResizeState.panelBottom - event.clientY, true);
+                event.preventDefault();
+            });
+            bottomPanelResizeHandle.addEventListener("pointerup", finishResize);
+            bottomPanelResizeHandle.addEventListener("pointercancel", finishResize);
+            bottomPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
+            bottomPanelResizeHandle.addEventListener("keydown", event => {
+                const currentHeight = bottomControlsPanel.getBoundingClientRect().height;
+                let nextHeight = null;
+                if (event.key === "ArrowUp") nextHeight = currentHeight + 8;
+                if (event.key === "ArrowDown") nextHeight = currentHeight - 8;
+                if (event.key === "Home") nextHeight = getMinimumBottomPanelHeight();
+                if (event.key === "End") nextHeight = getMaximumBottomPanelHeight();
+                if (nextHeight === null) {
+                    return;
+                }
+                setBottomPanelHeight(nextHeight, true);
                 event.preventDefault();
             });
         }
@@ -4265,7 +4312,7 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
-            setMainButtonSize(loadSavedMainButtonSize());
+            setBottomPanelHeight(getMaximumBottomPanelHeight());
             setStepsFontSize(loadSavedStepsFontSize());
             renderSettingsExpressionSample();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
@@ -4320,6 +4367,7 @@ Promise.resolve().then(() => {
             }
             installPressHoldDescriptions();
             installTopPanelResizing();
+            installBottomPanelResizing();
             if (toolOptionMenu) {
                 toolOptionMenu.addEventListener("click", event => {
                     const button = event.target.closest("button[data-tool-option]");
@@ -4410,11 +4458,7 @@ Promise.resolve().then(() => {
                     const layoutButton = event.target.closest("button[data-layout-action]");
                     if (layoutButton && !layoutButton.disabled) {
                         const action = layoutButton.dataset.layoutAction;
-                        if (action === "button-smaller") {
-                            setMainButtonSize(mainButtonSize - MAIN_BUTTON_SIZE_STEP, true);
-                        } else if (action === "button-larger") {
-                            setMainButtonSize(mainButtonSize + MAIN_BUTTON_SIZE_STEP, true);
-                        } else if (action === "steps-font-smaller") {
+                        if (action === "steps-font-smaller") {
                             setStepsFontSize(stepsFontSize - STEPS_FONT_SIZE_STEP, true);
                         } else if (action === "steps-font-larger") {
                             setStepsFontSize(stepsFontSize + STEPS_FONT_SIZE_STEP, true);
@@ -4984,7 +5028,9 @@ ctx.font = SETTINGS.textFont;
             }
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
-                applyResponsiveMainButtonSize();
+                setBottomPanelHeight(
+                    userBottomPanelHeight === null ? getMaximumBottomPanelHeight() : userBottomPanelHeight
+                );
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
                     drawExpression();
@@ -11058,8 +11104,8 @@ ctx.font = SETTINGS.textFont;
         }
 function renderToolArea() {
             // The old floating menu is intentionally kept in the document for
-            // possible future restoration. Main-workspace actions float above
-            // the steps, while builder actions use their dedicated keypad.
+            // possible future restoration. Main-workspace and builder actions
+            // use the dedicated controls panel at the bottom of the screen.
             hideFloatingMenu();
             hideToolOptionMenu();
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;

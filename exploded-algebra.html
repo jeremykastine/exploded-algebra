@@ -3627,23 +3627,6 @@
             cursor: pointer;
         }
         .handedness-choice input { margin: 0; }
-        .settings-button-sample {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            align-self: center;
-            width: var(--main-key-size);
-            height: var(--main-key-size);
-            min-width: var(--main-key-size);
-            min-height: var(--main-key-size);
-            padding: 4px;
-            border: 1px solid #8d8d8d;
-            border-radius: 7px;
-            background: #fff;
-            font-size: clamp(9px, calc(var(--main-key-size) * 0.25), 15px);
-            font-weight: 800;
-            pointer-events: none;
-        }
         .settings-expression-sample {
             flex: 0 1 100px;
             min-width: 58px;
@@ -3800,6 +3783,146 @@
         body.expression-builder-active.builder-entry-mode .divider {
             display: none !important;
         }
+
+        /* A dedicated, resizable control panel keeps every button outside the
+           expression workspace. Button dimensions are fitted to this row by
+           applyResponsiveMainButtonSize(). */
+        .app-container,
+        body.left-handed .app-container,
+        body.expression-builder-active .app-container,
+        body.expression-builder-active.left-handed .app-container {
+            --bottom-panel-height: 33.333dvh;
+            --post-keypad-height: calc(var(--main-key-size) * 4 + var(--main-key-gap) * 3);
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows:
+                min(var(--top-panel-height), 25dvh)
+                var(--divider-size)
+                minmax(0, 1fr)
+                var(--divider-size)
+                min(var(--bottom-panel-height), 33.333dvh);
+        }
+        .main,
+        body.left-handed .main { grid-row: 3; }
+        .bottom-panel-resize-handle {
+            grid-column: 1;
+            grid-row: 4;
+            display: block !important;
+            width: 100%;
+            height: var(--divider-size);
+            min-height: var(--divider-size);
+            cursor: row-resize;
+            touch-action: none;
+        }
+        .bottom-controls-panel {
+            position: relative;
+            z-index: 50;
+            grid-column: 1;
+            grid-row: 5;
+            min-width: 0;
+            min-height: 0;
+            border-top: 1px solid #cfcfcf;
+            box-sizing: border-box;
+            background: #f3f3f3;
+            pointer-events: auto;
+        }
+        .quadrant-tools,
+        body.left-handed .quadrant-tools,
+        .quadrant-menu,
+        body.left-handed .quadrant-menu,
+        .main-action-panel,
+        body.left-handed .main-action-panel {
+            grid-row: 5;
+            align-self: center;
+            margin-bottom: 0;
+        }
+        .quadrant-menu,
+        body.left-handed .quadrant-menu {
+            display: grid;
+            grid-template-columns: repeat(5, var(--main-key-size));
+            grid-template-rows: repeat(3, var(--main-key-size));
+            gap: var(--main-key-gap);
+            width: var(--workspace-keypad-width);
+            height: var(--main-keypad-height);
+        }
+        .quadrant-menu .settings-button {
+            grid-column: 5;
+            grid-row: 3;
+        }
+        body.left-handed .quadrant-menu .settings-button { grid-column: 1; }
+        body.selection-active:not(.expression-builder-active) .quadrant-menu {
+            grid-template-rows: repeat(4, var(--main-key-size));
+            height: var(--post-keypad-height);
+        }
+        body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button {
+            grid-row: 4;
+        }
+        body.authoring-recording-session .quadrant-menu {
+            grid-template-columns: repeat(6, var(--main-key-size));
+        }
+        body.authoring-recording-session:not(.left-handed) .quadrant-menu .settings-button { grid-column: 6; }
+        .main-action-panel {
+            width: var(--workspace-keypad-width);
+            height: var(--post-keypad-height);
+            max-height: none;
+        }
+        .builder-keypad-panel {
+            position: fixed;
+            right: var(--main-control-edge);
+            bottom: calc((var(--bottom-panel-height) - var(--builder-keypad-height)) / 2);
+        }
+        body.left-handed .builder-keypad-panel {
+            right: auto;
+            left: max(12px, env(safe-area-inset-left));
+        }
+
+        /* Authoring and Expression Builder omit the conventional-notation row,
+           while retaining the same independent controls panel. */
+        body.authoring-session:not(.expression-builder-active) .app-container,
+        body.authoring-session:not(.expression-builder-active).left-handed .app-container,
+        body.expression-builder-active .app-container,
+        body.expression-builder-active.left-handed .app-container,
+        body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
+        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container,
+        body.expression-builder-active.builder-entry-mode .app-container,
+        body.expression-builder-active.builder-entry-mode.left-handed .app-container {
+            grid-template-rows:
+                minmax(0, 1fr)
+                var(--divider-size)
+                min(var(--bottom-panel-height), 33.333dvh);
+        }
+        body.authoring-session:not(.expression-builder-active) .main,
+        body.authoring-session:not(.expression-builder-active).left-handed .main,
+        body.expression-builder-active .main,
+        body.expression-builder-active.left-handed .main,
+        body.authoring-session.authoring-initial-session.expression-builder-active .main,
+        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main,
+        body.expression-builder-active.builder-entry-mode .main { grid-row: 1; }
+        body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle,
+        body.expression-builder-active .bottom-panel-resize-handle { grid-row: 2; }
+        body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
+        body.authoring-session:not(.expression-builder-active) .quadrant-tools,
+        body.authoring-session:not(.expression-builder-active) .quadrant-menu,
+        body.authoring-session:not(.expression-builder-active) .main-action-panel,
+        body.expression-builder-active .bottom-controls-panel { grid-row: 3; }
+        body.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
+            display: block !important;
+        }
+
+        body.settings-active .bottom-controls-panel,
+        body.settings-active .bottom-panel-resize-handle,
+        body.step-guidance-active .bottom-controls-panel,
+        body.step-guidance-active .bottom-panel-resize-handle,
+        body.builder-review-active .bottom-controls-panel,
+        body.builder-review-active .bottom-panel-resize-handle,
+        body.expression-builder-active.builder-entry-mode.builder-review-active .bottom-panel-resize-handle {
+            display: none !important;
+        }
+        body.builder-review-active .app-container,
+        body.builder-review-active.left-handed .app-container {
+            grid-template-rows: minmax(0, 1fr);
+        }
+        body.builder-review-active .main,
+        body.builder-review-active.left-handed .main { grid-row: 1; }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -3816,6 +3939,8 @@
             <div id="levelContent"></div>
         </div>
         <div id="topPanelResizeHandle" class="divider top-panel-resize-handle" role="separator" aria-label="Resize conventional steps panel" aria-orientation="horizontal" aria-valuemin="48" tabindex="0"></div>
+        <div id="bottomControlsPanel" class="bottom-controls-panel" aria-hidden="true"></div>
+        <div id="bottomPanelResizeHandle" class="divider bottom-panel-resize-handle" role="separator" aria-label="Resize controls panel" aria-orientation="horizontal" aria-valuemin="96" tabindex="0"></div>
         <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <button type="button" data-workspace-action="authoringCheckpoint" aria-label="Record step" data-hold-description="Save the current expression as a recorded solution step." hidden>
@@ -3859,14 +3984,6 @@
                         </fieldset>
                     </div>
                     <div class="layout-size-controls" aria-label="Size controls">
-                    <div class="layout-size-control">
-                        <span class="layout-size-label">Button size <output id="buttonSizeValue" class="layout-size-value">44 px</output></span>
-                        <button id="buttonSizeSample" class="settings-button-sample" type="button" tabindex="-1" aria-hidden="true">ABC</button>
-                        <div class="layout-size-buttons" role="group" aria-label="Button size">
-                            <button type="button" data-layout-action="button-smaller" aria-label="Decrease button size" data-hold-description="Make the workspace, action, and Expression Builder buttons smaller.">−</button>
-                            <button type="button" data-layout-action="button-larger" aria-label="Increase button size" data-hold-description="Make the workspace, action, and Expression Builder buttons larger.">+</button>
-                        </div>
-                    </div>
                     <div class="layout-size-control">
                         <span class="layout-size-label">Steps font size <output id="stepsFontSizeValue" class="layout-size-value">15 px</output></span>
                         <div class="settings-expression-sample" aria-label="Sample expression"><span id="settingsExpressionSample" class="katex-placeholder" data-expr="2x+3">2x + 3</span></div>
@@ -3952,7 +4069,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260918-builder-peek-click"></script>
+    <script src="exploded-algebra-tool.js?v=20260918-bottom-controls-panel"></script>
 
 </body>
 </html>
