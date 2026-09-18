@@ -19,6 +19,14 @@ assert(
 );
 assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
+    /\.main-action-panel \.panel-tool-menu \{[\s\S]*?pointer-events: none;/.test(playerHtml),
+    "The post-selection menu container must let white-space taps reach the workspace"
+);
+assert(
+    /\.main-action-panel button,[\s\S]*?\.main-action-panel \.builder-action-row button \{[\s\S]*?pointer-events: auto;/.test(playerHtml),
+    "Post-selection buttons must remain tappable inside the click-through container"
+);
+assert(
     playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="mainArea"'),
     "Post-selection controls must be a direct app-grid item rather than an independently positioned child of the workspace"
 );

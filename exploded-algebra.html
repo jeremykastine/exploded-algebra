@@ -3112,7 +3112,7 @@
             border: 0;
             background: transparent;
             box-shadow: none;
-            pointer-events: auto;
+            pointer-events: none;
         }
         .main-action-panel .panel-menu-title,
         .main-action-panel .builder-instruction,
@@ -3192,6 +3192,13 @@
             background: #fff;
             font-size: clamp(10px, 1.15vw, 13px);
             text-align: center;
+            pointer-events: auto;
+        }
+        .main-action-panel input,
+        .main-action-panel select,
+        .main-action-panel textarea,
+        .main-action-panel label {
+            pointer-events: auto;
         }
         .main-action-panel .intent-category-button {
             width: var(--main-key-size);
