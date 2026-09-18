@@ -40,16 +40,14 @@ assert(
 );
 
 const expectedPostSelectionPositions = [
-    ['[data-rule-category="numericalRewrite"]', 5, 2],
-    ['[data-rule-category="insert"]', 4, 3],
-    ['[data-rule-category="delete"]', 4, 4],
-    ['[data-rule-category="commute"]', 5, 1],
-    ['[data-tool="factorProductOfInverses"]', 1, 1],
-    ['[data-tool="distributeInverseOverProduct"]', 1, 2],
-    ['[data-tool="distributeLeftToRight"]', 3, 2],
-    ['[data-tool="factorLeft"]', 2, 2],
-    ['[data-tool="distributeRightToLeft"]', 3, 1],
-    ['[data-tool="factorRight"]', 4, 1]
+    ['[data-rule-category="numericalRewrite"]', 8, 2],
+    ['[data-rule-category="commute"]', 8, 1],
+    ['[data-tool="factorProductOfInverses"]', 4, 1],
+    ['[data-tool="distributeInverseOverProduct"]', 4, 2],
+    ['[data-tool="factorLeft"]', 6, 1],
+    ['[data-tool="distributeLeftToRight"]', 6, 2],
+    ['[data-tool="factorRight"]', 7, 1],
+    ['[data-tool="distributeRightToLeft"]', 7, 2]
 ];
 expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
@@ -57,14 +55,37 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
         `Post-selection control ${selector} must occupy column ${column}, row ${row}`
     );
 });
-assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }'));
+const expectedDirectOptionPositions = [
+    ['insert', 'insertIdentityAddZeroBottom', 3, 3],
+    ['insert', 'insertIdentityMultiplyByOneRight', 4, 3],
+    ['insert', 'insertDoubleInverse', 5, 3],
+    ['insert', 'replaceOneWithInverseProduct', 6, 3],
+    ['insert', 'cancelOpposites', 7, 3],
+    ['delete', 'doubleNegative', 1, 4],
+    ['delete', 'zeroProduct', 2, 4],
+    ['delete', 'rewriteInvNegOneToNegOne', 3, 4],
+    ['delete', 'eliminateIdentities', 4, 4],
+    ['delete', 'eliminateDoubleInverse', 5, 4],
+    ['delete', 'cancelProductWithInverse', 6, 4],
+    ['delete', 'cancelOpposites', 7, 4]
+];
+expectedDirectOptionPositions.forEach(([category, tool, column, row]) => {
+    const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]`;
+    assert(
+        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
+        `${category} option ${tool} must occupy column ${column}, row ${row}`
+    );
+});
+assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
-assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button {\n            grid-row: 4;'));
+assert(/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu \.settings-button \{[\s\S]*?grid-column: 8;[\s\S]*?grid-row: 4;/.test(playerHtml));
+assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .app-container {\n            --workspace-keypad-width: calc(var(--main-key-size) * 8 + var(--main-key-gap) * 7);'));
+assert(playerHtml.includes('grid-template-columns: repeat(8, var(--main-key-size));'));
 
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 const expectedDirectRules = [
@@ -81,25 +102,51 @@ expectedDirectRules.forEach(([tool, label]) => {
         `${label} must be rendered as a direct branching-rule button`
     );
 });
-assert(playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
+const expectedInsertRules = [
+    'insertIdentityAddZeroBottom',
+    'insertIdentityMultiplyByOneRight',
+    'insertDoubleInverse',
+    'replaceOneWithInverseProduct',
+    'cancelOpposites'
+];
+const expectedDeleteRules = [
+    'doubleNegative',
+    'zeroProduct',
+    'rewriteInvNegOneToNegOne',
+    'eliminateIdentities',
+    'eliminateDoubleInverse',
+    'cancelProductWithInverse',
+    'cancelOpposites'
+];
+expectedInsertRules.forEach(tool => assert(
+    playerJs.includes(`{ tool: "${tool}",`),
+    `${tool} must be present in the direct Pencil row`
+));
+expectedDeleteRules.forEach(tool => assert(
+    playerHtml.includes(`[data-direct-rule-category="delete"][data-tool="${tool}"]`),
+    `${tool} must be positioned in the direct Eraser row`
+));
+assert(playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
+assert(playerJs.includes('DIRECT_INSERT_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert"))'));
+assert(playerJs.includes('DIRECT_DELETE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete"))'));
+assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
+assert(playerJs.includes('data-direct-rule-category="${categoryId}"'));
+assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.includes('data-direct-rule-category="${directCategory}"'));
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
 assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
-assert(playerJs.includes('M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156'));
-assert(playerJs.includes('M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156'));
 assert(playerJs.includes('M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156'));
-assert(playerJs.includes('<circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>'));
-assert(playerJs.includes('<circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>'));
-assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 2 \/ span 2; grid-row: 2; \}/.test(playerHtml));
-assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 3 \/ span 2; grid-row: 1; \}/.test(playerHtml));
-assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 1; grid-row: 1 \/ span 2; \}/.test(playerHtml));
-assert(/body\.left-handed \.main-action-panel \.branch-pair-left \{[\s\S]*?grid-column: 3 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
-assert(/body\.left-handed \.main-action-panel \.branch-pair-right \{[\s\S]*?grid-column: 2 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
+assert(playerJs.includes('<circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>'));
+assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 6; grid-row: 1 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 7; grid-row: 1 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 4; grid-row: 1 \/ span 2; \}/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.branch-pair-left \{\s*grid-column: 3;\s*\}/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.branch-pair-right \{\s*grid-column: 2;\s*\}/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
-assert(playerJs.includes("const columns = builderActive ? 7 : (authoringRecordingActive ? 6 : 5);"));
+assert(playerJs.includes("const columns = builderActive ? 7 : (selectionActive ? 8 : (authoringRecordingActive ? 6 : 5));"));
 assert(playerJs.includes("const rows = builderActive ? 6 : (selectionActive ? 4 : 3);"));
 assert(playerJs.includes("Math.min(widthLimit, heightLimit)"));
 assert(!playerJs.includes("mainButtonSize"));

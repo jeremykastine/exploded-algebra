@@ -670,21 +670,46 @@ Promise.resolve().then(() => {
             { tool: "factorProductOfInverses", label: "Combine inverses" }
         ];
 
+        const DIRECT_INSERT_RULE_BUTTONS = [
+            { tool: "insertIdentityAddZeroBottom", label: "Add zero", shortLabel: "Add\nzero" },
+            { tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", shortLabel: "Multiply\nby one" },
+            { tool: "insertDoubleInverse", label: "Introduce double inverses", shortLabel: "Double\ninverse" },
+            { tool: "replaceOneWithInverseProduct", label: "Introduce product of inverses", shortLabel: "Inverse\nproduct" },
+            { tool: "cancelOpposites", label: "Introduce sum of opposites", shortLabel: "Opposite\nsum" }
+        ];
+
+        const DIRECT_DELETE_RULE_BUTTONS = [
+            { tool: "doubleNegative", label: "Remove a double negative", shortLabel: "Double\nnegative" },
+            { tool: "zeroProduct", label: "Reduce a zero product", shortLabel: "Zero\nproduct" },
+            { tool: "rewriteInvNegOneToNegOne", label: "Rewrite inverse negative one", shortLabel: "Inverse\n−1" },
+            { tool: "eliminateIdentities", label: "Remove identity elements", shortLabel: "Remove\nidentity" },
+            { tool: "eliminateDoubleInverse", label: "Remove double inverses", shortLabel: "Remove double\ninverse" },
+            { tool: "cancelProductWithInverse", label: "Cancel a product with its inverse", shortLabel: "Cancel\ninverses" },
+            { tool: "cancelOpposites", label: "Cancel a sum of opposites", shortLabel: "Cancel\nopposites" }
+        ];
+
         function buildDirectBranchRuleButtonHtml(rule) {
             return `<button class="intent-category-button direct-branch-rule-button" data-tool="${rule.tool}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
                 <span class="intent-category-label">${escapeHtml(rule.label)}</span>
             </button>`;
         }
 
+        function buildDirectOptionRuleButtonHtml(rule, categoryId) {
+            const shortLines = String(rule.shortLabel || rule.label).split("\n");
+            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                <span class="direct-option-label" aria-hidden="true">${shortLines.map(escapeHtml).join("<br>")}</span>
+            </button>`;
+        }
+
         function buildSharedBranchPairOverlaysHtml() {
             return `
-                <svg class="branch-pair-overlay branch-pair-left" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
-                    <circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>
+                <svg class="branch-pair-overlay branch-pair-left" data-branch-pair="left" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
+                    <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
                 </svg>
-                <svg class="branch-pair-overlay branch-pair-right" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
-                    <circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>
+                <svg class="branch-pair-overlay branch-pair-right" data-branch-pair="right" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
+                    <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
                 </svg>
                 <svg class="branch-pair-overlay branch-pair-inverse" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
@@ -693,15 +718,18 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            // CSS maps the remaining semantic categories and six direct
-            // branching rules into the handedness-aware keypad.
-            const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];
+            // CSS maps numerical rewrite, commute, and all direct rules into
+            // the handedness-aware keypad. Insert and delete choices occupy
+            // complete rows instead of opening option menus.
+            const categoryIds = ["numericalRewrite", "commute"];
             const cancelDisabled = isDemoModeActive() ? " disabled" : "";
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
                         ${DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml).join("")}
+                        ${DIRECT_INSERT_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert")).join("")}
+                        ${DIRECT_DELETE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete")).join("")}
                         ${buildSharedBranchPairOverlaysHtml()}
                         <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
                             <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -1348,7 +1376,7 @@ Promise.resolve().then(() => {
             const builderActive = document.body.classList.contains("expression-builder-active");
             const selectionActive = document.body.classList.contains("selection-active") && !builderActive;
             const authoringRecordingActive = document.body.classList.contains("authoring-recording-session") && !builderActive;
-            const columns = builderActive ? 7 : (authoringRecordingActive ? 6 : 5);
+            const columns = builderActive ? 7 : (selectionActive ? 8 : (authoringRecordingActive ? 6 : 5));
             const rows = builderActive ? 6 : (selectionActive ? 4 : 3);
             const compactViewport = window.innerWidth <= 520;
             const gap = compactViewport ? 5 : 6;
@@ -3635,7 +3663,18 @@ Promise.resolve().then(() => {
             let targetButton = null;
             if (step.type === "tool") {
                 for (const targetTool of getDemoTargetToolCandidates(step.tool)) {
-                    targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
+                    if (targetTool === "cancelOpposites") {
+                        const selectedExpression = cloneSelectedRangeNode();
+                        const directCategory = selectedExpression && selectedExpression.type === "value" && selectedExpression.value === "0"
+                            ? "insert"
+                            : "delete";
+                        targetButton = container.querySelector(
+                            `button[data-tool="${escapeCssSelectorValue(targetTool)}"][data-direct-rule-category="${directCategory}"]`
+                        );
+                    }
+                    if (!targetButton) {
+                        targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
+                    }
                     if (targetButton) {
                         break;
                     }
