@@ -712,19 +712,19 @@ Promise.resolve().then(() => {
         function buildBranchPairOverlayHtml(pairName) {
             if (pairName === "distribute-left") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
-                    <path class="branch-arrowhead" d="M50 50 L62 42 V58 Z M156 32 L144 24 V40 Z M156 68 L144 60 V76 Z"/>
+                    <path d="M12 50 H78 C102 50 108 25 134 25 H194 M12 50 H78 C102 50 108 75 134 75 H194"/>
+                    <path class="branch-arrowhead" d="M12 50 L34 35 V65 Z M194 25 L172 12 V38 Z M194 75 L172 62 V88 Z"/>
                 </svg>`;
             }
             if (pairName === "distribute-right") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
-                    <path class="branch-arrowhead" d="M50 32 L62 24 V40 Z M50 68 L62 60 V76 Z M156 50 L144 42 V58 Z"/>
+                    <path d="M12 25 H72 C98 25 104 50 128 50 H194 M12 75 H72 C98 75 104 50 128 50 H194"/>
+                    <path class="branch-arrowhead" d="M12 25 L34 12 V38 Z M12 75 L34 62 V88 Z M194 50 L172 35 V65 Z"/>
                 </svg>`;
             }
             return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
-                <path class="branch-arrowhead" d="M50 50 L42 62 H58 Z M32 156 L24 144 H40 Z M68 156 L60 144 H76 Z"/>
+                <path d="M50 12 V78 C50 102 25 108 25 134 V194 M50 12 V78 C50 102 75 108 75 134 V194"/>
+                <path class="branch-arrowhead" d="M50 12 L35 34 H65 Z M25 194 L12 172 H38 Z M75 194 L62 172 H88 Z"/>
             </svg>`;
         }
 
