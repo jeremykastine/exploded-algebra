@@ -44,12 +44,12 @@ const expectedPostSelectionPositions = [
     ['[data-rule-category="insert"]', 4, 3],
     ['[data-rule-category="delete"]', 4, 4],
     ['[data-rule-category="commute"]', 5, 1],
-    ['[data-tool="factorProductOfInverses"]', 1, 3],
-    ['[data-tool="distributeInverseOverProduct"]', 1, 4],
-    ['[data-tool="distributeLeftToRight"]', 2, 3],
-    ['[data-tool="factorLeft"]', 3, 3],
-    ['[data-tool="factorRight"]', 2, 4],
-    ['[data-tool="distributeRightToLeft"]', 3, 4]
+    ['[data-tool="factorProductOfInverses"]', 1, 1],
+    ['[data-tool="distributeInverseOverProduct"]', 1, 2],
+    ['[data-tool="distributeLeftToRight"]', 2, 1],
+    ['[data-tool="factorLeft"]', 3, 1],
+    ['[data-tool="distributeRightToLeft"]', 2, 2],
+    ['[data-tool="factorRight"]', 3, 2]
 ];
 expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
@@ -59,6 +59,8 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
 });
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 4; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button {\n            grid-row: 4;'));
 
@@ -83,9 +85,9 @@ assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
 assert(playerJs.includes('M50 40 C91 40 115 50 156 50 M50 60 C91 60 115 50 156 50'));
 assert(playerJs.includes('M50 50 C50 91 40 115 40 156 M50 50 C50 91 60 115 60 156'));
-assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 2 \/ span 2; grid-row: 3; \}/.test(playerHtml));
-assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 2 \/ span 2; grid-row: 4; \}/.test(playerHtml));
-assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 1; grid-row: 3 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 2 \/ span 2; grid-row: 1; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 2 \/ span 2; grid-row: 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 1; grid-row: 1 \/ span 2; \}/.test(playerHtml));
 assert(/body\.left-handed \.main-action-panel \.branch-pair-left,[\s\S]*?grid-column: 3 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
