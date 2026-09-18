@@ -35,8 +35,9 @@ assert(
     "Pre-selection, settings, and post-selection controls must share the bottom panel row"
 );
 assert(
-    !/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu\s*\{[^}]*display:\s*none/.test(playerHtml),
-    "Settings must remain visible after an expression selection"
+    playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools {\n            display: grid;') &&
+        playerHtml.includes('body.selection-active:not(.expression-builder-active) .workspace-toolbar > :not(.settings-button)'),
+    "The shared toolbar grid must retain Settings after an expression selection"
 );
 
 const expectedPostSelectionPositions = [
@@ -99,7 +100,11 @@ assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 4; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
-assert(/\.quadrant-menu \.settings-button \{ grid-column: 6; grid-row: 4; \}/.test(playerHtml));
+assert(playerHtml.includes('.workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }'));
+assert(
+    /id="workspaceToolbar"[\s\S]*?id="settingsButton"[\s\S]*?<\/div>\s*<\/div>\s*<div id="mainActionPanel"/.test(playerHtml),
+    "Settings must be a member of the workspace toolbar grid"
+);
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 

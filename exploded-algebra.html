@@ -4125,7 +4125,8 @@
         .quadrant-tools button,
         .quadrant-tools.two-column-tools button,
         .workspace-toolbar button,
-        .quadrant-menu .settings-button {
+        .quadrant-menu .settings-button,
+        .workspace-toolbar .settings-button {
             width: 100%;
             height: 100%;
             min-width: 0;
@@ -4137,6 +4138,7 @@
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 3; }
+        .workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
 
@@ -4146,8 +4148,20 @@
         body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; grid-row: 4; }
         body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; grid-row: 3; }
+        body.left-handed .workspace-toolbar .settings-button { grid-column: 1; grid-row: 4; }
         body.left-handed .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
         body.selection-active.left-handed:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
+
+        /* Settings shares the workspace toolbar's grid so its cell cannot
+           drift from the other pre-selection controls. During selection the
+           same grid remains solely to carry Settings above the action grid. */
+        .quadrant-menu { display: none !important; }
+        body.selection-active:not(.expression-builder-active) .quadrant-tools {
+            display: grid;
+        }
+        body.selection-active:not(.expression-builder-active) .workspace-toolbar > :not(.settings-button) {
+            display: none;
+        }
 
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 1; grid-row: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 2; grid-row: 4; }
@@ -4232,11 +4246,6 @@
 </head>
 <body class="no-level-loaded">
     <div class="app-container">
-        <div class="quadrant-menu">
-            <button id="settingsButton" class="settings-button" type="button" aria-label="Open settings" aria-expanded="false" aria-controls="levelMenuPanel" title="Settings">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.7 2.8h4.6l.7 2.4c.5.2 1 .5 1.4.8l2.4-.6 2.3 4-1.7 1.8v1.6l1.7 1.8-2.3 4-2.4-.6c-.4.3-.9.6-1.4.8l-.7 2.4H9.7L9 18.8c-.5-.2-1-.5-1.4-.8l-2.4.6-2.3-4 1.7-1.8v-1.6L2.9 9.4l2.3-4 2.4.6c.4-.3.9-.6 1.4-.8l.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-            </button>
-        </div>
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
         </div>
@@ -4270,6 +4279,9 @@
                         <span class="workspace-undo-label" aria-hidden="true">Undo</span>
                     </button>
                 </div>
+                <button id="settingsButton" class="settings-button" type="button" aria-label="Open settings" aria-expanded="false" aria-controls="levelMenuPanel" title="Settings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.7 2.8h4.6l.7 2.4c.5.2 1 .5 1.4.8l2.4-.6 2.3 4-1.7 1.8v1.6l1.7 1.8-2.3 4-2.4-.6c-.4.3-.9.6-1.4.8l-.7 2.4H9.7L9 18.8c-.5-.2-1-.5-1.4-.8l-2.4.6-2.3-4 1.7-1.8v-1.6L2.9 9.4l2.3-4 2.4.6c.4-.3.9-.6 1.4-.8l.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+                </button>
             </div>
         </div>
         <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
