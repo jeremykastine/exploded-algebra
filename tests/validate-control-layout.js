@@ -64,22 +64,30 @@ assert(playerHtml.includes('body.selection-active:not(.expression-builder-active
 
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 const expectedDirectRules = [
-    ['distributeLeftToRight', 'Distribute left', 'branch-right'],
-    ['factorLeft', 'Factor left', 'merge-left'],
-    ['factorRight', 'Factor right', 'merge-right'],
-    ['distributeRightToLeft', 'Distribute right', 'branch-left'],
-    ['distributeInverseOverProduct', 'Separate inverse', 'inverse-branch'],
-    ['factorProductOfInverses', 'Combine inverses', 'inverse-merge']
+    ['distributeLeftToRight', 'Distribute left'],
+    ['factorLeft', 'Factor left'],
+    ['factorRight', 'Factor right'],
+    ['distributeRightToLeft', 'Distribute right'],
+    ['distributeInverseOverProduct', 'Separate inverse'],
+    ['factorProductOfInverses', 'Combine inverses']
 ];
-expectedDirectRules.forEach(([tool, label, icon]) => {
+expectedDirectRules.forEach(([tool, label]) => {
     assert(
-        playerJs.includes(`{ tool: "${tool}", label: "${label}", icon: "${icon}" }`),
+        playerJs.includes(`{ tool: "${tool}", label: "${label}" }`),
         `${label} must be rendered as a direct branching-rule button`
     );
 });
 assert(playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
-assert(playerJs.includes('icon === "inverse-branch"') && playerJs.includes('icon === "inverse-merge"'));
+assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
+assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
+assert(playerJs.includes('M50 40 C91 40 115 50 156 50 M50 60 C91 60 115 50 156 50'));
+assert(playerJs.includes('M50 50 C50 91 40 115 40 156 M50 50 C50 91 60 115 60 156'));
+assert(/\.main-action-panel \.branch-pair-left \{ grid-column: 2 \/ span 2; grid-row: 3; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-right \{ grid-column: 2 \/ span 2; grid-row: 4; \}/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-inverse \{ grid-column: 1; grid-row: 3 \/ span 2; \}/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.branch-pair-left,[\s\S]*?grid-column: 3 \/ span 2;[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
+assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
