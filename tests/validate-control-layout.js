@@ -73,7 +73,15 @@ expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) =
     );
 });
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }'));
-assert(playerHtml.includes('.main-action-panel .remaining-actions-menu-button { grid-column: 1; grid-row: 4; }'));
+[
+    ["double-inverse-insert", 1],
+    ["double-inverse-cancel", 2],
+    ["zero-product-insert", 3],
+    ["zero-product-cancel", 4]
+].forEach(([slot, row]) => assert(
+    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 3; grid-row: ${row}; }`),
+    `${slot} must occupy the new sixth action column at row ${row}`
+));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
@@ -99,18 +107,18 @@ expectedDirectRules.forEach(([tool, label]) => {
         `${label} must be rendered as a direct branching-rule button`
     );
 });
-assert(playerJs.includes('{ tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "+0" }'));
-assert(playerJs.includes('{ tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "·1" }'));
+assert(playerJs.includes('{ tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "A+0" }'));
+assert(playerJs.includes('{ tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "A·1" }'));
 assert(playerJs.includes('{ tool: "cancelOpposites", label: "Introduce additive inverses", icon: "A−A", variant: "insert" }'));
 assert(playerJs.includes('{ tool: "replaceOneWithInverseProduct", label: "Introduce multiplicative inverses", icon: "A÷A" }'));
-assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove additive identity", icon: "+0", variant: "additive", crossedOut: true }'));
-assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "·1", variant: "multiplicative", crossedOut: true }'));
-assert(playerJs.includes('{ tool: "cancelOpposites", label: "Cancel additive inverses", icon: "A−A", variant: "delete", crossedOut: true }'));
-assert(playerJs.includes('{ tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "A÷A", crossedOut: true }'));
-['insertDoubleInverse', 'eliminateDoubleInverse', 'doubleNegative', 'zeroProduct', 'rewriteInvNegOneToNegOne'].forEach(tool => assert(
-    playerJs.includes(`"${tool}"`),
-    `${tool} must remain accessible from More actions`
-));
+assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove additive identity", icon: "A", variant: "additive" }'));
+assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "A", variant: "multiplicative" }'));
+assert(playerJs.includes('{ tool: "cancelOpposites", label: "Cancel additive inverses", icon: "0", variant: "delete" }'));
+assert(playerJs.includes('{ tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "1" }'));
+assert(playerJs.includes('{ tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "1/(1/A)", category: "insert", slot: "double-inverse-insert" }'));
+assert(playerJs.includes('{ tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" }'));
+assert(playerJs.includes('{ tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" }'));
+assert(playerJs.includes('{ tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }'));
 assert(playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
 assert(playerJs.includes('DIRECT_IDENTITY_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert"))'));
 assert(playerJs.includes('DIRECT_REVERSE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete"))'));
@@ -120,10 +128,21 @@ assert(playerJs.includes('data-direct-rule-variant="${escapeHtml(rule.variant)}"
 assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.includes('data-direct-rule-category="${directCategory}"'));
 assert(playerJs.includes('function isDirectRuleButtonApplicable(button, toolName)'));
 assert(playerJs.includes('identityData.kind === "sum"') && playerJs.includes('identityData.kind === "prod"'));
-assert(playerJs.includes('button[data-remaining-actions-menu]') && playerJs.includes('showToolOptionMenu(btn, "remaining", tools)'));
-assert(/\.main-action-panel \.direct-rule-icon\.crossed-out::before,[\s\S]*?transform: rotate\(34deg\);/.test(playerHtml));
+assert(!playerJs.includes('data-remaining-actions-menu') && !playerHtml.includes('remaining-actions-menu-button'));
+assert(!playerHtml.includes('direct-rule-icon.crossed-out'));
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
 assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
+assert(playerJs.includes('function buildReversePairOverlaysHtml()'));
+['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse'].forEach(pair => {
+    assert(playerJs.includes(`"${pair}"`), `${pair} must have a two-way relationship arrow`);
+});
+assert(playerJs.includes('M20 88 V118 M13 96 L20 88 L27 96 M13 110 L20 118 L27 110'));
+assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
+assert(/\.main-action-panel \.reverse-pair-double-inverse \{ grid-column: 3; grid-row: 1 \/ span 2; \}/.test(playerHtml));
+assert(/\.main-action-panel \.reverse-pair-zero-product \{ grid-column: 3; grid-row: 3 \/ span 2; \}/.test(playerHtml));
+assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode)'));
+assert(playerJs.includes('isExactDoubleNegativeProduct(originalNode) && proposedIsOne'));
+assert(playerJs.includes('isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
 assert(playerJs.includes('M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156'));
 assert(playerJs.includes('M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156'));

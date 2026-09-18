@@ -671,25 +671,24 @@ Promise.resolve().then(() => {
         ];
 
         const DIRECT_IDENTITY_RULE_BUTTONS = [
-            { tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "+0" },
-            { tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "·1" },
+            { tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "A+0" },
+            { tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "A·1" },
             { tool: "cancelOpposites", label: "Introduce additive inverses", icon: "A−A", variant: "insert" },
             { tool: "replaceOneWithInverseProduct", label: "Introduce multiplicative inverses", icon: "A÷A" }
         ];
 
         const DIRECT_REVERSE_RULE_BUTTONS = [
-            { tool: "eliminateIdentities", label: "Remove additive identity", icon: "+0", variant: "additive", crossedOut: true },
-            { tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "·1", variant: "multiplicative", crossedOut: true },
-            { tool: "cancelOpposites", label: "Cancel additive inverses", icon: "A−A", variant: "delete", crossedOut: true },
-            { tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "A÷A", crossedOut: true }
+            { tool: "eliminateIdentities", label: "Remove additive identity", icon: "A", variant: "additive" },
+            { tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "A", variant: "multiplicative" },
+            { tool: "cancelOpposites", label: "Cancel additive inverses", icon: "0", variant: "delete" },
+            { tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "1" }
         ];
 
-        const REMAINING_ACTION_RULES = [
-            "insertDoubleInverse",
-            "eliminateDoubleInverse",
-            "doubleNegative",
-            "zeroProduct",
-            "rewriteInvNegOneToNegOne"
+        const DIRECT_EXTRA_RULE_BUTTONS = [
+            { tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "1/(1/A)", category: "insert", slot: "double-inverse-insert" },
+            { tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" },
+            { tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" },
+            { tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }
         ];
 
         function buildDirectBranchRuleButtonHtml(rule) {
@@ -700,9 +699,9 @@ Promise.resolve().then(() => {
 
         function buildDirectOptionRuleButtonHtml(rule, categoryId) {
             const variantAttribute = rule.variant ? ` data-direct-rule-variant="${escapeHtml(rule.variant)}"` : "";
-            const crossedOutClass = rule.crossedOut ? " crossed-out" : "";
-            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}"${variantAttribute} aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
-                <span class="direct-rule-icon${crossedOutClass}" aria-hidden="true">${escapeHtml(rule.icon)}</span>
+            const slotAttribute = rule.slot ? ` data-direct-rule-slot="${escapeHtml(rule.slot)}"` : "";
+            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}"${variantAttribute}${slotAttribute} aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                <span class="direct-rule-icon" aria-hidden="true">${escapeHtml(rule.icon)}</span>
             </button>`;
         }
 
@@ -722,6 +721,21 @@ Promise.resolve().then(() => {
                 </svg>`;
         }
 
+        function buildReversePairOverlaysHtml() {
+            const pairNames = [
+                "double-inverse",
+                "zero-product",
+                "additive-identity",
+                "multiplicative-identity",
+                "additive-inverse",
+                "multiplicative-inverse"
+            ];
+            return pairNames.map(pairName => `
+                <svg class="reverse-pair-overlay reverse-pair-${pairName}" data-reverse-pair="${pairName}" viewBox="0 0 40 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M20 88 V118 M13 96 L20 88 L27 96 M13 110 L20 118 L27 110"/>
+                </svg>`).join("");
+        }
+
         function buildIntentCategoryMenuHtml() {
             // CSS maps numerical rewrite, commute, and all direct rules into
             // the handedness-aware keypad. Insert and delete choices occupy
@@ -735,11 +749,9 @@ Promise.resolve().then(() => {
                         ${DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml).join("")}
                         ${DIRECT_IDENTITY_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert")).join("")}
                         ${DIRECT_REVERSE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete")).join("")}
+                        ${DIRECT_EXTRA_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, rule.category)).join("")}
                         ${buildSharedBranchPairOverlaysHtml()}
-                        <button type="button" class="intent-category-button remaining-actions-menu-button" data-remaining-actions-menu aria-label="More actions" aria-haspopup="menu" aria-expanded="false" title="More actions">
-                            <span class="remaining-actions-menu-icon" aria-hidden="true">•••</span>
-                            <span class="intent-category-label">More actions</span>
-                        </button>
+                        ${buildReversePairOverlaysHtml()}
                         <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
                             <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             <span class="intent-category-label">Clear selection</span>
@@ -907,12 +919,6 @@ Promise.resolve().then(() => {
             if (firstOption) {
                 firstOption.focus({ preventScroll: true });
             }
-        }
-
-        function getRemainingActionTools() {
-            return REMAINING_ACTION_RULES.filter(toolName =>
-                !!TOOL_INFO[toolName] && isToolAllowedInCurrentLevel(toolName)
-            );
         }
 
         function buildIntentCategoryToolListHtml() {
@@ -3593,6 +3599,9 @@ Promise.resolve().then(() => {
         }
 
         function getDemoTargetToolCandidates(toolName) {
+            if (["doubleNegative", "rewriteInvNegOneToNegOne", "rewriteNegOneToInvNegOne"].includes(toolName)) {
+                return uniqueToolKeys([toolName, "numericalRewrite"]);
+            }
             if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
                 return uniqueToolKeys([
                     toolName,
@@ -3701,9 +3710,6 @@ Promise.resolve().then(() => {
                     if (!targetButton) {
                         targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
                     }
-                    if (!targetButton && REMAINING_ACTION_RULES.includes(targetTool)) {
-                        targetButton = container.querySelector("button[data-remaining-actions-menu]");
-                    }
                     if (targetButton) {
                         break;
                     }
@@ -3728,7 +3734,7 @@ Promise.resolve().then(() => {
                     : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
             }
 
-            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category], button[data-remaining-actions-menu]").forEach(button => {
+            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
                 if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
@@ -4490,7 +4496,7 @@ Promise.resolve().then(() => {
                     beginTool(toolName);
                 });
                 document.addEventListener("click", event => {
-                    const menuAnchor = event.target.closest && event.target.closest("button[data-rule-category], button[data-remaining-actions-menu]");
+                    const menuAnchor = event.target.closest && event.target.closest("button[data-rule-category]");
                     if (!toolOptionMenu.classList.contains("hidden") && !toolOptionMenu.contains(event.target) && !menuAnchor) {
                         hideToolOptionMenu();
                     }
@@ -9738,13 +9744,19 @@ ctx.font = SETTINGS.textFont;
                     return builderValidationFailed("The proposed entry does not have the same numerical value.");
                 }
 
-                const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "original");
-                if (!originalCheck.ok) {
-                    return builderValidationFailed(originalCheck.error);
-                }
-                const replacementCheck = validateNumericalRewriteExpression(completed, profile, "proposed");
-                if (!replacementCheck.ok) {
-                    return builderValidationFailed("That structure is not permitted on this exercise.");
+                const isAlwaysAllowedExchange = isAlwaysAllowedNumericalRewriteExchange(
+                    normalizeExpressionTree(cloneNode(builder.originalSelectedNode)),
+                    completed
+                );
+                if (!isAlwaysAllowedExchange) {
+                    const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "original");
+                    if (!originalCheck.ok) {
+                        return builderValidationFailed(originalCheck.error);
+                    }
+                    const replacementCheck = validateNumericalRewriteExpression(completed, profile, "proposed");
+                    if (!replacementCheck.ok) {
+                        return builderValidationFailed("That structure is not permitted on this exercise.");
+                    }
                 }
                 replacement = completed;
             } else if (builder.tool === "numericalEquivalence") {
@@ -10014,8 +10026,43 @@ ctx.font = SETTINGS.textFont;
             return validateArithmeticExpressionForLevel(selectedNode, allowedLevel, "selected").ok;
         }
 
+        function isExactNumericalRewriteValue(node, value) {
+            return !!node && node.type === "value" && String(node.value) === value;
+        }
+
+        function isExactDoubleNegativeProduct(node) {
+            return !!node && node.type === "prod" && node.args.length === 2 &&
+                node.args.every(factor => isExactNumericalRewriteValue(factor, "-1"));
+        }
+
+        function isExactInverseOfNegativeOne(node) {
+            return !!node && node.type === "inv" && node.args.length === 1 &&
+                isExactNumericalRewriteValue(node.args[0], "-1");
+        }
+
+        function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode) {
+            const originalIsOne = isExactNumericalRewriteValue(originalNode, "1");
+            const proposedIsOne = isExactNumericalRewriteValue(proposedNode, "1");
+            const originalIsNegativeOne = isExactNumericalRewriteValue(originalNode, "-1");
+            const proposedIsNegativeOne = isExactNumericalRewriteValue(proposedNode, "-1");
+            return (isExactDoubleNegativeProduct(originalNode) && proposedIsOne) ||
+                (originalIsOne && isExactDoubleNegativeProduct(proposedNode)) ||
+                (isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne) ||
+                (originalIsNegativeOne && isExactInverseOfNegativeOne(proposedNode));
+        }
+
+        function isAlwaysAllowedNumericalRewriteEndpoint(node) {
+            return isExactNumericalRewriteValue(node, "1") ||
+                isExactNumericalRewriteValue(node, "-1") ||
+                isExactDoubleNegativeProduct(node) ||
+                isExactInverseOfNegativeOne(node);
+        }
+
         function canNumericalRewrite() {
             const selectedNode = cloneSelectedRangeNode();
+            if (isAlwaysAllowedNumericalRewriteEndpoint(selectedNode)) {
+                return true;
+            }
             return validateNumericalRewriteExpression(
                 selectedNode,
                 getNumericalRewriteProfile(),
@@ -11140,24 +11187,6 @@ ctx.font = SETTINGS.textFont;
                     renderToolArea();
                     refreshStatus();
                     drawExpression();
-                });
-            });
-
-            container.querySelectorAll("button[data-remaining-actions-menu]").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    let tools = getRemainingActionTools();
-                    if (isDemoModeActive()) {
-                        tools = tools.filter(isDemoToolAllowed);
-                    }
-                    if (tools.length === 0) {
-                        markToolButtonNotApplicable(btn);
-                        return;
-                    }
-                    if (activeToolOptionAnchor === btn && !toolOptionMenu.classList.contains("hidden")) {
-                        hideToolOptionMenu();
-                        return;
-                    }
-                    showToolOptionMenu(btn, "remaining", tools);
                 });
             });
 
