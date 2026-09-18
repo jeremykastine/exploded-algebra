@@ -3159,10 +3159,10 @@
         .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 5; grid-row: 1; }
         .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 1; grid-row: 1; }
         .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 1; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 2; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; grid-row: 1; }
-        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 2; grid-row: 2; }
-        .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 3; grid-row: 2; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; grid-row: 2; }
+        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 2; grid-row: 2; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; grid-row: 1; }
+        .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 4; grid-row: 1; }
         .main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }
         .main-action-panel .intent-category-actions > button {
             position: relative;
@@ -3185,8 +3185,8 @@
             vector-effect: non-scaling-stroke;
         }
         .main-action-panel .branch-pair-overlay circle { fill: currentColor; }
-        .main-action-panel .branch-pair-left { grid-column: 2 / span 2; grid-row: 1; }
-        .main-action-panel .branch-pair-right { grid-column: 2 / span 2; grid-row: 2; }
+        .main-action-panel .branch-pair-left { grid-column: 2 / span 2; grid-row: 2; }
+        .main-action-panel .branch-pair-right { grid-column: 3 / span 2; grid-row: 1; }
         .main-action-panel .branch-pair-inverse { grid-column: 1; grid-row: 1 / span 2; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="insert"] { grid-column: 2; }
@@ -3194,14 +3194,18 @@
         body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 1; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 4; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }
         body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
-        body.left-handed .main-action-panel .branch-pair-left,
-        body.left-handed .main-action-panel .branch-pair-right {
+        body.left-handed .main-action-panel .branch-pair-left {
             grid-column: 3 / span 2;
+            transform: scaleX(-1);
+            transform-origin: center;
+        }
+        body.left-handed .main-action-panel .branch-pair-right {
+            grid-column: 2 / span 2;
             transform: scaleX(-1);
             transform-origin: center;
         }
@@ -4108,7 +4112,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260918-aligned-branch-block"></script>
+    <script src="exploded-algebra-tool.js?v=20260918-branch-layout-correction"></script>
 
 </body>
 </html>

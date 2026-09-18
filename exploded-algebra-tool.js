@@ -679,16 +679,16 @@ Promise.resolve().then(() => {
         function buildSharedBranchPairOverlaysHtml() {
             return `
                 <svg class="branch-pair-overlay branch-pair-left" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 40 C91 40 115 50 156 50 M50 60 C91 60 115 50 156 50"/>
-                    <circle cx="50" cy="40" r="5"/><circle cx="50" cy="60" r="5"/><circle cx="156" cy="50" r="5"/>
+                    <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
+                    <circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>
                 </svg>
                 <svg class="branch-pair-overlay branch-pair-right" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 40 C91 40 115 50 156 50 M50 60 C91 60 115 50 156 50"/>
-                    <circle cx="50" cy="40" r="5"/><circle cx="50" cy="60" r="5"/><circle cx="156" cy="50" r="5"/>
+                    <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
+                    <circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>
                 </svg>
                 <svg class="branch-pair-overlay branch-pair-inverse" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M50 50 C50 91 40 115 40 156 M50 50 C50 91 60 115 60 156"/>
-                    <circle cx="50" cy="50" r="5"/><circle cx="40" cy="156" r="5"/><circle cx="60" cy="156" r="5"/>
+                    <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
+                    <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
                 </svg>`;
         }
 
