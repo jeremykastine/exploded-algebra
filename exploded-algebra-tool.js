@@ -1435,7 +1435,7 @@ Promise.resolve().then(() => {
             const selectionActive = document.body.classList.contains("selection-active") && !builderActive;
             const authoringRecordingActive = document.body.classList.contains("authoring-recording-session") && !builderActive;
             const columns = builderActive ? 7 : (selectionActive ? 8 : (authoringRecordingActive ? 6 : 5));
-            const rows = builderActive ? 6 : (selectionActive ? 4 : 3);
+            const rows = builderActive ? 4 : (selectionActive ? 4 : 3);
             const compactViewport = window.innerWidth <= 520;
             const gap = compactViewport ? 5 : 6;
             const edge = compactViewport ? 8 : 12;

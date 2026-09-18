@@ -177,7 +177,7 @@ assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
 assert(playerJs.includes("const columns = builderActive ? 7 : (selectionActive ? 8 : (authoringRecordingActive ? 6 : 5));"));
-assert(playerJs.includes("const rows = builderActive ? 6 : (selectionActive ? 4 : 3);"));
+assert(playerJs.includes("const rows = builderActive ? 4 : (selectionActive ? 4 : 3);"));
 assert(playerJs.includes("Math.min(widthLimit, heightLimit)"));
 assert(!playerJs.includes("mainButtonSize"));
 assert(!playerHtml.includes("Button size"));
