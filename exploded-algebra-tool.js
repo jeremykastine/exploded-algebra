@@ -685,7 +685,7 @@ Promise.resolve().then(() => {
         ];
 
         const DIRECT_EXTRA_RULE_BUTTONS = [
-            { tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "1/(1/A)", category: "insert", slot: "double-inverse-insert" },
+            { tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "÷÷A", category: "insert", slot: "double-inverse-insert" },
             { tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" },
             { tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" },
             { tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }
@@ -713,18 +713,18 @@ Promise.resolve().then(() => {
             if (pairName === "distribute-left") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156"/>
-                    <circle cx="50" cy="50" r="5"/><circle cx="156" cy="32" r="5"/><circle cx="156" cy="68" r="5"/>
+                    <path class="branch-arrowhead" d="M50 50 L62 42 V58 Z M156 32 L144 24 V40 Z M156 68 L144 60 V76 Z"/>
                 </svg>`;
             }
             if (pairName === "distribute-right") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156"/>
-                    <circle cx="50" cy="32" r="5"/><circle cx="50" cy="68" r="5"/><circle cx="156" cy="50" r="5"/>
+                    <path class="branch-arrowhead" d="M50 32 L62 24 V40 Z M50 68 L62 60 V76 Z M156 50 L144 42 V58 Z"/>
                 </svg>`;
             }
             return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                 <path d="M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156"/>
-                <circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>
+                <path class="branch-arrowhead" d="M50 50 L42 62 H58 Z M32 156 L24 144 H40 Z M68 156 L60 144 H76 Z"/>
             </svg>`;
         }
 
@@ -779,8 +779,8 @@ Promise.resolve().then(() => {
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
                         ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, label: "Combine or separate inverses" })}
-                        ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true, label: "Factor or distribute on the left" })}
-                        ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true, label: "Distribute or factor on the right" })}
+                        ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, label: "Factor or distribute on the left" })}
+                        ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, label: "Distribute or factor on the right" })}
                         ${buildDirectOptionRulePairHtml("additive-identity", DIRECT_IDENTITY_RULE_BUTTONS[0], "insert", DIRECT_REVERSE_RULE_BUTTONS[0], "delete", "Introduce or remove an additive identity")}
                         ${buildDirectOptionRulePairHtml("multiplicative-identity", DIRECT_IDENTITY_RULE_BUTTONS[1], "insert", DIRECT_REVERSE_RULE_BUTTONS[1], "delete", "Introduce or remove a multiplicative identity")}
                         ${buildDirectOptionRulePairHtml("additive-inverse", DIRECT_IDENTITY_RULE_BUTTONS[2], "insert", DIRECT_REVERSE_RULE_BUTTONS[2], "delete", "Introduce or cancel additive inverses")}

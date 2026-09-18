@@ -40,8 +40,8 @@ assert(
 );
 
 const expectedPostSelectionPositions = [
-    ['[data-rule-category="numericalRewrite"]', 8, 2],
-    ['[data-rule-category="commute"]', 8, 1]
+    ['[data-rule-category="commute"]', 7, 3],
+    ['[data-rule-category="numericalRewrite"]', 7, 4]
 ];
 expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
@@ -50,12 +50,12 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     );
 });
 const expectedPairedButtonPositions = [
-    ['[data-tool="factorProductOfInverses"]', 4, 1],
-    ['[data-tool="distributeInverseOverProduct"]', 4, 2],
-    ['[data-tool="factorLeft"]', 5, 2],
-    ['[data-tool="distributeLeftToRight"]', 6, 2],
-    ['[data-tool="factorRight"]', 7, 1],
-    ['[data-tool="distributeRightToLeft"]', 6, 1]
+    ['[data-tool="distributeRightToLeft"]', 4, 3],
+    ['[data-tool="factorRight"]', 5, 3],
+    ['[data-tool="factorLeft"]', 4, 4],
+    ['[data-tool="distributeLeftToRight"]', 5, 4],
+    ['[data-tool="factorProductOfInverses"]', 6, 3],
+    ['[data-tool="distributeInverseOverProduct"]', 6, 4]
 ];
 expectedPairedButtonPositions.forEach(([selector, column, row]) => {
     assert(
@@ -64,14 +64,14 @@ expectedPairedButtonPositions.forEach(([selector, column, row]) => {
     );
 });
 const expectedDirectOptionPositions = [
-    ['insert', 'insertIdentityAddZeroBottom', null, 7, 3],
-    ['insert', 'insertIdentityMultiplyByOneRight', null, 6, 3],
-    ['insert', 'cancelOpposites', null, 5, 3],
-    ['insert', 'replaceOneWithInverseProduct', null, 4, 3],
-    ['delete', 'eliminateIdentities', 'additive', 7, 4],
-    ['delete', 'eliminateIdentities', 'multiplicative', 6, 4],
-    ['delete', 'cancelOpposites', null, 5, 4],
-    ['delete', 'cancelProductWithInverse', null, 4, 4]
+    ['insert', 'insertIdentityAddZeroBottom', null, 7, 1],
+    ['insert', 'insertIdentityMultiplyByOneRight', null, 6, 1],
+    ['insert', 'cancelOpposites', null, 5, 1],
+    ['insert', 'replaceOneWithInverseProduct', null, 4, 1],
+    ['delete', 'eliminateIdentities', 'additive', 7, 2],
+    ['delete', 'eliminateIdentities', 'multiplicative', 6, 2],
+    ['delete', 'cancelOpposites', null, 5, 2],
+    ['delete', 'cancelProductWithInverse', null, 4, 2]
 ];
 expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) => {
     const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]${variant ? `[data-direct-rule-variant="${variant}"]` : ""}`;
@@ -84,14 +84,19 @@ assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-c
 [
     ["double-inverse-insert", 1],
     ["double-inverse-cancel", 2],
-    ["zero-product-insert", 3],
-    ["zero-product-cancel", 4]
 ].forEach(([slot, row]) => assert(
     playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 3; grid-row: ${row}; }`),
-    `${slot} must retain column 3, row ${row}`
+    `${slot} must occupy column 3, row ${row}`
 ));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
+[
+    ["zero-product-insert", 1],
+    ["zero-product-cancel", 2]
+].forEach(([slot, row]) => assert(
+    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 2; grid-row: ${row}; }`),
+    `${slot} must occupy column 2, row ${row}`
+));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"],'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.quadrant-menu \.settings-button \{[\s\S]*?grid-column: 8;[\s\S]*?grid-row: 4;/.test(playerHtml));
@@ -121,7 +126,7 @@ assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove additive
 assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "A", variant: "multiplicative" }'));
 assert(playerJs.includes('{ tool: "cancelOpposites", label: "Cancel additive inverses", icon: "0", variant: "delete" }'));
 assert(playerJs.includes('{ tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "1" }'));
-assert(playerJs.includes('{ tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "1/(1/A)", category: "insert", slot: "double-inverse-insert" }'));
+assert(playerJs.includes('{ tool: "insertDoubleInverse", label: "Introduce double inverse", icon: "÷÷A", category: "insert", slot: "double-inverse-insert" }'));
 assert(playerJs.includes('{ tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" }'));
 assert(playerJs.includes('{ tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" }'));
 assert(playerJs.includes('{ tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }'));
@@ -139,7 +144,7 @@ assert(!playerHtml.includes('direct-rule-icon.crossed-out'));
 assert(playerJs.includes('function buildDirectBranchRulePairHtml(pairName, orientation, firstTool, secondTool, options = {})'));
 assert(playerJs.includes('function buildBranchPairOverlayHtml(pairName)'));
 assert(playerJs.includes('function buildReversePairOverlayHtml(pairName, orientation)'));
-['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse', 'distribute-left', 'distribute-right'].forEach(pair => {
+['double-inverse', 'zero-product', 'additive-identity', 'multiplicative-identity', 'additive-inverse', 'multiplicative-inverse'].forEach(pair => {
     assert(playerJs.includes(`"${pair}"`), `${pair} must have a two-way relationship arrow`);
 });
 assert(playerJs.includes('M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110'));
@@ -160,7 +165,12 @@ assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-b
 assert(playerJs.includes('M50 50 H84 C106 50 112 32 132 32 H156 M50 50 H84 C106 50 112 68 132 68 H156'));
 assert(playerJs.includes('M50 32 H74 C94 32 100 50 122 50 H156 M50 68 H74 C94 68 100 50 122 50 H156'));
 assert(playerJs.includes('M50 50 V84 C50 106 32 112 32 132 V156 M50 50 V84 C50 106 68 112 68 132 V156'));
-assert(playerJs.includes('<circle cx="50" cy="50" r="5"/><circle cx="32" cy="156" r="5"/><circle cx="68" cy="156" r="5"/>'));
+assert(playerJs.includes('class="branch-arrowhead"'));
+assert(playerJs.includes('M50 50 L62 42 V58 Z M156 32 L144 24 V40 Z M156 68 L144 60 V76 Z'));
+assert(playerJs.includes('M50 32 L62 24 V40 Z M50 68 L62 60 V76 Z M156 50 L144 42 V58 Z'));
+assert(playerJs.includes('M50 50 L42 62 H58 Z M32 156 L24 144 H40 Z M68 156 L60 144 H76 Z'));
+assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true'));
+assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
 assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
