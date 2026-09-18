@@ -40,25 +40,46 @@ assert(
 );
 
 const expectedPostSelectionPositions = [
-    [1, 5, 2], // Numerical Rewrite
-    [2, 3, 4], // Pencil / Insert
-    [3, 4, 4], // Eraser / Delete
-    [4, 1, 4], // Separate
-    [5, 2, 4], // Combine
-    [6, 5, 1]  // Commute
+    ['[data-rule-category="numericalRewrite"]', 5, 2],
+    ['[data-rule-category="insert"]', 4, 3],
+    ['[data-rule-category="delete"]', 4, 4],
+    ['[data-rule-category="commute"]', 5, 1],
+    ['[data-tool="factorProductOfInverses"]', 1, 3],
+    ['[data-tool="distributeInverseOverProduct"]', 1, 4],
+    ['[data-tool="distributeLeftToRight"]', 2, 3],
+    ['[data-tool="factorLeft"]', 3, 3],
+    ['[data-tool="factorRight"]', 2, 4],
+    ['[data-tool="distributeRightToLeft"]', 3, 4]
 ];
-expectedPostSelectionPositions.forEach(([child, column, row]) => {
+expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
-        playerHtml.includes(`.main-action-panel .intent-category-button:nth-child(${child}) { grid-column: ${column}; grid-row: ${row}; }`),
-        `Post-selection category ${child} must occupy column ${column}, row ${row}`
+        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
+        `Post-selection control ${selector} must occupy column ${column}, row ${row}`
     );
 });
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 5; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button {\n            grid-row: 4;'));
 
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
+const expectedDirectRules = [
+    ['distributeLeftToRight', 'Distribute left', 'branch-right'],
+    ['factorLeft', 'Factor left', 'merge-left'],
+    ['factorRight', 'Factor right', 'merge-right'],
+    ['distributeRightToLeft', 'Distribute right', 'branch-left'],
+    ['distributeInverseOverProduct', 'Separate inverse', 'inverse-branch'],
+    ['factorProductOfInverses', 'Combine inverses', 'inverse-merge']
+];
+expectedDirectRules.forEach(([tool, label, icon]) => {
+    assert(
+        playerJs.includes(`{ tool: "${tool}", label: "${label}", icon: "${icon}" }`),
+        `${label} must be rendered as a direct branching-rule button`
+    );
+});
+assert(playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
+assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
+assert(playerJs.includes('icon === "inverse-branch"') && playerJs.includes('icon === "inverse-merge"'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));

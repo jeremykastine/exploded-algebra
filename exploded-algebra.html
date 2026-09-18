@@ -3153,19 +3153,27 @@
             grid-template-rows: repeat(4, var(--main-key-size));
             grid-auto-flow: row;
         }
-        .main-action-panel .intent-category-button:nth-child(1) { grid-column: 5; grid-row: 2; }
-        .main-action-panel .intent-category-button:nth-child(2) { grid-column: 3; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(3) { grid-column: 4; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(4) { grid-column: 1; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(5) { grid-column: 2; grid-row: 4; }
-        .main-action-panel .intent-category-button:nth-child(6) { grid-column: 5; grid-row: 1; }
+        .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 5; grid-row: 2; }
+        .main-action-panel .intent-category-actions > [data-rule-category="insert"] { grid-column: 4; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-rule-category="delete"] { grid-column: 4; grid-row: 4; }
+        .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 5; grid-row: 1; }
+        .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 1; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 1; grid-row: 4; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 2; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 2; grid-row: 4; }
+        .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; grid-row: 4; }
         .main-action-panel .cancel-selection-button { grid-column: 5; grid-row: 3; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(1) { grid-column: 1; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(2) { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(3) { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(4) { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(5) { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-button:nth-child(6) { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="numericalRewrite"] { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="insert"] { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="delete"] { grid-column: 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-rule-category="commute"] { grid-column: 1; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeInverseOverProduct"] { grid-column: 5; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 4; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 3; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorRight"] { grid-column: 4; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeRightToLeft"] { grid-column: 3; }
         body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }
         .main-action-panel .tool-grid {
             display: flex;
@@ -3210,6 +3218,12 @@
         .main-action-panel .intent-category-icon {
             width: var(--main-icon-size);
             height: var(--main-icon-size);
+        }
+        .main-action-panel .inverse-branch-label {
+            fill: currentColor;
+            font-size: 13px;
+            font-weight: 800;
+            text-anchor: middle;
         }
         .main-action-panel .intent-category-math {
             width: var(--main-icon-size);
@@ -4069,7 +4083,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260918-bottom-controls-panel"></script>
+    <script src="exploded-algebra-tool.js?v=20260918-six-branch-rules"></script>
 
 </body>
 </html>

@@ -262,9 +262,9 @@ Promise.resolve().then(() => {
             }
         ];
 
-        // The fixed rule-category menu presents the user's intention rather
-        // than the individual algebraic rule. Exact applicability is still
-        // decided by the existing rule checks below.
+        // Most fixed buttons present the user's intention. Distribution,
+        // factoring, and inverse branching are exposed as individual rules;
+        // exact applicability is still decided by the checks below.
         const INTENT_RULE_CATEGORIES = [
             { id: "commute", label: "Commute" },
             { id: "insert", label: "Introduce Element(s)" },
@@ -661,14 +661,59 @@ Promise.resolve().then(() => {
             </button>`;
         }
 
+        const DIRECT_BRANCH_RULE_BUTTONS = [
+            { tool: "distributeLeftToRight", label: "Distribute left", icon: "branch-right" },
+            { tool: "factorLeft", label: "Factor left", icon: "merge-left" },
+            { tool: "factorRight", label: "Factor right", icon: "merge-right" },
+            { tool: "distributeRightToLeft", label: "Distribute right", icon: "branch-left" },
+            { tool: "distributeInverseOverProduct", label: "Separate inverse", icon: "inverse-branch" },
+            { tool: "factorProductOfInverses", label: "Combine inverses", icon: "inverse-merge" }
+        ];
+
+        function getDirectBranchRuleIconHtml(icon) {
+            if (icon === "inverse-branch") {
+                return `<svg class="intent-category-icon inverse-branch-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
+                    <path class="icon-stroke" d="M50 5 V22 C50 34 27 32 27 48 V54 M50 22 C50 34 73 32 73 48 V54"/>
+                    <path class="icon-fill" d="M27 65 L19 51 H35 Z M73 65 L65 51 H81 Z"/>
+                    <text class="inverse-branch-label" x="50" y="45">inv</text>
+                </svg>`;
+            }
+            if (icon === "inverse-merge") {
+                return `<svg class="intent-category-icon inverse-branch-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false">
+                    <path class="icon-stroke" d="M27 5 V14 C27 30 50 28 50 42 V54 M73 5 V14 C73 30 50 28 50 42"/>
+                    <path class="icon-fill" d="M50 65 L42 51 H58 Z"/>
+                    <text class="inverse-branch-label" x="50" y="25">inv</text>
+                </svg>`;
+            }
+
+            const branching = icon === "branch-right" || icon === "branch-left";
+            const mirrored = icon === "branch-left" || icon === "merge-left";
+            const transform = mirrored ? ` transform="translate(100 0) scale(-1 1)"` : "";
+            const paths = branching
+                ? `<path class="icon-stroke" d="M8 34 H33 C49 34 48 15 68 15 H84 M33 34 C49 34 48 53 68 53 H84"/>
+                   <path class="icon-fill" d="M94 15 L80 7 V23 Z M94 53 L80 45 V61 Z"/>`
+                : `<path class="icon-stroke" d="M8 15 H29 C49 15 48 34 64 34 H84 M8 53 H29 C49 53 48 34 64 34"/>
+                   <path class="icon-fill" d="M94 34 L80 26 V42 Z"/>`;
+            return `<svg class="intent-category-icon" viewBox="0 0 100 68" aria-hidden="true" focusable="false"><g${transform}>${paths}</g></svg>`;
+        }
+
+        function buildDirectBranchRuleButtonHtml(rule) {
+            return `<button class="intent-category-button direct-branch-rule-button" data-tool="${rule.tool}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                ${getDirectBranchRuleIconHtml(rule.icon)}
+                <span class="intent-category-label">${escapeHtml(rule.label)}</span>
+            </button>`;
+        }
+
         function buildIntentCategoryMenuHtml() {
-            // CSS maps these semantic categories into the handedness-aware keypad.
-            const categoryIds = ["numericalRewrite", "insert", "delete", "separate", "consolidate", "commute"];
+            // CSS maps the remaining semantic categories and six direct
+            // branching rules into the handedness-aware keypad.
+            const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];
             const cancelDisabled = isDemoModeActive() ? " disabled" : "";
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
+                        ${DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml).join("")}
                         <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
                             <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             <span class="intent-category-label">Clear selection</span>
