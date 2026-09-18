@@ -670,22 +670,26 @@ Promise.resolve().then(() => {
             { tool: "factorProductOfInverses", label: "Combine inverses" }
         ];
 
-        const DIRECT_INSERT_RULE_BUTTONS = [
-            { tool: "insertIdentityAddZeroBottom", label: "Add zero", shortLabel: "Add\nzero" },
-            { tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", shortLabel: "Multiply\nby one" },
-            { tool: "insertDoubleInverse", label: "Introduce double inverses", shortLabel: "Double\ninverse" },
-            { tool: "replaceOneWithInverseProduct", label: "Introduce product of inverses", shortLabel: "Inverse\nproduct" },
-            { tool: "cancelOpposites", label: "Introduce sum of opposites", shortLabel: "Opposite\nsum" }
+        const DIRECT_IDENTITY_RULE_BUTTONS = [
+            { tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "+0" },
+            { tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "·1" },
+            { tool: "cancelOpposites", label: "Introduce additive inverses", icon: "A−A", variant: "insert" },
+            { tool: "replaceOneWithInverseProduct", label: "Introduce multiplicative inverses", icon: "A÷A" }
         ];
 
-        const DIRECT_DELETE_RULE_BUTTONS = [
-            { tool: "doubleNegative", label: "Remove a double negative", shortLabel: "Double\nnegative" },
-            { tool: "zeroProduct", label: "Reduce a zero product", shortLabel: "Zero\nproduct" },
-            { tool: "rewriteInvNegOneToNegOne", label: "Rewrite inverse negative one", shortLabel: "Inverse\n−1" },
-            { tool: "eliminateIdentities", label: "Remove identity elements", shortLabel: "Remove\nidentity" },
-            { tool: "eliminateDoubleInverse", label: "Remove double inverses", shortLabel: "Remove double\ninverse" },
-            { tool: "cancelProductWithInverse", label: "Cancel a product with its inverse", shortLabel: "Cancel\ninverses" },
-            { tool: "cancelOpposites", label: "Cancel a sum of opposites", shortLabel: "Cancel\nopposites" }
+        const DIRECT_REVERSE_RULE_BUTTONS = [
+            { tool: "eliminateIdentities", label: "Remove additive identity", icon: "+0", variant: "additive", crossedOut: true },
+            { tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "·1", variant: "multiplicative", crossedOut: true },
+            { tool: "cancelOpposites", label: "Cancel additive inverses", icon: "A−A", variant: "delete", crossedOut: true },
+            { tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "A÷A", crossedOut: true }
+        ];
+
+        const REMAINING_ACTION_RULES = [
+            "insertDoubleInverse",
+            "eliminateDoubleInverse",
+            "doubleNegative",
+            "zeroProduct",
+            "rewriteInvNegOneToNegOne"
         ];
 
         function buildDirectBranchRuleButtonHtml(rule) {
@@ -695,9 +699,10 @@ Promise.resolve().then(() => {
         }
 
         function buildDirectOptionRuleButtonHtml(rule, categoryId) {
-            const shortLines = String(rule.shortLabel || rule.label).split("\n");
-            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
-                <span class="direct-option-label" aria-hidden="true">${shortLines.map(escapeHtml).join("<br>")}</span>
+            const variantAttribute = rule.variant ? ` data-direct-rule-variant="${escapeHtml(rule.variant)}"` : "";
+            const crossedOutClass = rule.crossedOut ? " crossed-out" : "";
+            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}"${variantAttribute} aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                <span class="direct-rule-icon${crossedOutClass}" aria-hidden="true">${escapeHtml(rule.icon)}</span>
             </button>`;
         }
 
@@ -728,9 +733,13 @@ Promise.resolve().then(() => {
                     <div class="intent-category-actions">
                         ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
                         ${DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml).join("")}
-                        ${DIRECT_INSERT_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert")).join("")}
-                        ${DIRECT_DELETE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete")).join("")}
+                        ${DIRECT_IDENTITY_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert")).join("")}
+                        ${DIRECT_REVERSE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete")).join("")}
                         ${buildSharedBranchPairOverlaysHtml()}
+                        <button type="button" class="intent-category-button remaining-actions-menu-button" data-remaining-actions-menu aria-label="More actions" aria-haspopup="menu" aria-expanded="false" title="More actions">
+                            <span class="remaining-actions-menu-icon" aria-hidden="true">•••</span>
+                            <span class="intent-category-label">More actions</span>
+                        </button>
                         <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
                             <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                             <span class="intent-category-label">Clear selection</span>
@@ -875,7 +884,9 @@ Promise.resolve().then(() => {
                 return;
             }
             const category = INTENT_RULE_CATEGORIES.find(item => item.id === categoryId);
-            const title = category ? `${category.label} options` : "Application options";
+            const title = categoryId === "remaining"
+                ? "More actions"
+                : category ? `${category.label} options` : "Application options";
             toolOptionMenu.innerHTML = `
                 <div class="tool-option-menu-title">${escapeHtml(title)}</div>
                 ${tools.map(toolName => {
@@ -896,6 +907,12 @@ Promise.resolve().then(() => {
             if (firstOption) {
                 firstOption.focus({ preventScroll: true });
             }
+        }
+
+        function getRemainingActionTools() {
+            return REMAINING_ACTION_RULES.filter(toolName =>
+                !!TOOL_INFO[toolName] && isToolAllowedInCurrentLevel(toolName)
+            );
         }
 
         function buildIntentCategoryToolListHtml() {
@@ -3672,8 +3689,20 @@ Promise.resolve().then(() => {
                             `button[data-tool="${escapeCssSelectorValue(targetTool)}"][data-direct-rule-category="${directCategory}"]`
                         );
                     }
+                    if (targetTool === "eliminateIdentities") {
+                        const identityData = getIdentityEliminationData();
+                        const directVariant = identityData && identityData.kind === "sum"
+                            ? "additive"
+                            : "multiplicative";
+                        targetButton = container.querySelector(
+                            `button[data-tool="${escapeCssSelectorValue(targetTool)}"][data-direct-rule-variant="${directVariant}"]`
+                        );
+                    }
                     if (!targetButton) {
                         targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
+                    }
+                    if (!targetButton && REMAINING_ACTION_RULES.includes(targetTool)) {
+                        targetButton = container.querySelector("button[data-remaining-actions-menu]");
                     }
                     if (targetButton) {
                         break;
@@ -3699,7 +3728,7 @@ Promise.resolve().then(() => {
                     : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
             }
 
-            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
+            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category], button[data-remaining-actions-menu]").forEach(button => {
                 if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
@@ -4450,6 +4479,7 @@ Promise.resolve().then(() => {
                     event.stopPropagation();
                     const toolName = button.dataset.toolOption;
                     if (!isDemoToolAllowed(toolName) || !isToolActuallyApplicable(toolName)) {
+                        markToolButtonNotApplicable(button);
                         return;
                     }
                     const beforeExpression = getExpressionTextForTrace();
@@ -4460,8 +4490,8 @@ Promise.resolve().then(() => {
                     beginTool(toolName);
                 });
                 document.addEventListener("click", event => {
-                    const categoryButton = event.target.closest && event.target.closest("button[data-rule-category]");
-                    if (!toolOptionMenu.classList.contains("hidden") && !toolOptionMenu.contains(event.target) && !categoryButton) {
+                    const menuAnchor = event.target.closest && event.target.closest("button[data-rule-category], button[data-remaining-actions-menu]");
+                    if (!toolOptionMenu.classList.contains("hidden") && !toolOptionMenu.contains(event.target) && !menuAnchor) {
                         hideToolOptionMenu();
                     }
                 });
@@ -10893,6 +10923,25 @@ ctx.font = SETTINGS.textFont;
             }
         }
 
+        function isDirectRuleButtonApplicable(button, toolName) {
+            const variant = button && button.dataset ? button.dataset.directRuleVariant : "";
+            if (toolName === "eliminateIdentities" && variant) {
+                const identityData = getIdentityEliminationData();
+                return !!identityData && (
+                    (variant === "additive" && identityData.kind === "sum") ||
+                    (variant === "multiplicative" && identityData.kind === "prod")
+                );
+            }
+            if (toolName === "cancelOpposites" && variant === "insert") {
+                const selectedNode = cloneSelectedRangeNode();
+                return !!selectedNode && selectedNode.type === "value" && selectedNode.value === "0";
+            }
+            if (toolName === "cancelOpposites" && variant === "delete") {
+                return !!getCancelOppositesData();
+            }
+            return isToolActuallyApplicable(toolName);
+        }
+
         function performBuilderAction(action, value = "") {
             if (!uiState.expressionBuilder || uiState.stage !== "builder") {
                 return false;
@@ -11094,13 +11143,31 @@ ctx.font = SETTINGS.textFont;
                 });
             });
 
+            container.querySelectorAll("button[data-remaining-actions-menu]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    let tools = getRemainingActionTools();
+                    if (isDemoModeActive()) {
+                        tools = tools.filter(isDemoToolAllowed);
+                    }
+                    if (tools.length === 0) {
+                        markToolButtonNotApplicable(btn);
+                        return;
+                    }
+                    if (activeToolOptionAnchor === btn && !toolOptionMenu.classList.contains("hidden")) {
+                        hideToolOptionMenu();
+                        return;
+                    }
+                    showToolOptionMenu(btn, "remaining", tools);
+                });
+            });
+
             container.querySelectorAll("button[data-tool]").forEach(btn => {
                 btn.addEventListener("click", () => {
                     const toolName = btn.dataset.tool;
                     if (!isDemoToolAllowed(toolName)) {
                         return;
                     }
-                    if (!isToolActuallyApplicable(toolName)) {
+                    if (!isDirectRuleButtonApplicable(btn, toolName)) {
                         if (!isDemoModeActive() && !isApplicableOnlyToolNotationMode()) {
                             markToolButtonNotApplicable(btn);
                         }

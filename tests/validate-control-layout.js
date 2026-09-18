@@ -56,27 +56,24 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     );
 });
 const expectedDirectOptionPositions = [
-    ['insert', 'insertIdentityAddZeroBottom', 3, 3],
-    ['insert', 'insertIdentityMultiplyByOneRight', 4, 3],
-    ['insert', 'insertDoubleInverse', 5, 3],
-    ['insert', 'replaceOneWithInverseProduct', 6, 3],
-    ['insert', 'cancelOpposites', 7, 3],
-    ['delete', 'doubleNegative', 1, 4],
-    ['delete', 'zeroProduct', 2, 4],
-    ['delete', 'rewriteInvNegOneToNegOne', 3, 4],
-    ['delete', 'eliminateIdentities', 4, 4],
-    ['delete', 'eliminateDoubleInverse', 5, 4],
-    ['delete', 'cancelProductWithInverse', 6, 4],
-    ['delete', 'cancelOpposites', 7, 4]
+    ['insert', 'insertIdentityAddZeroBottom', null, 7, 3],
+    ['insert', 'insertIdentityMultiplyByOneRight', null, 6, 3],
+    ['insert', 'cancelOpposites', null, 5, 3],
+    ['insert', 'replaceOneWithInverseProduct', null, 4, 3],
+    ['delete', 'eliminateIdentities', 'additive', 7, 4],
+    ['delete', 'eliminateIdentities', 'multiplicative', 6, 4],
+    ['delete', 'cancelOpposites', null, 5, 4],
+    ['delete', 'cancelProductWithInverse', null, 4, 4]
 ];
-expectedDirectOptionPositions.forEach(([category, tool, column, row]) => {
-    const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]`;
+expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) => {
+    const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]${variant ? `[data-direct-rule-variant="${variant}"]` : ""}`;
     assert(
         playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
         `${category} option ${tool} must occupy column ${column}, row ${row}`
     );
 });
 assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 8; grid-row: 3; }'));
+assert(playerHtml.includes('.main-action-panel .remaining-actions-menu-button { grid-column: 1; grid-row: 4; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
@@ -102,36 +99,29 @@ expectedDirectRules.forEach(([tool, label]) => {
         `${label} must be rendered as a direct branching-rule button`
     );
 });
-const expectedInsertRules = [
-    'insertIdentityAddZeroBottom',
-    'insertIdentityMultiplyByOneRight',
-    'insertDoubleInverse',
-    'replaceOneWithInverseProduct',
-    'cancelOpposites'
-];
-const expectedDeleteRules = [
-    'doubleNegative',
-    'zeroProduct',
-    'rewriteInvNegOneToNegOne',
-    'eliminateIdentities',
-    'eliminateDoubleInverse',
-    'cancelProductWithInverse',
-    'cancelOpposites'
-];
-expectedInsertRules.forEach(tool => assert(
-    playerJs.includes(`{ tool: "${tool}",`),
-    `${tool} must be present in the direct Pencil row`
-));
-expectedDeleteRules.forEach(tool => assert(
-    playerHtml.includes(`[data-direct-rule-category="delete"][data-tool="${tool}"]`),
-    `${tool} must be positioned in the direct Eraser row`
+assert(playerJs.includes('{ tool: "insertIdentityAddZeroBottom", label: "Add zero", icon: "+0" }'));
+assert(playerJs.includes('{ tool: "insertIdentityMultiplyByOneRight", label: "Multiply by one", icon: "·1" }'));
+assert(playerJs.includes('{ tool: "cancelOpposites", label: "Introduce additive inverses", icon: "A−A", variant: "insert" }'));
+assert(playerJs.includes('{ tool: "replaceOneWithInverseProduct", label: "Introduce multiplicative inverses", icon: "A÷A" }'));
+assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove additive identity", icon: "+0", variant: "additive", crossedOut: true }'));
+assert(playerJs.includes('{ tool: "eliminateIdentities", label: "Remove multiplicative identity", icon: "·1", variant: "multiplicative", crossedOut: true }'));
+assert(playerJs.includes('{ tool: "cancelOpposites", label: "Cancel additive inverses", icon: "A−A", variant: "delete", crossedOut: true }'));
+assert(playerJs.includes('{ tool: "cancelProductWithInverse", label: "Cancel multiplicative inverses", icon: "A÷A", crossedOut: true }'));
+['insertDoubleInverse', 'eliminateDoubleInverse', 'doubleNegative', 'zeroProduct', 'rewriteInvNegOneToNegOne'].forEach(tool => assert(
+    playerJs.includes(`"${tool}"`),
+    `${tool} must remain accessible from More actions`
 ));
 assert(playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
-assert(playerJs.includes('DIRECT_INSERT_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert"))'));
-assert(playerJs.includes('DIRECT_DELETE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete"))'));
+assert(playerJs.includes('DIRECT_IDENTITY_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "insert"))'));
+assert(playerJs.includes('DIRECT_REVERSE_RULE_BUTTONS.map(rule => buildDirectOptionRuleButtonHtml(rule, "delete"))'));
 assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
 assert(playerJs.includes('data-direct-rule-category="${categoryId}"'));
+assert(playerJs.includes('data-direct-rule-variant="${escapeHtml(rule.variant)}"'));
 assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.includes('data-direct-rule-category="${directCategory}"'));
+assert(playerJs.includes('function isDirectRuleButtonApplicable(button, toolName)'));
+assert(playerJs.includes('identityData.kind === "sum"') && playerJs.includes('identityData.kind === "prod"'));
+assert(playerJs.includes('button[data-remaining-actions-menu]') && playerJs.includes('showToolOptionMenu(btn, "remaining", tools)'));
+assert(/\.main-action-panel \.direct-rule-icon\.crossed-out::before,[\s\S]*?transform: rotate\(34deg\);/.test(playerHtml));
 assert(playerJs.includes('DIRECT_BRANCH_RULE_BUTTONS.map(buildDirectBranchRuleButtonHtml)'));
 assert(playerJs.includes('function buildSharedBranchPairOverlaysHtml()'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
