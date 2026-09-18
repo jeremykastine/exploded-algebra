@@ -1431,18 +1431,14 @@ Promise.resolve().then(() => {
             if (!appContainer || !bottomControlsPanel) {
                 return;
             }
-            const builderActive = document.body.classList.contains("expression-builder-active");
-            const selectionActive = document.body.classList.contains("selection-active") && !builderActive;
-            const authoringRecordingActive = document.body.classList.contains("authoring-recording-session") && !builderActive;
-            const columns = builderActive ? 7 : (selectionActive ? 8 : (authoringRecordingActive ? 6 : 5));
-            const rows = builderActive ? 4 : (selectionActive ? 4 : 3);
+            const columns = 6;
+            const rows = 4;
             const compactViewport = window.innerWidth <= 520;
             const gap = compactViewport ? 5 : 6;
-            const edge = compactViewport ? 8 : 12;
             const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);
             const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);
-            const widthLimit = Math.floor((availableWidth - edge * 2 - gap * (columns - 1)) / columns);
-            const heightLimit = Math.floor((availableHeight - edge * 2 - gap * (rows - 1)) / rows);
+            const widthLimit = Math.floor((availableWidth - gap * (columns - 1)) / columns);
+            const heightLimit = Math.floor((availableHeight - gap * (rows - 1)) / rows);
             const effectiveSize = Math.max(10, Math.min(widthLimit, heightLimit));
             appContainer.style.setProperty("--main-key-size", `${effectiveSize}px`);
             appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
