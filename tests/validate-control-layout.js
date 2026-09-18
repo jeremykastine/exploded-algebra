@@ -146,9 +146,9 @@ assert(playerJs.includes('M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 1
 assert(playerJs.includes('M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89'));
 assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 1px solid #999;[\s\S]*?border-radius: 7px;/.test(playerHtml));
-assert(playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
-assert(playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
-assert(playerHtml.includes('background: #c7cbd1;'));
+assert(!playerHtml.includes('.main-action-panel .split-rule-frame::after {'));
+assert(!playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
+assert(!playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
 assert(playerJs.includes('<span class="split-rule-frame split-rule-frame-${orientation} split-rule-frame-${pairName}" data-rule-pair="${pairName}" aria-hidden="true"></span>'));
 assert(!playerJs.includes('<div class="split-rule-button'));
 assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bwidth:/.test(playerHtml));
