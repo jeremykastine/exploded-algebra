@@ -1201,6 +1201,7 @@ Promise.resolve().then(() => {
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const builderRewritePreview = document.getElementById("builderRewritePreview");
         const builderKeypadPanel = document.getElementById("builderKeypadPanel");
+        const builderPeekDismissLayer = document.getElementById("builderPeekDismissLayer");
         const builderCommandPanel = document.getElementById("builderCommandPanel");
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
@@ -4469,44 +4470,23 @@ Promise.resolve().then(() => {
                     }
                     renderToolArea();
                 });
-                builderCommandPanel.addEventListener("pointerdown", event => {
+                builderCommandPanel.addEventListener("click", event => {
                     const button = event.target.closest("button[data-builder-review]");
-                    if (!button || button.disabled || (event.pointerType === "mouse" && event.button !== 0)) {
+                    if (!button || button.disabled) {
                         return;
                     }
-                    activeBuilderReviewPointerId = event.pointerId;
-                    if (showBuilderOriginalReview()) {
-                        event.preventDefault();
-                    }
-                });
-                builderCommandPanel.addEventListener("keydown", event => {
-                    const button = event.target.closest("button[data-builder-review]");
-                    if (!button || ![" ", "Enter"].includes(event.key) || event.repeat) return;
                     event.preventDefault();
                     event.stopPropagation();
                     showBuilderOriginalReview();
                 });
-                builderCommandPanel.addEventListener("keyup", event => {
-                    if (event.target.closest("button[data-builder-review]") && [" ", "Enter"].includes(event.key)) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        hideBuilderOriginalReview();
-                    }
-                });
-                builderCommandPanel.addEventListener("contextmenu", event => {
-                    if (event.target.closest("button[data-builder-review]")) {
-                        event.preventDefault();
-                    }
+            }
+            if (builderPeekDismissLayer) {
+                builderPeekDismissLayer.addEventListener("click", event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    hideBuilderOriginalReview();
                 });
             }
-            const finishBuilderReview = event => {
-                if (builderReviewActive && event.pointerId === activeBuilderReviewPointerId) {
-                    event.preventDefault();
-                    hideBuilderOriginalReview();
-                }
-            };
-            document.addEventListener("pointerup", finishBuilderReview, true);
-            document.addEventListener("pointercancel", finishBuilderReview, true);
             window.addEventListener("blur", hideBuilderOriginalReview);
             updateWorkspaceToolbar();
             if (authoringSessionActive) {
@@ -4626,7 +4606,6 @@ ctx.font = SETTINGS.textFont;
         let activeWorkspacePointerId = null;
         let workspacePointerStart = null;
         let builderReviewActive = false;
-        let activeBuilderReviewPointerId = null;
         const selection = {
             status: "no",
             node: null,
@@ -9268,8 +9247,13 @@ ctx.font = SETTINGS.textFont;
         function cancelExpressionBuilder() {
             const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
             builderReviewActive = false;
-            activeBuilderReviewPointerId = null;
             document.body.classList.remove("builder-review-active");
+            if (builderPeekDismissLayer) {
+                if (document.activeElement === builderPeekDismissLayer) {
+                    builderPeekDismissLayer.blur();
+                }
+                builderPeekDismissLayer.setAttribute("aria-hidden", "true");
+            }
             if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
                 expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
@@ -9295,6 +9279,10 @@ ctx.font = SETTINGS.textFont;
                 selection.lastPart = builder.originalSelection.lastPart;
             }
             document.body.classList.add("builder-review-active");
+            if (builderPeekDismissLayer) {
+                builderPeekDismissLayer.setAttribute("aria-hidden", "false");
+                builderPeekDismissLayer.focus({ preventScroll: true });
+            }
             drawExpression();
             return true;
         }
@@ -9303,8 +9291,13 @@ ctx.font = SETTINGS.textFont;
             if (!builderReviewActive) return false;
             const builder = uiState.expressionBuilder;
             builderReviewActive = false;
-            activeBuilderReviewPointerId = null;
             document.body.classList.remove("builder-review-active");
+            if (builderPeekDismissLayer) {
+                if (document.activeElement === builderPeekDismissLayer) {
+                    builderPeekDismissLayer.blur();
+                }
+                builderPeekDismissLayer.setAttribute("aria-hidden", "true");
+            }
             if (isIntegratedExpressionBuilder(builder)) {
                 expressionRoot = builder.root;
             }
@@ -10483,7 +10476,7 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
                         <button class="builder-operator-button builder-exit-inv-button" data-builder-action="exitInverse" aria-label="Exit inverse" title="Keyboard shortcut: Right Arrow"${exitDisabled ? " disabled" : ""}><span class="builder-exit-inverse-icon">${getBuilderSymbolIcon("inv")}<svg class="builder-exit-arrow" viewBox="0 0 32 32" aria-hidden="true"><path class="builder-exit-arrow-halo" d="M14 18 27 29M20 29h7v-7"/><path class="builder-exit-arrow-line" d="M14 18 27 29M20 29h7v-7"/></svg></span></button>
-                        <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Original-expression review is unavailable while building the starting expression" : "Hold to review original expression"}" title="${reviewDisabled ? "No previous expression to review" : "Hold to review original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
+                        <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Take a peek is unavailable while building the starting expression" : "Take a peek at the original expression"}" title="${reviewDisabled ? "No previous expression to peek at" : "Take a peek at the original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
                         <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
@@ -11081,8 +11074,10 @@ function renderToolArea() {
             }
             if (!builderActive && builderReviewActive) {
                 builderReviewActive = false;
-                activeBuilderReviewPointerId = null;
                 document.body.classList.remove("builder-review-active");
+                if (builderPeekDismissLayer) {
+                    builderPeekDismissLayer.setAttribute("aria-hidden", "true");
+                }
             }
             if (builderActive) {
                 // Save the main view before the builder layout changes the page.
