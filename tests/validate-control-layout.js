@@ -198,6 +198,9 @@ assert(playerJs.includes('M300 1 V300') && playerJs.includes('M500 1 V300') && p
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
 assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
+assert(/\.main-action-panel \.intent-category-actions > button\.intent-category-button::before \{[\s\S]*?inset: clamp\(4px,[\s\S]*?border: 0;[\s\S]*?border-radius: clamp\(6px,[\s\S]*?background: #eeeeee;[\s\S]*?pointer-events: none;/.test(playerHtml));
+assert(/\.main-action-panel \.intent-category-actions > button\.intent-category-button > \* \{[\s\S]*?position: relative;[\s\S]*?z-index: 1;/.test(playerHtml));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-inset-action-tiles'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
