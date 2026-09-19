@@ -1425,11 +1425,11 @@ Promise.resolve().then(() => {
         let stableExpressionState = null;
 
         let internalClipboardText = "";
-        let stepsFontSize = 15;
-        const STEPS_FONT_SIZE_MIN = 11;
-        const STEPS_FONT_SIZE_MAX = 26;
-        const STEPS_FONT_SIZE_STEP = 1;
-        const STEPS_FONT_SIZE_STORAGE_KEY = "explodedAlgebraStepsFontSizeV1";
+        let stepsVisibleLineCount = 3;
+        let stepsFontRecalculationFrame = null;
+        const STEPS_VISIBLE_LINE_MIN = 1;
+        const STEPS_VISIBLE_LINE_MAX = 3;
+        const STEPS_VISIBLE_LINE_STORAGE_KEY = "explodedAlgebraStepsVisibleLinesV1";
 
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
@@ -1437,13 +1437,12 @@ Promise.resolve().then(() => {
                 const valueElement = button.querySelector("[data-setting-value]");
                 let value = "";
                 let nextValue = "";
-                if (setting === "handedness") {
-                    const isLeftHanded = document.body.classList.contains("left-handed");
-                    value = isLeftHanded ? "Left" : "Right";
-                    nextValue = isLeftHanded ? "Right" : "Left";
-                } else if (setting === "steps-font") {
-                    value = `${Math.round(stepsFontSize)} px`;
-                    nextValue = `${stepsFontSize >= STEPS_FONT_SIZE_MAX ? STEPS_FONT_SIZE_MIN : stepsFontSize + STEPS_FONT_SIZE_STEP} px`;
+                if (setting === "steps-lines") {
+                    value = `${stepsVisibleLineCount} ${stepsVisibleLineCount === 1 ? "Line" : "Lines"}`;
+                    const nextLineCount = stepsVisibleLineCount >= STEPS_VISIBLE_LINE_MAX
+                        ? STEPS_VISIBLE_LINE_MIN
+                        : stepsVisibleLineCount + 1;
+                    nextValue = `${nextLineCount} ${nextLineCount === 1 ? "Line" : "Lines"}`;
                 } else if (setting === "bar-style") {
                     const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
                     const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
@@ -1481,28 +1480,69 @@ Promise.resolve().then(() => {
             appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
         }
 
-        function loadSavedStepsFontSize() {
+        function loadSavedStepsVisibleLineCount() {
             try {
-                const savedSize = Number(window.localStorage.getItem(STEPS_FONT_SIZE_STORAGE_KEY));
-                return Number.isFinite(savedSize) && savedSize >= STEPS_FONT_SIZE_MIN && savedSize <= STEPS_FONT_SIZE_MAX
-                    ? savedSize
-                    : stepsFontSize;
+                const savedLineCount = Number(window.localStorage.getItem(STEPS_VISIBLE_LINE_STORAGE_KEY));
+                return Number.isInteger(savedLineCount) && savedLineCount >= STEPS_VISIBLE_LINE_MIN && savedLineCount <= STEPS_VISIBLE_LINE_MAX
+                    ? savedLineCount
+                    : stepsVisibleLineCount;
             } catch (error) {
-                return stepsFontSize;
+                return stepsVisibleLineCount;
             }
         }
 
-        function setStepsFontSize(size, persist = false) {
-            const boundedSize = Math.max(STEPS_FONT_SIZE_MIN, Math.min(STEPS_FONT_SIZE_MAX, Number(size) || stepsFontSize));
-            stepsFontSize = boundedSize;
-            appContainer.style.setProperty("--steps-font-size", `${boundedSize}px`);
+        function calculateStepsFontSizeForVisibleLines(lineCount = stepsVisibleLineCount) {
+            if (!leftPanel) {
+                return 15;
+            }
+            const panelBounds = leftPanel.getBoundingClientRect();
+            const panelStyle = window.getComputedStyle(leftPanel);
+            const panelPadding = (parseFloat(panelStyle.paddingTop) || 0) + (parseFloat(panelStyle.paddingBottom) || 0);
+            const sampleColumn = leftPanel.querySelector(".solution-column");
+            const sampleStep = leftPanel.querySelector(".solution-step");
+            const columnStyle = sampleColumn ? window.getComputedStyle(sampleColumn) : null;
+            const stepStyle = sampleStep ? window.getComputedStyle(sampleStep) : null;
+            const perLinePadding = (columnStyle ? (parseFloat(columnStyle.paddingTop) || 0) + (parseFloat(columnStyle.paddingBottom) || 0) : 0) +
+                (stepStyle ? (parseFloat(stepStyle.paddingTop) || 0) + (parseFloat(stepStyle.paddingBottom) || 0) : 6);
+            const measuredFontSize = columnStyle ? parseFloat(columnStyle.fontSize) || 15 : 15;
+            const measuredLineHeight = columnStyle ? parseFloat(columnStyle.lineHeight) || measuredFontSize * 1.4 : measuredFontSize * 1.4;
+            const lineHeightRatio = Math.max(1, measuredLineHeight / measuredFontSize);
+            const availableHeight = Math.max(1, panelBounds.height - panelPadding);
+            const targetSize = Math.floor((availableHeight / lineCount - perLinePadding) / lineHeightRatio);
+            return Math.max(8, Math.min(96, targetSize));
+        }
+
+        function recalculateStepsFontSize() {
+            if (!appContainer) {
+                return;
+            }
+            const calculatedSize = calculateStepsFontSizeForVisibleLines();
+            appContainer.style.setProperty("--steps-font-size", `${calculatedSize}px`);
+        }
+
+        function scheduleStepsFontSizeRecalculation() {
+            if (stepsFontRecalculationFrame !== null) {
+                cancelAnimationFrame(stepsFontRecalculationFrame);
+            }
+            stepsFontRecalculationFrame = requestAnimationFrame(() => {
+                stepsFontRecalculationFrame = null;
+                recalculateStepsFontSize();
+            });
+        }
+
+        function setStepsVisibleLineCount(lineCount, persist = false) {
+            const boundedLineCount = Math.max(
+                STEPS_VISIBLE_LINE_MIN,
+                Math.min(STEPS_VISIBLE_LINE_MAX, Math.round(Number(lineCount) || stepsVisibleLineCount))
+            );
+            stepsVisibleLineCount = boundedLineCount;
             if (persist) {
                 try {
-                    window.localStorage.setItem(STEPS_FONT_SIZE_STORAGE_KEY, String(boundedSize));
+                    window.localStorage.setItem(STEPS_VISIBLE_LINE_STORAGE_KEY, String(boundedLineCount));
                 } catch (error) {}
             }
             refreshQuickSettingButtons();
-            scheduleTopPanelHeightUpdate(getCurrentLevel());
+            scheduleStepsFontSizeRecalculation();
         }
 
         const handlePanelOrientationChange = () => {
@@ -1951,6 +1991,7 @@ Promise.resolve().then(() => {
                 userTopPanelHeight = clampedHeight;
             }
             appContainer.style.setProperty("--top-panel-height", `${Math.round(clampedHeight)}px`);
+            scheduleStepsFontSizeRecalculation();
             if (topPanelResizeHandle) {
                 topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
                 topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
@@ -4496,7 +4537,7 @@ Promise.resolve().then(() => {
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
-            setStepsFontSize(loadSavedStepsFontSize());
+            setStepsVisibleLineCount(loadSavedStepsVisibleLineCount());
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             if (workspaceToolbar) {
@@ -4608,7 +4649,6 @@ Promise.resolve().then(() => {
                     startLoadedLevel(selectedLevel);
                 });
             }
-            setLeftHandedLayout(loadSavedHandedness());
             if (builderDigitRail) {
                 builderDigitRail.addEventListener("click", event => {
                     const button = event.target.closest("button[data-builder-action]");
@@ -4823,7 +4863,6 @@ ctx.font = SETTINGS.textFont;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
-        const HANDEDNESS_STORAGE_KEY = "explodedAlgebraLeftHanded";
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
@@ -4855,15 +4894,11 @@ ctx.font = SETTINGS.textFont;
         }
 
         function cycleQuickSetting(setting) {
-            if (setting === "handedness") {
-                setLeftHandedLayout(!document.body.classList.contains("left-handed"), true);
-                return;
-            }
-            if (setting === "steps-font") {
-                const nextSize = stepsFontSize >= STEPS_FONT_SIZE_MAX
-                    ? STEPS_FONT_SIZE_MIN
-                    : stepsFontSize + STEPS_FONT_SIZE_STEP;
-                setStepsFontSize(nextSize, true);
+            if (setting === "steps-lines") {
+                const nextLineCount = stepsVisibleLineCount >= STEPS_VISIBLE_LINE_MAX
+                    ? STEPS_VISIBLE_LINE_MIN
+                    : stepsVisibleLineCount + 1;
+                setStepsVisibleLineCount(nextLineCount, true);
                 return;
             }
             if (setting === "bar-style") {
@@ -4965,26 +5000,6 @@ ctx.font = SETTINGS.textFont;
                 drawExpression();
             }
             refreshQuickSettingButtons();
-        }
-
-        function setLeftHandedLayout(enabled, persist = false) {
-            const isLeftHanded = !!enabled;
-            document.body.classList.toggle("left-handed", isLeftHanded);
-            if (persist) {
-                try {
-                    window.localStorage.setItem(HANDEDNESS_STORAGE_KEY, isLeftHanded ? "1" : "0");
-                } catch (error) {}
-            }
-            refreshQuickSettingButtons();
-            scheduleResponsiveLayoutRecalculation();
-        }
-
-        function loadSavedHandedness() {
-            try {
-                return window.localStorage.getItem(HANDEDNESS_STORAGE_KEY) === "1";
-            } catch (error) {
-                return false;
-            }
         }
 
         function applyWorkspaceZoomSizing() {

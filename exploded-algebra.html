@@ -4191,18 +4191,17 @@
             min-width: 0;
             min-height: 0;
         }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 2; grid-row: 4; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1; grid-row: 2; }
+        .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 2; grid-row: 3; }
         .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 4; }
         .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; grid-row: 4; }
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 6; grid-row: 4; }
-        .workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 1; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 3; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 4; grid-row: 1; }
-        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 1; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 6; grid-row: 3; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
 
@@ -4235,37 +4234,15 @@
             pointer-events: none;
         }
 
-        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 5; grid-row: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 4; grid-row: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; grid-row: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
-        body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; grid-row: 3; }
-        body.left-handed .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1; grid-row: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 6; }
-        body.left-handed .workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 5; }
-        body.left-handed .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; }
-        body.left-handed .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 2; }
-        body.left-handed .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
-        body.selection-active.left-handed:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
-
         .quadrant-menu { display: none !important; }
 
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 1; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 2; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; grid-row: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; grid-row: 2; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 3; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 6; grid-row: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 5; grid-row: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 4; grid-row: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; grid-row: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; grid-row: 3; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }
 
         .main-action-panel .panel-tool-menu,
         .main-action-panel .intent-category-list,
@@ -4408,13 +4385,9 @@
                     <span class="workspace-checkpoint-label" aria-hidden="true">Record<br>Step</span>
                 </button>
                 <div class="workspace-tool-group workspace-settings-group" aria-label="Display settings">
-                    <button type="button" class="workspace-setting-button" data-workspace-setting="handedness" data-hold-description="Change which side holds the primary controls.">
-                        <span class="workspace-setting-name" aria-hidden="true">Handedness</span>
-                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">Right</span>
-                    </button>
-                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-font" data-hold-description="Cycle the conventional steps text through the available sizes.">
-                        <span class="workspace-setting-name" aria-hidden="true">Steps Text</span>
-                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">15 px</span>
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-lines" data-hold-description="Cycle between fitting one, two, or three lines in the visible steps panel height.">
+                        <span class="workspace-setting-name" aria-hidden="true">Steps Size</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">3 Lines</span>
                     </button>
                     <button type="button" class="workspace-setting-button" data-workspace-setting="bar-style" data-hold-description="Cycle the visual style used for addition and multiplication.">
                         <span class="workspace-setting-name" aria-hidden="true">Bar Style</span>
@@ -4513,7 +4486,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-inline-settings"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-steps-lines-layout"></script>
 
 </body>
 </html>

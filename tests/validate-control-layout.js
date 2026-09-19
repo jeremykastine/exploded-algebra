@@ -3,12 +3,13 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
+const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }'));
-assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 6; grid-row: 2; }'));
-assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 3; }'));
+assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }'));
+assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }'));
 assert(
     playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
     "The app must provide a distinct bottom controls panel and resize handle"
@@ -40,15 +41,21 @@ assert(
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
 assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="levelMenuPanel"'), "Settings must live directly in the pre-selection toolbar");
-["handedness", "steps-font", "bar-style", "bar-shading"].forEach(setting => {
+["steps-lines", "bar-style", "bar-shading"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing inline ${setting} setting button`);
 });
+assert(!playerHtml.includes('data-workspace-setting="handedness"') && !playerJs.includes("setLeftHandedLayout"), "The left-handedness option must be removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 1; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 2; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 3; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 4; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 6; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1; grid-row: 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 2; grid-row: 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
@@ -80,7 +87,6 @@ assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
-const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 assert(playerJs.includes("function isPointInsideCurrentSelection(x, y)"), "Selection presses must use the highlighted selection bounds");
 assert(/function selectFromWorkspaceTap\(x, y, pointerType, allowSelectionCancel = true\) \{[\s\S]*?allowSelectionCancel && selection\.node && isPointInsideCurrentSelection\(x, y\)[\s\S]*?clearSelection\(\);[\s\S]*?return true;/.test(playerJs), "Pressing inside the current selection must clear it");
 assert(playerJs.includes("selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);") && playerJs.includes("selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);"), "Dragging from the selection must remain a two-endpoint selection gesture rather than a cancel press");
@@ -184,11 +190,14 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-inline-settings'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-steps-lines-layout'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
-assert(playerJs.includes('stepsFontSize >= STEPS_FONT_SIZE_MAX'));
+assert(playerJs.includes('const STEPS_VISIBLE_LINE_MIN = 1;') && playerJs.includes('const STEPS_VISIBLE_LINE_MAX = 3;'));
+assert(playerJs.includes('function calculateStepsFontSizeForVisibleLines'));
+assert(playerJs.includes('function setStepsVisibleLineCount'));
+assert(playerJs.includes('scheduleStepsFontSizeRecalculation();'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
