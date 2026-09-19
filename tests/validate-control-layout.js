@@ -59,54 +59,26 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
         `Post-selection control ${selector} must occupy column ${column}, row ${row}`
     );
 });
-const expectedPairedButtonPositions = [
-    ['[data-tool="factorLeft"]', 3, 4],
-    ['[data-tool="distributeLeftToRight"]', 4, 4],
-    ['[data-tool="distributeRightToLeft"]', 5, 4],
-    ['[data-tool="factorRight"]', 6, 4],
-    ['[data-tool="factorProductOfInverses"]', 1, 3],
-    ['[data-tool="distributeInverseOverProduct"]', 1, 4]
+const expectedContextualButtonPositions = [
+    ["multiplicative-inverse", "1", "1 / span 2"],
+    ["double-inverse", "2", "1 / span 2"],
+    ["zero-product", "3", "1 / span 2"],
+    ["multiplicative-identity", "4", "1 / span 2"],
+    ["additive-inverse", "5", "1 / span 2"],
+    ["additive-identity", "6", "1 / span 2"],
+    ["inverse", "1", "3 / span 2"],
+    ["distribute-left", "3 / span 2", "4"],
+    ["distribute-right", "5 / span 2", "4"]
 ];
-expectedPairedButtonPositions.forEach(([selector, column, row]) => {
+expectedContextualButtonPositions.forEach(([pair, column, row]) => {
     assert(
-        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
-        `Paired control ${selector} must retain column ${column}, row ${row}`
+        playerHtml.includes(`.main-action-panel .intent-category-actions > [data-contextual-rule-pair="${pair}"] { grid-column: ${column}; grid-row: ${row}; }`),
+        `Contextual control ${pair} must occupy column ${column}, row ${row}`
     );
 });
-const expectedDirectOptionPositions = [
-    ['insert', 'insertIdentityAddZeroBottom', null, 6, 1],
-    ['insert', 'insertIdentityMultiplyByOneRight', null, 4, 1],
-    ['insert', 'cancelOpposites', null, 5, 1],
-    ['insert', 'replaceOneWithInverseProduct', null, 1, 1],
-    ['delete', 'eliminateIdentities', 'additive', 6, 2],
-    ['delete', 'eliminateIdentities', 'multiplicative', 4, 2],
-    ['delete', 'cancelOpposites', null, 5, 2],
-    ['delete', 'cancelProductWithInverse', null, 1, 2]
-];
-expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) => {
-    const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]${variant ? `[data-direct-rule-variant="${variant}"]` : ""}`;
-    assert(
-        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
-        `${category} option ${tool} must retain column ${column}, row ${row}`
-    );
-});
-[
-    ["double-inverse-insert", 1],
-    ["double-inverse-cancel", 2],
-].forEach(([slot, row]) => assert(
-    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 2; grid-row: ${row}; }`),
-    `${slot} must occupy column 2, row ${row}`
-));
-[
-    ["zero-product-insert", 1],
-    ["zero-product-cancel", 2]
-].forEach(([slot, row]) => assert(
-    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 3; grid-row: ${row}; }`),
-    `${slot} must occupy column 3, row ${row}`
-));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"],'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 6; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-left"] { grid-column: 3 / span 2; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }'));
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
@@ -148,12 +120,9 @@ assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteFactors", "·", "
 assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteTerms", "+", "Commute addition")'));
 assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button auto-compute-placeholder" data-auto-compute-placeholder') && playerJs.includes('disabled>'));
 assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button manual-compute-button" data-tool="numericalRewrite"'));
-assert(playerJs.includes('function buildSplitRulePairHtml(pairName, orientation, buttonsHtml, options = {})'));
+assert(playerJs.includes('function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml)'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
 assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
-assert(playerJs.includes('data-direct-rule-category="${categoryId}"'));
-assert(playerJs.includes('data-direct-rule-variant="${escapeHtml(rule.variant)}"'));
-assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.includes('data-direct-rule-category="${directCategory}"'));
 assert(playerJs.includes('function isDirectRuleButtonApplicable(button, toolName)'));
 assert(playerJs.includes('identityData.kind === "sum"') && playerJs.includes('identityData.kind === "prod"'));
 assert(!playerJs.includes('data-remaining-actions-menu') && !playerHtml.includes('remaining-actions-menu-button'));
@@ -171,8 +140,9 @@ assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 0;[\s\S]*?borde
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame::after {'));
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
-assert(playerJs.includes('<span class="split-rule-frame split-rule-frame-${orientation} split-rule-frame-${pairName}" data-rule-pair="${pairName}" aria-hidden="true"></span>'));
-assert(!playerJs.includes('<div class="split-rule-button'));
+assert(playerJs.includes('data-contextual-rule-pair="${pairName}"'));
+assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-first"'));
+assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-second"'));
 assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bwidth:/.test(playerHtml));
 assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bheight:/.test(playerHtml));
 assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode)'));
@@ -190,6 +160,13 @@ assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "hor
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
 assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
+assert(playerJs.includes('function resolveContextualRulePair(pairName)'));
+assert(playerJs.includes('if (canFactorProductOfInverses())') && playerJs.includes('if (canDistributeInverseOverProduct())'));
+assert(playerJs.includes('if (canEliminateDoubleInverse())') && playerJs.includes('return canInsertDoubleInverse()'));
+assert(playerJs.includes('if (canZeroProduct())') && playerJs.includes('return canInsertZeroProduct()'));
+assert(playerJs.includes('if (getCancelOppositesData())') && playerJs.includes('canReplaceZeroWithOppositeSum()'));
+assert(playerJs.includes('if (canCancelProductWithInverse())') && playerJs.includes('canReplaceOneWithInverseProduct()'));
+assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includes('recordToolForSolution(resolved.toolName, beforeExpression)'));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
 assert(playerHtml.includes('.main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 5 / span 2; grid-row: 3; }'));
@@ -198,9 +175,10 @@ assert(playerJs.includes('M300 1 V300') && playerJs.includes('M500 1 V300') && p
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
 assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
-assert(/\.main-action-panel \.intent-category-actions > button\.intent-category-button::before \{[\s\S]*?inset: clamp\(4px,[\s\S]*?border: 0;[\s\S]*?border-radius: clamp\(6px,[\s\S]*?background: #eeeeee;[\s\S]*?pointer-events: none;/.test(playerHtml));
-assert(/\.main-action-panel \.intent-category-actions > button\.intent-category-button > \* \{[\s\S]*?position: relative;[\s\S]*?z-index: 1;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-inset-action-tiles'));
+assert(!playerHtml.includes('button.intent-category-button::before'));
+assert(/button\.contextual-rule-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
+assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-contextual-pairs'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));

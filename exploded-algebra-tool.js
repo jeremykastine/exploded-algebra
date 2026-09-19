@@ -704,13 +704,6 @@ Promise.resolve().then(() => {
             return `<span class="branch-rule-symbol branch-rule-symbol-${count}" aria-hidden="true">${symbols}</span>`;
         }
 
-        function buildDirectBranchRuleButtonHtml(rule, symbol, count) {
-            return `<button class="intent-category-button direct-branch-rule-button" data-tool="${rule.tool}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
-                ${buildBranchRuleSymbolHtml(symbol, count)}
-                <span class="intent-category-label">${escapeHtml(rule.label)}</span>
-            </button>`;
-        }
-
         function buildDirectInverseNumberRuleButtonHtml(rule) {
             return `<button class="intent-category-button direct-inverse-number-rule-button" data-tool="${rule.tool}" data-direct-inverse-number-slot="${rule.slot}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
                 <svg class="inverse-number-rule-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
@@ -753,11 +746,10 @@ Promise.resolve().then(() => {
             </svg>`;
         }
 
-        function buildDirectOptionRuleButtonHtml(rule, categoryId) {
-            const variantAttribute = rule.variant ? ` data-direct-rule-variant="${escapeHtml(rule.variant)}"` : "";
-            const slotAttribute = rule.slot ? ` data-direct-rule-slot="${escapeHtml(rule.slot)}"` : "";
-            return `<button class="intent-category-button direct-option-rule-button" data-tool="${rule.tool}" data-direct-rule-category="${categoryId}"${variantAttribute}${slotAttribute} aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
-                <span class="direct-rule-icon" aria-hidden="true">${escapeHtml(rule.icon)}</span>
+        function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml) {
+            return `<button class="intent-category-button contextual-rule-button contextual-rule-button-${orientation}" data-contextual-rule-pair="${pairName}" data-contextual-rule-label="${escapeHtml(label)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+                <span class="contextual-rule-side contextual-rule-side-first">${firstVisualHtml}</span>
+                <span class="contextual-rule-side contextual-rule-side-second">${secondVisualHtml}</span>
             </button>`;
         }
 
@@ -795,34 +787,32 @@ Promise.resolve().then(() => {
             </svg>`;
         }
 
-        function buildSplitRulePairHtml(pairName, orientation, buttonsHtml, options = {}) {
-            const branchOverlay = options.branch ? buildBranchPairOverlayHtml(pairName) : "";
-            const reverseOverlay = options.reverse ? buildReversePairOverlayHtml(pairName, orientation) : "";
-            return `${buttonsHtml}
-                <span class="split-rule-frame split-rule-frame-${orientation} split-rule-frame-${pairName}" data-rule-pair="${pairName}" aria-hidden="true"></span>
-                ${branchOverlay}
-                ${reverseOverlay}`;
-        }
-
         function buildDirectBranchRulePairHtml(pairName, orientation, firstTool, secondTool, options = {}) {
             const firstRule = getDirectRuleByTool(DIRECT_BRANCH_RULE_BUTTONS, firstTool);
             const secondRule = getDirectRuleByTool(DIRECT_BRANCH_RULE_BUTTONS, secondTool);
-            return buildSplitRulePairHtml(
+            const label = options.label || `${firstRule.label} or ${secondRule.label}`;
+            const buttonHtml = buildContextualRuleButtonHtml(
                 pairName,
                 orientation,
-                buildDirectBranchRuleButtonHtml(firstRule, options.symbol || "·", options.firstSymbolCount || 1) +
-                    buildDirectBranchRuleButtonHtml(secondRule, options.symbol || "·", options.secondSymbolCount || 2),
-                options
+                label,
+                buildBranchRuleSymbolHtml(options.symbol || "·", options.firstSymbolCount || 1),
+                buildBranchRuleSymbolHtml(options.symbol || "·", options.secondSymbolCount || 2)
             );
+            const branchOverlay = options.branch ? buildBranchPairOverlayHtml(pairName) : "";
+            return `${buttonHtml}${branchOverlay}`;
         }
 
         function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label) {
-            return buildSplitRulePairHtml(
+            const firstVariant = firstRule.variant ? ` data-contextual-side-variant="${escapeHtml(firstRule.variant)}"` : "";
+            const secondVariant = secondRule.variant ? ` data-contextual-side-variant="${escapeHtml(secondRule.variant)}"` : "";
+            const buttonHtml = buildContextualRuleButtonHtml(
                 pairName,
                 "vertical",
-                buildDirectOptionRuleButtonHtml(firstRule, firstCategory) + buildDirectOptionRuleButtonHtml(secondRule, secondCategory),
-                { reverse: true, label }
+                label,
+                `<span class="direct-rule-icon" data-contextual-side-tool="${firstRule.tool}" data-contextual-side-category="${firstCategory}"${firstVariant} aria-hidden="true">${escapeHtml(firstRule.icon)}</span>`,
+                `<span class="direct-rule-icon" data-contextual-side-tool="${secondRule.tool}" data-contextual-side-category="${secondCategory}"${secondVariant} aria-hidden="true">${escapeHtml(secondRule.icon)}</span>`
             );
+            return `${buttonHtml}${buildReversePairOverlayHtml(pairName, "vertical")}`;
         }
 
         function buildIntentCategoryMenuHtml() {
@@ -3794,6 +3784,12 @@ Promise.resolve().then(() => {
                         );
                     }
                     if (!targetButton) {
+                        targetButton = Array.from(container.querySelectorAll("button[data-contextual-rule-pair]")).find(button => {
+                            const resolved = resolveContextualRulePair(button.dataset.contextualRulePair);
+                            return resolved && resolved.toolName === targetTool;
+                        }) || null;
+                    }
+                    if (!targetButton) {
                         targetButton = container.querySelector(`button[data-tool="${escapeCssSelectorValue(targetTool)}"]`);
                     }
                     if (targetButton) {
@@ -3820,7 +3816,7 @@ Promise.resolve().then(() => {
                     : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
             }
 
-            container.querySelectorAll("button[data-tool], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
+            container.querySelectorAll("button[data-tool], button[data-contextual-rule-pair], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
                 if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
@@ -11063,22 +11059,116 @@ ctx.font = SETTINGS.textFont;
         }
 
         function isDirectRuleButtonApplicable(button, toolName) {
-            const variant = button && button.dataset ? button.dataset.directRuleVariant : "";
-            if (toolName === "eliminateIdentities" && variant) {
-                const identityData = getIdentityEliminationData();
-                return !!identityData && (
-                    (variant === "additive" && identityData.kind === "sum") ||
-                    (variant === "multiplicative" && identityData.kind === "prod")
-                );
-            }
-            if (toolName === "cancelOpposites" && variant === "insert") {
-                const selectedNode = cloneSelectedRangeNode();
-                return !!selectedNode && selectedNode.type === "value" && selectedNode.value === "0";
-            }
-            if (toolName === "cancelOpposites" && variant === "delete") {
-                return !!getCancelOppositesData();
-            }
             return isToolActuallyApplicable(toolName);
+        }
+
+        function resolveContextualRulePair(pairName) {
+            if (pairName === "inverse") {
+                if (canFactorProductOfInverses()) {
+                    return { toolName: "factorProductOfInverses", label: "Combine inverses" };
+                }
+                if (canDistributeInverseOverProduct()) {
+                    return { toolName: "distributeInverseOverProduct", label: "Separate inverse" };
+                }
+                return null;
+            }
+
+            if (pairName === "distribute-left") {
+                const factorData = getFactoringData("left");
+                if (factorData && factorData.commonCount > 0) {
+                    return { toolName: "factorLeft", label: "Factor from the left" };
+                }
+                if (getDistributionData("left")) {
+                    return { toolName: "distributeLeftToRight", label: "Distribute from the left" };
+                }
+                return null;
+            }
+
+            if (pairName === "distribute-right") {
+                const factorData = getFactoringData("right");
+                if (factorData && factorData.commonCount > 0) {
+                    return { toolName: "factorRight", label: "Factor from the right" };
+                }
+                if (getDistributionData("right")) {
+                    return { toolName: "distributeRightToLeft", label: "Distribute from the right" };
+                }
+                return null;
+            }
+
+            if (pairName === "additive-identity") {
+                const identityData = getIdentityEliminationData();
+                if (identityData && identityData.kind === "sum") {
+                    return { toolName: "eliminateIdentities", label: "Remove additive identity" };
+                }
+                return canInsertIdentity()
+                    ? { toolName: "insertIdentityAddZeroBottom", label: "Introduce additive identity" }
+                    : null;
+            }
+
+            if (pairName === "multiplicative-identity") {
+                const identityData = getIdentityEliminationData();
+                if (identityData && identityData.kind === "prod") {
+                    return { toolName: "eliminateIdentities", label: "Remove multiplicative identity" };
+                }
+                return canInsertIdentity()
+                    ? { toolName: "insertIdentityMultiplyByOneRight", label: "Introduce multiplicative identity" }
+                    : null;
+            }
+
+            if (pairName === "additive-inverse") {
+                if (getCancelOppositesData()) {
+                    return { toolName: "cancelOpposites", label: "Cancel additive inverses" };
+                }
+                return canReplaceZeroWithOppositeSum()
+                    ? { toolName: "cancelOpposites", label: "Introduce additive inverses" }
+                    : null;
+            }
+
+            if (pairName === "multiplicative-inverse") {
+                if (canCancelProductWithInverse()) {
+                    return { toolName: "cancelProductWithInverse", label: "Cancel multiplicative inverses" };
+                }
+                return canReplaceOneWithInverseProduct()
+                    ? { toolName: "replaceOneWithInverseProduct", label: "Introduce multiplicative inverses" }
+                    : null;
+            }
+
+            if (pairName === "double-inverse") {
+                if (canEliminateDoubleInverse()) {
+                    return { toolName: "eliminateDoubleInverse", label: "Cancel double inverse" };
+                }
+                return canInsertDoubleInverse()
+                    ? { toolName: "insertDoubleInverse", label: "Introduce double inverse" }
+                    : null;
+            }
+
+            if (pairName === "zero-product") {
+                if (canZeroProduct()) {
+                    return { toolName: "zeroProduct", label: "Cancel zero product" };
+                }
+                return canInsertZeroProduct()
+                    ? { toolName: "insertZeroProductRight", label: "Introduce zero product" }
+                    : null;
+            }
+
+            return null;
+        }
+
+        function refreshContextualRuleButtons(container) {
+            if (!container) {
+                return;
+            }
+            container.querySelectorAll("button[data-contextual-rule-pair]").forEach(button => {
+                const resolved = resolveContextualRulePair(button.dataset.contextualRulePair);
+                const label = resolved ? resolved.label : button.dataset.contextualRuleLabel;
+                button.setAttribute("aria-label", label);
+                button.setAttribute("title", resolved ? label : `${label} — not applicable to this selection`);
+                if (resolved) {
+                    button.dataset.resolvedTool = resolved.toolName;
+                } else {
+                    delete button.dataset.resolvedTool;
+                }
+            });
         }
 
         function performBuilderAction(action, value = "") {
@@ -11212,6 +11302,25 @@ ctx.font = SETTINGS.textFont;
         }
 
         function attachToolListeners(container) {
+            refreshContextualRuleButtons(container);
+
+            container.querySelectorAll("button[data-contextual-rule-pair]").forEach(button => {
+                button.addEventListener("click", () => {
+                    const resolved = resolveContextualRulePair(button.dataset.contextualRulePair);
+                    if (!resolved || !isDemoToolAllowed(resolved.toolName)) {
+                        if (!isDemoModeActive()) {
+                            markToolButtonNotApplicable(button);
+                        }
+                        return;
+                    }
+                    const beforeExpression = getExpressionTextForTrace();
+                    recordCurrentSelectionForSolution();
+                    recordToolForSolution(resolved.toolName, beforeExpression);
+                    advanceDemoStep();
+                    beginTool(resolved.toolName);
+                });
+            });
+
             container.querySelectorAll("button[data-rule-category]").forEach(btn => {
                 btn.addEventListener("click", () => {
                     const categoryId = btn.dataset.ruleCategory;
