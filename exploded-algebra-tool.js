@@ -773,7 +773,6 @@ Promise.resolve().then(() => {
             // the handedness-aware keypad. Insert and delete choices occupy
             // complete rows instead of opening option menus.
             const categoryIds = ["numericalRewrite", "commute"];
-            const cancelDisabled = isDemoModeActive() ? " disabled" : "";
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
@@ -787,10 +786,6 @@ Promise.resolve().then(() => {
                         ${buildDirectOptionRulePairHtml("multiplicative-inverse", DIRECT_IDENTITY_RULE_BUTTONS[3], "insert", DIRECT_REVERSE_RULE_BUTTONS[3], "delete", "Introduce or cancel multiplicative inverses")}
                         ${buildDirectOptionRulePairHtml("double-inverse", DIRECT_EXTRA_RULE_BUTTONS[0], "insert", DIRECT_EXTRA_RULE_BUTTONS[1], "delete", "Introduce or cancel a double inverse")}
                         ${buildDirectOptionRulePairHtml("zero-product", DIRECT_EXTRA_RULE_BUTTONS[2], "insert", DIRECT_EXTRA_RULE_BUTTONS[3], "delete", "Introduce or cancel a zero product")}
-                        <button type="button" class="cancel-selection-button" data-action="cancelSelection" aria-label="Clear selection" data-hold-description="Clear the current selection without changing the expression."${cancelDisabled}>
-                            <svg class="intent-category-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.4 2.4"/><path d="M14.5 13.5L21 20M21 13.5L14.5 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                            <span class="intent-category-label">Clear selection</span>
-                        </button>
                     </div>
                 </div>`;
         }
@@ -6653,6 +6648,11 @@ ctx.font = SETTINGS.textFont;
             };
         }
 
+        function isPointInsideCurrentSelection(x, y) {
+            const box = getSelectionBox();
+            return !!box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+        }
+
         function positionFloatingMenu() {
             if (!selection.node) {
                 hideFloatingMenu();
@@ -11242,13 +11242,6 @@ ctx.font = SETTINGS.textFont;
                 btn.addEventListener("click", () => {
                     const action = btn.dataset.action;
                     const value = btn.dataset.value || null;
-                    if (action === "cancelSelection") {
-                        if (isDemoModeActive()) {
-                            return;
-                        }
-                        handleToolAction(action, value);
-                        return;
-                    }
                     if (!isDemoActionAllowed(action, value)) {
                         return;
                     }
@@ -11652,19 +11645,6 @@ function renderToolArea() {
         }
 
         function handleToolAction(action, value) {
-            if (action === "cancelSelection") {
-                if (isDemoModeActive()) {
-                    return;
-                }
-                setWorkspaceMode("select");
-                clearSelection();
-                clearInteraction();
-                renderLevelInfo(currentLevelIndex);
-                refreshStatus();
-                drawExpression();
-                return;
-            }
-
             if (action === "backToIntentCategories") {
                 uiState.activeToolCategory = null;
                 renderToolArea();
@@ -11965,19 +11945,22 @@ function renderToolArea() {
             document.body.classList.remove("workspace-panning");
         }
 
-        function selectFromWorkspaceTap(x, y, pointerType) {
+        function selectFromWorkspaceTap(x, y, pointerType, allowSelectionCancel = true) {
+            if (allowSelectionCancel && selection.node && isPointInsideCurrentSelection(x, y)) {
+                if (isDemoModeActive()) {
+                    return false;
+                }
+                setWorkspaceMode("select");
+                clearSelection();
+                clearInteraction();
+                renderLevelInfo(currentLevelIndex);
+                refreshStatus();
+                drawExpression();
+                return true;
+            }
+
             const target = findNearestVisibleObject(x, y, pointerType);
             if (!target) {
-                if (selection.node) {
-                    if (isDemoModeActive()) {
-                        return false;
-                    }
-                    clearSelection();
-                    clearInteraction();
-                    refreshStatus();
-                    drawExpression();
-                    return true;
-                }
                 return false;
             }
 
@@ -12072,8 +12055,8 @@ function renderToolArea() {
             } else if (pointerStart.mode === "selection") {
                 const startPoint = workspaceClientPointToSvg(pointerStart.clientX, pointerStart.clientY);
                 const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
-                selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType);
-                selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType);
+                selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);
+                selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);
             }
             releaseWorkspacePointer();
         }
@@ -12145,28 +12128,28 @@ function renderToolArea() {
             const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
             const pointerX = pointerPoint.x;
             const pointerY = pointerPoint.y;
-            const clearingSelectionFromEmptySpace = !cancelingBuilder && !panningView && !!selection.node &&
-                !findNearestVisibleObject(pointerX, pointerY, e.pointerType || "mouse");
 
             const choosingCommuteOrder = selection.status === "yes" &&
                 uiState.stage === "preview" &&
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
+            const cancelingSelectionFromCurrentSelection = !activeBuilder && !panningView && !choosingCommuteOrder &&
+                !!selection.node && isPointInsideCurrentSelection(pointerX, pointerY);
 
             if (isDemoModeActive() && !panningView) {
                 const step = getCurrentDemoStep();
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (clearingSelectionFromEmptySpace) {
+                if (cancelingSelectionFromCurrentSelection) {
                     return;
                 }
                 const groupingBuilderOperator = integratedBuilder && !!step && step.type === "builder" && step.action === "groupOperator";
-                if (!cancelingBuilder && !groupingBuilderOperator && !clearingSelectionFromEmptySpace && !selectingExpression && !choosingDemoCommuteOrder) {
+                if (!cancelingBuilder && !groupingBuilderOperator && !selectingExpression && !choosingDemoCommuteOrder) {
                     return;
                 }
             }
 
-            if (!integratedBuilder && !cancelingBuilder && !clearingSelectionFromEmptySpace && !panningView && !choosingCommuteOrder && uiState.activeTool) {
+            if (!integratedBuilder && !cancelingBuilder && !cancelingSelectionFromCurrentSelection && !panningView && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -12186,9 +12169,7 @@ function renderToolArea() {
                         ? "pan"
                     : integratedBuilder
                         ? "builderOperator"
-                    : clearingSelectionFromEmptySpace
-                        ? "selection"
-                        : choosingCommuteOrder
+                    : choosingCommuteOrder
                             ? "commute"
                             : "selection"
             };

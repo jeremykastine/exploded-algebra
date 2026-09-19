@@ -39,11 +39,8 @@ assert(
         /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
-assert(
-    playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools {\n            display: grid;') &&
-        playerHtml.includes('body.selection-active:not(.expression-builder-active) .workspace-toolbar > :not(.settings-button)'),
-    "The shared toolbar grid must retain Settings after an expression selection"
-);
+assert(!playerHtml.includes('id="settingsButton"'), "The controls grid must not include a Settings button");
+assert(!playerHtml.includes('cancel-selection-button'), "The post-selection grid must not include a Cancel Selection button");
 
 const expectedPostSelectionPositions = [
     ['[data-rule-category="commute"]', 5, 3],
@@ -86,7 +83,6 @@ expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) =
         `${category} option ${tool} must retain column ${column}, row ${row}`
     );
 });
-assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-column: 6; grid-row: 3; }'));
 [
     ["double-inverse-insert", 1],
     ["double-inverse-cancel", 2],
@@ -104,16 +100,15 @@ assert(playerHtml.includes('.main-action-panel .cancel-selection-button { grid-c
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"],'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 4; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 5; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .cancel-selection-button { grid-column: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }'));
-assert(
-    /id="workspaceToolbar"[\s\S]*?id="settingsButton"[\s\S]*?<\/div>\s*<\/div>\s*<div id="mainActionPanel"/.test(playerHtml),
-    "Settings must be a member of the workspace toolbar grid"
-);
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
+assert(playerJs.includes("function isPointInsideCurrentSelection(x, y)"), "Selection presses must use the highlighted selection bounds");
+assert(/function selectFromWorkspaceTap\(x, y, pointerType, allowSelectionCancel = true\) \{[\s\S]*?allowSelectionCancel && selection\.node && isPointInsideCurrentSelection\(x, y\)[\s\S]*?clearSelection\(\);[\s\S]*?return true;/.test(playerJs), "Pressing inside the current selection must clear it");
+assert(playerJs.includes("selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);") && playerJs.includes("selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);"), "Dragging from the selection must remain a two-endpoint selection gesture rather than a cancel press");
+assert(!playerJs.includes("clearingSelectionFromEmptySpace"), "Empty workspace presses must no longer clear the selection");
+assert(!playerJs.includes('action === "cancelSelection"'), "The old Cancel Selection action must be removed");
 const expectedDirectRules = [
     ['distributeLeftToRight', 'Distribute left'],
     ['factorLeft', 'Factor left'],
