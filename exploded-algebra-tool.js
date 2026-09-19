@@ -763,18 +763,18 @@ Promise.resolve().then(() => {
             if (pairName === "distribute-left") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 50 108 75 130 75 H144"/>
-                    <path class="branch-arrowhead" d="M62 50 L76 40 V60 Z M144 25 L130 16 V34 Z M144 75 L130 66 V84 Z"/>
+                    <path class="branch-arrowhead" d="M62 50 L70 44 V56 Z M144 25 L136 20 V30 Z M144 75 L136 70 V80 Z"/>
                 </svg>`;
             }
             if (pairName === "distribute-right") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                     <path d="M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144"/>
-                    <path class="branch-arrowhead" d="M62 25 L76 16 V34 Z M62 75 L76 66 V84 Z M144 50 L130 40 V60 Z"/>
+                    <path class="branch-arrowhead" d="M62 25 L70 20 V30 Z M62 75 L70 70 V80 Z M144 50 L136 44 V56 Z"/>
                 </svg>`;
             }
             return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
                 <path d="M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144"/>
-                <path class="branch-arrowhead" d="M50 62 L40 76 H60 Z M28 144 L18 130 H38 Z M72 144 L62 130 H82 Z"/>
+                <path class="branch-arrowhead" d="M50 62 L44 70 H56 Z M28 144 L22 136 H34 Z M72 144 L66 136 H78 Z"/>
             </svg>`;
         }
 

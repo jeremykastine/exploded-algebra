@@ -183,9 +183,9 @@ assert(playerJs.includes('M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 
 assert(playerJs.includes('M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144'));
 assert(playerJs.includes('M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144'));
 assert(playerJs.includes('class="branch-arrowhead"'));
-assert(playerJs.includes('M62 50 L76 40 V60 Z M144 25 L130 16 V34 Z M144 75 L130 66 V84 Z'));
-assert(playerJs.includes('M62 25 L76 16 V34 Z M62 75 L76 66 V84 Z M144 50 L130 40 V60 Z'));
-assert(playerJs.includes('M50 62 L40 76 H60 Z M28 144 L18 130 H38 Z M72 144 L62 130 H82 Z'));
+assert(playerJs.includes('M62 50 L70 44 V56 Z M144 25 L136 20 V30 Z M144 75 L136 70 V80 Z'));
+assert(playerJs.includes('M62 25 L70 20 V30 Z M62 75 L70 70 V80 Z M144 50 L136 44 V56 Z'));
+assert(playerJs.includes('M50 62 L44 70 H56 Z M28 144 L22 136 H34 Z M72 144 L66 136 H78 Z'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
 assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));

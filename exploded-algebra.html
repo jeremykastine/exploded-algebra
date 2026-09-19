@@ -3198,14 +3198,20 @@
         .main-action-panel .split-rule-frame-additive-identity { grid-column: 6; grid-row: 1 / span 2; }
         .main-action-panel .intent-category-actions > button.direct-branch-rule-button,
         .main-action-panel .intent-category-actions > button.direct-option-rule-button,
-        .main-action-panel .intent-category-actions > button.direct-inverse-number-rule-button,
-        .main-action-panel .intent-category-actions > button.direct-commute-button,
         .main-action-panel .intent-category-actions > button.numerical-rewrite-mode-button {
             position: relative;
             z-index: 1;
             border: 0;
             border-radius: 0;
             background: transparent;
+        }
+        .main-action-panel .intent-category-actions > button.direct-inverse-number-rule-button,
+        .main-action-panel .intent-category-actions > button.direct-commute-button {
+            position: relative;
+            z-index: 1;
+            border: 1px solid #999;
+            border-radius: 7px;
+            background: #fff;
         }
         .main-action-panel .intent-category-actions > button.demo-target-button {
             background: #fff3bf;
@@ -3245,7 +3251,7 @@
         .main-action-panel .branch-pair-overlay path {
             fill: none;
             stroke: currentColor;
-            stroke-width: 3.5;
+            stroke-width: 2.6;
             vector-effect: non-scaling-stroke;
         }
         .main-action-panel .branch-pair-overlay .branch-arrowhead {
@@ -4509,7 +4515,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-post-selection-grid"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-post-selection-grid-2"></script>
 
 </body>
 </html>
