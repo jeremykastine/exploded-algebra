@@ -3146,12 +3146,9 @@
             grid-template-rows: repeat(4, minmax(0, 1fr));
             grid-auto-flow: row;
         }
-        .main-action-panel .intent-category-actions > [data-direct-commute="·"] { grid-column: 3; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-commute="+"] { grid-column: 4; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-auto-compute-placeholder] { grid-column: 5; grid-row: 3; }
-        .main-action-panel .intent-category-actions > .manual-compute-button { grid-column: 6; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-inverse-number-slot="inverse-one"] { grid-column: 2; grid-row: 3; }
-        .main-action-panel .intent-category-actions > [data-direct-inverse-number-slot="inverse-negative-one"] { grid-column: 2; grid-row: 4; }
+        .main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }
+        .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 2; grid-row: 3 / span 2; }
         .main-action-panel .intent-category-actions > [data-contextual-rule-pair="multiplicative-inverse"] { grid-column: 1; grid-row: 1 / span 2; }
         .main-action-panel .intent-category-actions > [data-contextual-rule-pair="double-inverse"] { grid-column: 2; grid-row: 1 / span 2; }
         .main-action-panel .intent-category-actions > [data-contextual-rule-pair="zero-product"] { grid-column: 3; grid-row: 1 / span 2; }
@@ -3165,31 +3162,9 @@
             position: relative;
             z-index: 1;
         }
-        .main-action-panel .split-rule-frame {
-            position: relative;
-            z-index: 0;
-            align-self: stretch;
-            justify-self: stretch;
-            box-sizing: border-box;
-            overflow: hidden;
-            border: 0;
-            border-radius: 0;
-            background: #fff;
-            pointer-events: none;
-        }
-        .main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 5 / span 2; grid-row: 3; }
-        .main-action-panel .intent-category-actions > button.direct-branch-rule-button,
-        .main-action-panel .intent-category-actions > button.direct-option-rule-button,
-        .main-action-panel .intent-category-actions > button.numerical-rewrite-mode-button {
-            position: relative;
-            z-index: 1;
-            border: 0;
-            border-radius: 0;
-            background: transparent;
-        }
-        .main-action-panel .intent-category-actions > button.direct-inverse-number-rule-button,
-        .main-action-panel .intent-category-actions > button.direct-commute-button,
-        .main-action-panel .intent-category-actions > button.contextual-rule-button {
+        .main-action-panel .intent-category-actions > button.contextual-rule-button,
+        .main-action-panel .intent-category-actions > button.contextual-numerical-rewrite-button,
+        .main-action-panel .intent-category-actions > button.cancel-selection-button {
             position: relative;
             z-index: 1;
             border: 0;
@@ -3204,20 +3179,9 @@
             background: #ffecec;
             color: #9c0000;
         }
-        .main-action-panel .intent-category-actions > button.direct-branch-rule-button:disabled,
-        .main-action-panel .intent-category-actions > button.direct-option-rule-button:disabled,
-        .main-action-panel .intent-category-actions > button.direct-inverse-number-rule-button:disabled,
-        .main-action-panel .intent-category-actions > button.direct-commute-button:disabled,
-        .main-action-panel .intent-category-actions > button.numerical-rewrite-mode-button:disabled {
-            background: transparent;
-            color: #999;
-        }
-        .main-action-panel .intent-category-actions > button.direct-branch-rule-button:focus-visible,
-        .main-action-panel .intent-category-actions > button.direct-option-rule-button:focus-visible,
-        .main-action-panel .intent-category-actions > button.direct-inverse-number-rule-button:focus-visible,
-        .main-action-panel .intent-category-actions > button.direct-commute-button:focus-visible,
         .main-action-panel .intent-category-actions > button.contextual-rule-button:focus-visible,
-        .main-action-panel .intent-category-actions > button.numerical-rewrite-mode-button:focus-visible {
+        .main-action-panel .intent-category-actions > button.contextual-numerical-rewrite-button:focus-visible,
+        .main-action-panel .intent-category-actions > button.cancel-selection-button:focus-visible {
             z-index: 4;
             outline: 2px solid #315f9f;
             outline-offset: -3px;
@@ -3287,12 +3251,9 @@
             stroke-width: 1.25;
             vector-effect: non-scaling-stroke;
         }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-commute="·"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-commute="+"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-auto-compute-placeholder] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > .manual-compute-button { grid-column: 1; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-inverse-number-slot="inverse-one"],
-        body.left-handed .main-action-panel .intent-category-actions > [data-direct-inverse-number-slot="inverse-negative-one"] { grid-column: 5; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 1 / span 2; }
+        body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="multiplicative-inverse"] { grid-column: 6; }
         body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="double-inverse"] { grid-column: 5; }
         body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="zero-product"] { grid-column: 4; }
@@ -3304,8 +3265,7 @@
         body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }
         body.left-handed .main-action-panel [data-branch-pair="inverse"] { grid-column: 6; }
         body.left-handed .main-action-panel [data-branch-pair="left"] { grid-column: 3 / span 2; }
-        body.left-handed .main-action-panel [data-branch-pair="right"],
-        body.left-handed .main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 1 / span 2; }
+        body.left-handed .main-action-panel [data-branch-pair="right"] { grid-column: 1 / span 2; }
         body.left-handed .main-action-panel [data-reverse-pair="additive-identity"] { grid-column: 1; }
         body.left-handed .main-action-panel [data-reverse-pair="multiplicative-identity"] { grid-column: 3; }
         body.left-handed .main-action-panel [data-reverse-pair="additive-inverse"] { grid-column: 2; }
@@ -3371,13 +3331,11 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             font-size: clamp(18px, calc(var(--main-key-size) * 0.42), 30px);
         }
-        .main-action-panel .inverse-number-rule-icon,
         .main-action-panel .direct-commute-icon {
             width: 100%;
             height: 100%;
             overflow: visible;
         }
-        .main-action-panel .inverse-number-rule-icon text,
         .main-action-panel .direct-commute-icon text {
             fill: currentColor;
             font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
@@ -3385,8 +3343,6 @@
             font-weight: 700;
             text-anchor: middle;
         }
-        .main-action-panel .inverse-number-rule-icon .inverse-number-rule-source { font-size: 31px; }
-        .main-action-panel .inverse-number-rule-icon .inverse-number-rule-arrow,
         .main-action-panel .direct-commute-icon > path:not(.direct-commute-arrowhead) {
             fill: none;
             stroke: currentColor;
@@ -3394,7 +3350,6 @@
             stroke-linecap: round;
             stroke-linejoin: round;
         }
-        .main-action-panel .inverse-number-rule-icon .inverse-number-rule-arrowhead,
         .main-action-panel .direct-commute-icon .direct-commute-arrowhead {
             fill: currentColor;
             stroke: none;
@@ -3403,28 +3358,33 @@
             font-size: 34px;
             dominant-baseline: middle;
         }
-        .main-action-panel .numerical-rewrite-mode-button {
+        .main-action-panel .contextual-numerical-rewrite-button {
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: clamp(2px, 0.8vh, 7px);
             color: #202020;
         }
-        .main-action-panel .numerical-rewrite-heading {
-            font-size: clamp(9px, calc(var(--main-key-size) * 0.18), 13px);
-            font-weight: 700;
-            line-height: 1;
-        }
-        .main-action-panel .numerical-rewrite-mode {
-            font-size: clamp(13px, calc(var(--main-key-size) * 0.31), 22px);
+        .main-action-panel .contextual-numerical-rewrite-label {
+            font-size: clamp(14px, calc(var(--main-key-size) * 0.28), 22px);
             font-weight: 800;
-            line-height: 1;
+            line-height: 1.05;
         }
-        .main-action-panel .auto-compute-placeholder:disabled {
-            color: #777;
-            cursor: default;
-            opacity: 1;
+        .main-action-panel .cancel-selection-icon {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .main-action-panel .cancel-selection-icon rect {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 4;
+            stroke-dasharray: 8 7;
+        }
+        .main-action-panel .cancel-selection-icon path {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 6;
+            stroke-linecap: round;
         }
         .main-action-panel .tool-grid {
             display: flex;
@@ -4529,7 +4489,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-contextual-pairs"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-multifunction-actions"></script>
 
 </body>
 </html>

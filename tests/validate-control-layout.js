@@ -43,22 +43,10 @@ assert(playerHtml.includes('id="settingsButton"'), "The pre-selection controls m
 assert(playerHtml.includes('.workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }'), "Settings must occupy the lower-right pre-selection cell");
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide the complete pre-selection toolbar, including Settings");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the Settings toolbar");
-assert(!playerHtml.includes('cancel-selection-button'), "The post-selection grid must not include a Cancel Selection button");
-
-const expectedPostSelectionPositions = [
-    ['[data-direct-commute="·"]', 3, 3],
-    ['[data-direct-commute="+"]', 4, 3],
-    ['[data-auto-compute-placeholder]', 5, 3],
-    ['.manual-compute-button', 6, 3],
-    ['[data-direct-inverse-number-slot="inverse-one"]', 2, 3],
-    ['[data-direct-inverse-number-slot="inverse-negative-one"]', 2, 4]
-];
-expectedPostSelectionPositions.forEach(([selector, column, row]) => {
-    assert(
-        playerHtml.includes(`.main-action-panel .intent-category-actions > ${selector} { grid-column: ${column}; grid-row: ${row}; }`),
-        `Post-selection control ${selector} must occupy column ${column}, row ${row}`
-    );
-});
+assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 2; grid-row: 3 / span 2; }'));
 const expectedContextualButtonPositions = [
     ["multiplicative-inverse", "1", "1 / span 2"],
     ["double-inverse", "2", "1 / span 2"],
@@ -79,6 +67,8 @@ expectedContextualButtonPositions.forEach(([pair, column, row]) => {
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 6; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-left"] { grid-column: 3 / span 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 1 / span 2; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 5; }'));
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
@@ -114,12 +104,11 @@ assert(playerJs.includes('{ tool: "insertDoubleInverse", label: "Introduce doubl
 assert(playerJs.includes('{ tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" }'));
 assert(playerJs.includes('{ tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" }'));
 assert(playerJs.includes('{ tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }'));
-assert(playerJs.includes('{ tool: "rewriteInvOneToOne", label: "Simplify inverse of one", operand: "1", result: "1", slot: "inverse-one" }'));
-assert(playerJs.includes('{ tool: "rewriteInvNegOneToNegOne", label: "Simplify inverse of negative one", operand: "−1", result: "−1", slot: "inverse-negative-one" }'));
-assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteFactors", "·", "Commute multiplication")'));
-assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteTerms", "+", "Commute addition")'));
-assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button auto-compute-placeholder" data-auto-compute-placeholder') && playerJs.includes('disabled>'));
-assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button manual-compute-button" data-tool="numericalRewrite"'));
+assert(!playerJs.includes('data-direct-inverse-number-slot'));
+assert(playerJs.includes('function buildContextualCommuteButtonHtml()'));
+assert(playerJs.includes('buildDirectCommuteIconHtml("·")') && playerJs.includes('buildDirectCommuteIconHtml("+")'));
+assert(playerJs.includes('class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite'));
+assert(playerJs.includes('class="intent-category-button cancel-selection-button" data-cancel-selection'));
 assert(playerJs.includes('function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml)'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
 assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
@@ -136,10 +125,7 @@ assert(playerJs.includes('function buildReversePairOverlayHtml(pairName, orienta
 assert(playerJs.includes('M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110'));
 assert(playerJs.includes('M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89'));
 assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
-assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;/.test(playerHtml));
-assert(!playerHtml.includes('.main-action-panel .split-rule-frame::after {'));
-assert(!playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
-assert(!playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
+assert(!playerHtml.includes('.main-action-panel .split-rule-frame'));
 assert(playerJs.includes('data-contextual-rule-pair="${pairName}"'));
 assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-first"'));
 assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-second"'));
@@ -167,18 +153,28 @@ assert(playerJs.includes('if (canZeroProduct())') && playerJs.includes('return c
 assert(playerJs.includes('if (getCancelOppositesData())') && playerJs.includes('canReplaceZeroWithOppositeSum()'));
 assert(playerJs.includes('if (canCancelProductWithInverse())') && playerJs.includes('canReplaceOneWithInverseProduct()'));
 assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includes('recordToolForSolution(resolved.toolName, beforeExpression)'));
+assert(playerJs.includes('function resolveContextualCommuteTool()'));
+assert(playerJs.includes('selection.node.type === "sum"') && playerJs.includes('toolName: "commuteTerms"'));
+assert(playerJs.includes('selection.node.type === "prod"') && playerJs.includes('toolName: "commuteFactors"'));
+assert(playerJs.includes('function resolveAutomaticNumericalRewriteTool()'));
+assert(playerJs.includes('canApplyInverseRewrite("rewriteInvOneToOne")'));
+assert(playerJs.includes('canApplyInverseRewrite("rewriteInvNegOneToNegOne")'));
+assert(playerJs.includes('getDoubleNegativeData()'));
+assert(playerJs.includes('function resolveContextualNumericalRewriteAction()'));
+assert(playerJs.includes('mode: "automatic"') && playerJs.includes('mode: "manual"'));
+assert(playerJs.includes('button[data-cancel-selection]') && playerJs.includes('cancelSelectionButton.addEventListener("click"'));
+assert(/cancelSelectionButton\.addEventListener\("click", \(\) => \{[\s\S]*?if \(isDemoModeActive\(\)\)[\s\S]*?clearSelection\(\);[\s\S]*?clearInteraction\(\);/.test(playerJs));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
-assert(playerHtml.includes('.main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 5 / span 2; grid-row: 3; }'));
 assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('M1 1 H599 V399 H1 Z'));
-assert(playerJs.includes('M300 1 V300') && playerJs.includes('M500 1 V300') && playerJs.includes('M100 300 H599'));
+assert(playerJs.includes('M300 1 V200') && playerJs.includes('M500 1 V200') && playerJs.includes('M200 300 H599'));
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
 assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(!playerHtml.includes('button.intent-category-button::before'));
-assert(/button\.contextual-rule-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
+assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-contextual-pairs'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-multifunction-actions'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));

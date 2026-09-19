@@ -694,55 +694,46 @@ Promise.resolve().then(() => {
             { tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }
         ];
 
-        const DIRECT_INVERSE_NUMBER_RULE_BUTTONS = [
-            { tool: "rewriteInvOneToOne", label: "Simplify inverse of one", operand: "1", result: "1", slot: "inverse-one" },
-            { tool: "rewriteInvNegOneToNegOne", label: "Simplify inverse of negative one", operand: "−1", result: "−1", slot: "inverse-negative-one" }
-        ];
-
         function buildBranchRuleSymbolHtml(symbol, count) {
             const symbols = Array.from({ length: count }, () => `<span>${symbol}</span>`).join("");
             return `<span class="branch-rule-symbol branch-rule-symbol-${count}" aria-hidden="true">${symbols}</span>`;
         }
 
-        function buildDirectInverseNumberRuleButtonHtml(rule) {
-            return `<button class="intent-category-button direct-inverse-number-rule-button" data-tool="${rule.tool}" data-direct-inverse-number-slot="${rule.slot}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
-                <svg class="inverse-number-rule-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-                    <text class="inverse-number-rule-source" x="15" y="28">÷</text>
-                    <text class="inverse-number-rule-operand" x="49" y="28">${rule.operand}</text>
-                    <path class="inverse-number-rule-arrow" d="M39 39 C48 50 54 56 65 64"/>
-                    <path class="inverse-number-rule-arrowhead" d="M66 64 L55 60 L62 53 Z"/>
-                    <text class="inverse-number-rule-result" x="66" y="88">${rule.result}</text>
-                </svg>
-            </button>`;
-        }
-
-        function buildDirectCommuteButtonHtml(tool, operation, label) {
-            return `<button class="intent-category-button direct-commute-button" data-tool="${tool}" data-direct-commute="${operation}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-                <svg class="direct-commute-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        function buildDirectCommuteIconHtml(operation) {
+            return `<svg class="direct-commute-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
                     <path d="M22 43 C26 19 57 12 75 29"/>
                     <path class="direct-commute-arrowhead" d="M76 29 L62 27 L72 17 Z"/>
                     <path d="M78 57 C74 81 43 88 25 71"/>
                     <path class="direct-commute-arrowhead" d="M24 71 L38 73 L28 83 Z"/>
                     <text x="50" y="61">${operation}</text>
+                </svg>`;
+        }
+
+        function buildContextualCommuteButtonHtml() {
+            return `<button class="intent-category-button contextual-commute-button contextual-rule-button contextual-rule-button-horizontal" data-contextual-commute aria-label="Commute" title="Commute addition or multiplication">
+                <span class="contextual-rule-side">${buildDirectCommuteIconHtml("·")}</span>
+                <span class="contextual-rule-side">${buildDirectCommuteIconHtml("+")}</span>
+            </button>`;
+        }
+
+        function buildContextualNumericalRewriteButtonHtml() {
+            return `<button class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite aria-label="Numerical Rewrite" title="Numerical Rewrite">
+                <span class="contextual-numerical-rewrite-label">Numerical<br>Rewrite</span>
+            </button>`;
+        }
+
+        function buildCancelSelectionButtonHtml() {
+            return `<button class="intent-category-button cancel-selection-button" data-cancel-selection aria-label="Cancel selection" title="Cancel selection">
+                <svg class="cancel-selection-icon" viewBox="0 0 100 200" aria-hidden="true" focusable="false">
+                    <rect x="19" y="58" width="62" height="84" rx="8"/>
+                    <path d="M34 78 L66 122 M66 78 L34 122"/>
                 </svg>
             </button>`;
         }
 
-        function buildNumericalRewriteButtonsHtml() {
-            return `<button class="intent-category-button numerical-rewrite-mode-button auto-compute-placeholder" data-auto-compute-placeholder aria-label="Automatic numerical rewrite is not available yet" title="Automatic numerical rewrite will be configured later" disabled>
-                    <span class="numerical-rewrite-heading">Numerical</span>
-                    <span class="numerical-rewrite-mode">Auto</span>
-                </button>
-                <button class="intent-category-button numerical-rewrite-mode-button manual-compute-button" data-tool="numericalRewrite" aria-label="Manual numerical rewrite" title="Manual numerical rewrite">
-                    <span class="numerical-rewrite-heading">Rewrite</span>
-                    <span class="numerical-rewrite-mode">Manual</span>
-                </button>
-                <span class="split-rule-frame split-rule-frame-horizontal split-rule-frame-numerical-rewrite" data-rule-pair="numerical-rewrite" aria-hidden="true"></span>`;
-        }
-
         function buildPostSelectionGridOverlayHtml() {
             return `<svg class="post-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V300 M400 1 V399 M500 1 V300 M1 200 H599 M100 300 H599"/>
+                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V200 M400 1 V399 M500 1 V200 M1 200 H599 M200 300 H599"/>
             </svg>`;
         }
 
@@ -823,10 +814,9 @@ Promise.resolve().then(() => {
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, symbol: "÷", firstSymbolCount: 1, secondSymbolCount: 2, label: "Combine or separate inverses" })}
-                        ${DIRECT_INVERSE_NUMBER_RULE_BUTTONS.map(buildDirectInverseNumberRuleButtonHtml).join("")}
-                        ${buildDirectCommuteButtonHtml("commuteFactors", "·", "Commute multiplication")}
-                        ${buildDirectCommuteButtonHtml("commuteTerms", "+", "Commute addition")}
-                        ${buildNumericalRewriteButtonsHtml()}
+                        ${buildCancelSelectionButtonHtml()}
+                        ${buildContextualCommuteButtonHtml()}
+                        ${buildContextualNumericalRewriteButtonHtml()}
                         ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, symbol: "·", firstSymbolCount: 1, secondSymbolCount: 2, label: "Factor or distribute on the left" })}
                         ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, symbol: "·", firstSymbolCount: 2, secondSymbolCount: 1, label: "Distribute or factor on the right" })}
                         ${buildDirectOptionRulePairHtml("additive-identity", DIRECT_IDENTITY_RULE_BUTTONS[0], "insert", DIRECT_REVERSE_RULE_BUTTONS[0], "delete", "Introduce or remove an additive identity")}
@@ -3683,6 +3673,9 @@ Promise.resolve().then(() => {
                     toolName,
                     "numericalEquivalence",
                     "numericalRewrite",
+                    "doubleNegative",
+                    "rewriteInvOneToOne",
+                    "rewriteInvNegOneToNegOne",
                     `arithmeticLevel${getArithmeticLevelForCurrentLevel()}`
                 ]);
             }
@@ -3765,6 +3758,12 @@ Promise.resolve().then(() => {
             let targetButton = null;
             if (step.type === "tool") {
                 for (const targetTool of getDemoTargetToolCandidates(step.tool)) {
+                    if (["commute", "commuteTerms", "commuteFactors"].includes(targetTool)) {
+                        targetButton = container.querySelector("button[data-contextual-commute]");
+                    }
+                    if (["numericalRewrite", "doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne"].includes(targetTool)) {
+                        targetButton = container.querySelector("button[data-contextual-numerical-rewrite]");
+                    }
                     if (targetTool === "cancelOpposites") {
                         const selectedExpression = cloneSelectedRangeNode();
                         const directCategory = selectedExpression && selectedExpression.type === "value" && selectedExpression.value === "0"
@@ -3816,7 +3815,7 @@ Promise.resolve().then(() => {
                     : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
             }
 
-            container.querySelectorAll("button[data-tool], button[data-contextual-rule-pair], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
+            container.querySelectorAll("button[data-tool], button[data-contextual-rule-pair], button[data-contextual-commute], button[data-contextual-numerical-rewrite], button[data-cancel-selection], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
                 if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
@@ -11154,6 +11153,42 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
+        function resolveContextualCommuteTool() {
+            if (!selection.node || !canCommuteRotate()) {
+                return null;
+            }
+            if (selection.node.type === "sum") {
+                return { toolName: "commuteTerms", label: "Commute addition" };
+            }
+            if (selection.node.type === "prod") {
+                return { toolName: "commuteFactors", label: "Commute multiplication" };
+            }
+            return null;
+        }
+
+        function resolveAutomaticNumericalRewriteTool() {
+            if (canApplyInverseRewrite("rewriteInvOneToOne")) {
+                return { toolName: "rewriteInvOneToOne", label: "Automatically simplify inverse of one" };
+            }
+            if (canApplyInverseRewrite("rewriteInvNegOneToNegOne")) {
+                return { toolName: "rewriteInvNegOneToNegOne", label: "Automatically simplify inverse of negative one" };
+            }
+            if (getDoubleNegativeData()) {
+                return { toolName: "doubleNegative", label: "Automatically cancel two negative-one factors" };
+            }
+            return null;
+        }
+
+        function resolveContextualNumericalRewriteAction() {
+            const automatic = resolveAutomaticNumericalRewriteTool();
+            if (automatic) {
+                return { ...automatic, mode: "automatic" };
+            }
+            return canNumericalRewrite()
+                ? { toolName: "numericalRewrite", label: "Open Manual Numerical Rewrite", mode: "manual" }
+                : null;
+        }
+
         function refreshContextualRuleButtons(container) {
             if (!container) {
                 return;
@@ -11169,6 +11204,32 @@ ctx.font = SETTINGS.textFont;
                     delete button.dataset.resolvedTool;
                 }
             });
+
+            const commuteButton = container.querySelector("button[data-contextual-commute]");
+            if (commuteButton) {
+                const resolved = resolveContextualCommuteTool();
+                commuteButton.setAttribute("aria-label", resolved ? resolved.label : "Commute");
+                commuteButton.setAttribute("title", resolved ? resolved.label : "Commute — not applicable to this selection");
+                if (resolved) {
+                    commuteButton.dataset.resolvedTool = resolved.toolName;
+                } else {
+                    delete commuteButton.dataset.resolvedTool;
+                }
+            }
+
+            const numericalButton = container.querySelector("button[data-contextual-numerical-rewrite]");
+            if (numericalButton) {
+                const resolved = resolveContextualNumericalRewriteAction();
+                numericalButton.setAttribute("aria-label", resolved ? resolved.label : "Numerical Rewrite");
+                numericalButton.setAttribute("title", resolved ? resolved.label : "Numerical Rewrite — not applicable to this selection");
+                if (resolved) {
+                    numericalButton.dataset.resolvedTool = resolved.toolName;
+                    numericalButton.dataset.rewriteMode = resolved.mode;
+                } else {
+                    delete numericalButton.dataset.resolvedTool;
+                    delete numericalButton.dataset.rewriteMode;
+                }
+            }
         }
 
         function performBuilderAction(action, value = "") {
@@ -11303,6 +11364,57 @@ ctx.font = SETTINGS.textFont;
 
         function attachToolListeners(container) {
             refreshContextualRuleButtons(container);
+
+            const contextualCommuteButton = container.querySelector("button[data-contextual-commute]");
+            if (contextualCommuteButton) {
+                contextualCommuteButton.addEventListener("click", () => {
+                    const resolved = resolveContextualCommuteTool();
+                    if (!resolved || !isDemoToolAllowed(resolved.toolName)) {
+                        if (!isDemoModeActive()) {
+                            markToolButtonNotApplicable(contextualCommuteButton);
+                        }
+                        return;
+                    }
+                    const beforeExpression = getExpressionTextForTrace();
+                    recordCurrentSelectionForSolution();
+                    recordToolForSolution(resolved.toolName, beforeExpression);
+                    advanceDemoStep();
+                    beginTool(resolved.toolName);
+                });
+            }
+
+            const contextualNumericalButton = container.querySelector("button[data-contextual-numerical-rewrite]");
+            if (contextualNumericalButton) {
+                contextualNumericalButton.addEventListener("click", () => {
+                    const resolved = resolveContextualNumericalRewriteAction();
+                    if (!resolved || !isDemoToolAllowed(resolved.toolName)) {
+                        if (!isDemoModeActive()) {
+                            markToolButtonNotApplicable(contextualNumericalButton);
+                        }
+                        return;
+                    }
+                    const beforeExpression = getExpressionTextForTrace();
+                    recordCurrentSelectionForSolution();
+                    recordToolForSolution(resolved.toolName, beforeExpression);
+                    advanceDemoStep();
+                    beginTool(resolved.toolName);
+                });
+            }
+
+            const cancelSelectionButton = container.querySelector("button[data-cancel-selection]");
+            if (cancelSelectionButton) {
+                cancelSelectionButton.addEventListener("click", () => {
+                    if (isDemoModeActive()) {
+                        return;
+                    }
+                    setWorkspaceMode("select");
+                    clearSelection();
+                    clearInteraction();
+                    renderLevelInfo(currentLevelIndex);
+                    refreshStatus();
+                    drawExpression();
+                });
+            }
 
             container.querySelectorAll("button[data-contextual-rule-pair]").forEach(button => {
                 button.addEventListener("click", () => {
