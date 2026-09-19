@@ -1498,17 +1498,9 @@ Promise.resolve().then(() => {
             const panelBounds = leftPanel.getBoundingClientRect();
             const panelStyle = window.getComputedStyle(leftPanel);
             const panelPadding = (parseFloat(panelStyle.paddingTop) || 0) + (parseFloat(panelStyle.paddingBottom) || 0);
-            const sampleColumn = leftPanel.querySelector(".solution-column");
-            const sampleStep = leftPanel.querySelector(".solution-step");
-            const columnStyle = sampleColumn ? window.getComputedStyle(sampleColumn) : null;
-            const stepStyle = sampleStep ? window.getComputedStyle(sampleStep) : null;
-            const perLinePadding = (columnStyle ? (parseFloat(columnStyle.paddingTop) || 0) + (parseFloat(columnStyle.paddingBottom) || 0) : 0) +
-                (stepStyle ? (parseFloat(stepStyle.paddingTop) || 0) + (parseFloat(stepStyle.paddingBottom) || 0) : 6);
-            const measuredFontSize = columnStyle ? parseFloat(columnStyle.fontSize) || 15 : 15;
-            const measuredLineHeight = columnStyle ? parseFloat(columnStyle.lineHeight) || measuredFontSize * 1.4 : measuredFontSize * 1.4;
-            const lineHeightRatio = Math.max(1, measuredLineHeight / measuredFontSize);
+            const lineHeightRatio = 1.2;
             const availableHeight = Math.max(1, panelBounds.height - panelPadding);
-            const targetSize = Math.floor((availableHeight / lineCount - perLinePadding) / lineHeightRatio);
+            const targetSize = Math.floor(availableHeight / (lineCount * lineHeightRatio));
             return Math.max(8, Math.min(96, targetSize));
         }
 

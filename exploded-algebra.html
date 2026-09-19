@@ -3650,6 +3650,7 @@
         .textbook-solution {
             display: flex;
             flex-direction: column;
+            gap: 0;
             width: 100%;
             min-width: 0;
             min-height: 0;
@@ -3658,14 +3659,20 @@
         .running-solution {
             display: flex;
             flex-direction: column;
+            gap: 0;
             width: 100%;
+        }
+        .problem-statement,
+        .step-column {
+            line-height: 1.2;
         }
         .solution-column,
         .solution-column:first-child {
             display: block;
             width: 100%;
             min-width: 0;
-            padding: 3px 6px;
+            margin: 0;
+            padding: 0 6px;
             border-right: 0;
             box-sizing: border-box;
         }
@@ -3673,25 +3680,42 @@
         .solution-step.completed-step {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.45em;
             width: 100%;
+            min-height: 0;
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
+            line-height: inherit;
         }
         .solution-step .math-block,
         .problem-expression {
             flex: 1 1 auto;
             min-width: 0;
+            margin: 0;
+            line-height: inherit;
+        }
+        .solution-column .katex {
+            line-height: 1.2;
+        }
+        .problem-instruction {
+            margin: 0 0 0.2em;
+            line-height: 1.2;
+        }
+        .completed-step-check {
+            line-height: 1;
         }
         .view-step-guidance-button {
             flex: 0 0 auto;
-            min-height: 32px;
-            padding: 5px 9px;
+            min-height: 0;
+            padding: 0.12em 0.4em;
             border: 1px solid #7650a5;
-            border-radius: 5px;
+            border-radius: 0.25em;
             background: #f2ebfa;
             color: #4d2877;
             font: inherit;
-            font-size: 0.78em;
+            font-size: 0.65em;
+            line-height: 1.2;
             font-weight: 700;
             white-space: nowrap;
             cursor: pointer;
@@ -4191,16 +4215,16 @@
             min-width: 0;
             min-height: 0;
         }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }
         .workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1; grid-row: 2; }
         .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1; grid-row: 3; }
         .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 2; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 6; grid-row: 3; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
@@ -4237,12 +4261,12 @@
         .quadrant-menu { display: none !important; }
 
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 1; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 1; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 2; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }
 
         .main-action-panel .panel-tool-menu,
         .main-action-panel .intent-category-list,
@@ -4486,7 +4510,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-steps-lines-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-scaled-steps-spacing"></script>
 
 </body>
 </html>
