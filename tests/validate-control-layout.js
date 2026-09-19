@@ -48,10 +48,10 @@ assert(!playerHtml.includes('data-workspace-setting="handedness"') && !playerJs.
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1; grid-row: 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1; grid-row: 3; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 2; grid-row: 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1 / span 2; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }'));
@@ -190,7 +190,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-scaled-steps-spacing'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-double-wide-settings'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
