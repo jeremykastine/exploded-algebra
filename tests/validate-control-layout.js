@@ -39,7 +39,10 @@ assert(
         /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
-assert(!playerHtml.includes('id="settingsButton"'), "The controls grid must not include a Settings button");
+assert(playerHtml.includes('id="settingsButton"'), "The pre-selection controls must retain the Settings button");
+assert(playerHtml.includes('.workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }'), "Settings must occupy the lower-right pre-selection cell");
+assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide the complete pre-selection toolbar, including Settings");
+assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the Settings toolbar");
 assert(!playerHtml.includes('cancel-selection-button'), "The post-selection grid must not include a Cancel Selection button");
 
 const expectedPostSelectionPositions = [
