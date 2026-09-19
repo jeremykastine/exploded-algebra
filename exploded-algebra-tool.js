@@ -38,7 +38,7 @@ Promise.resolve().then(() => {
             evaluateSumContainingProducts: `<span class="rule-name">Evaluate Product-Sum</span><span class="rule-notation">ab + cd = e</span>`,
             evaluate: `<span class="rule-name">Evaluate</span>`,
             numericalEquivalence: `<span class="rule-name">Numerical equivalence</span>`,
-            numericalRewrite: `<span class="rule-name">Numerical Rewrite</span>`,
+            numericalRewrite: `<span class="rule-name">Numerical Manipulation</span>`,
             arithmeticLevel0: `<span class="rule-name">Arithmetic level zero</span>`,
             arithmeticLevel1: `<span class="rule-name">Arithmetic level one</span>`,
             arithmeticLevel2: `<span class="rule-name">Arithmetic level two</span>`,
@@ -274,7 +274,7 @@ Promise.resolve().then(() => {
             { id: "delete", label: "Remove Element(s)" },
             { id: "separate", label: "Separate" },
             { id: "consolidate", label: "Combine" },
-            { id: "numericalRewrite", label: "Numerical Rewrite" }
+            { id: "numericalRewrite", label: "Numerical Manipulation" }
         ];
 
         const INTENT_CATEGORY_DESCRIPTIONS = {
@@ -315,7 +315,7 @@ Promise.resolve().then(() => {
         function getIntentCategoryDescriptionHtml(categoryId) {
             if (categoryId === "numericalRewrite") {
                 const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
-                return `<p>Rewrite a numerical expression in an equivalent form.</p><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+                return `<p>Manipulate a numerical expression into an equivalent form.</p><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
             }
             return `<p>${escapeHtml(getIntentCategoryDescription(categoryId))}</p>`;
         }
@@ -445,7 +445,7 @@ Promise.resolve().then(() => {
 
         const TOOL_FORM_MENU_ROWS_BY_MODE = {
             plain: [
-                { full: { tool: "numericalRewrite", html: "Numerical Rewrite" } },
+                { full: { tool: "numericalRewrite", html: "Numerical Manipulation" } },
                 {
                     commutePair: true,
                     left: { tool: "commuteFirstToLast", html: "Commute first to end" },
@@ -717,8 +717,8 @@ Promise.resolve().then(() => {
         }
 
         function buildContextualNumericalRewriteButtonHtml() {
-            return `<button class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite aria-label="Numerical Rewrite" title="Numerical Rewrite">
-                <span class="contextual-numerical-rewrite-label">Numerical<br>Rewrite</span>
+            return `<button class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite aria-label="Numerical Manipulation" title="Numerical Manipulation">
+                <span class="contextual-numerical-rewrite-label">Numerical<br>Manipulation</span>
             </button>`;
         }
 
@@ -808,7 +808,7 @@ Promise.resolve().then(() => {
 
         function buildIntentCategoryMenuHtml() {
             // CSS maps every direct control into the handedness-aware keypad.
-            // Auto numerical rewrite is intentionally a visible placeholder
+            // Auto numerical manipulation is intentionally a visible placeholder
             // until authoring controls define its exact permissions.
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
@@ -1005,7 +1005,7 @@ Promise.resolve().then(() => {
 
             // Keep most rules visible even when not exactly applicable.
             // Legacy arithmetic-level buttons remain filtered for old files;
-            // current files expose only the profile-based Numerical Rewrite.
+            // current files expose only the profile-based Numerical Manipulation.
             if (isArithmeticEquivalenceTool(side.tool)) {
                 return !!TOOL_INFO[side.tool] && isArithmeticToolAllowedInCurrentLevel(side.tool);
             }
@@ -11185,7 +11185,7 @@ ctx.font = SETTINGS.textFont;
                 return { ...automatic, mode: "automatic" };
             }
             return canNumericalRewrite()
-                ? { toolName: "numericalRewrite", label: "Open Manual Numerical Rewrite", mode: "manual" }
+                ? { toolName: "numericalRewrite", label: "Open Manual Numerical Manipulation", mode: "manual" }
                 : null;
         }
 
@@ -11220,8 +11220,8 @@ ctx.font = SETTINGS.textFont;
             const numericalButton = container.querySelector("button[data-contextual-numerical-rewrite]");
             if (numericalButton) {
                 const resolved = resolveContextualNumericalRewriteAction();
-                numericalButton.setAttribute("aria-label", resolved ? resolved.label : "Numerical Rewrite");
-                numericalButton.setAttribute("title", resolved ? resolved.label : "Numerical Rewrite — not applicable to this selection");
+                numericalButton.setAttribute("aria-label", resolved ? resolved.label : "Numerical Manipulation");
+                numericalButton.setAttribute("title", resolved ? resolved.label : "Numerical Manipulation — not applicable to this selection");
                 if (resolved) {
                     numericalButton.dataset.resolvedTool = resolved.toolName;
                     numericalButton.dataset.rewriteMode = resolved.mode;

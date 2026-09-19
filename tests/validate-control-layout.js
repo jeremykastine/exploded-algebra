@@ -46,7 +46,7 @@ assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }'));
-assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 2; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 1; grid-row: 3 / span 2; }'));
 const expectedContextualButtonPositions = [
     ["multiplicative-inverse", "1", "1 / span 2"],
     ["double-inverse", "2", "1 / span 2"],
@@ -54,7 +54,7 @@ const expectedContextualButtonPositions = [
     ["multiplicative-identity", "4", "1 / span 2"],
     ["additive-inverse", "5", "1 / span 2"],
     ["additive-identity", "6", "1 / span 2"],
-    ["inverse", "1", "3 / span 2"],
+    ["inverse", "2", "3 / span 2"],
     ["distribute-left", "3 / span 2", "4"],
     ["distribute-right", "5 / span 2", "4"]
 ];
@@ -64,11 +64,11 @@ expectedContextualButtonPositions.forEach(([pair, column, row]) => {
         `Contextual control ${pair} must occupy column ${column}, row ${row}`
     );
 });
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 6; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 5; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-left"] { grid-column: 3 / span 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }'));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 1 / span 2; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 5; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 6; }'));
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
@@ -108,6 +108,8 @@ assert(!playerJs.includes('data-direct-inverse-number-slot'));
 assert(playerJs.includes('function buildContextualCommuteButtonHtml()'));
 assert(playerJs.includes('buildDirectCommuteIconHtml("·")') && playerJs.includes('buildDirectCommuteIconHtml("+")'));
 assert(playerJs.includes('class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite'));
+assert(playerJs.includes('aria-label="Numerical Manipulation" title="Numerical Manipulation"'));
+assert(playerJs.includes('<span class="contextual-numerical-rewrite-label">Numerical<br>Manipulation</span>'));
 assert(playerJs.includes('class="intent-category-button cancel-selection-button" data-cancel-selection'));
 assert(playerJs.includes('function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml)'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
@@ -174,7 +176,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-multifunction-actions'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-manipulation-layout'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
