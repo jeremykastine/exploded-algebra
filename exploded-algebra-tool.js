@@ -747,6 +747,12 @@ Promise.resolve().then(() => {
                 <span class="split-rule-frame split-rule-frame-horizontal split-rule-frame-numerical-rewrite" data-rule-pair="numerical-rewrite" aria-hidden="true"></span>`;
         }
 
+        function buildPostSelectionGridOverlayHtml() {
+            return `<svg class="post-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V300 M400 1 V399 M500 1 V300 M1 200 H599 M100 300 H599"/>
+            </svg>`;
+        }
+
         function buildDirectOptionRuleButtonHtml(rule, categoryId) {
             const variantAttribute = rule.variant ? ` data-direct-rule-variant="${escapeHtml(rule.variant)}"` : "";
             const slotAttribute = rule.slot ? ` data-direct-rule-slot="${escapeHtml(rule.slot)}"` : "";
@@ -839,6 +845,7 @@ Promise.resolve().then(() => {
                         ${buildDirectOptionRulePairHtml("multiplicative-inverse", DIRECT_IDENTITY_RULE_BUTTONS[3], "insert", DIRECT_REVERSE_RULE_BUTTONS[3], "delete", "Introduce or cancel multiplicative inverses")}
                         ${buildDirectOptionRulePairHtml("double-inverse", DIRECT_EXTRA_RULE_BUTTONS[0], "insert", DIRECT_EXTRA_RULE_BUTTONS[1], "delete", "Introduce or cancel a double inverse")}
                         ${buildDirectOptionRulePairHtml("zero-product", DIRECT_EXTRA_RULE_BUTTONS[2], "insert", DIRECT_EXTRA_RULE_BUTTONS[3], "delete", "Introduce or cancel a zero product")}
+                        ${buildPostSelectionGridOverlayHtml()}
                     </div>
                 </div>`;
         }

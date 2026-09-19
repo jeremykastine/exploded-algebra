@@ -3181,8 +3181,8 @@
             justify-self: stretch;
             box-sizing: border-box;
             overflow: hidden;
-            border: 1px solid #999;
-            border-radius: 7px;
+            border: 0;
+            border-radius: 0;
             background: #fff;
             pointer-events: none;
         }
@@ -3209,9 +3209,9 @@
         .main-action-panel .intent-category-actions > button.direct-commute-button {
             position: relative;
             z-index: 1;
-            border: 1px solid #999;
-            border-radius: 7px;
-            background: #fff;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
         }
         .main-action-panel .intent-category-actions > button.demo-target-button {
             background: #fff3bf;
@@ -3285,6 +3285,24 @@
         .main-action-panel [data-reverse-pair="multiplicative-identity"] { grid-column: 4; grid-row: 1 / span 2; }
         .main-action-panel [data-reverse-pair="additive-inverse"] { grid-column: 5; grid-row: 1 / span 2; }
         .main-action-panel [data-reverse-pair="additive-identity"] { grid-column: 6; grid-row: 1 / span 2; }
+        .main-action-panel .post-selection-grid-overlay {
+            z-index: 5;
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            align-self: stretch;
+            justify-self: stretch;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            color: #777;
+            pointer-events: none;
+        }
+        .main-action-panel .post-selection-grid-lines {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.25;
+            vector-effect: non-scaling-stroke;
+        }
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-commute="·"] { grid-column: 4; }
         body.left-handed .main-action-panel .intent-category-actions > [data-direct-commute="+"] { grid-column: 3; }
         body.left-handed .main-action-panel .intent-category-actions > [data-auto-compute-placeholder] { grid-column: 2; }
@@ -3330,6 +3348,10 @@
         body.left-handed .main-action-panel [data-reverse-pair="zero-product"] { grid-column: 4; }
         body.left-handed .main-action-panel [data-branch-pair="left"],
         body.left-handed .main-action-panel [data-branch-pair="right"] {
+            transform: scaleX(-1);
+            transform-origin: center;
+        }
+        body.left-handed .main-action-panel .post-selection-grid-overlay {
             transform: scaleX(-1);
             transform-origin: center;
         }
@@ -4370,6 +4392,10 @@
         .bottom-controls-panel > .builder-keypad-panel.hidden {
             display: none;
         }
+        body.selection-active:not(.expression-builder-active) .bottom-controls-panel,
+        body.selection-active:not(.expression-builder-active) .main-action-panel .intent-category-actions {
+            gap: 0;
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -4515,7 +4541,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-post-selection-grid-2"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-square-grid-outline"></script>
 
 </body>
 </html>

@@ -167,7 +167,7 @@ assert(playerJs.includes('function buildReversePairOverlayHtml(pairName, orienta
 assert(playerJs.includes('M50 88 V118 M43 96 L50 88 L57 96 M43 110 L50 118 L57 110'));
 assert(playerJs.includes('M88 82 H118 M96 75 L88 82 L96 89 M110 75 L118 82 L110 89'));
 assert(/\.main-action-panel \.reverse-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
-assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 1px solid #999;[\s\S]*?border-radius: 7px;/.test(playerHtml));
+assert(/\.main-action-panel \.split-rule-frame \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;/.test(playerHtml));
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame::after {'));
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame-horizontal::after {'));
 assert(!playerHtml.includes('.main-action-panel .split-rule-frame-vertical::after {'));
@@ -193,6 +193,11 @@ assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
 assert(playerHtml.includes('.main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 5 / span 2; grid-row: 3; }'));
+assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('M1 1 H599 V399 H1 Z'));
+assert(playerJs.includes('M300 1 V300') && playerJs.includes('M500 1 V300') && playerJs.includes('M100 300 H599'));
+assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
+assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
+assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
