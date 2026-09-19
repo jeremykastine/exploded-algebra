@@ -53,15 +53,15 @@ assert.equal(singlePairPattern.operatorCenters.length, 0);
 
 const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.join(projectRoot, "exploded-algebra-tool.js"), "utf8");
-assert(playerHtml.includes('value="nested-operator-parentheses"'));
-assert(playerHtml.includes('id="operationBarStyleSelect"'));
+assert(!playerHtml.includes('id="operationBarStyleSelect"'));
 assert(!playerHtml.includes('id="sumBarStyleSelect"'));
 assert(!playerHtml.includes('id="productBarStyleSelect"'));
-assert(playerHtml.includes('value="endpoint-operators"'));
-assert(playerHtml.includes('value="ellipse"'));
-assert(playerHtml.includes('id="operationBarShadingSelect"'));
+assert(!playerHtml.includes('id="operationBarShadingSelect"'));
+assert(playerJs.includes('value: "nested-operator-parentheses"'));
+assert(playerJs.includes('value: "endpoint-operators"'));
+assert(playerJs.includes('value: "ellipse"'));
 ["black", "gray", "light-gray", "gradient"].forEach(shading => {
-    assert(playerHtml.includes(`value="${shading}"`), `Missing ${shading} bar shading option`);
+    assert(playerJs.includes(`value: "${shading}"`), `Missing ${shading} bar shading option`);
 });
 assert(playerJs.includes('"nested-operator-parentheses"'));
 assert(playerJs.includes('"endpoint-operators"'));

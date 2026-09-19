@@ -4197,9 +4197,43 @@
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; grid-row: 4; }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 3; }
-        .workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 6; grid-row: 4; }
+        .workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 1; grid-row: 1; }
+        .workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 3; grid-row: 1; }
+        .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 4; grid-row: 1; }
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 1; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
+
+        .workspace-toolbar .workspace-setting-button,
+        .workspace-toolbar [data-workspace-action="resetExercise"],
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            overflow: hidden;
+            text-align: center;
+            line-height: 1.05;
+        }
+        .workspace-setting-name {
+            display: block;
+            max-width: 100%;
+            font-size: clamp(8px, calc(var(--main-key-size) * 0.20), 11px);
+            font-weight: 700;
+            overflow-wrap: anywhere;
+            pointer-events: none;
+        }
+        .workspace-setting-value {
+            display: block;
+            max-width: 100%;
+            font-size: clamp(9px, calc(var(--main-key-size) * 0.24), 14px);
+            font-weight: 800;
+            overflow-wrap: anywhere;
+            pointer-events: none;
+        }
 
         body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 5; grid-row: 4; }
         body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 4; grid-row: 4; }
@@ -4207,7 +4241,12 @@
         body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; grid-row: 4; }
         body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; grid-row: 2; }
         body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; grid-row: 3; }
-        body.left-handed .workspace-toolbar .settings-button { grid-column: 1; grid-row: 4; }
+        body.left-handed .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1; grid-row: 4; }
+        body.left-handed .workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 6; }
+        body.left-handed .workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 5; }
+        body.left-handed .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 4; }
+        body.left-handed .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; }
+        body.left-handed .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 2; }
         body.left-handed .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
         body.selection-active.left-handed:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 1; grid-row: 4; }
 
@@ -4368,6 +4407,24 @@
                 <button type="button" data-workspace-action="authoringCheckpoint" aria-label="Record step" data-hold-description="Save the current expression as a recorded solution step." hidden>
                     <span class="workspace-checkpoint-label" aria-hidden="true">Record<br>Step</span>
                 </button>
+                <div class="workspace-tool-group workspace-settings-group" aria-label="Display settings">
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="handedness" data-hold-description="Change which side holds the primary controls.">
+                        <span class="workspace-setting-name" aria-hidden="true">Handedness</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">Right</span>
+                    </button>
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-font" data-hold-description="Cycle the conventional steps text through the available sizes.">
+                        <span class="workspace-setting-name" aria-hidden="true">Steps Text</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">15 px</span>
+                    </button>
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="bar-style" data-hold-description="Cycle the visual style used for addition and multiplication.">
+                        <span class="workspace-setting-name" aria-hidden="true">Bar Style</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">Thick</span>
+                    </button>
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="bar-shading" data-hold-description="Cycle the fill used for addition and multiplication.">
+                        <span class="workspace-setting-name" aria-hidden="true">Bar Shade</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">Gradient</span>
+                    </button>
+                </div>
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
                     <button type="button" data-workspace-mode="pan" aria-pressed="false" aria-label="Move view" data-hold-description="Drag to move the expression view. Zooming automatically returns to this tool.">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -4389,10 +4446,15 @@
                     <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
                         <span class="workspace-undo-label" aria-hidden="true">Undo</span>
                     </button>
+                    <button type="button" class="reset-exercise-button" data-workspace-action="resetExercise" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
+                        <span class="workspace-setting-name" aria-hidden="true">Reset</span>
+                        <span class="workspace-setting-value" aria-hidden="true">Exercise</span>
+                    </button>
+                    <button type="button" class="move-history-button" data-workspace-action="downloadMoveHistory" aria-label="Download move history" data-hold-description="Download the complete move history for this exercise." hidden>
+                        <span class="workspace-setting-name" aria-hidden="true">Move</span>
+                        <span class="workspace-setting-value" aria-hidden="true">History</span>
+                    </button>
                 </div>
-                <button id="settingsButton" class="settings-button" type="button" aria-label="Open settings" aria-expanded="false" aria-controls="levelMenuPanel" title="Settings">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.7 2.8h4.6l.7 2.4c.5.2 1 .5 1.4.8l2.4-.6 2.3 4-1.7 1.8v1.6l1.7 1.8-2.3 4-2.4-.6c-.4.3-.9.6-1.4.8l-.7 2.4H9.7L9 18.8c-.5-.2-1-.5-1.4-.8l-2.4.6-2.3-4 1.7-1.8v-1.6L2.9 9.4l2.3-4 2.4.6c.4-.3.9-.6 1.4-.8l.7-2.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-                </button>
             </div>
             </div>
             <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
@@ -4417,51 +4479,6 @@
         </div>
         <div id="bottomPanelResizeHandle" class="divider bottom-panel-resize-handle" role="separator" aria-label="Resize controls panel" aria-orientation="horizontal" aria-valuemin="96" tabindex="0"></div>
         <div class="main" id="mainArea">
-            <div id="levelMenuPanel" class="level-menu-panel hidden" role="dialog" aria-label="Settings">
-                <h2 class="level-menu-title">Settings</h2>
-                <div class="settings-control-stack">
-                    <div class="level-menu-actions" aria-label="Exercise and layout controls">
-                        <button id="resetExerciseButton" class="reset-exercise-button" type="button" data-hold-description="Restart the current exercise from its original expression.">Reset Exercise</button>
-                        <fieldset class="handedness-choice">
-                            <legend>Handedness</legend>
-                            <label><input type="radio" name="handedness" value="right" checked> Right-handed</label>
-                            <label><input type="radio" name="handedness" value="left"> Left-handed</label>
-                        </fieldset>
-                    </div>
-                    <div class="layout-size-controls" aria-label="Size controls">
-                    <div class="layout-size-control">
-                        <span class="layout-size-label">Steps font size <output id="stepsFontSizeValue" class="layout-size-value">15 px</output></span>
-                        <div class="settings-expression-sample" aria-label="Sample expression"><span id="settingsExpressionSample" class="katex-placeholder" data-expr="2x+3">2x + 3</span></div>
-                        <div class="layout-size-buttons" role="group" aria-label="Steps font size">
-                            <button type="button" data-layout-action="steps-font-smaller" aria-label="Decrease steps font size" data-hold-description="Make the conventional steps text smaller and refit the panel height.">−</button>
-                            <button type="button" data-layout-action="steps-font-larger" aria-label="Increase steps font size" data-hold-description="Make the conventional steps text larger and refit the panel height.">+</button>
-                        </div>
-                    </div>
-                    </div>
-                    <div class="bar-style-control">
-                        <label for="operationBarStyleSelect">Addition and multiplication style</label>
-                        <select id="operationBarStyleSelect" class="panel-select">
-                            <option value="thick">Thick bar</option>
-                            <option value="endpoint-operators">Thick bar with endpoint operators</option>
-                            <option value="ellipse">Filled ellipse</option>
-                            <option value="flared">Flared ends</option>
-                            <option value="midline">Thin midline</option>
-                            <option value="nested-parentheses">Nested parentheses</option>
-                            <option value="nested-operator-parentheses">Nested parentheses + operators</option>
-                            <option value="outward-parentheses">Outward parentheses</option>
-                        </select>
-                        <label for="operationBarShadingSelect">Bar shading</label>
-                        <select id="operationBarShadingSelect" class="panel-select">
-                            <option value="black">Black</option>
-                            <option value="gray">Gray</option>
-                            <option value="light-gray">Light gray</option>
-                            <option value="gradient" selected>Gradient</option>
-                        </select>
-                    </div>
-                    <div id="moveHistoryControls"></div>
-                </div>
-                <button id="exitSettingsButton" class="exit-settings-button" type="button">Exit Settings</button>
-            </div>
             <div id="rightTopBar" class="right-top-bar">
                 <div class="right-top-row">
                     <div class="right-expression-wrap">
@@ -4496,7 +4513,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260919-manipulation-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260919-inline-settings"></script>
 
 </body>
 </html>

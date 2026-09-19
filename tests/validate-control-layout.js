@@ -39,10 +39,18 @@ assert(
         /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
-assert(playerHtml.includes('id="settingsButton"'), "The pre-selection controls must retain the Settings button");
-assert(playerHtml.includes('.workspace-toolbar .settings-button { grid-column: 6; grid-row: 4; }'), "Settings must occupy the lower-right pre-selection cell");
-assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide the complete pre-selection toolbar, including Settings");
-assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the Settings toolbar");
+assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="levelMenuPanel"'), "Settings must live directly in the pre-selection toolbar");
+["handedness", "steps-font", "bar-style", "bar-shading"].forEach(setting => {
+    assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing inline ${setting} setting button`);
+});
+assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="handedness"] { grid-column: 1; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-font"] { grid-column: 2; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 3; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 4; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 6; grid-row: 4; }'));
+assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
+assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }'));
@@ -176,7 +184,11 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-manipulation-layout'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260919-inline-settings'));
+assert(playerJs.includes('function cycleQuickSetting(setting)'));
+assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
+assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
+assert(playerJs.includes('stepsFontSize >= STEPS_FONT_SIZE_MAX'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));

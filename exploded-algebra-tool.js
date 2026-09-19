@@ -1365,17 +1365,10 @@ Promise.resolve().then(() => {
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const authoringCheckpointButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringCheckpoint"]');
         const mainActionPanel = document.getElementById("mainActionPanel");
-        const resetExerciseButton = document.getElementById("resetExerciseButton");
-        const handednessInputs = Array.from(document.querySelectorAll('input[name="handedness"]'));
+        const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
+        const moveHistoryButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="downloadMoveHistory"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
-        const settingsButton = document.getElementById("settingsButton");
-        const levelMenuPanel = document.getElementById("levelMenuPanel");
-        const operationBarStyleSelect = document.getElementById("operationBarStyleSelect");
-        const operationBarShadingSelect = document.getElementById("operationBarShadingSelect");
-        const stepsFontSizeValue = document.getElementById("stepsFontSizeValue");
-        const settingsExpressionSample = document.getElementById("settingsExpressionSample");
-        const exitSettingsButton = document.getElementById("exitSettingsButton");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
@@ -1405,7 +1398,6 @@ Promise.resolve().then(() => {
         const levelFileInput = document.getElementById("levelFileInput");
         const loadedLevelFileName = document.getElementById("loadedLevelFileName");
         const levelContent = document.getElementById("levelContent");
-        const moveHistoryControls = document.getElementById("moveHistoryControls");
         const modeChoiceBackdrop = document.getElementById("modeChoiceBackdrop");
         const modeChoiceTitle = document.getElementById("modeChoiceTitle");
 
@@ -1439,27 +1431,37 @@ Promise.resolve().then(() => {
         const STEPS_FONT_SIZE_STEP = 1;
         const STEPS_FONT_SIZE_STORAGE_KEY = "explodedAlgebraStepsFontSizeV1";
 
-        function updateLayoutSizeControls() {
-            if (stepsFontSizeValue) {
-                stepsFontSizeValue.textContent = `${Math.round(stepsFontSize)} px`;
-            }
-            const stepsFontSmaller = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-smaller"]');
-            const stepsFontLarger = levelMenuPanel && levelMenuPanel.querySelector('[data-layout-action="steps-font-larger"]');
-            if (stepsFontSmaller) stepsFontSmaller.disabled = stepsFontSize <= STEPS_FONT_SIZE_MIN;
-            if (stepsFontLarger) stepsFontLarger.disabled = stepsFontSize >= STEPS_FONT_SIZE_MAX;
-        }
-
-        function renderSettingsExpressionSample() {
-            if (!settingsExpressionSample) {
-                return;
-            }
-            const expression = settingsExpressionSample.getAttribute("data-expr") || "2x+3";
-            if (!window.katex) {
-                settingsExpressionSample.textContent = "2x + 3";
-                return;
-            }
-            settingsExpressionSample.innerHTML = "";
-            katex.render(expression, settingsExpressionSample, { throwOnError: false, displayMode: false });
+        function refreshQuickSettingButtons() {
+            quickSettingButtons.forEach(button => {
+                const setting = button.dataset.workspaceSetting;
+                const valueElement = button.querySelector("[data-setting-value]");
+                let value = "";
+                let nextValue = "";
+                if (setting === "handedness") {
+                    const isLeftHanded = document.body.classList.contains("left-handed");
+                    value = isLeftHanded ? "Left" : "Right";
+                    nextValue = isLeftHanded ? "Right" : "Left";
+                } else if (setting === "steps-font") {
+                    value = `${Math.round(stepsFontSize)} px`;
+                    nextValue = `${stepsFontSize >= STEPS_FONT_SIZE_MAX ? STEPS_FONT_SIZE_MIN : stepsFontSize + STEPS_FONT_SIZE_STEP} px`;
+                } else if (setting === "bar-style") {
+                    const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
+                    const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
+                    value = current.shortLabel;
+                    nextValue = next.shortLabel;
+                } else if (setting === "bar-shading") {
+                    const current = OPERATION_BAR_SHADING_OPTIONS.find(option => option.value === SETTINGS.operationBarShading) || OPERATION_BAR_SHADING_OPTIONS[0];
+                    const next = getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, current.value);
+                    value = current.shortLabel;
+                    nextValue = next.shortLabel;
+                }
+                if (valueElement) {
+                    valueElement.textContent = value;
+                }
+                const name = button.querySelector(".workspace-setting-name")?.textContent.trim() || "Setting";
+                button.setAttribute("aria-label", `${name}: ${value}. Press to change to ${nextValue}.`);
+                button.setAttribute("title", `${name}: ${value}; next: ${nextValue}`);
+            });
         }
 
         function applyResponsiveMainButtonSize() {
@@ -1499,7 +1501,7 @@ Promise.resolve().then(() => {
                     window.localStorage.setItem(STEPS_FONT_SIZE_STORAGE_KEY, String(boundedSize));
                 } catch (error) {}
             }
-            updateLayoutSizeControls();
+            refreshQuickSettingButtons();
             scheduleTopPanelHeightUpdate(getCurrentLevel());
         }
 
@@ -2259,9 +2261,6 @@ Promise.resolve().then(() => {
             }
             if (button.dataset.toolCategory) {
                 return `${titleHtml}<p>Show the algebra rules in this category.</p>`;
-            }
-            if (button.id === "settingsButton") {
-                return `${titleHtml}<p>Open settings in place of the exploded expression.</p>`;
             }
             if (button.classList.contains("completion-export-button")) {
                 return `${titleHtml}<p>Download the complete move history for this exercise.</p>`;
@@ -3950,25 +3949,20 @@ Promise.resolve().then(() => {
             return completedSteps.slice();
         }
 
-        function renderMoveHistoryControls(level) {
-            if (!moveHistoryControls) {
+        function downloadCurrentMoveHistory() {
+            if (!solutionRecorder) {
                 return;
             }
-            if (!isInteractiveLevel(level)) {
-                moveHistoryControls.innerHTML = "";
-                return;
-            }
+            const historyDate = completionExportCompletedAtDate || new Date();
+            solutionRecorder.finalExpression = getExpressionTextForTrace();
+            downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
+        }
 
-            moveHistoryControls.innerHTML = '<button type="button" class="completion-export-button">Download Move History</button>';
-            const button = moveHistoryControls.querySelector(".completion-export-button");
-            button.addEventListener("click", () => {
-                if (!solutionRecorder) {
-                    return;
-                }
-                const historyDate = completionExportCompletedAtDate || new Date();
-                solutionRecorder.finalExpression = getExpressionTextForTrace();
-                downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
-            });
+        function renderMoveHistoryControls(level) {
+            if (!moveHistoryButton) {
+                return;
+            }
+            moveHistoryButton.hidden = !isInteractiveLevel(level);
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 520;
@@ -4503,23 +4497,16 @@ Promise.resolve().then(() => {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
             setStepsFontSize(loadSavedStepsFontSize());
-            renderSettingsExpressionSample();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
-            if (operationBarStyleSelect) {
-                operationBarStyleSelect.addEventListener("change", () => {
-                    setOperationBarStyle(operationBarStyleSelect.value, true);
-                });
-            }
-            if (operationBarShadingSelect) {
-                operationBarShadingSelect.addEventListener("change", () => {
-                    setOperationBarShading(operationBarShadingSelect.value, true);
-                });
-            }
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
                     if (!button || button.disabled) {
+                        return;
+                    }
+                    if (button.dataset.workspaceSetting) {
+                        cycleQuickSetting(button.dataset.workspaceSetting);
                         return;
                     }
                     if (button.dataset.workspaceAction === "zoomIn") {
@@ -4541,6 +4528,19 @@ Promise.resolve().then(() => {
                         } else {
                             undoExpressionStep();
                         }
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "resetExercise") {
+                        if (window.confirm("Are you sure you want to reset the exercise?")) {
+                            if (!assistanceWasSpecifiedByNavigation) {
+                                clearAssistanceQueryString();
+                            }
+                            window.location.reload();
+                        }
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "downloadMoveHistory") {
+                        downloadCurrentMoveHistory();
                         return;
                     }
                     if (button.dataset.workspaceAction === "authoringCheckpoint") {
@@ -4594,16 +4594,6 @@ Promise.resolve().then(() => {
             if (document.fonts && document.fonts.ready) {
                 document.fonts.ready.then(scheduleResponsiveLayoutRecalculation);
             }
-            if (resetExerciseButton) {
-                resetExerciseButton.addEventListener("click", () => {
-                    if (window.confirm("Are you sure you want to reset the exercise?")) {
-                        if (!assistanceWasSpecifiedByNavigation) {
-                            clearAssistanceQueryString();
-                        }
-                        window.location.reload();
-                    }
-                });
-            }
             if (modeChoiceBackdrop) {
                 modeChoiceBackdrop.addEventListener("click", event => {
                     const button = event.target.closest("button[data-assistance-level]");
@@ -4619,57 +4609,6 @@ Promise.resolve().then(() => {
                 });
             }
             setLeftHandedLayout(loadSavedHandedness());
-            handednessInputs.forEach(input => {
-                input.addEventListener("change", () => {
-                    if (input.checked) {
-                        setLeftHandedLayout(input.value === "left", true);
-                    }
-                });
-            });
-            if (settingsButton && levelMenuPanel) {
-                const setSettingsOpen = open => {
-                    if (open) {
-                        hidePressHoldPopover();
-                        renderSettingsExpressionSample();
-                    }
-                    levelMenuPanel.classList.toggle("hidden", !open);
-                    document.body.classList.toggle("settings-active", open);
-                    settingsButton.setAttribute("aria-expanded", String(open));
-                    settingsButton.setAttribute("aria-label", "Open settings");
-                    if (!open) {
-                        scheduleResponsiveLayoutRecalculation();
-                    }
-                };
-                settingsButton.addEventListener("click", event => {
-                    event.stopPropagation();
-                    setSettingsOpen(levelMenuPanel.classList.contains("hidden"));
-                });
-                levelMenuPanel.addEventListener("click", event => {
-                    const layoutButton = event.target.closest("button[data-layout-action]");
-                    if (layoutButton && !layoutButton.disabled) {
-                        const action = layoutButton.dataset.layoutAction;
-                        if (action === "steps-font-smaller") {
-                            setStepsFontSize(stepsFontSize - STEPS_FONT_SIZE_STEP, true);
-                        } else if (action === "steps-font-larger") {
-                            setStepsFontSize(stepsFontSize + STEPS_FONT_SIZE_STEP, true);
-                        }
-                    }
-                    event.stopPropagation();
-                });
-                if (exitSettingsButton) {
-                    exitSettingsButton.addEventListener("click", event => {
-                        event.stopPropagation();
-                        setSettingsOpen(false);
-                        settingsButton.focus();
-                    });
-                }
-                document.addEventListener("keydown", event => {
-                    if (event.key === "Escape" && !levelMenuPanel.classList.contains("hidden")) {
-                        setSettingsOpen(false);
-                        settingsButton.focus();
-                    }
-                });
-            }
             if (builderDigitRail) {
                 builderDigitRail.addEventListener("click", event => {
                     const button = event.target.closest("button[data-builder-action]");
@@ -4891,17 +4830,50 @@ ctx.font = SETTINGS.textFont;
         const OPERATION_BAR_GRADIENT_STORAGE_KEY = "explodedAlgebraOperationBarGradientV1";
         const OPERATION_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperationBarStyleV3";
         const OPERATION_BAR_SHADING_STORAGE_KEY = "explodedAlgebraOperationBarShadingV1";
-        const OPERATOR_BAR_STYLES = new Set([
-            "thick",
-            "endpoint-operators",
-            "ellipse",
-            "flared",
-            "midline",
-            "nested-parentheses",
-            "nested-operator-parentheses",
-            "outward-parentheses"
-        ]);
-        const OPERATION_BAR_SHADINGS = new Set(["black", "gray", "light-gray", "gradient"]);
+        const OPERATION_BAR_STYLE_OPTIONS = [
+            { value: "thick", shortLabel: "Thick" },
+            { value: "endpoint-operators", shortLabel: "Endpoints" },
+            { value: "ellipse", shortLabel: "Ellipse" },
+            { value: "flared", shortLabel: "Flared" },
+            { value: "midline", shortLabel: "Midline" },
+            { value: "nested-parentheses", shortLabel: "Nested ( )" },
+            { value: "nested-operator-parentheses", shortLabel: "Nested + Ops" },
+            { value: "outward-parentheses", shortLabel: "Outward ( )" }
+        ];
+        const OPERATION_BAR_SHADING_OPTIONS = [
+            { value: "black", shortLabel: "Black" },
+            { value: "gray", shortLabel: "Gray" },
+            { value: "light-gray", shortLabel: "Light Gray" },
+            { value: "gradient", shortLabel: "Gradient" }
+        ];
+        const OPERATOR_BAR_STYLES = new Set(OPERATION_BAR_STYLE_OPTIONS.map(option => option.value));
+        const OPERATION_BAR_SHADINGS = new Set(OPERATION_BAR_SHADING_OPTIONS.map(option => option.value));
+
+        function getNextCyclicOption(options, currentValue) {
+            const currentIndex = options.findIndex(option => option.value === currentValue);
+            return options[(currentIndex + 1 + options.length) % options.length];
+        }
+
+        function cycleQuickSetting(setting) {
+            if (setting === "handedness") {
+                setLeftHandedLayout(!document.body.classList.contains("left-handed"), true);
+                return;
+            }
+            if (setting === "steps-font") {
+                const nextSize = stepsFontSize >= STEPS_FONT_SIZE_MAX
+                    ? STEPS_FONT_SIZE_MIN
+                    : stepsFontSize + STEPS_FONT_SIZE_STEP;
+                setStepsFontSize(nextSize, true);
+                return;
+            }
+            if (setting === "bar-style") {
+                setOperationBarStyle(getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, SETTINGS.operationBarStyle).value, true);
+                return;
+            }
+            if (setting === "bar-shading") {
+                setOperationBarShading(getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, SETTINGS.operationBarShading).value, true);
+            }
+        }
 
         function normalizeOperationBarStyle(style) {
             if (style === "gradient") {
@@ -4969,9 +4941,6 @@ ctx.font = SETTINGS.textFont;
             SETTINGS.operationBarStyle = normalizedStyle;
             SETTINGS.sumBeamStyle = normalizedStyle;
             SETTINGS.productBeamStyle = normalizedStyle;
-            if (operationBarStyleSelect) {
-                operationBarStyleSelect.value = normalizedStyle;
-            }
             if (persist) {
                 try {
                     window.localStorage.setItem(OPERATION_BAR_STYLE_STORAGE_KEY, normalizedStyle);
@@ -4981,14 +4950,12 @@ ctx.font = SETTINGS.textFont;
                 layoutExpression(expressionRoot);
                 drawExpression();
             }
+            refreshQuickSettingButtons();
         }
 
         function setOperationBarShading(shading, persist = false) {
             const normalizedShading = normalizeOperationBarShading(shading) || "gradient";
             SETTINGS.operationBarShading = normalizedShading;
-            if (operationBarShadingSelect) {
-                operationBarShadingSelect.value = normalizedShading;
-            }
             if (persist) {
                 try {
                     window.localStorage.setItem(OPERATION_BAR_SHADING_STORAGE_KEY, normalizedShading);
@@ -4997,19 +4964,18 @@ ctx.font = SETTINGS.textFont;
             if (expressionRoot) {
                 drawExpression();
             }
+            refreshQuickSettingButtons();
         }
 
         function setLeftHandedLayout(enabled, persist = false) {
             const isLeftHanded = !!enabled;
             document.body.classList.toggle("left-handed", isLeftHanded);
-            handednessInputs.forEach(input => {
-                input.checked = input.value === (isLeftHanded ? "left" : "right");
-            });
             if (persist) {
                 try {
                     window.localStorage.setItem(HANDEDNESS_STORAGE_KEY, isLeftHanded ? "1" : "0");
                 } catch (error) {}
             }
+            refreshQuickSettingButtons();
             scheduleResponsiveLayoutRecalculation();
         }
 
