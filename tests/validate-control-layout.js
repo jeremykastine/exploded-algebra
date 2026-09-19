@@ -46,8 +46,12 @@ assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression
 assert(!playerHtml.includes('cancel-selection-button'), "The post-selection grid must not include a Cancel Selection button");
 
 const expectedPostSelectionPositions = [
-    ['[data-rule-category="commute"]', 5, 3],
-    ['[data-rule-category="numericalRewrite"]', 5, 4]
+    ['[data-direct-commute="·"]', 3, 3],
+    ['[data-direct-commute="+"]', 4, 3],
+    ['[data-auto-compute-placeholder]', 5, 3],
+    ['.manual-compute-button', 6, 3],
+    ['[data-direct-inverse-number-slot="inverse-one"]', 2, 3],
+    ['[data-direct-inverse-number-slot="inverse-negative-one"]', 2, 4]
 ];
 expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     assert(
@@ -56,10 +60,10 @@ expectedPostSelectionPositions.forEach(([selector, column, row]) => {
     );
 });
 const expectedPairedButtonPositions = [
-    ['[data-tool="distributeRightToLeft"]', 3, 3],
-    ['[data-tool="factorRight"]', 4, 3],
-    ['[data-tool="factorLeft"]', 2, 4],
-    ['[data-tool="distributeLeftToRight"]', 3, 4],
+    ['[data-tool="factorLeft"]', 3, 4],
+    ['[data-tool="distributeLeftToRight"]', 4, 4],
+    ['[data-tool="distributeRightToLeft"]', 5, 4],
+    ['[data-tool="factorRight"]', 6, 4],
     ['[data-tool="factorProductOfInverses"]', 1, 3],
     ['[data-tool="distributeInverseOverProduct"]', 1, 4]
 ];
@@ -71,13 +75,13 @@ expectedPairedButtonPositions.forEach(([selector, column, row]) => {
 });
 const expectedDirectOptionPositions = [
     ['insert', 'insertIdentityAddZeroBottom', null, 6, 1],
-    ['insert', 'insertIdentityMultiplyByOneRight', null, 5, 1],
-    ['insert', 'cancelOpposites', null, 4, 1],
-    ['insert', 'replaceOneWithInverseProduct', null, 3, 1],
+    ['insert', 'insertIdentityMultiplyByOneRight', null, 4, 1],
+    ['insert', 'cancelOpposites', null, 5, 1],
+    ['insert', 'replaceOneWithInverseProduct', null, 1, 1],
     ['delete', 'eliminateIdentities', 'additive', 6, 2],
-    ['delete', 'eliminateIdentities', 'multiplicative', 5, 2],
-    ['delete', 'cancelOpposites', null, 4, 2],
-    ['delete', 'cancelProductWithInverse', null, 3, 2]
+    ['delete', 'eliminateIdentities', 'multiplicative', 4, 2],
+    ['delete', 'cancelOpposites', null, 5, 2],
+    ['delete', 'cancelProductWithInverse', null, 1, 2]
 ];
 expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) => {
     const selector = `[data-direct-rule-category="${category}"][data-tool="${tool}"]${variant ? `[data-direct-rule-variant="${variant}"]` : ""}`;
@@ -97,12 +101,12 @@ expectedDirectOptionPositions.forEach(([category, tool, variant, column, row]) =
     ["zero-product-insert", 1],
     ["zero-product-cancel", 2]
 ].forEach(([slot, row]) => assert(
-    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 1; grid-row: ${row}; }`),
-    `${slot} must occupy column 1, row ${row}`
+    playerHtml.includes(`.main-action-panel .intent-category-actions > [data-direct-rule-slot="${slot}"] { grid-column: 3; grid-row: ${row}; }`),
+    `${slot} must occupy column 3, row ${row}`
 ));
 assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorProductOfInverses"],'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 4; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 5; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="distributeLeftToRight"] { grid-column: 3; }'));
+assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-tool="factorLeft"] { grid-column: 4; }'));
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
@@ -138,10 +142,15 @@ assert(playerJs.includes('{ tool: "insertDoubleInverse", label: "Introduce doubl
 assert(playerJs.includes('{ tool: "eliminateDoubleInverse", label: "Cancel double inverse", icon: "A", category: "delete", slot: "double-inverse-cancel" }'));
 assert(playerJs.includes('{ tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" }'));
 assert(playerJs.includes('{ tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }'));
-assert(playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
+assert(playerJs.includes('{ tool: "rewriteInvOneToOne", label: "Simplify inverse of one", operand: "1", result: "1", slot: "inverse-one" }'));
+assert(playerJs.includes('{ tool: "rewriteInvNegOneToNegOne", label: "Simplify inverse of negative one", operand: "−1", result: "−1", slot: "inverse-negative-one" }'));
+assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteFactors", "·", "Commute multiplication")'));
+assert(playerJs.includes('buildDirectCommuteButtonHtml("commuteTerms", "+", "Commute addition")'));
+assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button auto-compute-placeholder" data-auto-compute-placeholder') && playerJs.includes('disabled>'));
+assert(playerJs.includes('class="intent-category-button numerical-rewrite-mode-button manual-compute-button" data-tool="numericalRewrite"'));
 assert(playerJs.includes('function buildSplitRulePairHtml(pairName, orientation, buttonsHtml, options = {})'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
-assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "insert", "delete", "commute"];'));
+assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
 assert(playerJs.includes('data-direct-rule-category="${categoryId}"'));
 assert(playerJs.includes('data-direct-rule-variant="${escapeHtml(rule.variant)}"'));
 assert(playerJs.includes('targetTool === "cancelOpposites"') && playerJs.includes('data-direct-rule-category="${directCategory}"'));
@@ -170,17 +179,20 @@ assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(origi
 assert(playerJs.includes('isExactDoubleNegativeProduct(originalNode) && proposedIsOne'));
 assert(playerJs.includes('isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
-assert(playerJs.includes('M12 50 H78 C102 50 108 25 134 25 H194 M12 50 H78 C102 50 108 75 134 75 H194'));
-assert(playerJs.includes('M12 25 H72 C98 25 104 50 128 50 H194 M12 75 H72 C98 75 104 50 128 50 H194'));
-assert(playerJs.includes('M50 12 V78 C50 102 25 108 25 134 V194 M50 12 V78 C50 102 75 108 75 134 V194'));
+assert(playerJs.includes('M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 50 108 75 130 75 H144'));
+assert(playerJs.includes('M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144'));
+assert(playerJs.includes('M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144'));
 assert(playerJs.includes('class="branch-arrowhead"'));
-assert(playerJs.includes('M12 50 L34 35 V65 Z M194 25 L172 12 V38 Z M194 75 L172 62 V88 Z'));
-assert(playerJs.includes('M12 25 L34 12 V38 Z M12 75 L34 62 V88 Z M194 50 L172 35 V65 Z'));
-assert(playerJs.includes('M50 12 L35 34 H65 Z M25 194 L12 172 H38 Z M75 194 L62 172 H88 Z'));
+assert(playerJs.includes('M62 50 L76 40 V60 Z M144 25 L130 16 V34 Z M144 75 L130 66 V84 Z'));
+assert(playerJs.includes('M62 25 L76 16 V34 Z M62 75 L76 66 V84 Z M144 50 L130 40 V60 Z'));
+assert(playerJs.includes('M50 62 L40 76 H60 Z M28 144 L18 130 H38 Z M72 144 L62 130 H82 Z'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
 assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
+assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
+assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
+assert(playerHtml.includes('.main-action-panel .split-rule-frame-numerical-rewrite { grid-column: 5 / span 2; grid-row: 3; }'));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
 assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
 assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));

@@ -25,6 +25,7 @@ Promise.resolve().then(() => {
             insertDoubleInverse: `<span class="rule-name">Introduce Double Inverse</span><span class="rule-notation">A = inverse(inverse(A))</span>`,
             distributeInverseOverProduct: `<span class="rule-name">Inverse of a Product</span><span class="rule-notation">inverse(A · B) = inverse(A) · inverse(B)</span>`,
             factorProductOfInverses: `<span class="rule-name">Product of Inverses</span><span class="rule-notation">inverse(A) · inverse(B) = inverse(A · B)</span>`,
+            rewriteInvOneToOne: `<span class="rule-name">Inverse of One</span><span class="rule-notation">inverse(1) = 1</span>`,
             rewriteInvNegOneToNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">inverse(-1) = -1</span>`,
             rewriteNegOneToInvNegOne: `<span class="rule-name">Inverse of Negative One</span><span class="rule-notation">-1 = inverse(-1)</span>`,
             cancelOpposites: `<span class="rule-name">Cancel Additive Inverses</span><span class="rule-notation">A + (-A) = 0</span>`,
@@ -82,6 +83,7 @@ Promise.resolve().then(() => {
             "insertDoubleInverse",
             "distributeInverseOverProduct",
             "factorProductOfInverses",
+            "rewriteInvOneToOne",
             "rewriteInvNegOneToNegOne",
             "rewriteNegOneToInvNegOne",
             "commute",
@@ -123,6 +125,7 @@ Promise.resolve().then(() => {
 
 
         const INVERSE_REWRITE_TOOLS = [
+            "rewriteInvOneToOne",
             "rewriteInvNegOneToNegOne",
             "rewriteNegOneToInvNegOne"
         ];
@@ -691,10 +694,57 @@ Promise.resolve().then(() => {
             { tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }
         ];
 
-        function buildDirectBranchRuleButtonHtml(rule) {
+        const DIRECT_INVERSE_NUMBER_RULE_BUTTONS = [
+            { tool: "rewriteInvOneToOne", label: "Simplify inverse of one", operand: "1", result: "1", slot: "inverse-one" },
+            { tool: "rewriteInvNegOneToNegOne", label: "Simplify inverse of negative one", operand: "−1", result: "−1", slot: "inverse-negative-one" }
+        ];
+
+        function buildBranchRuleSymbolHtml(symbol, count) {
+            const symbols = Array.from({ length: count }, () => `<span>${symbol}</span>`).join("");
+            return `<span class="branch-rule-symbol branch-rule-symbol-${count}" aria-hidden="true">${symbols}</span>`;
+        }
+
+        function buildDirectBranchRuleButtonHtml(rule, symbol, count) {
             return `<button class="intent-category-button direct-branch-rule-button" data-tool="${rule.tool}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                ${buildBranchRuleSymbolHtml(symbol, count)}
                 <span class="intent-category-label">${escapeHtml(rule.label)}</span>
             </button>`;
+        }
+
+        function buildDirectInverseNumberRuleButtonHtml(rule) {
+            return `<button class="intent-category-button direct-inverse-number-rule-button" data-tool="${rule.tool}" data-direct-inverse-number-slot="${rule.slot}" aria-label="${escapeHtml(rule.label)}" title="${escapeHtml(rule.label)}">
+                <svg class="inverse-number-rule-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                    <text class="inverse-number-rule-source" x="15" y="28">÷</text>
+                    <text class="inverse-number-rule-operand" x="49" y="28">${rule.operand}</text>
+                    <path class="inverse-number-rule-arrow" d="M39 39 C48 50 54 56 65 64"/>
+                    <path class="inverse-number-rule-arrowhead" d="M66 64 L55 60 L62 53 Z"/>
+                    <text class="inverse-number-rule-result" x="66" y="88">${rule.result}</text>
+                </svg>
+            </button>`;
+        }
+
+        function buildDirectCommuteButtonHtml(tool, operation, label) {
+            return `<button class="intent-category-button direct-commute-button" data-tool="${tool}" data-direct-commute="${operation}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+                <svg class="direct-commute-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                    <path d="M22 43 C26 19 57 12 75 29"/>
+                    <path class="direct-commute-arrowhead" d="M76 29 L62 27 L72 17 Z"/>
+                    <path d="M78 57 C74 81 43 88 25 71"/>
+                    <path class="direct-commute-arrowhead" d="M24 71 L38 73 L28 83 Z"/>
+                    <text x="50" y="61">${operation}</text>
+                </svg>
+            </button>`;
+        }
+
+        function buildNumericalRewriteButtonsHtml() {
+            return `<button class="intent-category-button numerical-rewrite-mode-button auto-compute-placeholder" data-auto-compute-placeholder aria-label="Automatic numerical rewrite is not available yet" title="Automatic numerical rewrite will be configured later" disabled>
+                    <span class="numerical-rewrite-heading">Numerical</span>
+                    <span class="numerical-rewrite-mode">Auto</span>
+                </button>
+                <button class="intent-category-button numerical-rewrite-mode-button manual-compute-button" data-tool="numericalRewrite" aria-label="Manual numerical rewrite" title="Manual numerical rewrite">
+                    <span class="numerical-rewrite-heading">Rewrite</span>
+                    <span class="numerical-rewrite-mode">Manual</span>
+                </button>
+                <span class="split-rule-frame split-rule-frame-horizontal split-rule-frame-numerical-rewrite" data-rule-pair="numerical-rewrite" aria-hidden="true"></span>`;
         }
 
         function buildDirectOptionRuleButtonHtml(rule, categoryId) {
@@ -712,19 +762,19 @@ Promise.resolve().then(() => {
         function buildBranchPairOverlayHtml(pairName) {
             if (pairName === "distribute-left") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M12 50 H78 C102 50 108 25 134 25 H194 M12 50 H78 C102 50 108 75 134 75 H194"/>
-                    <path class="branch-arrowhead" d="M12 50 L34 35 V65 Z M194 25 L172 12 V38 Z M194 75 L172 62 V88 Z"/>
+                    <path d="M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 50 108 75 130 75 H144"/>
+                    <path class="branch-arrowhead" d="M62 50 L76 40 V60 Z M144 25 L130 16 V34 Z M144 75 L130 66 V84 Z"/>
                 </svg>`;
             }
             if (pairName === "distribute-right") {
                 return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M12 25 H72 C98 25 104 50 128 50 H194 M12 75 H72 C98 75 104 50 128 50 H194"/>
-                    <path class="branch-arrowhead" d="M12 25 L34 12 V38 Z M12 75 L34 62 V88 Z M194 50 L172 35 V65 Z"/>
+                    <path d="M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144"/>
+                    <path class="branch-arrowhead" d="M62 25 L76 16 V34 Z M62 75 L76 66 V84 Z M144 50 L130 40 V60 Z"/>
                 </svg>`;
             }
             return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path d="M50 12 V78 C50 102 25 108 25 134 V194 M50 12 V78 C50 102 75 108 75 134 V194"/>
-                <path class="branch-arrowhead" d="M50 12 L35 34 H65 Z M25 194 L12 172 H38 Z M75 194 L62 172 H88 Z"/>
+                <path d="M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144"/>
+                <path class="branch-arrowhead" d="M50 62 L40 76 H60 Z M28 144 L18 130 H38 Z M72 144 L62 130 H82 Z"/>
             </svg>`;
         }
 
@@ -754,7 +804,8 @@ Promise.resolve().then(() => {
             return buildSplitRulePairHtml(
                 pairName,
                 orientation,
-                buildDirectBranchRuleButtonHtml(firstRule) + buildDirectBranchRuleButtonHtml(secondRule),
+                buildDirectBranchRuleButtonHtml(firstRule, options.symbol || "·", options.firstSymbolCount || 1) +
+                    buildDirectBranchRuleButtonHtml(secondRule, options.symbol || "·", options.secondSymbolCount || 2),
                 options
             );
         }
@@ -769,17 +820,19 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            // CSS maps numerical rewrite, commute, and all direct rules into
-            // the handedness-aware keypad. Insert and delete choices occupy
-            // complete rows instead of opening option menus.
-            const categoryIds = ["numericalRewrite", "commute"];
+            // CSS maps every direct control into the handedness-aware keypad.
+            // Auto numerical rewrite is intentionally a visible placeholder
+            // until authoring controls define its exact permissions.
             return `<div class="panel-menu-title">Choose an action</div>
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
-                        ${categoryIds.map(buildIntentCategoryButtonHtml).join("")}
-                        ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, label: "Combine or separate inverses" })}
-                        ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, label: "Factor or distribute on the left" })}
-                        ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, label: "Distribute or factor on the right" })}
+                        ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, symbol: "÷", firstSymbolCount: 1, secondSymbolCount: 2, label: "Combine or separate inverses" })}
+                        ${DIRECT_INVERSE_NUMBER_RULE_BUTTONS.map(buildDirectInverseNumberRuleButtonHtml).join("")}
+                        ${buildDirectCommuteButtonHtml("commuteFactors", "·", "Commute multiplication")}
+                        ${buildDirectCommuteButtonHtml("commuteTerms", "+", "Commute addition")}
+                        ${buildNumericalRewriteButtonsHtml()}
+                        ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, symbol: "·", firstSymbolCount: 1, secondSymbolCount: 2, label: "Factor or distribute on the left" })}
+                        ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, symbol: "·", firstSymbolCount: 2, secondSymbolCount: 1, label: "Distribute or factor on the right" })}
                         ${buildDirectOptionRulePairHtml("additive-identity", DIRECT_IDENTITY_RULE_BUTTONS[0], "insert", DIRECT_REVERSE_RULE_BUTTONS[0], "delete", "Introduce or remove an additive identity")}
                         ${buildDirectOptionRulePairHtml("multiplicative-identity", DIRECT_IDENTITY_RULE_BUTTONS[1], "insert", DIRECT_REVERSE_RULE_BUTTONS[1], "delete", "Introduce or remove a multiplicative identity")}
                         ${buildDirectOptionRulePairHtml("additive-inverse", DIRECT_IDENTITY_RULE_BUTTONS[2], "insert", DIRECT_REVERSE_RULE_BUTTONS[2], "delete", "Introduce or cancel additive inverses")}
@@ -3625,7 +3678,7 @@ Promise.resolve().then(() => {
         }
 
         function getDemoTargetToolCandidates(toolName) {
-            if (["doubleNegative", "rewriteInvNegOneToNegOne", "rewriteNegOneToInvNegOne"].includes(toolName)) {
+            if (["doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne", "rewriteNegOneToInvNegOne"].includes(toolName)) {
                 return uniqueToolKeys([toolName, "numericalRewrite"]);
             }
             if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
@@ -7065,6 +7118,10 @@ ctx.font = SETTINGS.textFont;
             const node = cloneSelectedRangeNode();
             if (!node) {
                 return null;
+            }
+
+            if (ruleName === "rewriteInvOneToOne") {
+                return isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null;
             }
 
             if (ruleName === "rewriteInvNegOneToNegOne") {
