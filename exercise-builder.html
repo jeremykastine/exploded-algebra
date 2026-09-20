@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="exercise-builder.css?v=20260920-vertical-numerical-permissions">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260920-fixed-numerical-permissions"></script>
+  <script defer src="exercise-builder.js?v=20260920-six-numerical-categories"></script>
 </head>
 <body>
   <main>
@@ -24,7 +24,7 @@
         </div>
         <fieldset>
           <legend>Numerical manipulation permissions</legend>
-          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression. Positive whole-number addition and multiplication apply without carrying or significant-figure restrictions.</p>
+          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression. Non-negative whole-number addition and multiplication apply without carrying or significant-figure restrictions.</p>
           <div id="numericalPermissionsTable" class="numerical-permissions" role="list" aria-label="Numerical manipulation permissions" aria-describedby="numericalPermissionHelp"></div>
           <p class="field-help fixed-numerical-note">Also fixed: (−1)(−1) → 1 is automatic, and its reverse direction is manual.</p>
         </fieldset>
@@ -68,7 +68,7 @@
   </main>
 
   <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260920-fixed-numerical-permissions"></iframe>
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260920-six-numerical-categories"></iframe>
   </div>
 </body>
 </html>

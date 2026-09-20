@@ -34,7 +34,8 @@ for (const ruleId of [
   "positiveMultiplication",
   "signedAddition",
   "signedMultiplication",
-  "fractionSimplification",
+  "nonnegativeFractionSimplification",
+  "signedFractionSimplification",
   "inverseOne",
   "inverseNegativeOne"
 ]) {
@@ -47,6 +48,7 @@ assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') &
 assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(".permission-direction") && /\.permission-options \{[^}]*display: grid;/.test(builderCss) && !/\.numerical-permissions \{[^}]*grid-template-columns:/.test(builderCss), "The numerical permission outline must keep rules, directions, and choices vertically stacked without a wide table grid");
 assert(builderJs.includes('id: "positiveAddition"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number addition must not offer Not allowed in either direction");
 assert(builderJs.includes('id: "positiveMultiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number multiplication must not offer Not allowed in either direction");
+assert(builderJs.includes('id: "nonnegativeFractionSimplification"') && builderJs.includes('id: "signedFractionSimplification"'), "Phase 1 must provide separate non-negative and signed fraction categories");
 assert(builderJs.includes('id: "inverseOne"') && builderJs.includes('id: "inverseNegativeOne"') && builderJs.match(/fixed: true/g)?.length === 2, "Inverse of one and inverse of negative one must appear as fixed full list entries");
 assert(builderJs.includes("CONFIGURABLE_NUMERICAL_REWRITE_RULES") && builderJs.includes(".filter(rule => !rule.fixed)"), "Fixed inverse rows must not add redundant fields to exported numerical permissions");
 assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("positiveAdditionWithCarry") && !builderJs.includes("positiveMultiplicationOneSignificantFigure") && !builderJs.includes("positiveMultiplicationUnrestricted"), "Setup must not expose carrying or significant-figure permission categories");

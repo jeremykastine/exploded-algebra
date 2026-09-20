@@ -7549,6 +7549,14 @@ ctx.font = SETTINGS.textFont;
 
         const NUMERICAL_REWRITE_RULE_IDS = [
             "positiveAddition",
+            "signedAddition",
+            "positiveMultiplication",
+            "signedMultiplication",
+            "nonnegativeFractionSimplification",
+            "signedFractionSimplification"
+        ];
+        const PREVIOUS_NUMERICAL_REWRITE_RULE_IDS = [
+            "positiveAddition",
             "positiveMultiplication",
             "signedAddition",
             "signedMultiplication",
@@ -7583,7 +7591,8 @@ ctx.font = SETTINGS.textFont;
                 rules.signedMultiplication = { forward: "manual", reverse: "manual" };
             }
             if (legacyLevel >= 3) {
-                rules.fractionSimplification = { forward: "manual", reverse: "manual" };
+                rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
+                rules.signedFractionSimplification = { forward: "manual", reverse: "manual" };
             }
             return { rules };
         }
@@ -7599,7 +7608,8 @@ ctx.font = SETTINGS.textFont;
                 rules.signedMultiplication = { forward: "manual", reverse: "manual" };
             }
             if (profile.allowInverses === true) {
-                rules.fractionSimplification = { forward: "manual", reverse: "manual" };
+                rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
+                rules.signedFractionSimplification = { forward: "manual", reverse: "manual" };
             }
             return { rules };
         }
@@ -7617,7 +7627,12 @@ ctx.font = SETTINGS.textFont;
                 (rules.positiveMultiplicationUnrestricted ? "positiveMultiplicationUnrestricted" : "positiveMultiplicationOneSignificantFigure"));
             copyRule("signedAddition", "signedAddition");
             copyRule("signedMultiplication", "signedMultiplication");
-            copyRule("fractionSimplification", "fractionSimplification");
+            copyRule("nonnegativeFractionSimplification", rules.nonnegativeFractionSimplification
+                ? "nonnegativeFractionSimplification"
+                : "fractionSimplification");
+            copyRule("signedFractionSimplification", rules.signedFractionSimplification
+                ? "signedFractionSimplification"
+                : "fractionSimplification");
             for (const ruleId of ["positiveAddition", "positiveMultiplication"]) {
                 normalized[ruleId] = {
                     forward: normalized[ruleId].forward === "automatic" ? "automatic" : "manual",
@@ -7651,9 +7666,14 @@ ctx.font = SETTINGS.textFont;
                 const hasLegacyGranularRules = LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
                     Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
                 );
+                const hasPreviousRules = PREVIOUS_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
+                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
+                );
                 const ruleIds = hasCurrentRules
                     ? NUMERICAL_REWRITE_RULE_IDS
-                    : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null);
+                    : (hasPreviousRules
+                        ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
+                        : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null));
                 if (!ruleIds) {
                     throw new Error(`${sourceName} has an incomplete numericalRewrite.rules setting.`);
                 }
@@ -7680,13 +7700,19 @@ ctx.font = SETTINGS.textFont;
             return profile.rules[ruleId] || { forward: "not-allowed", reverse: "not-allowed" };
         }
 
+        function isFractionSimplificationRuleId(ruleId) {
+            return ruleId === "nonnegativeFractionSimplification" ||
+                ruleId === "signedFractionSimplification";
+        }
+
         function getNumericalRewriteProfileSummaryItems(profile) {
             const labels = {
-                positiveAddition: "Positive whole-number addition",
-                positiveMultiplication: "Positive whole-number multiplication",
-                signedAddition: "Flat sums with negative-one factors",
-                signedMultiplication: "Flat products with negative-one factors",
-                fractionSimplification: "Fraction simplification"
+                positiveAddition: "Non-negative whole-number addition",
+                positiveMultiplication: "Non-negative whole-number multiplication",
+                signedAddition: "Signed whole-number addition",
+                signedMultiplication: "Signed whole-number multiplication",
+                nonnegativeFractionSimplification: "Non-negative fraction simplification",
+                signedFractionSimplification: "Signed fraction simplification"
             };
             const modeLabel = mode => ({
                 automatic: "Automatic",
@@ -7801,7 +7827,77 @@ ctx.font = SETTINGS.textFont;
             return !!evaluateNumericalRewriteNodeExactly(node);
         }
 
-        function isNumericalRewriteIntegerNode(node) {
+        function getNumericalRewriteIntegerData(node) {
+            const wholeNumber = getWholeNumberBigIntFromNode(node);
+            if (wholeNumber !== null) {
+                return { negative: false, zero: wholeNumber === 0n };
+            }
+            if (isExactNumericalRewriteValue(node, "-1")) {
+                return { negative: true, zero: false };
+            }
+            if (!node || node.type !== "prod" || node.args.length !== 2) {
+                return null;
+            }
+            const negativeOneIndex = node.args.findIndex(child => isExactNumericalRewriteValue(child, "-1"));
+            if (negativeOneIndex < 0) {
+                return null;
+            }
+            const magnitude = getWholeNumberBigIntFromNode(node.args[1 - negativeOneIndex]);
+            return magnitude === null ? null : { negative: true, zero: magnitude === 0n };
+        }
+
+        function getInverseIntegerData(node) {
+            if (!node || node.type !== "inv" || node.args.length !== 1) {
+                return null;
+            }
+            const integer = getNumericalRewriteIntegerData(node.args[0]);
+            return !integer || integer.zero ? null : integer;
+        }
+
+        function getFractionSimplificationCategory(node) {
+            const standaloneDenominator = getInverseIntegerData(node);
+            if (standaloneDenominator) {
+                return standaloneDenominator.negative
+                    ? "signedFractionSimplification"
+                    : "nonnegativeFractionSimplification";
+            }
+            if (!node || node.type !== "prod") {
+                return null;
+            }
+            const inverseFactors = node.args.filter(factor => getInverseIntegerData(factor));
+            if (inverseFactors.length !== 1) {
+                return null;
+            }
+            const numeratorFactors = node.args.filter(factor => factor !== inverseFactors[0]);
+            const numeratorNode = numeratorFactors.length === 1
+                ? numeratorFactors[0]
+                : (numeratorFactors.length === 2 ? { type: "prod", args: numeratorFactors } : null);
+            const numerator = getNumericalRewriteIntegerData(numeratorNode);
+            const denominator = getInverseIntegerData(inverseFactors[0]);
+            if (!numerator || !denominator) {
+                return null;
+            }
+            return numerator.negative || denominator.negative
+                ? "signedFractionSimplification"
+                : "nonnegativeFractionSimplification";
+        }
+
+        function isFlatSignedIntegerProduct(node) {
+            if (!node || node.type !== "prod" || node.args.length < 2) {
+                return false;
+            }
+            let hasNegativeOne = false;
+            for (const factor of node.args) {
+                if (isExactNumericalRewriteValue(factor, "-1")) {
+                    hasNegativeOne = true;
+                } else if (getWholeNumberBigIntFromNode(factor) === null) {
+                    return false;
+                }
+            }
+            return hasNegativeOne;
+        }
+
+        function isFlatSignedIntegerTerm(node) {
             if (getWholeNumberBigIntFromNode(node) !== null || isExactNumericalRewriteValue(node, "-1")) {
                 return true;
             }
@@ -7812,60 +7908,6 @@ ctx.font = SETTINGS.textFont;
             return negativeOneIndex >= 0 && getWholeNumberBigIntFromNode(node.args[1 - negativeOneIndex]) !== null;
         }
 
-        function isInverseOfNumericalRewriteInteger(node) {
-            if (!node || node.type !== "inv" || node.args.length !== 1 ||
-                !isNumericalRewriteIntegerNode(node.args[0])) {
-                return false;
-            }
-            const value = evaluateNumericalRewriteNodeExactly(node.args[0]);
-            return !!value && value.numerator !== 0n && value.denominator === 1n;
-        }
-
-        function isFractionSimplificationForm(node) {
-            if (isInverseOfNumericalRewriteInteger(node)) {
-                return true;
-            }
-            if (!node || node.type !== "prod" || node.args.length < 2) {
-                return false;
-            }
-            let hasInverse = false;
-            for (const factor of node.args) {
-                if (isInverseOfNumericalRewriteInteger(factor)) {
-                    hasInverse = true;
-                } else if (!isNumericalRewriteIntegerNode(factor)) {
-                    return false;
-                }
-            }
-            return hasInverse;
-        }
-
-        function isFlatSignedIntegerProduct(node) {
-            if (!node || node.type !== "prod" || node.args.length < 2) {
-                return false;
-            }
-            let hasNegativeOne = false;
-            let hasWholeNumber = false;
-            for (const factor of node.args) {
-                if (factor.type !== "value") {
-                    return false;
-                }
-                if (String(factor.value) === "-1") {
-                    hasNegativeOne = true;
-                } else if (/^\d+$/.test(String(factor.value))) {
-                    hasWholeNumber = true;
-                } else {
-                    return false;
-                }
-            }
-            return hasNegativeOne && hasWholeNumber;
-        }
-
-        function isFlatSignedIntegerTerm(node) {
-            return getWholeNumberBigIntFromNode(node) !== null ||
-                isExactNumericalRewriteValue(node, "-1") ||
-                isFlatSignedIntegerProduct(node);
-        }
-
         function classifyNumericalRewriteCategory(node) {
             if (!node) {
                 return null;
@@ -7874,8 +7916,9 @@ ctx.font = SETTINGS.textFont;
             if (!numericalRewriteNodeIsEntirelyNumerical(normalized)) {
                 return null;
             }
-            if (isFractionSimplificationForm(normalized)) {
-                return "fractionSimplification";
+            const fractionCategory = getFractionSimplificationCategory(normalized);
+            if (fractionCategory) {
+                return fractionCategory;
             }
             if (normalized.type === "sum" && normalized.args.length >= 2) {
                 if (normalized.args.every(child => getWholeNumberBigIntFromNode(child) !== null)) {
@@ -7963,14 +8006,14 @@ ctx.font = SETTINGS.textFont;
             if (ruleId && getNumericalRewriteRuleSetting(ruleId).forward === "manual") {
                 return true;
             }
-            if (ruleId === "fractionSimplification" &&
+            if (isFractionSimplificationRuleId(ruleId) &&
                 getNumericalRewriteRuleSetting(ruleId).reverse === "manual") {
                 return true;
             }
             const canonical = getCanonicalNumericalRewriteNode(selectedNode);
             return numericalRewriteNodesHaveSameStructure(selectedNode, canonical) &&
                 NUMERICAL_REWRITE_RULE_IDS.some(candidateRuleId =>
-                    candidateRuleId !== "fractionSimplification" &&
+                    !isFractionSimplificationRuleId(candidateRuleId) &&
                     getNumericalRewriteRuleSetting(candidateRuleId).reverse === "manual"
                 );
         }
@@ -7987,15 +8030,16 @@ ctx.font = SETTINGS.textFont;
             const originalRuleId = classifyNumericalRewriteCategory(original);
             const proposedRuleId = classifyNumericalRewriteCategory(proposed);
 
-            if (originalRuleId === "fractionSimplification") {
+            if (isFractionSimplificationRuleId(originalRuleId)) {
                 const canonicalOriginal = getCanonicalNumericalRewriteNode(original);
                 const forwardAllowed = getNumericalRewriteRuleSetting(originalRuleId).forward === "manual";
                 if (forwardAllowed && numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)) {
                     return { ok: true };
                 }
                 const originalIsCanonical = numericalRewriteNodesHaveSameStructure(original, canonicalOriginal);
-                const reverseAllowed = getNumericalRewriteRuleSetting(originalRuleId).reverse === "manual";
-                if (originalIsCanonical && proposedRuleId === "fractionSimplification" && reverseAllowed) {
+                const reverseAllowed = isFractionSimplificationRuleId(proposedRuleId) &&
+                    getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual";
+                if (originalIsCanonical && reverseAllowed) {
                     const canonicalProposed = getCanonicalNumericalRewriteNode(proposed);
                     if (numericalRewriteNodesHaveSameStructure(original, canonicalProposed)) {
                         return { ok: true };
