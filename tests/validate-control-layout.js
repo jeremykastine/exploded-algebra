@@ -198,7 +198,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-numerical-permissions'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-automatic-major-steps'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

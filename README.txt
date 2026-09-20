@@ -133,7 +133,10 @@ It also links to exercise-builder.html, a four-phase authoring application that
 uses the real Exploded Algebra player in an embedded authoring session. Builder
 drafts autosave in localStorage. Completed levels export with formatVersion 1,
 the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
-and enough information for High, Medium, and Low assistance. Test Level passes
+and enough information for High, Medium, and Low assistance. During Phase 3,
+every completed expression-changing manipulation is automatically saved as a
+major step. Phase 4 displays every saved step and lets the author delete unwanted
+intermediate steps before export. Test Level passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 

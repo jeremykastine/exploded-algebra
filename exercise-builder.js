@@ -327,21 +327,15 @@
       loadedWorkspacePhase = 3;
     }
     document.body.classList.add("phase3-recording");
-    syncFinishRecordingButton(api.getSnapshot());
+    syncFinishRecordingControl(api.getSnapshot());
     api.refreshLayout();
   }
 
-  function syncFinishRecordingButton(snapshot) {
+  function syncFinishRecordingControl(snapshot) {
     const api = getApi();
     const isAvailable = currentPhase === 3 && !!snapshot && snapshot.preselectionActive === true;
-    if (!api || typeof api.setRecordingCheckpointState !== "function") return;
-    if (!isAvailable) {
-      api.setRecordingCheckpointState(false, false);
-      return;
-    }
-    const fullSnapshot = snapshot.recorder ? snapshot : getApi()?.getSnapshot() || snapshot;
-    reconcileRecordedSteps(fullSnapshot);
-    api.setRecordingCheckpointState(currentStepIsRecorded(fullSnapshot), true);
+    if (!api || typeof api.setFinishRecordingControlVisible !== "function") return;
+    api.setFinishRecordingControlVisible(isAvailable);
   }
 
   function makeInitialCurationCandidate(api) {
@@ -376,14 +370,7 @@
     });
   }
 
-  function currentStepIsRecorded(snapshot) {
-    const last = (draft.recording.candidates || []).at(-1);
-    const actions = getRecordedActions(snapshot);
-    return !!last && !last.isInitial && last.actionEndIndex === actions.length &&
-      sameExpressionText(last.expression, snapshot && snapshot.currentExpression);
-  }
-
-  function recordCurrentStep(snapshot, api) {
+  function recordAutomaticMajorStep(snapshot, api) {
     reconcileRecordedSteps(snapshot);
     const actions = getRecordedActions(snapshot);
     const previous = (draft.recording.candidates || []).at(-1);
@@ -391,7 +378,6 @@
     const actionStartIndex = previous && !previous.isInitial ? previous.actionEndIndex : 0;
     const expression = String(snapshot && snapshot.currentExpression || "").trim();
     if (!expression || actions.length <= actionStartIndex || sameExpressionText(expression, beforeExpression)) {
-      window.alert("Complete an expression-changing solution step before recording it.");
       return false;
     }
     const generatedStepKatex = api.generateKatex(expression);
@@ -408,18 +394,13 @@
       isInitial: false
     });
     draft.recording.workspaceSnapshot = snapshot;
-    syncFinishRecordingButton(snapshot);
     return true;
   }
 
-  async function recordStepOrFinish() {
+  async function finishRecordingFromControl() {
     const api = await waitForApi();
     const snapshot = api.getSnapshot();
-    if (currentStepIsRecorded(snapshot)) {
-      await finishRecording(snapshot, api);
-      return;
-    }
-    recordCurrentStep(snapshot, api);
+    await finishRecording(snapshot, api);
   }
 
   function deleteCurationCandidateAt(candidates, index) {
@@ -529,13 +510,10 @@
     const api = providedApi || await waitForApi();
     const snapshot = providedSnapshot || api.getSnapshot();
     draft.recording.workspaceSnapshot = snapshot;
+    recordAutomaticMajorStep(snapshot, api);
     reconcileRecordedSteps(snapshot);
     if (!draft.recording.candidates.length) {
-      window.alert("Record at least one solution step before choosing All Done.");
-      return;
-    }
-    if (!currentStepIsRecorded(snapshot)) {
-      window.alert("Record the current solution step before choosing All Done.");
+      window.alert("Complete at least one expression-changing solution step before choosing All Done.");
       return;
     }
     draft.recording.candidates = [makeInitialCurationCandidate(api), ...draft.recording.candidates];
@@ -688,10 +666,15 @@
         iframeReady = true;
       }
       if (event.data.type === "interaction-state") {
-        syncFinishRecordingButton(event.data.detail);
+        const api = getApi();
+        const snapshot = api && api.getSnapshot();
+        if (currentPhase === 3 && event.data.detail && event.data.detail.preselectionActive && snapshot) {
+          recordAutomaticMajorStep(snapshot, api);
+        }
+        syncFinishRecordingControl(event.data.detail);
       }
-      if (event.data.type === "recording-checkpoint") {
-        recordStepOrFinish();
+      if (event.data.type === "finish-recording") {
+        finishRecordingFromControl();
       }
       if (event.data.type === "initial-expression-committed") {
         acceptInitialExpressionAndSolve();
@@ -699,7 +682,7 @@
         captureWorkspaceSnapshot();
         const api = getApi();
         const snapshot = api && api.getSnapshot();
-        if (currentPhase === 3) syncFinishRecordingButton(snapshot);
+        if (currentPhase === 3) syncFinishRecordingControl(snapshot);
         if (currentPhase === 2 && snapshot && !snapshot.builderActive && !snapshot.initialCommitted) {
           api.startInitialExpressionBuilder(null);
         }

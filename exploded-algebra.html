@@ -2977,14 +2977,14 @@
         body.authoring-recording-session .workspace-toolbar {
             grid-template-columns: repeat(6, var(--main-key-size));
         }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 5 / span 2; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 5 / span 2; grid-row: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 2; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 2; }
+        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 2; }
         body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 6; }
         body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 5; }
         body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; }
@@ -3001,7 +3001,7 @@
             white-space: nowrap;
             pointer-events: none;
         }
-        .workspace-checkpoint-label {
+        .workspace-finish-recording-label {
             display: block;
             font-size: clamp(8px, calc(var(--main-key-size) * 0.22), 11px);
             font-weight: 800;
@@ -3010,12 +3010,12 @@
             white-space: normal;
             pointer-events: none;
         }
-        .workspace-toolbar [data-workspace-action="authoringCheckpoint"] {
+        .workspace-toolbar [data-workspace-action="authoringFinishRecording"] {
             border-color: #7040a0;
             background: #7040a0;
             color: #fff;
         }
-        body:not(.authoring-recording-session) .workspace-toolbar [data-workspace-action="authoringCheckpoint"] {
+        body:not(.authoring-recording-session) .workspace-toolbar [data-workspace-action="authoringFinishRecording"] {
             display: none;
         }
 
@@ -4260,7 +4260,7 @@
 
         .quadrant-menu { display: none !important; }
 
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringCheckpoint"] { grid-column: 5 / span 2; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 5 / span 2; grid-row: 4; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
@@ -4405,8 +4405,8 @@
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression controls">
             <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
-                <button type="button" data-workspace-action="authoringCheckpoint" aria-label="Record step" data-hold-description="Save the current expression as a recorded solution step." hidden>
-                    <span class="workspace-checkpoint-label" aria-hidden="true">Record<br>Step</span>
+                <button type="button" data-workspace-action="authoringFinishRecording" aria-label="All done" data-hold-description="Finish recording and continue to step review." hidden>
+                    <span class="workspace-finish-recording-label" aria-hidden="true">All<br>Done</span>
                 </button>
                 <div class="workspace-tool-group workspace-settings-group" aria-label="Display settings">
                     <button type="button" class="workspace-setting-button" data-workspace-setting="steps-lines" data-hold-description="Cycle between fitting one, two, or three lines in the visible steps panel height.">
@@ -4510,7 +4510,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260920-numerical-permissions"></script>
+    <script src="exploded-algebra-tool.js?v=20260920-automatic-major-steps"></script>
 
 </body>
 </html>

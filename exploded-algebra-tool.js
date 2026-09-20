@@ -1363,7 +1363,7 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
-        const authoringCheckpointButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringCheckpoint"]');
+        const authoringFinishRecordingButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringFinishRecording"]');
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="downloadMoveHistory"]');
@@ -4492,16 +4492,9 @@ Promise.resolve().then(() => {
                 loadRecordingSession: loadRecordingAuthoringSession,
                 startInitialExpressionBuilder,
                 getSnapshot: getAuthoringSnapshot,
-                setRecordingCheckpointState(recorded, visible = true) {
-                    if (!authoringCheckpointButton) return;
-                    const isRecorded = !!recorded;
-                    authoringCheckpointButton.hidden = !visible;
-                    authoringCheckpointButton.setAttribute("aria-label", isRecorded ? "All done" : "Record step");
-                    authoringCheckpointButton.dataset.holdDescription = isRecorded
-                        ? "Finish recording and continue to step review."
-                        : "Save the current expression as a recorded solution step.";
-                    const label = authoringCheckpointButton.querySelector(".workspace-checkpoint-label");
-                    if (label) label.innerHTML = isRecorded ? "All<br>Done" : "Record<br>Step";
+                setFinishRecordingControlVisible(visible = true) {
+                    if (!authoringFinishRecordingButton) return;
+                    authoringFinishRecordingButton.hidden = !visible;
                 },
                 generateKatex(expressionText) {
                     return ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expressionText));
@@ -4576,8 +4569,8 @@ Promise.resolve().then(() => {
                         downloadCurrentMoveHistory();
                         return;
                     }
-                    if (button.dataset.workspaceAction === "authoringCheckpoint") {
-                        notifyAuthoringHost("recording-checkpoint");
+                    if (button.dataset.workspaceAction === "authoringFinishRecording") {
+                        notifyAuthoringHost("finish-recording");
                         return;
                     }
                     const mode = button.dataset.workspaceMode;
