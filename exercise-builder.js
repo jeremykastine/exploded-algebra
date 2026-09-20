@@ -12,11 +12,11 @@
     { id: "signedMultiplication", label: "Signed whole-number multiplication", example: "(−1) · 4 · 7 ↔ (−1) · 28", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "nonnegativeFractionSimplification", label: "Non-negative fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "signedFractionSimplification", label: "Signed fraction simplification", example: "(−1) · 18 · inverse(24) ↔ (−1) · 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
-    { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic"], reverse: ["manual"], fixed: true },
-    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic"], reverse: ["manual"], fixed: true },
-    { id: "doubleNegative", label: "Negative one times negative one", example: "(−1) · (−1) ↔ 1", forward: ["automatic"], reverse: ["manual"], fixed: true }
+    { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic", "manual"], reverse: ["manual"] },
+    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic", "manual"], reverse: ["manual"] },
+    { id: "doubleNegative", label: "Negative one times negative one", example: "(−1) · (−1) ↔ 1", forward: ["automatic", "manual"], reverse: ["manual"] }
   ];
-  const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES.filter(rule => !rule.fixed);
+  const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;
   const NUMERICAL_PERMISSION_LABELS = {
     automatic: "Automatic",
     manual: "Manual",
@@ -43,7 +43,7 @@
         numericalRewrite: {
           rules: Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
             rule.id,
-            { forward: rule.forward[0], reverse: rule.reverse[0] }
+            { forward: "manual", reverse: "manual" }
           ]))
         },
         includeUndoActions: false,
@@ -126,8 +126,8 @@
         const headingId = `numerical-${rule.id}-heading`;
         const forwardId = `numerical-${rule.id}-forward-heading`;
         const reverseId = `numerical-${rule.id}-reverse-heading`;
-        const inputs = (name, options) => options.map((value, optionIndex) =>
-          `<label><input type="radio" name="${name}" value="${value}"${optionIndex === 0 ? " checked" : ""}> ${NUMERICAL_PERMISSION_LABELS[value]}</label>`
+        const inputs = (name, options) => options.map(value =>
+          `<label><input type="radio" name="${name}" value="${value}"${value === "manual" ? " checked" : ""}> ${NUMERICAL_PERMISSION_LABELS[value]}</label>`
         ).join("");
         return `
           <section class="numerical-permission-rule" role="listitem" aria-labelledby="${headingId}">

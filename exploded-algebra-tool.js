@@ -7583,6 +7583,17 @@ ctx.font = SETTINGS.textFont;
             "positiveMultiplication",
             "signedMultiplication",
             "nonnegativeFractionSimplification",
+            "signedFractionSimplification",
+            "inverseOne",
+            "inverseNegativeOne",
+            "doubleNegative"
+        ];
+        const PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS = [
+            "positiveAddition",
+            "signedAddition",
+            "positiveMultiplication",
+            "signedMultiplication",
+            "nonnegativeFractionSimplification",
             "signedFractionSimplification"
         ];
         const PREVIOUS_NUMERICAL_REWRITE_RULE_IDS = [
@@ -7611,9 +7622,16 @@ ctx.font = SETTINGS.textFont;
             ]));
         }
 
+        function applyLegacyFixedNumericalRewriteDefaults(rules) {
+            for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
+                rules[ruleId] = { forward: "automatic", reverse: "manual" };
+            }
+            return rules;
+        }
+
         function numericalRewriteProfileFromLegacyLevel(level) {
             const legacyLevel = clampArithmeticLevel(level, 0);
-            const rules = makeNumericalRewriteRules();
+            const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
             rules.positiveAddition = { forward: "manual", reverse: "manual" };
             rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
             if (legacyLevel >= 2) {
@@ -7628,7 +7646,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function numericalRewriteProfileFromLegacyDefinition(profile) {
-            const rules = makeNumericalRewriteRules();
+            const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
             rules.positiveAddition = { forward: "manual", reverse: "manual" };
             rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
             if (profile.allowNegativeOne === true && profile.addition !== "none") {
@@ -7645,7 +7663,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function normalizeNumericalRewriteRules(rules) {
-            const normalized = makeNumericalRewriteRules();
+            const normalized = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
             const copyRule = (targetRuleId, sourceRuleId) => {
                 if (rules[sourceRuleId]) {
                     normalized[targetRuleId] = clonePlainData(rules[sourceRuleId]);
@@ -7663,9 +7681,18 @@ ctx.font = SETTINGS.textFont;
             copyRule("signedFractionSimplification", rules.signedFractionSimplification
                 ? "signedFractionSimplification"
                 : "fractionSimplification");
+            copyRule("inverseOne", "inverseOne");
+            copyRule("inverseNegativeOne", "inverseNegativeOne");
+            copyRule("doubleNegative", "doubleNegative");
             for (const ruleId of ["positiveAddition", "positiveMultiplication"]) {
                 normalized[ruleId] = {
                     forward: normalized[ruleId].forward === "automatic" ? "automatic" : "manual",
+                    reverse: "manual"
+                };
+            }
+            for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
+                normalized[ruleId] = {
+                    forward: normalized[ruleId].forward === "manual" ? "manual" : "automatic",
                     reverse: "manual"
                 };
             }
@@ -7693,6 +7720,9 @@ ctx.font = SETTINGS.textFont;
                 const hasCurrentRules = NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
                     Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
                 );
+                const hasPreFixedRules = PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
+                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
+                );
                 const hasLegacyGranularRules = LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
                     Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
                 );
@@ -7701,9 +7731,11 @@ ctx.font = SETTINGS.textFont;
                 );
                 const ruleIds = hasCurrentRules
                     ? NUMERICAL_REWRITE_RULE_IDS
-                    : (hasPreviousRules
-                        ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
-                        : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null));
+                    : (hasPreFixedRules
+                        ? PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS
+                        : (hasPreviousRules
+                            ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
+                            : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null)));
                 if (!ruleIds) {
                     throw new Error(`${sourceName} has an incomplete numericalRewrite.rules setting.`);
                 }
@@ -7742,7 +7774,10 @@ ctx.font = SETTINGS.textFont;
                 signedAddition: "Signed whole-number addition",
                 signedMultiplication: "Signed whole-number multiplication",
                 nonnegativeFractionSimplification: "Non-negative fraction simplification",
-                signedFractionSimplification: "Signed fraction simplification"
+                signedFractionSimplification: "Signed fraction simplification",
+                inverseOne: "Inverse of one",
+                inverseNegativeOne: "Inverse of negative one",
+                doubleNegative: "Negative one times negative one"
             };
             const modeLabel = mode => ({
                 automatic: "Automatic",
@@ -7753,9 +7788,6 @@ ctx.font = SETTINGS.textFont;
                 const rule = getNumericalRewriteRuleSetting(ruleId, profile);
                 return `${labels[ruleId]}: Forward — ${modeLabel(rule.forward)}; Reverse — ${modeLabel(rule.reverse)}`;
             });
-            items.push("Inverse of one: Forward — Automatic; Reverse — Manual");
-            items.push("Inverse of negative one: Forward — Automatic; Reverse — Manual");
-            items.push("Negative one times negative one: Forward — Automatic; Reverse — Manual");
             return items;
         }
 
@@ -7946,6 +7978,15 @@ ctx.font = SETTINGS.textFont;
             if (!numericalRewriteNodeIsEntirelyNumerical(normalized)) {
                 return null;
             }
+            if (isExactInverseOfOne(normalized)) {
+                return "inverseOne";
+            }
+            if (isExactInverseOfNegativeOne(normalized)) {
+                return "inverseNegativeOne";
+            }
+            if (isExactDoubleNegativeProduct(normalized)) {
+                return "doubleNegative";
+            }
             const fractionCategory = getFractionSimplificationCategory(normalized);
             if (fractionCategory) {
                 return fractionCategory;
@@ -8029,9 +8070,6 @@ ctx.font = SETTINGS.textFont;
             if (!selectedNode || !numericalRewriteNodeIsEntirelyNumerical(selectedNode)) {
                 return false;
             }
-            if (isAlwaysAllowedNumericalRewriteEndpoint(selectedNode)) {
-                return true;
-            }
             const ruleId = classifyNumericalRewriteCategory(selectedNode);
             if (ruleId && getNumericalRewriteRuleSetting(ruleId).forward === "manual") {
                 return true;
@@ -8051,9 +8089,6 @@ ctx.font = SETTINGS.textFont;
         function validateManualNumericalRewriteExchange(originalNode, proposedNode) {
             const original = normalizeExpressionTree(cloneNode(originalNode));
             const proposed = normalizeExpressionTree(cloneNode(proposedNode));
-            if (isAlwaysAllowedNumericalRewriteExchange(original, proposed)) {
-                return { ok: true };
-            }
             if (numericalRewriteNodesHaveSameStructure(original, proposed)) {
                 return { ok: false, error: "Build a different equivalent numerical expression." };
             }
@@ -10349,27 +10384,6 @@ ctx.font = SETTINGS.textFont;
                 isExactNumericalRewriteValue(node.args[0], "1");
         }
 
-        function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode) {
-            const originalIsOne = isExactNumericalRewriteValue(originalNode, "1");
-            const proposedIsOne = isExactNumericalRewriteValue(proposedNode, "1");
-            const originalIsNegativeOne = isExactNumericalRewriteValue(originalNode, "-1");
-            const proposedIsNegativeOne = isExactNumericalRewriteValue(proposedNode, "-1");
-            return (isExactDoubleNegativeProduct(originalNode) && proposedIsOne) ||
-                (originalIsOne && isExactDoubleNegativeProduct(proposedNode)) ||
-                (isExactInverseOfOne(originalNode) && proposedIsOne) ||
-                (originalIsOne && isExactInverseOfOne(proposedNode)) ||
-                (isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne) ||
-                (originalIsNegativeOne && isExactInverseOfNegativeOne(proposedNode));
-        }
-
-        function isAlwaysAllowedNumericalRewriteEndpoint(node) {
-            return isExactNumericalRewriteValue(node, "1") ||
-                isExactNumericalRewriteValue(node, "-1") ||
-                isExactDoubleNegativeProduct(node) ||
-                isExactInverseOfOne(node) ||
-                isExactInverseOfNegativeOne(node);
-        }
-
         function canNumericalRewrite() {
             return !!getAutomaticNumericalRewriteData() || canUseManualNumericalRewrite();
         }
@@ -11391,15 +11405,6 @@ ctx.font = SETTINGS.textFont;
         }
 
         function resolveAutomaticNumericalRewriteTool() {
-            if (canApplyInverseRewrite("rewriteInvOneToOne")) {
-                return { toolName: "rewriteInvOneToOne", label: "Automatically simplify inverse of one" };
-            }
-            if (canApplyInverseRewrite("rewriteInvNegOneToNegOne")) {
-                return { toolName: "rewriteInvNegOneToNegOne", label: "Automatically simplify inverse of negative one" };
-            }
-            if (getDoubleNegativeData()) {
-                return { toolName: "doubleNegative", label: "Automatically cancel two negative-one factors" };
-            }
             const configuredRewrite = getAutomaticNumericalRewriteData();
             if (configuredRewrite) {
                 return { toolName: "automaticNumericalRewrite", label: "Automatically simplify numerical expression" };

@@ -42,7 +42,8 @@ for (const ruleId of [
 ]) {
   assert(builderJs.includes(`id: "${ruleId}"`), `Setup must define numerical rule ${ruleId}`);
 }
-assert(builderJs.includes('{ forward: rule.forward[0], reverse: rule.reverse[0] }'), "Setup must default every configurable numerical rule to its first forward and reverse options");
+assert(builderJs.includes('{ forward: "manual", reverse: "manual" }'), "Setup must default every numerical rule direction to Manual");
+assert(builderJs.includes('value === "manual" ? " checked" : ""'), "Setup must visibly select Manual for every numerical permission by default");
 assert(builderJs.includes('automatic: "Automatic"') && builderJs.includes('manual: "Manual"') && builderJs.includes('"not-allowed": "Not allowed"'), "Setup must render the required forward and reverse radio choices");
 assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"'), "Setup must render the numerical permission outline");
 assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') && builderJs.includes('class="permission-direction-title">Forward') && builderJs.includes('class="permission-direction-title">Reverse'), "Every numerical rule and direction must be vertically outlined");
@@ -50,10 +51,13 @@ assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(
 assert(builderJs.includes('id: "positiveAddition"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number addition must not offer Not allowed in either direction");
 assert(builderJs.includes('id: "positiveMultiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number multiplication must not offer Not allowed in either direction");
 assert(builderJs.includes('id: "nonnegativeFractionSimplification"') && builderJs.includes('id: "signedFractionSimplification"'), "Phase 1 must provide separate non-negative and signed fraction categories");
-assert(builderJs.includes('id: "inverseOne"') && builderJs.includes('id: "inverseNegativeOne"') && builderJs.includes('id: "doubleNegative"') && builderJs.match(/fixed: true/g)?.length === 3, "The two inverse rules and negative-one product must appear as fixed full list entries");
-assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 9 after fixed items 7 and 8");
-assert(!builderHtml.includes("fixed-numerical-note"), "The fixed negative-one product must not remain as a separate note below the list");
-assert(builderJs.includes("CONFIGURABLE_NUMERICAL_REWRITE_RULES") && builderJs.includes(".filter(rule => !rule.fixed)"), "Fixed rows must not add redundant fields to exported numerical permissions");
+for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
+  const rulePattern = new RegExp(`id: "${ruleId}"[^\\n]*forward: \\["automatic", "manual"\\][^\\n]*reverse: \\["manual"\\]`);
+  assert(rulePattern.test(builderJs), `${ruleId} must offer Automatic and Manual forward with Manual reverse`);
+}
+assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 9 after items 7 and 8");
+assert(!builderHtml.includes("fixed-numerical-note"), "The negative-one product must not appear as a separate note below the list");
+assert(builderJs.includes("const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;"), "All nine numerical rules must be exported with their selected permissions");
 assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("positiveAdditionWithCarry") && !builderJs.includes("positiveMultiplicationOneSignificantFigure") && !builderJs.includes("positiveMultiplicationUnrestricted"), "Setup must not expose carrying or significant-figure permission categories");
 assert(!builderJs.includes("NUMERICAL_PERMISSION_HIERARCHIES") && !builderJs.includes("applyMonotonicNumericalPermissions"), "Setup must not retain hierarchy code for removed categories");
 assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
@@ -147,15 +151,15 @@ assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.in
 assert(playerJs.includes('"<p>None given</p>"'), "Empty student Step Guidance must say None given");
 assert(playerHtml.includes(".builder-keypad-panel .builder-review-button:disabled"), "The unavailable starting-expression eye button must be visibly grayed out");
 assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
-assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 2; grid-row: 1; }'), "The x button must occupy Peek's former top position in the six-column grid");
+assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 4; }'), "The x button must occupy Backspace's former position in the six-column grid");
 assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 3; grid-row: 1; }') && playerHtml.includes('.builder-keypad-panel .builder-exit-inv-button { grid-column: 3; grid-row: 2; }'), "Inverse and Exit Inverse must top the column beside the number pad");
 assert(playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 3; grid-row: 4; }') && playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 3; grid-row: 3; }'), "Addition and multiplication must bottom the column beside the number pad");
-assert(playerHtml.includes('button.builder-submit-button {\n            grid-column: 2;\n            grid-row: 2 / span 3;') && playerHtml.includes('button.builder-review-button {\n            grid-column: 1;\n            grid-row: 1;'), "Submit must occupy the three cells below x, with Peek at the top of the neighboring column");
+assert(playerHtml.includes('.builder-keypad-panel .builder-undo-button { grid-column: 2; grid-row: 1 / span 2; }') && playerHtml.includes('button.builder-submit-button {\n            grid-column: 2;\n            grid-row: 3 / span 2;'), "Backspace and Submit must each occupy half of x's former column");
 assert(playerHtml.includes('.builder-keypad-panel .builder-zoom-in-button { grid-column: 1; grid-row: 2; }') && playerHtml.includes('.builder-keypad-panel .builder-reset-view-button { grid-column: 1; grid-row: 4; }'), "Builder zoom and reset controls must sit below Peek");
 assert(playerHtml.includes('grid-template-rows: repeat(4, var(--main-key-size));'), "The Builder keypad must contain exactly four button rows without empty rows above");
 assert(/\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml), "The Builder keypad must inherit the entire resizable panel's six-by-four grid");
 assert(!/builder-submit-button,\s*\.builder-keypad-panel \.builder-action-row button\.builder-review-button\s*\{\s*position: fixed;/.test(playerHtml), "Submit and Review must not remain detached fixed-position controls");
-assert(playerHtml.includes('body.left-handed .builder-keypad-panel .builder-variable-button { grid-column: 5; grid-row: 1; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 2 / span 3; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 1; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 6; grid-row: 2; }'), "Left-handed mode must mirror the compact keypad cluster");
+assert(playerHtml.includes('body.left-handed .builder-keypad-panel .builder-variable-button { grid-column: 3; grid-row: 4; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 5; grid-row: 1 / span 2; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 3 / span 2; }') && playerHtml.includes('body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 1; }'), "Left-handed mode must mirror the swapped x, Backspace, and Submit cluster");
 assert(!playerJs.includes('data-builder-view-action="pan"') && !playerHtml.includes('builder-pan-button'), "Integrated Expression Builder must not show a separate Pan button");
 assert(playerJs.includes('data-builder-view-action="zoomIn"') && playerJs.includes('data-builder-view-action="zoomOut"') && playerJs.includes('data-builder-view-action="resetZoom"'), "Integrated Expression Builder must retain zoom and reset controls");
 assert(playerJs.includes('const panningView = !integratedBuilder && uiState.workspaceMode === "pan"'), "Integrated Expression Builder gestures must not depend on the main workspace Pan mode");

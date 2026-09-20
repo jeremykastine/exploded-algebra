@@ -2663,7 +2663,7 @@
 
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
-        .builder-keypad-panel .builder-variable-button { grid-column: 2; grid-row: 1; }
+        .builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 4; }
 
         .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 4; grid-row: 1; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 5; grid-row: 1; }
@@ -2681,10 +2681,10 @@
         .builder-keypad-panel .builder-exit-inv-button { grid-column: 3; grid-row: 2; }
         .builder-keypad-panel .builder-sum-button { grid-column: 3; grid-row: 4; }
         .builder-keypad-panel .builder-prod-button { grid-column: 3; grid-row: 3; }
-        .builder-keypad-panel .builder-undo-button { grid-column: 6; grid-row: 4; }
+        .builder-keypad-panel .builder-undo-button { grid-column: 2; grid-row: 1 / span 2; }
         .builder-keypad-panel .builder-action-row button.builder-submit-button {
             grid-column: 2;
-            grid-row: 2 / span 3;
+            grid-row: 3 / span 2;
             writing-mode: horizontal-tb;
         }
         .builder-keypad-panel .builder-action-row button.builder-review-button {
@@ -3561,7 +3561,7 @@
         }
         /* Mirror the builder controls, but translate the numeric keypad as one
            unit so its internal calculator ordering remains unchanged. */
-        body.left-handed .builder-keypad-panel .builder-variable-button { grid-column: 5; grid-row: 1; }
+        body.left-handed .builder-keypad-panel .builder-variable-button { grid-column: 3; grid-row: 4; }
         body.left-handed .builder-keypad-panel .builder-inv-button { grid-column: 4; grid-row: 1; }
         body.left-handed .builder-keypad-panel .builder-exit-inv-button { grid-column: 4; grid-row: 2; }
         body.left-handed .builder-keypad-panel .builder-prod-button { grid-column: 4; grid-row: 3; }
@@ -3577,9 +3577,9 @@
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="3"] { grid-column: 3; }
         body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 2; }
         body.left-handed .builder-keypad-panel .builder-negative-one-button { grid-column: 1; }
-        body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 3; }
+        body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 5; grid-row: 1 / span 2; }
         body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 1; }
-        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 2 / span 3; }
+        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 3 / span 2; }
         body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 6; grid-row: 4; }
         body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 6; grid-row: 3; }
         body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 6; grid-row: 2; }
