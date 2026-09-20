@@ -2683,7 +2683,7 @@
         .builder-keypad-panel .builder-prod-button { grid-column: 3; grid-row: 3; }
         .builder-keypad-panel .builder-undo-button { grid-column: 6; grid-row: 4; }
         .builder-keypad-panel .builder-action-row button.builder-submit-button {
-            grid-column: 1;
+            grid-column: 2;
             grid-row: 2 / span 3;
             writing-mode: horizontal-tb;
         }
@@ -2691,9 +2691,9 @@
             grid-column: 1;
             grid-row: 1;
         }
-        .builder-keypad-panel .builder-zoom-in-button { grid-column: 2; grid-row: 2; }
-        .builder-keypad-panel .builder-zoom-out-button { grid-column: 2; grid-row: 3; }
-        .builder-keypad-panel .builder-reset-view-button { grid-column: 2; grid-row: 4; }
+        .builder-keypad-panel .builder-zoom-in-button { grid-column: 1; grid-row: 2; }
+        .builder-keypad-panel .builder-zoom-out-button { grid-column: 1; grid-row: 3; }
+        .builder-keypad-panel .builder-reset-view-button { grid-column: 1; grid-row: 4; }
         .builder-keypad-panel .builder-view-button svg {
             display: block;
             width: 72%;
@@ -3204,10 +3204,6 @@
             stroke-width: 2.6;
             vector-effect: non-scaling-stroke;
         }
-        .main-action-panel .branch-pair-overlay .branch-arrowhead {
-            fill: currentColor;
-            stroke: none;
-        }
         .main-action-panel [data-branch-pair="left"] { grid-column: 3 / span 2; grid-row: 4; }
         .main-action-panel [data-branch-pair="right"] { grid-column: 5 / span 2; grid-row: 4; }
         .main-action-panel [data-branch-pair="inverse"] { grid-column: 2; grid-row: 3 / span 2; }
@@ -3308,6 +3304,20 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             grid-template-rows: minmax(0, 1fr);
         }
+        .main-action-panel [data-contextual-rule-pair="inverse"] .contextual-rule-side-first .branch-rule-symbol {
+            transform: translateY(-16.6667%);
+        }
+        .main-action-panel [data-contextual-rule-pair="inverse"] .contextual-rule-side-second .branch-rule-symbol {
+            transform: translateY(16.6667%);
+        }
+        .main-action-panel [data-contextual-rule-pair="distribute-left"] .contextual-rule-side-first .branch-rule-symbol,
+        .main-action-panel [data-contextual-rule-pair="distribute-right"] .contextual-rule-side-first .branch-rule-symbol {
+            transform: translateX(-16.6667%);
+        }
+        .main-action-panel [data-contextual-rule-pair="distribute-left"] .contextual-rule-side-second .branch-rule-symbol,
+        .main-action-panel [data-contextual-rule-pair="distribute-right"] .contextual-rule-side-second .branch-rule-symbol {
+            transform: translateX(16.6667%);
+        }
         .main-action-panel .contextual-rule-side {
             position: relative;
             display: flex;
@@ -3340,6 +3350,11 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             font-size: clamp(18px, calc(var(--main-key-size) * 0.42), 30px);
         }
+        .main-action-panel [data-contextual-rule-pair="distribute-left"] .branch-rule-symbol-2,
+        .main-action-panel [data-contextual-rule-pair="distribute-right"] .branch-rule-symbol-2 {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+        }
         .main-action-panel .direct-commute-icon {
             width: 100%;
             height: 100%;
@@ -3352,16 +3367,12 @@
             font-weight: 700;
             text-anchor: middle;
         }
-        .main-action-panel .direct-commute-icon > path:not(.direct-commute-arrowhead) {
+        .main-action-panel .direct-commute-icon > path {
             fill: none;
             stroke: currentColor;
             stroke-width: 4;
             stroke-linecap: round;
             stroke-linejoin: round;
-        }
-        .main-action-panel .direct-commute-icon .direct-commute-arrowhead {
-            fill: currentColor;
-            stroke: none;
         }
         .main-action-panel .direct-commute-icon text {
             font-size: 34px;
@@ -3374,9 +3385,10 @@
             color: #202020;
         }
         .main-action-panel .contextual-numerical-rewrite-label {
-            font-size: clamp(14px, calc(var(--main-key-size) * 0.28), 22px);
+            font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+            font-size: clamp(22px, calc(var(--main-key-size) * 0.48), 36px);
             font-weight: 800;
-            line-height: 1.05;
+            line-height: 1;
         }
         .main-action-panel .cancel-selection-icon {
             width: 100%;
@@ -3567,10 +3579,10 @@
         body.left-handed .builder-keypad-panel .builder-negative-one-button { grid-column: 1; }
         body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 3; }
         body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 1; }
-        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 6; grid-row: 2 / span 3; }
-        body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 5; grid-row: 4; }
-        body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 5; grid-row: 3; }
-        body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 5; grid-row: 2; }
+        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 2 / span 3; }
+        body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 6; grid-row: 4; }
+        body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 6; grid-row: 3; }
+        body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 6; grid-row: 2; }
 
         .builder-rewrite-original,
         .builder-rewrite-proposal {
@@ -4217,17 +4229,17 @@
             min-width: 0;
             min-height: 0;
         }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }
         .workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1 / span 2; grid-row: 1; }
         .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }
         .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 6; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5 / span 2; grid-row: 3; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
 
@@ -4263,12 +4275,12 @@
         .quadrant-menu { display: none !important; }
 
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 5 / span 2; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }
 
         .main-action-panel .panel-tool-menu,
         .main-action-panel .intent-category-list,
@@ -4512,7 +4524,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260920-six-numerical-categories"></script>
+    <script src="exploded-algebra-tool.js?v=20260920-control-layout"></script>
 
 </body>
 </html>

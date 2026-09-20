@@ -700,12 +700,14 @@ Promise.resolve().then(() => {
         }
 
         function buildDirectCommuteIconHtml(operation) {
+            const arrows = operation === "·"
+                ? `<path d="M22 29 H78 M68 19 L78 29 L68 39"/>
+                    <path d="M78 71 H22 M32 61 L22 71 L32 81"/>`
+                : `<path d="M70 78 V22 M60 32 L70 22 L80 32"/>
+                    <path d="M30 22 V78 M20 68 L30 78 L40 68"/>`;
             return `<svg class="direct-commute-icon" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-                    <path d="M22 43 C26 19 57 12 75 29"/>
-                    <path class="direct-commute-arrowhead" d="M76 29 L62 27 L72 17 Z"/>
-                    <path d="M78 57 C74 81 43 88 25 71"/>
-                    <path class="direct-commute-arrowhead" d="M24 71 L38 73 L28 83 Z"/>
-                    <text x="50" y="61">${operation}</text>
+                    ${arrows}
+                    <text x="50" y="50">${operation}</text>
                 </svg>`;
         }
 
@@ -718,7 +720,7 @@ Promise.resolve().then(() => {
 
         function buildContextualNumericalRewriteButtonHtml() {
             return `<button class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite aria-label="Numerical Manipulation" title="Numerical Manipulation">
-                <span class="contextual-numerical-rewrite-label">Numerical<br>Manipulation</span>
+                <span class="contextual-numerical-rewrite-label">123</span>
             </button>`;
         }
 
@@ -750,20 +752,17 @@ Promise.resolve().then(() => {
 
         function buildBranchPairOverlayHtml(pairName) {
             if (pairName === "distribute-left") {
-                return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 50 108 75 130 75 H144"/>
-                    <path class="branch-arrowhead" d="M62 50 L70 44 V56 Z M144 25 L136 20 V30 Z M144 75 L136 70 V80 Z"/>
+                return `<svg class="branch-pair-overlay" data-branch-pair="left" viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M200 50 H250 C300 50 300 25 350 25 H400 M200 50 H250 C300 50 300 75 350 75 H400"/>
                 </svg>`;
             }
             if (pairName === "distribute-right") {
-                return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 206 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path d="M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144"/>
-                    <path class="branch-arrowhead" d="M62 25 L70 20 V30 Z M62 75 L70 70 V80 Z M144 50 L136 44 V56 Z"/>
+                return `<svg class="branch-pair-overlay" data-branch-pair="right" viewBox="0 0 600 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path d="M200 25 H250 C300 25 300 50 350 50 H400 M200 75 H250 C300 75 300 50 350 50 H400"/>
                 </svg>`;
             }
-            return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 206" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path d="M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144"/>
-                <path class="branch-arrowhead" d="M50 62 L44 70 H56 Z M28 144 L22 136 H34 Z M72 144 L66 136 H78 Z"/>
+            return `<svg class="branch-pair-overlay" data-branch-pair="inverse" viewBox="0 0 100 600" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                <path d="M50 200 V250 C50 300 28 300 28 350 V400 M50 200 V250 C50 300 72 300 72 350 V400"/>
             </svg>`;
         }
 

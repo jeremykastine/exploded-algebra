@@ -8,9 +8,9 @@ const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra
 
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
-assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }'));
-assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }'));
-assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }'));
+assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }'));
+assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
+assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }'));
 assert(
     playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
     "The app must provide a distinct bottom controls panel and resize handle"
@@ -47,16 +47,16 @@ assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="
 });
 assert(!playerHtml.includes('data-workspace-setting="handedness"') && !playerJs.includes("setLeftHandedLayout"), "The left-handedness option must be removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 4; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; grid-row: 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; grid-row: 3; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 4; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 4; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
@@ -124,7 +124,7 @@ assert(playerJs.includes('function buildContextualCommuteButtonHtml()'));
 assert(playerJs.includes('buildDirectCommuteIconHtml("·")') && playerJs.includes('buildDirectCommuteIconHtml("+")'));
 assert(playerJs.includes('class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite'));
 assert(playerJs.includes('aria-label="Numerical Manipulation" title="Numerical Manipulation"'));
-assert(playerJs.includes('<span class="contextual-numerical-rewrite-label">Numerical<br>Manipulation</span>'));
+assert(playerJs.includes('<span class="contextual-numerical-rewrite-label">123</span>'));
 assert(playerJs.includes('class="intent-category-button cancel-selection-button" data-cancel-selection'));
 assert(playerJs.includes('function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml)'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
@@ -152,13 +152,14 @@ assert(playerJs.includes('function isAlwaysAllowedNumericalRewriteExchange(origi
 assert(playerJs.includes('isExactDoubleNegativeProduct(originalNode) && proposedIsOne'));
 assert(playerJs.includes('isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne'));
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
-assert(playerJs.includes('M62 50 H82 C104 50 108 25 130 25 H144 M62 50 H82 C104 50 108 75 130 75 H144'));
-assert(playerJs.includes('M62 25 H76 C98 25 102 50 124 50 H144 M62 75 H76 C98 75 102 50 124 50 H144'));
-assert(playerJs.includes('M50 62 V82 C50 104 28 108 28 130 V144 M50 62 V82 C50 104 72 108 72 130 V144'));
-assert(playerJs.includes('class="branch-arrowhead"'));
-assert(playerJs.includes('M62 50 L70 44 V56 Z M144 25 L136 20 V30 Z M144 75 L136 70 V80 Z'));
-assert(playerJs.includes('M62 25 L70 20 V30 Z M62 75 L70 70 V80 Z M144 50 L136 44 V56 Z'));
-assert(playerJs.includes('M50 62 L44 70 H56 Z M28 144 L22 136 H34 Z M72 144 L66 136 H78 Z'));
+assert(playerJs.includes('M200 50 H250 C300 50 300 25 350 25 H400 M200 50 H250 C300 50 300 75 350 75 H400'));
+assert(playerJs.includes('M200 25 H250 C300 25 300 50 350 50 H400 M200 75 H250 C300 75 300 50 350 50 H400'));
+assert(playerJs.includes('M50 200 V250 C50 300 28 300 28 350 V400 M50 200 V250 C50 300 72 300 72 350 V400'));
+assert(!playerJs.includes('class="branch-arrowhead"'));
+assert(playerHtml.includes('transform: translateY(-16.6667%)') && playerHtml.includes('transform: translateY(16.6667%)'));
+assert(playerHtml.includes('transform: translateX(-16.6667%)') && playerHtml.includes('transform: translateX(16.6667%)'));
+assert(playerJs.includes('M22 29 H78 M68 19 L78 29 L68 39') && playerJs.includes('M78 71 H22 M32 61 L22 71 L32 81'));
+assert(playerJs.includes('M70 78 V22 M60 32 L70 22 L80 32') && playerJs.includes('M30 22 V78 M20 68 L30 78 L40 68'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
 assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
@@ -210,7 +211,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-six-numerical-categories'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-control-layout'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
