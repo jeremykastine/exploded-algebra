@@ -89,9 +89,10 @@ assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repe
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
 assert(playerJs.includes("function isPointInsideCurrentSelection(x, y)"), "Selection presses must use the highlighted selection bounds");
-assert(/function selectFromWorkspaceTap\(x, y, pointerType, allowSelectionCancel = true\) \{[\s\S]*?allowSelectionCancel && selection\.node && isPointInsideCurrentSelection\(x, y\)[\s\S]*?clearSelection\(\);[\s\S]*?return true;/.test(playerJs), "Pressing inside the current selection must clear it");
+assert(playerJs.includes("function isPointInsideExpression(x, y)"), "Selection presses must distinguish the expression from surrounding workspace");
+assert(/function selectFromWorkspaceTap\(x, y, pointerType, allowSelectionCancel = true\) \{[\s\S]*?isPointInsideCurrentSelection\(x, y\) \|\| !isPointInsideExpression\(x, y\)[\s\S]*?cancelCurrentWorkspaceSelection\(\)/.test(playerJs), "Pressing inside the current selection or outside the expression must clear it");
 assert(playerJs.includes("selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);") && playerJs.includes("selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);"), "Dragging from the selection must remain a two-endpoint selection gesture rather than a cancel press");
-assert(!playerJs.includes("clearingSelectionFromEmptySpace"), "Empty workspace presses must no longer clear the selection");
+assert(playerJs.includes(': "cancelSelection"') && playerJs.includes('pointerStart.mode === "cancelSelection"'), "Blank workspace taps must clear an existing selection");
 assert(!playerJs.includes('action === "cancelSelection"'), "The old Cancel Selection action must be removed");
 const expectedDirectRules = [
     ['distributeLeftToRight', 'Distribute left'],
@@ -200,7 +201,7 @@ assert(playerJs.includes('(isExactInverseOfOne(originalNode) && proposedIsOne)')
 assert(playerJs.includes('function resolveContextualNumericalRewriteAction()'));
 assert(playerJs.includes('mode: "automatic"') && playerJs.includes('mode: "manual"'));
 assert(playerJs.includes('button[data-cancel-selection]') && playerJs.includes('cancelSelectionButton.addEventListener("click"'));
-assert(/cancelSelectionButton\.addEventListener\("click", \(\) => \{[\s\S]*?if \(isDemoModeActive\(\)\)[\s\S]*?clearSelection\(\);[\s\S]*?clearInteraction\(\);/.test(playerJs));
+assert(/cancelSelectionButton\.addEventListener\("click", \(\) => \{[\s\S]*?cancelCurrentWorkspaceSelection\(\);/.test(playerJs));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
 assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('M1 1 H599 V399 H1 Z'));
@@ -211,7 +212,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-control-layout'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-selection-viewport'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

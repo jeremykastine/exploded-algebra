@@ -4188,6 +4188,7 @@ Promise.resolve().then(() => {
             workspaceZoom = 1;
             workspacePanX = 0;
             workspacePanY = 0;
+            workspaceViewManuallyPanned = false;
             setWorkspaceMode("select");
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
@@ -4843,6 +4844,7 @@ ctx.font = SETTINGS.textFont;
         let workspaceZoom = 1;
         let workspacePanX = 0;
         let workspacePanY = 0;
+        let workspaceViewManuallyPanned = false;
         let builderWorkspaceViewActive = false;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
@@ -5124,6 +5126,7 @@ ctx.font = SETTINGS.textFont;
 
         function resetWorkspaceZoom() {
             const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || workspacePanX !== 0 || workspacePanY !== 0;
+            workspaceViewManuallyPanned = false;
             if (!viewChanged) {
                 setWorkspaceMode("pan");
                 return false;
@@ -5175,8 +5178,10 @@ ctx.font = SETTINGS.textFont;
         }
 
         function scheduleResponsiveLayoutRecalculation() {
-            if (!builderWorkspaceViewActive) {
+            if (!builderWorkspaceViewActive && workspaceViewManuallyPanned) {
                 pendingResponsiveWorkspaceView = captureWorkspaceView();
+            } else {
+                pendingResponsiveWorkspaceView = null;
             }
             if (responsiveLayoutFrame !== null) {
                 cancelAnimationFrame(responsiveLayoutFrame);
@@ -5192,6 +5197,8 @@ ctx.font = SETTINGS.textFont;
                 }
                 if (!builderWorkspaceViewActive && pendingResponsiveWorkspaceView) {
                     restoreWorkspaceView(pendingResponsiveWorkspaceView);
+                } else if (!builderWorkspaceViewActive && !workspaceViewManuallyPanned) {
+                    setWorkspacePan(0, 0);
                 }
                 positionToolOptionMenu();
                 updateSidePanelColumns();
@@ -5213,11 +5220,13 @@ ctx.font = SETTINGS.textFont;
                     zoom: workspaceZoom,
                     panX: workspacePanX,
                     panY: workspacePanY,
+                    manuallyPanned: workspaceViewManuallyPanned,
                     mode: uiState.workspaceMode
                 };
                 workspaceZoom = 1;
                 workspacePanX = 0;
                 workspacePanY = 0;
+                workspaceViewManuallyPanned = false;
                 applyWorkspaceZoomSizing();
                 setWorkspaceMode("select");
                 builderWorkspaceViewActive = true;
@@ -5233,6 +5242,7 @@ ctx.font = SETTINGS.textFont;
             workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, view.zoom));
             workspacePanX = Number.isFinite(view.panX) ? view.panX : 0;
             workspacePanY = Number.isFinite(view.panY) ? view.panY : 0;
+            workspaceViewManuallyPanned = view.manuallyPanned === true;
             setWorkspaceMode(view.mode);
             if (expressionRoot) {
                 drawExpression();
@@ -6343,6 +6353,19 @@ ctx.font = SETTINGS.textFont;
             renderToolArea();
         }
 
+        function cancelCurrentWorkspaceSelection() {
+            if (!selection.node || isDemoModeActive()) {
+                return false;
+            }
+            setWorkspaceMode("select");
+            clearSelection();
+            clearInteraction();
+            renderLevelInfo(currentLevelIndex);
+            refreshStatus();
+            drawExpression();
+            return true;
+        }
+
         function resetInteractionOnly() {
             clearInteraction();
             refreshStatus();
@@ -6671,6 +6694,14 @@ ctx.font = SETTINGS.textFont;
         function isPointInsideCurrentSelection(x, y) {
             const box = getSelectionBox();
             return !!box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+        }
+
+        function isPointInsideExpression(x, y) {
+            if (!expressionRoot) {
+                return false;
+            }
+            const bounds = getExpressionBounds();
+            return x >= bounds.left && x <= bounds.right && y >= bounds.top && y <= bounds.bottom;
         }
 
         function positionFloatingMenu() {
@@ -11601,15 +11632,7 @@ ctx.font = SETTINGS.textFont;
             const cancelSelectionButton = container.querySelector("button[data-cancel-selection]");
             if (cancelSelectionButton) {
                 cancelSelectionButton.addEventListener("click", () => {
-                    if (isDemoModeActive()) {
-                        return;
-                    }
-                    setWorkspaceMode("select");
-                    clearSelection();
-                    clearInteraction();
-                    renderLevelInfo(currentLevelIndex);
-                    refreshStatus();
-                    drawExpression();
+                    cancelCurrentWorkspaceSelection();
                 });
             }
 
@@ -12431,17 +12454,12 @@ function renderToolArea() {
         }
 
         function selectFromWorkspaceTap(x, y, pointerType, allowSelectionCancel = true) {
-            if (allowSelectionCancel && selection.node && isPointInsideCurrentSelection(x, y)) {
-                if (isDemoModeActive()) {
-                    return false;
-                }
-                setWorkspaceMode("select");
-                clearSelection();
-                clearInteraction();
-                renderLevelInfo(currentLevelIndex);
-                refreshStatus();
-                drawExpression();
-                return true;
+            if (
+                allowSelectionCancel &&
+                selection.node &&
+                (isPointInsideCurrentSelection(x, y) || !isPointInsideExpression(x, y))
+            ) {
+                return cancelCurrentWorkspaceSelection();
             }
 
             const target = findNearestVisibleObject(x, y, pointerType);
@@ -12526,6 +12544,8 @@ function renderToolArea() {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
                 if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
+                } else if (pointerStart.mode === "cancelSelection") {
+                    cancelCurrentWorkspaceSelection();
                 } else if (pointerStart.mode === "builderOperator") {
                     const target = getClosestIntegratedBuilderOperatorTarget(point.x, point.y);
                     if (target) {
@@ -12563,11 +12583,12 @@ function renderToolArea() {
             const integratedBuilder = uiState.stage === "builder" &&
                 isIntegratedExpressionBuilder(uiState.expressionBuilder);
             const panningView = !integratedBuilder && uiState.workspaceMode === "pan";
+            const cancelingSelectionFromBlankWorkspace = !integratedBuilder && !panningView && !!selection.node;
             if (
                 activeWorkspacePointerId !== null ||
                 uiState.mode !== "edit" ||
                 uiState.stage === "postview" ||
-                (!integratedBuilder && !panningView)
+                (!integratedBuilder && !panningView && !cancelingSelectionFromBlankWorkspace)
             ) {
                 return;
             }
@@ -12579,7 +12600,11 @@ function renderToolArea() {
                 pointerType: e.pointerType || "mouse",
                 panX: workspacePanX,
                 panY: workspacePanY,
-                mode: integratedBuilder ? "builderOperator" : "pan"
+                mode: integratedBuilder
+                    ? "builderOperator"
+                    : panningView
+                        ? "pan"
+                        : "cancelSelection"
             };
             if (svgContainer.setPointerCapture) {
                 try {
@@ -12619,13 +12644,15 @@ function renderToolArea() {
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
             const cancelingSelectionFromCurrentSelection = !activeBuilder && !panningView && !choosingCommuteOrder &&
                 !!selection.node && isPointInsideCurrentSelection(pointerX, pointerY);
+            const cancelingSelectionFromOutsideExpression = !activeBuilder && !panningView && !choosingCommuteOrder &&
+                !!selection.node && !isPointInsideExpression(pointerX, pointerY);
 
             if (isDemoModeActive() && !panningView) {
                 const step = getCurrentDemoStep();
                 const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
                 const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
                     (step.type === "commuteChoice" || step.type !== "tool");
-                if (cancelingSelectionFromCurrentSelection) {
+                if (cancelingSelectionFromCurrentSelection || cancelingSelectionFromOutsideExpression) {
                     return;
                 }
                 const groupingBuilderOperator = integratedBuilder && !!step && step.type === "builder" && step.action === "groupOperator";
@@ -12634,7 +12661,7 @@ function renderToolArea() {
                 }
             }
 
-            if (!integratedBuilder && !cancelingBuilder && !cancelingSelectionFromCurrentSelection && !panningView && !choosingCommuteOrder && uiState.activeTool) {
+            if (!integratedBuilder && !cancelingBuilder && !cancelingSelectionFromCurrentSelection && !cancelingSelectionFromOutsideExpression && !panningView && !choosingCommuteOrder && uiState.activeTool) {
                 return;
             }
 
@@ -12696,6 +12723,12 @@ function renderToolArea() {
                 workspacePointerStart.panX + deltaX,
                 workspacePointerStart.panY + deltaY
             );
+            if (
+                workspacePointerStart.mode === "pan" &&
+                (workspacePanX !== workspacePointerStart.panX || workspacePanY !== workspacePointerStart.panY)
+            ) {
+                workspaceViewManuallyPanned = true;
+            }
             e.preventDefault();
         });
 

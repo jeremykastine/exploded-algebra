@@ -7,8 +7,8 @@ const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html
 const playerJs = fs.readFileSync(path.join(projectRoot, "exploded-algebra-tool.js"), "utf8");
 
 assert(
-    /svgContainer\.addEventListener\("pointerdown",[\s\S]*?e\.target !== svgContainer[\s\S]*?const panningView = !integratedBuilder && uiState\.workspaceMode === "pan"[\s\S]*?mode: integratedBuilder \? "builderOperator" : "pan"/.test(playerJs),
-    "The blank workspace container must start either a normal pan or an Expression Builder tap-or-pan gesture"
+    /svgContainer\.addEventListener\("pointerdown",[\s\S]*?e\.target !== svgContainer[\s\S]*?const panningView = !integratedBuilder && uiState\.workspaceMode === "pan"[\s\S]*?cancelingSelectionFromBlankWorkspace[\s\S]*?"builderOperator"[\s\S]*?"pan"[\s\S]*?"cancelSelection"/.test(playerJs),
+    "The blank workspace container must start a normal pan, an Expression Builder gesture, or a selection-cancel tap"
 );
 assert(
     playerJs.includes('svgContainer.addEventListener("pointermove"'),
@@ -17,6 +17,16 @@ assert(
 assert(
     playerJs.includes('svgContainer.addEventListener("lostpointercapture"'),
     "Container-started pan gestures must clean up lost pointer capture"
+);
+assert(
+    playerJs.includes("let workspaceViewManuallyPanned = false") &&
+        playerJs.includes('workspacePointerStart.mode === "pan"') &&
+        playerJs.includes("workspaceViewManuallyPanned = true"),
+    "Only a real Pan gesture may mark the main workspace view as intentionally offset"
+);
+assert(
+    /scheduleResponsiveLayoutRecalculation\(\)[\s\S]*?workspaceViewManuallyPanned[\s\S]*?setWorkspacePan\(0, 0\)/.test(playerJs),
+    "Responsive mode changes must keep an unpanned expression anchored at the workspace's upper left"
 );
 assert(
     /body\.workspace-pan-active #svgContainer\s*\{[\s\S]*?touch-action: none;/.test(playerHtml),
