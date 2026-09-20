@@ -4237,8 +4237,8 @@ Promise.resolve().then(() => {
                 initialKatex,
                 evaluationLevel: Number.isInteger(config.evaluationLevel) ? config.evaluationLevel : 0,
                 numericalRewrite: clonePlainData(config.numericalRewrite || {
-                    addition: "no-carry",
-                    multiplication: "one-significant-figure",
+                    addition: "flat",
+                    multiplication: "unrestricted",
                     allowNegativeOne: false,
                     allowInverses: false
                 }),
@@ -7548,6 +7548,13 @@ ctx.font = SETTINGS.textFont;
         }
 
         const NUMERICAL_REWRITE_RULE_IDS = [
+            "positiveAddition",
+            "positiveMultiplication",
+            "signedAddition",
+            "signedMultiplication",
+            "fractionSimplification"
+        ];
+        const LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS = [
             "positiveAdditionNoCarry",
             "positiveAdditionWithCarry",
             "positiveMultiplicationOneSignificantFigure",
@@ -7569,43 +7576,25 @@ ctx.font = SETTINGS.textFont;
         function numericalRewriteProfileFromLegacyLevel(level) {
             const legacyLevel = clampArithmeticLevel(level, 0);
             const rules = makeNumericalRewriteRules();
-            if (legacyLevel === 0) {
-                rules.positiveAdditionNoCarry = { forward: "manual", reverse: "manual" };
-                rules.positiveMultiplicationOneSignificantFigure = { forward: "manual", reverse: "manual" };
-                return { rules };
+            rules.positiveAddition = { forward: "manual", reverse: "manual" };
+            rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
+            if (legacyLevel >= 2) {
+                rules.signedAddition = { forward: "manual", reverse: "manual" };
+                rules.signedMultiplication = { forward: "manual", reverse: "manual" };
             }
-            if (legacyLevel === 1) {
-                [
-                    "positiveAdditionNoCarry",
-                    "positiveAdditionWithCarry",
-                    "positiveMultiplicationOneSignificantFigure",
-                    "positiveMultiplicationUnrestricted"
-                ].forEach(ruleId => {
-                    rules[ruleId] = { forward: "manual", reverse: "manual" };
-                });
-                return { rules };
+            if (legacyLevel >= 3) {
+                rules.fractionSimplification = { forward: "manual", reverse: "manual" };
             }
-            NUMERICAL_REWRITE_RULE_IDS.forEach(ruleId => {
-                if (ruleId !== "fractionSimplification" || legacyLevel >= 3) {
-                    rules[ruleId] = { forward: "manual", reverse: "manual" };
-                }
-            });
             return { rules };
         }
 
         function numericalRewriteProfileFromLegacyDefinition(profile) {
             const rules = makeNumericalRewriteRules();
             if (profile.addition !== "none") {
-                rules.positiveAdditionNoCarry = { forward: "manual", reverse: "manual" };
-            }
-            if (["flat", "expression-terms"].includes(profile.addition)) {
-                rules.positiveAdditionWithCarry = { forward: "manual", reverse: "manual" };
+                rules.positiveAddition = { forward: "manual", reverse: "manual" };
             }
             if (profile.multiplication !== "none") {
-                rules.positiveMultiplicationOneSignificantFigure = { forward: "manual", reverse: "manual" };
-            }
-            if (profile.multiplication === "unrestricted") {
-                rules.positiveMultiplicationUnrestricted = { forward: "manual", reverse: "manual" };
+                rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
             }
             if (profile.allowNegativeOne === true && profile.addition !== "none") {
                 rules.signedAddition = { forward: "manual", reverse: "manual" };
@@ -7619,10 +7608,27 @@ ctx.font = SETTINGS.textFont;
             return { rules };
         }
 
+        function normalizeNumericalRewriteRules(rules) {
+            const normalized = makeNumericalRewriteRules();
+            const copyRule = (targetRuleId, sourceRuleId) => {
+                if (rules[sourceRuleId]) {
+                    normalized[targetRuleId] = clonePlainData(rules[sourceRuleId]);
+                }
+            };
+            copyRule("positiveAddition", rules.positiveAddition ? "positiveAddition" :
+                (rules.positiveAdditionWithCarry ? "positiveAdditionWithCarry" : "positiveAdditionNoCarry"));
+            copyRule("positiveMultiplication", rules.positiveMultiplication ? "positiveMultiplication" :
+                (rules.positiveMultiplicationUnrestricted ? "positiveMultiplicationUnrestricted" : "positiveMultiplicationOneSignificantFigure"));
+            copyRule("signedAddition", "signedAddition");
+            copyRule("signedMultiplication", "signedMultiplication");
+            copyRule("fractionSimplification", "fractionSimplification");
+            return normalized;
+        }
+
         function getNumericalRewriteProfile(level = getCurrentLevel()) {
             if (level && level.numericalRewrite && typeof level.numericalRewrite === "object") {
                 if (level.numericalRewrite.rules) {
-                    return clonePlainData(level.numericalRewrite);
+                    return { rules: normalizeNumericalRewriteRules(level.numericalRewrite.rules) };
                 }
                 return numericalRewriteProfileFromLegacyDefinition(level.numericalRewrite);
             }
@@ -7637,7 +7643,19 @@ ctx.font = SETTINGS.textFont;
                 if (!profile.rules || typeof profile.rules !== "object" || Array.isArray(profile.rules)) {
                     throw new Error(`${sourceName} has an invalid numericalRewrite.rules setting.`);
                 }
-                NUMERICAL_REWRITE_RULE_IDS.forEach(ruleId => {
+                const hasCurrentRules = NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
+                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
+                );
+                const hasLegacyGranularRules = LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
+                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
+                );
+                const ruleIds = hasCurrentRules
+                    ? NUMERICAL_REWRITE_RULE_IDS
+                    : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null);
+                if (!ruleIds) {
+                    throw new Error(`${sourceName} has an incomplete numericalRewrite.rules setting.`);
+                }
+                ruleIds.forEach(ruleId => {
                     const rule = profile.rules[ruleId];
                     if (!rule || !NUMERICAL_REWRITE_FORWARD_MODES.includes(rule.forward) ||
                         !NUMERICAL_REWRITE_REVERSE_MODES.includes(rule.reverse)) {
@@ -7662,10 +7680,8 @@ ctx.font = SETTINGS.textFont;
 
         function getNumericalRewriteProfileSummaryItems(profile) {
             const labels = {
-                positiveAdditionNoCarry: "Positive addition without carrying",
-                positiveAdditionWithCarry: "Positive addition with carrying",
-                positiveMultiplicationOneSignificantFigure: "Two one-significant-figure positive factors",
-                positiveMultiplicationUnrestricted: "Unrestricted positive multiplication",
+                positiveAddition: "Positive whole-number addition",
+                positiveMultiplication: "Positive whole-number multiplication",
                 signedAddition: "Flat sums with negative-one factors",
                 signedMultiplication: "Flat products with negative-one factors",
                 fractionSimplification: "Fraction simplification"
@@ -7770,35 +7786,6 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function isOneSignificantFigureBigInt(value) {
-            return value >= 0n && (value === 0n || /^[1-9]0*$/.test(value.toString()));
-        }
-
-        function isNoCarryWholeNumberNodeAddition(nodes) {
-            if (!Array.isArray(nodes) || nodes.length < 2) {
-                return false;
-            }
-            const texts = nodes.map(node => {
-                const value = getWholeNumberBigIntFromNode(node);
-                return value === null ? null : value.toString();
-            });
-            if (texts.some(text => text === null)) {
-                return false;
-            }
-            const maxLength = Math.max(...texts.map(text => text.length));
-            for (let offset = 0; offset < maxLength; offset++) {
-                let columnSum = 0;
-                for (const text of texts) {
-                    const index = text.length - 1 - offset;
-                    columnSum += index >= 0 ? Number(text[index]) : 0;
-                }
-                if (columnSum >= 10) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         function numericalRewriteNodeContainsInverse(node) {
             return !!node && (node.type === "inv" || node.args.some(numericalRewriteNodeContainsInverse));
         }
@@ -7847,9 +7834,7 @@ ctx.font = SETTINGS.textFont;
             }
             if (normalized.type === "sum" && normalized.args.length >= 2) {
                 if (normalized.args.every(child => getWholeNumberBigIntFromNode(child) !== null)) {
-                    return isNoCarryWholeNumberNodeAddition(normalized.args)
-                        ? "positiveAdditionNoCarry"
-                        : "positiveAdditionWithCarry";
+                    return "positiveAddition";
                 }
                 if (normalized.args.every(isFlatSignedIntegerTerm) &&
                     normalized.args.some(term => isExactNumericalRewriteValue(term, "-1") || isFlatSignedIntegerProduct(term))) {
@@ -7863,9 +7848,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 const factors = normalized.args.map(getWholeNumberBigIntFromNode);
                 if (factors.every(value => value !== null)) {
-                    return factors.length === 2 && factors.every(isOneSignificantFigureBigInt)
-                        ? "positiveMultiplicationOneSignificantFigure"
-                        : "positiveMultiplicationUnrestricted";
+                    return "positiveMultiplication";
                 }
             }
             return null;

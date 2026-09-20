@@ -72,37 +72,32 @@ Each exercise specifies Numerical Rewrite permissions with this structure:
 
   "numericalRewrite": {
     "rules": {
-      "positiveAdditionNoCarry": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "positiveAdditionWithCarry": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "positiveMultiplicationOneSignificantFigure": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "positiveMultiplicationUnrestricted": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "signedAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "signedMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "fractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" }
     }
   }
 
-The seven categories are deliberately disjoint: the no-carry and binary
-one-significant-figure cases use their narrower rows, while carrying addition
-and broader positive multiplication use the next rows. Signed arithmetic is
-flat and represents negative numbers with negative-one factors. Fraction
-simplification applies to numerical products involving inverses. Forward
-Automatic evaluates to a canonical exact integer or fraction; Forward Manual
-opens the Expression Builder; Not allowed disables that direction. Reverse is
-never automatic. Manual rewrites must be exactly equivalent and match the
-enabled category and direction. In each direction, no-carry addition must be at
-least as permissive as carrying addition, and one-significant-figure
-multiplication must be at least as permissive as unrestricted multiplication.
-The Exercise Builder automatically updates the related radio choice to preserve
-this ordering.
+Positive whole-number addition and multiplication have no carrying or
+significant-figure restrictions. Any narrower expectations belong in the
+exercise's recorded steps rather than its numerical-manipulation permissions.
+Signed arithmetic is flat and represents negative numbers with negative-one
+factors. Fraction simplification applies to numerical products involving
+inverses. Forward Automatic evaluates to a canonical exact integer or fraction;
+Forward Manual opens the Expression Builder; Not allowed disables that
+direction. Reverse is never automatic. Manual rewrites must be exactly
+equivalent and match the enabled category and direction.
 
 Three simplifications are fixed rather than exercise-configurable:
 `(-1)(-1) -> 1`, `inverse(1) -> 1`, and `inverse(-1) -> -1` are always automatic,
 and each reverse direction is always manual.
 
-Older custom files that contain `arithmeticLevel` or the previous broad
-`numericalRewrite` profile are mapped to compatible manual rules when loaded.
-New move-history downloads retain the explicit rule matrix.
+Older custom files that contain `arithmeticLevel`, the previous broad
+`numericalRewrite` profile, or the seven-rule granular profile are mapped to the
+five current rules when loaded. New move-history downloads retain the explicit
+rule matrix.
 
 Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
 Selecting a literal 1 adds a Product of Inverses choice
