@@ -72,8 +72,8 @@ Each exercise specifies Numerical Rewrite permissions with this structure:
 
   "numericalRewrite": {
     "rules": {
-      "positiveAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "positiveMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveAddition": { "forward": "automatic" | "manual", "reverse": "manual" },
+      "positiveMultiplication": { "forward": "automatic" | "manual", "reverse": "manual" },
       "signedAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "signedMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "fractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" }
@@ -83,16 +83,24 @@ Each exercise specifies Numerical Rewrite permissions with this structure:
 Positive whole-number addition and multiplication have no carrying or
 significant-figure restrictions. Any narrower expectations belong in the
 exercise's recorded steps rather than its numerical-manipulation permissions.
+They are always available: their forward direction may be Automatic or Manual,
+and their reverse direction is always Manual.
 Signed arithmetic is flat and represents negative numbers with negative-one
-factors. Fraction simplification applies to numerical products involving
-inverses. Forward Automatic evaluates to a canonical exact integer or fraction;
-Forward Manual opens the Expression Builder; Not allowed disables that
-direction. Reverse is never automatic. Manual rewrites must be exactly
-equivalent and match the enabled category and direction.
+factors. Fraction simplification accepts any-length products whose factors are
+integers or inverses of integers. Forward simplification produces the canonical
+reduced integer or fraction, removing the inverse when the result is an integer.
+Reverse Manual may expand an integer or reduced fraction into any equivalent
+product of integers and inverses of integers. Forward Automatic evaluates to a
+canonical exact integer or fraction; Forward Manual opens the Expression
+Builder; Not allowed disables that direction. Reverse is never automatic.
+Manual rewrites must be exactly equivalent and match the enabled category and
+direction.
 
 Three simplifications are fixed rather than exercise-configurable:
 `(-1)(-1) -> 1`, `inverse(1) -> 1`, and `inverse(-1) -> -1` are always automatic,
-and each reverse direction is always manual.
+and each reverse direction is always manual. The two inverse rules appear as
+full entries in Exercise Builder Phase 1. Long-holding Numerical Manipulation in
+the player displays all current configurable and fixed direction settings.
 
 Older custom files that contain `arithmeticLevel`, the previous broad
 `numericalRewrite` profile, or the seven-rule granular profile are mapped to the

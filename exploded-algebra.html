@@ -2218,6 +2218,8 @@
         .press-hold-popover .rule-notation { display: block; }
         .press-hold-popover p { max-width: 720px; margin: 4px 0; }
         .press-hold-popover ul { max-width: 720px; margin: 7px 0 0; padding-left: 22px; text-align: left; }
+        .press-hold-popover .numerical-permission-summary { font-size: clamp(11px, 1.8vw, 15px); line-height: 1.3; }
+        .press-hold-popover .numerical-permission-summary li + li { margin-top: 2px; }
         body:not(.expression-builder-active) button {
             -webkit-touch-callout: none;
             user-select: none;
@@ -4510,7 +4512,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260920-simplified-numerical-permissions"></script>
+    <script src="exploded-algebra-tool.js?v=20260920-fixed-numerical-permissions"></script>
 
 </body>
 </html>

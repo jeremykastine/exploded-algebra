@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
@@ -182,6 +183,14 @@ assert(playerJs.includes('return "positiveAddition";') && playerJs.includes('ret
 assert(!playerJs.includes('return isNoCarryWholeNumberNodeAddition(normalized.args)') && !playerJs.includes('factors.every(isOneSignificantFigureBigInt)'));
 assert(playerJs.includes('LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('function normalizeNumericalRewriteRules(rules)'));
 assert(playerJs.includes('"signedAddition"') && playerJs.includes('"signedMultiplication"') && playerJs.includes('"fractionSimplification"'));
+assert(playerJs.includes('normalized[ruleId].forward === "automatic" ? "automatic" : "manual"') && playerJs.includes('reverse: "manual"'), "Positive addition and multiplication must normalize to Automatic or Manual forward and Manual reverse");
+assert(playerJs.includes('function isNumericalRewriteIntegerNode(node)') && playerJs.includes('function isInverseOfNumericalRewriteInteger(node)') && playerJs.includes('function isFractionSimplificationForm(node)'), "Fraction simplification must validate products of integers and inverses of integers");
+assert(playerJs.includes('if (isFractionSimplificationForm(normalized))') && !playerJs.includes('numericalRewriteNodeContainsInverse'), "Fraction simplification must reject unsupported numerical forms merely containing an inverse");
+assert(playerJs.includes('numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)') && playerJs.includes('numericalRewriteNodesHaveSameStructure(original, canonicalProposed)'), "Manual fraction rewrites must use canonical forward and equivalent reverse validation");
+assert(/function makeCanonicalNumericalRewriteNode\(value\)[\s\S]*?value\.denominator === 1n[\s\S]*?return valueNode\(absoluteNumerator\.toString\(\)\)/.test(playerJs), "Canonical fraction simplification must remove the inverse when the result is a whole number");
+assert(playerJs.includes('Inverse of one: Forward — Automatic; Reverse — Manual') && playerJs.includes('Inverse of negative one: Forward — Automatic; Reverse — Manual') && playerJs.includes('Negative one times negative one: Forward — Automatic; Reverse — Manual'), "The Numerical Manipulation hold description must list all fixed settings");
+assert(/function getIntentCategoryDescriptionHtml\(categoryId\)[\s\S]*?categoryId === "numericalRewrite"[\s\S]*?getNumericalRewriteProfileSummaryItems\(getNumericalRewriteProfile\(\)\)/.test(playerJs), "Long-holding Numerical Manipulation must display the current exercise's complete permission summary");
+assert(playerJs.includes('class="numerical-permission-summary"') && playerHtml.includes('.press-hold-popover .numerical-permission-summary'), "The complete Numerical Manipulation hold summary must remain compact enough for phone screens");
 assert(playerJs.includes('function getAutomaticNumericalRewriteData()') && playerJs.includes('function applyAutomaticNumericalRewrite()'));
 assert(playerJs.includes('function validateManualNumericalRewriteExchange(originalNode, proposedNode)'));
 assert(playerJs.includes('getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual"'));
@@ -200,7 +209,7 @@ assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-simplified-numerical-permissions'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-fixed-numerical-permissions'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -223,5 +232,51 @@ assert(!playerHtml.includes("Button size"));
 assert(playerJs.includes("function installBottomPanelResizing()"));
 assert(playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;"));
 assert(playerJs.includes('document.body.classList.toggle("selection-active", selectionActive);\n            applyResponsiveMainButtonSize();'));
+
+const integerFormMatch = playerJs.match(/function isNumericalRewriteIntegerNode\(node\) \{([\s\S]*?)\n        \}\n\n        function isInverseOfNumericalRewriteInteger/);
+const inverseIntegerFormMatch = playerJs.match(/function isInverseOfNumericalRewriteInteger\(node\) \{([\s\S]*?)\n        \}\n\n        function isFractionSimplificationForm/);
+const fractionFormMatch = playerJs.match(/function isFractionSimplificationForm\(node\) \{([\s\S]*?)\n        \}\n\n        function isFlatSignedIntegerProduct/);
+assert(integerFormMatch && inverseIntegerFormMatch && fractionFormMatch, "Fraction form validators must remain testable");
+const fractionContext = {
+    getWholeNumberBigIntFromNode(node) {
+        return node && node.type === "value" && /^\d+$/.test(String(node.value)) ? BigInt(node.value) : null;
+    },
+    isExactNumericalRewriteValue(node, value) {
+        return !!node && node.type === "value" && String(node.value) === value;
+    },
+    evaluateNumericalRewriteNodeExactly(node) {
+        if (!node) return null;
+        if (node.type === "value" && String(node.value) === "-1") return { numerator: -1n, denominator: 1n };
+        if (node.type === "value" && /^\d+$/.test(String(node.value))) return { numerator: BigInt(node.value), denominator: 1n };
+        if (node.type === "prod") {
+            let numerator = 1n;
+            for (const child of node.args) {
+                const value = fractionContext.evaluateNumericalRewriteNodeExactly(child);
+                if (!value || value.denominator !== 1n) return null;
+                numerator *= value.numerator;
+            }
+            return { numerator, denominator: 1n };
+        }
+        return null;
+    }
+};
+vm.createContext(fractionContext);
+vm.runInContext(`
+function isNumericalRewriteIntegerNode(node) {${integerFormMatch[1]}\n}
+function isInverseOfNumericalRewriteInteger(node) {${inverseIntegerFormMatch[1]}\n}
+function isFractionSimplificationForm(node) {${fractionFormMatch[1]}\n}
+this.isFractionSimplificationForm = isFractionSimplificationForm;
+`, fractionContext);
+const valueNode = value => ({ type: "value", value: String(value), args: [] });
+const productNode = (...args) => ({ type: "prod", args });
+const inverseNode = child => ({ type: "inv", args: [child] });
+const sumNode = (...args) => ({ type: "sum", args });
+assert(fractionContext.isFractionSimplificationForm(productNode(
+    valueNode(18), inverseNode(valueNode(24)), valueNode(-1), valueNode(5), inverseNode(productNode(valueNode(-1), valueNode(7)))
+)), "Fraction simplification must accept arbitrary-length products of integers and inverses of positive or negative integers");
+assert(fractionContext.isFractionSimplificationForm(inverseNode(productNode(valueNode(-1), valueNode(9)))), "Fraction simplification must accept the inverse of a negative integer");
+assert(!fractionContext.isFractionSimplificationForm(inverseNode(sumNode(valueNode(1), valueNode(2)))), "Fraction simplification must reject inverses of sums");
+assert(!fractionContext.isFractionSimplificationForm(inverseNode(inverseNode(valueNode(2)))), "Fraction simplification must reject nested inverses as factors");
+assert(!fractionContext.isFractionSimplificationForm(productNode(valueNode(2), valueNode(3))), "The fraction category must require at least one inverse factor");
 
 console.log("Control layout checks passed.");

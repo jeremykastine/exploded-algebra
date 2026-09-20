@@ -6,12 +6,20 @@
   const FORMAT_VERSION = 1;
   const VARIABLES = ["x"];
   const NUMERICAL_REWRITE_RULES = [
-    { id: "positiveAddition", label: "Positive whole-number addition", example: "23 + 14 ↔ 37" },
-    { id: "positiveMultiplication", label: "Positive whole-number multiplication", example: "24 · 37 ↔ 888" },
-    { id: "signedAddition", label: "Flat sums with negative-one factors", example: "8 + (−1) · 12 ↔ (−1) · 4" },
-    { id: "signedMultiplication", label: "Flat products with negative-one factors", example: "(−1) · 4 · 7 ↔ (−1) · 28" },
-    { id: "fractionSimplification", label: "Fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)" }
+    { id: "positiveAddition", label: "Positive whole-number addition", example: "23 + 14 ↔ 37", forward: ["automatic", "manual"], reverse: ["manual"] },
+    { id: "positiveMultiplication", label: "Positive whole-number multiplication", example: "24 · 37 ↔ 888", forward: ["automatic", "manual"], reverse: ["manual"] },
+    { id: "signedAddition", label: "Flat sums with negative-one factors", example: "8 + (−1) · 12 ↔ (−1) · 4", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
+    { id: "signedMultiplication", label: "Flat products with negative-one factors", example: "(−1) · 4 · 7 ↔ (−1) · 28", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
+    { id: "fractionSimplification", label: "Fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
+    { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic"], reverse: ["manual"], fixed: true },
+    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic"], reverse: ["manual"], fixed: true }
   ];
+  const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES.filter(rule => !rule.fixed);
+  const NUMERICAL_PERMISSION_LABELS = {
+    automatic: "Automatic",
+    manual: "Manual",
+    "not-allowed": "Not allowed"
+  };
 
   const byId = id => document.getElementById(id);
   const workspace = byId("eaWorkspace");
@@ -31,9 +39,9 @@
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
       settings: {
         numericalRewrite: {
-          rules: Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
+          rules: Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
             rule.id,
-            { forward: "automatic", reverse: "manual" }
+            { forward: rule.forward[0], reverse: rule.reverse[0] }
           ]))
         },
         includeUndoActions: false,
@@ -116,8 +124,9 @@
         const headingId = `numerical-${rule.id}-heading`;
         const forwardId = `numerical-${rule.id}-forward-heading`;
         const reverseId = `numerical-${rule.id}-reverse-heading`;
-        const input = (name, value, label, checked = false) =>
-          `<label><input type="radio" name="${name}" value="${value}"${checked ? " checked" : ""}> ${label}</label>`;
+        const inputs = (name, options) => options.map((value, optionIndex) =>
+          `<label><input type="radio" name="${name}" value="${value}"${optionIndex === 0 ? " checked" : ""}> ${NUMERICAL_PERMISSION_LABELS[value]}</label>`
+        ).join("");
         return `
           <section class="numerical-permission-rule" role="listitem" aria-labelledby="${headingId}">
             <h3 id="${headingId}" class="numerical-rule-name"><span>${index + 1}.</span> ${escapeHtml(rule.label)}</h3>
@@ -125,16 +134,13 @@
             <div class="permission-direction" role="group" aria-labelledby="${forwardId}">
               <h4 id="${forwardId}" class="permission-direction-title">Forward</h4>
               <div class="permission-options">
-                ${input(forwardName, "automatic", "Automatic", true)}
-                ${input(forwardName, "manual", "Manual")}
-                ${input(forwardName, "not-allowed", "Not allowed")}
+                ${inputs(forwardName, rule.forward)}
               </div>
             </div>
             <div class="permission-direction" role="group" aria-labelledby="${reverseId}">
               <h4 id="${reverseId}" class="permission-direction-title">Reverse</h4>
               <div class="permission-options">
-                ${input(reverseName, "manual", "Manual", true)}
-                ${input(reverseName, "not-allowed", "Not allowed")}
+                ${inputs(reverseName, rule.reverse)}
               </div>
             </div>
           </section>`;
@@ -142,7 +148,7 @@
   }
 
   function readNumericalPermissionChoices() {
-    return Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
+    return Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
       rule.id,
       {
         forward: document.querySelector(`input[name="numerical-${rule.id}-forward"]:checked`).value,

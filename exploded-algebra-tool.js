@@ -315,7 +315,7 @@ Promise.resolve().then(() => {
         function getIntentCategoryDescriptionHtml(categoryId) {
             if (categoryId === "numericalRewrite") {
                 const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
-                return `<p>Manipulate a numerical expression into an equivalent form.</p><ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+                return `<p>Manipulate a numerical expression into an equivalent form.</p><ul class="numerical-permission-summary">${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
             }
             return `<p>${escapeHtml(getIntentCategoryDescription(categoryId))}</p>`;
         }
@@ -7590,12 +7590,8 @@ ctx.font = SETTINGS.textFont;
 
         function numericalRewriteProfileFromLegacyDefinition(profile) {
             const rules = makeNumericalRewriteRules();
-            if (profile.addition !== "none") {
-                rules.positiveAddition = { forward: "manual", reverse: "manual" };
-            }
-            if (profile.multiplication !== "none") {
-                rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
-            }
+            rules.positiveAddition = { forward: "manual", reverse: "manual" };
+            rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
             if (profile.allowNegativeOne === true && profile.addition !== "none") {
                 rules.signedAddition = { forward: "manual", reverse: "manual" };
             }
@@ -7622,6 +7618,12 @@ ctx.font = SETTINGS.textFont;
             copyRule("signedAddition", "signedAddition");
             copyRule("signedMultiplication", "signedMultiplication");
             copyRule("fractionSimplification", "fractionSimplification");
+            for (const ruleId of ["positiveAddition", "positiveMultiplication"]) {
+                normalized[ruleId] = {
+                    forward: normalized[ruleId].forward === "automatic" ? "automatic" : "manual",
+                    reverse: "manual"
+                };
+            }
             return normalized;
         }
 
@@ -7686,10 +7688,19 @@ ctx.font = SETTINGS.textFont;
                 signedMultiplication: "Flat products with negative-one factors",
                 fractionSimplification: "Fraction simplification"
             };
-            return NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
+            const modeLabel = mode => ({
+                automatic: "Automatic",
+                manual: "Manual",
+                "not-allowed": "Not allowed"
+            })[mode] || mode;
+            const items = NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
                 const rule = getNumericalRewriteRuleSetting(ruleId, profile);
-                return `${labels[ruleId]}: forward ${rule.forward}; reverse ${rule.reverse}`;
+                return `${labels[ruleId]}: Forward — ${modeLabel(rule.forward)}; Reverse — ${modeLabel(rule.reverse)}`;
             });
+            items.push("Inverse of one: Forward — Automatic; Reverse — Manual");
+            items.push("Inverse of negative one: Forward — Automatic; Reverse — Manual");
+            items.push("Negative one times negative one: Forward — Automatic; Reverse — Manual");
+            return items;
         }
 
         function greatestCommonDivisorBigInt(a, b) {
@@ -7786,12 +7797,46 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function numericalRewriteNodeContainsInverse(node) {
-            return !!node && (node.type === "inv" || node.args.some(numericalRewriteNodeContainsInverse));
-        }
-
         function numericalRewriteNodeIsEntirelyNumerical(node) {
             return !!evaluateNumericalRewriteNodeExactly(node);
+        }
+
+        function isNumericalRewriteIntegerNode(node) {
+            if (getWholeNumberBigIntFromNode(node) !== null || isExactNumericalRewriteValue(node, "-1")) {
+                return true;
+            }
+            if (!node || node.type !== "prod" || node.args.length !== 2) {
+                return false;
+            }
+            const negativeOneIndex = node.args.findIndex(child => isExactNumericalRewriteValue(child, "-1"));
+            return negativeOneIndex >= 0 && getWholeNumberBigIntFromNode(node.args[1 - negativeOneIndex]) !== null;
+        }
+
+        function isInverseOfNumericalRewriteInteger(node) {
+            if (!node || node.type !== "inv" || node.args.length !== 1 ||
+                !isNumericalRewriteIntegerNode(node.args[0])) {
+                return false;
+            }
+            const value = evaluateNumericalRewriteNodeExactly(node.args[0]);
+            return !!value && value.numerator !== 0n && value.denominator === 1n;
+        }
+
+        function isFractionSimplificationForm(node) {
+            if (isInverseOfNumericalRewriteInteger(node)) {
+                return true;
+            }
+            if (!node || node.type !== "prod" || node.args.length < 2) {
+                return false;
+            }
+            let hasInverse = false;
+            for (const factor of node.args) {
+                if (isInverseOfNumericalRewriteInteger(factor)) {
+                    hasInverse = true;
+                } else if (!isNumericalRewriteIntegerNode(factor)) {
+                    return false;
+                }
+            }
+            return hasInverse;
         }
 
         function isFlatSignedIntegerProduct(node) {
@@ -7829,7 +7874,7 @@ ctx.font = SETTINGS.textFont;
             if (!numericalRewriteNodeIsEntirelyNumerical(normalized)) {
                 return null;
             }
-            if (["prod", "inv"].includes(normalized.type) && numericalRewriteNodeContainsInverse(normalized)) {
+            if (isFractionSimplificationForm(normalized)) {
                 return "fractionSimplification";
             }
             if (normalized.type === "sum" && normalized.args.length >= 2) {
@@ -7893,35 +7938,6 @@ ctx.font = SETTINGS.textFont;
             );
         }
 
-        function getNumericalRewriteComplexity(node) {
-            const score = { nodes: 0, digits: 0, magnitude: 0n };
-            const visit = current => {
-                score.nodes += 1;
-                if (current.type === "value") {
-                    const text = String(current.value);
-                    if (/^\d+$/.test(text)) {
-                        score.digits += text.length;
-                        score.magnitude += BigInt(text);
-                    } else if (text === "-1") {
-                        score.digits += 1;
-                        score.magnitude += 1n;
-                    }
-                }
-                current.args.forEach(visit);
-            };
-            visit(node);
-            return score;
-        }
-
-        function compareNumericalRewriteComplexity(first, second) {
-            const a = getNumericalRewriteComplexity(first);
-            const b = getNumericalRewriteComplexity(second);
-            if (a.nodes !== b.nodes) return a.nodes < b.nodes ? -1 : 1;
-            if (a.digits !== b.digits) return a.digits < b.digits ? -1 : 1;
-            if (a.magnitude !== b.magnitude) return a.magnitude < b.magnitude ? -1 : 1;
-            return 0;
-        }
-
         function getAutomaticNumericalRewriteData() {
             const selectedNode = cloneSelectedRangeNode();
             const ruleId = classifyNumericalRewriteCategory(selectedNode);
@@ -7971,12 +7987,19 @@ ctx.font = SETTINGS.textFont;
             const originalRuleId = classifyNumericalRewriteCategory(original);
             const proposedRuleId = classifyNumericalRewriteCategory(proposed);
 
-            if (originalRuleId === "fractionSimplification" && proposedRuleId === "fractionSimplification") {
-                const comparison = compareNumericalRewriteComplexity(proposed, original);
+            if (originalRuleId === "fractionSimplification") {
+                const canonicalOriginal = getCanonicalNumericalRewriteNode(original);
                 const forwardAllowed = getNumericalRewriteRuleSetting(originalRuleId).forward === "manual";
-                const reverseAllowed = getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual";
-                if ((comparison <= 0 && forwardAllowed) || (comparison > 0 && reverseAllowed)) {
+                if (forwardAllowed && numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)) {
                     return { ok: true };
+                }
+                const originalIsCanonical = numericalRewriteNodesHaveSameStructure(original, canonicalOriginal);
+                const reverseAllowed = getNumericalRewriteRuleSetting(originalRuleId).reverse === "manual";
+                if (originalIsCanonical && proposedRuleId === "fractionSimplification" && reverseAllowed) {
+                    const canonicalProposed = getCanonicalNumericalRewriteNode(proposed);
+                    if (numericalRewriteNodesHaveSameStructure(original, canonicalProposed)) {
+                        return { ok: true };
+                    }
                 }
             } else {
                 if (originalRuleId && getNumericalRewriteRuleSetting(originalRuleId).forward === "manual") {

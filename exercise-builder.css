@@ -44,6 +44,7 @@ legend { padding: 0 7px; font-weight: 800; }
 .check-stack { display: grid; align-content: center; gap: 10px; }
 .check-label, .radio-row label { display: flex; grid: none; align-items: center; gap: 8px; min-height: 34px; font-weight: 500; }
 .radio-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.undo-radio-options { display: grid; gap: 6px; }
 
 .numerical-permissions {
   display: grid;
