@@ -90,7 +90,11 @@ simplification applies to numerical products involving inverses. Forward
 Automatic evaluates to a canonical exact integer or fraction; Forward Manual
 opens the Expression Builder; Not allowed disables that direction. Reverse is
 never automatic. Manual rewrites must be exactly equivalent and match the
-enabled category and direction.
+enabled category and direction. In each direction, no-carry addition must be at
+least as permissive as carrying addition, and one-significant-figure
+multiplication must be at least as permissive as unrestricted multiplication.
+The Exercise Builder automatically updates the related radio choice to preserve
+this ordering.
 
 Three simplifications are fixed rather than exercise-configurable:
 `(-1)(-1) -> 1`, `inverse(1) -> 1`, and `inverse(-1) -> -1` are always automatic,

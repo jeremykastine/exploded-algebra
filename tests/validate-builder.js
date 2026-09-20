@@ -41,8 +41,39 @@ for (const ruleId of [
   assert(builderJs.includes(`id: "${ruleId}"`), `Setup must define numerical rule ${ruleId}`);
 }
 assert(builderJs.includes('{ forward: "automatic", reverse: "manual" }'), "Setup must default every configurable numerical rule to Automatic forward and Manual reverse");
-assert(builderJs.includes('value="automatic" checked') && builderJs.includes('value="manual" checked') && builderJs.includes('value="not-allowed"'), "Setup must render the required forward and reverse radio choices");
-assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes("Their reverse directions are manual"), "Setup must render the permission matrix and explain the fixed numerical rules");
+assert(builderJs.includes('input(forwardName, "forward", "automatic", "Automatic", true)') && builderJs.includes('input(reverseName, "reverse", "manual", "Manual", true)') && builderJs.includes('"not-allowed", "Not allowed"'), "Setup must render the required forward and reverse radio choices");
+assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"') && builderHtml.includes("Their reverse directions are manual"), "Setup must render the permission outline and explain the fixed numerical rules");
+assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') && builderJs.includes('class="permission-direction-title">Forward') && builderJs.includes('class="permission-direction-title">Reverse'), "Every numerical rule and direction must be vertically outlined");
+assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(".permission-direction") && /\.permission-options \{[^}]*display: grid;/.test(builderCss) && !/\.numerical-permissions \{[^}]*grid-template-columns:/.test(builderCss), "The numerical permission outline must keep rules, directions, and choices vertically stacked without a wide table grid");
+assert(builderJs.includes('["positiveAdditionNoCarry", "positiveAdditionWithCarry"]') && builderJs.includes('["positiveMultiplicationOneSignificantFigure", "positiveMultiplicationUnrestricted"]'), "Setup must define monotonic addition and multiplication hierarchies");
+const monotonicMatch = builderJs.match(/function applyMonotonicNumericalPermissions\(ruleChoices, changedRuleId, direction\) \{([\s\S]*?)\n  \}\n\n  function writeNumericalPermissionChoices/);
+assert(monotonicMatch, "The numerical permission hierarchy must remain testable");
+const monotonicContext = {
+  NUMERICAL_PERMISSION_HIERARCHIES: [
+    ["positiveAdditionNoCarry", "positiveAdditionWithCarry"],
+    ["positiveMultiplicationOneSignificantFigure", "positiveMultiplicationUnrestricted"]
+  ],
+  NUMERICAL_PERMISSION_RANKS: {
+    forward: { "not-allowed": 0, manual: 1, automatic: 2 },
+    reverse: { "not-allowed": 0, manual: 1 }
+  }
+};
+vm.createContext(monotonicContext);
+vm.runInContext(`function applyMonotonicNumericalPermissions(ruleChoices, changedRuleId, direction) {${monotonicMatch[1]}\n}\nthis.applyMonotonicNumericalPermissions = applyMonotonicNumericalPermissions;`, monotonicContext);
+const hierarchyChoices = {
+  positiveAdditionNoCarry: { forward: "not-allowed", reverse: "not-allowed" },
+  positiveAdditionWithCarry: { forward: "automatic", reverse: "manual" },
+  positiveMultiplicationOneSignificantFigure: { forward: "manual", reverse: "not-allowed" },
+  positiveMultiplicationUnrestricted: { forward: "automatic", reverse: "manual" }
+};
+monotonicContext.applyMonotonicNumericalPermissions(hierarchyChoices, "positiveAdditionNoCarry", "forward");
+monotonicContext.applyMonotonicNumericalPermissions(hierarchyChoices, "positiveAdditionNoCarry", "reverse");
+assert(hierarchyChoices.positiveAdditionWithCarry.forward === "not-allowed" && hierarchyChoices.positiveAdditionWithCarry.reverse === "not-allowed", "Disallowing no-carry addition must disallow carrying addition in the same direction");
+monotonicContext.applyMonotonicNumericalPermissions(hierarchyChoices, "positiveMultiplicationOneSignificantFigure", "forward");
+assert(hierarchyChoices.positiveMultiplicationUnrestricted.forward === "manual", "Lowering one-significant-figure multiplication must lower unrestricted multiplication");
+hierarchyChoices.positiveMultiplicationUnrestricted.reverse = "manual";
+monotonicContext.applyMonotonicNumericalPermissions(hierarchyChoices, "positiveMultiplicationUnrestricted", "reverse");
+assert(hierarchyChoices.positiveMultiplicationOneSignificantFigure.reverse === "manual", "Raising unrestricted multiplication must raise one-significant-figure multiplication");
 assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
 assert(builderHtml.includes('name="includeUndo" value="no" checked') && !builderHtml.includes('name="includeUndo" value="yes" checked'), "Undo recording must be off by default in Setup");
 assert(builderJs.includes("includeUndoActions: false"), "The in-memory undo-recording default must match Setup");

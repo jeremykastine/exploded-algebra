@@ -14,6 +14,14 @@
     { id: "signedMultiplication", label: "Flat products with negative-one factors", example: "(−1) · 4 · 7 ↔ (−1) · 28" },
     { id: "fractionSimplification", label: "Fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)" }
   ];
+  const NUMERICAL_PERMISSION_HIERARCHIES = [
+    ["positiveAdditionNoCarry", "positiveAdditionWithCarry"],
+    ["positiveMultiplicationOneSignificantFigure", "positiveMultiplicationUnrestricted"]
+  ];
+  const NUMERICAL_PERMISSION_RANKS = {
+    forward: { "not-allowed": 0, manual: 1, automatic: 2 },
+    reverse: { "not-allowed": 0, manual: 1 }
+  };
 
   const byId = id => document.getElementById(id);
   const workspace = byId("eaWorkspace");
@@ -112,21 +120,78 @@
 
   function renderNumericalPermissionTable() {
     const target = byId("numericalPermissionsTable");
-    const header = (label, role) => `<div class="numerical-permission-cell numerical-permission-header" role="${role}">${label}</div>`;
-    target.innerHTML = [
-      header("Numerical change", "columnheader"),
-      header("Forward", "columnheader"),
-      header("Reverse", "columnheader"),
-      ...NUMERICAL_REWRITE_RULES.flatMap(rule => {
+    target.innerHTML = NUMERICAL_REWRITE_RULES.map((rule, index) => {
         const forwardName = `numerical-${rule.id}-forward`;
         const reverseName = `numerical-${rule.id}-reverse`;
-        return [
-          `<div class="numerical-permission-cell numerical-rule-name" role="rowheader"><strong>${escapeHtml(rule.label)}</strong><small>${escapeHtml(rule.example)}</small></div>`,
-          `<div class="numerical-permission-cell" role="cell"><div class="permission-options" role="radiogroup" aria-label="${escapeHtml(rule.label)} forward"><label><input type="radio" name="${forwardName}" value="automatic" checked> Automatic</label><label><input type="radio" name="${forwardName}" value="manual"> Manual</label><label><input type="radio" name="${forwardName}" value="not-allowed"> Not allowed</label></div></div>`,
-          `<div class="numerical-permission-cell" role="cell"><div class="permission-options" role="radiogroup" aria-label="${escapeHtml(rule.label)} reverse"><label><input type="radio" name="${reverseName}" value="manual" checked> Manual</label><label><input type="radio" name="${reverseName}" value="not-allowed"> Not allowed</label></div></div>`
-        ];
-      })
-    ].join("");
+        const headingId = `numerical-${rule.id}-heading`;
+        const forwardId = `numerical-${rule.id}-forward-heading`;
+        const reverseId = `numerical-${rule.id}-reverse-heading`;
+        const input = (name, direction, value, label, checked = false) =>
+          `<label><input type="radio" name="${name}" value="${value}" data-numerical-rule="${rule.id}" data-numerical-direction="${direction}"${checked ? " checked" : ""}> ${label}</label>`;
+        return `
+          <section class="numerical-permission-rule" role="listitem" aria-labelledby="${headingId}">
+            <h3 id="${headingId}" class="numerical-rule-name"><span>${index + 1}.</span> ${escapeHtml(rule.label)}</h3>
+            <p class="numerical-rule-example">${escapeHtml(rule.example)}</p>
+            <div class="permission-direction" role="group" aria-labelledby="${forwardId}">
+              <h4 id="${forwardId}" class="permission-direction-title">Forward</h4>
+              <div class="permission-options">
+                ${input(forwardName, "forward", "automatic", "Automatic", true)}
+                ${input(forwardName, "forward", "manual", "Manual")}
+                ${input(forwardName, "forward", "not-allowed", "Not allowed")}
+              </div>
+            </div>
+            <div class="permission-direction" role="group" aria-labelledby="${reverseId}">
+              <h4 id="${reverseId}" class="permission-direction-title">Reverse</h4>
+              <div class="permission-options">
+                ${input(reverseName, "reverse", "manual", "Manual", true)}
+                ${input(reverseName, "reverse", "not-allowed", "Not allowed")}
+              </div>
+            </div>
+          </section>`;
+      }).join("");
+  }
+
+  function readNumericalPermissionChoices() {
+    return Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
+      rule.id,
+      {
+        forward: document.querySelector(`input[name="numerical-${rule.id}-forward"]:checked`).value,
+        reverse: document.querySelector(`input[name="numerical-${rule.id}-reverse"]:checked`).value
+      }
+    ]));
+  }
+
+  function applyMonotonicNumericalPermissions(ruleChoices, changedRuleId, direction) {
+    const ranks = NUMERICAL_PERMISSION_RANKS[direction];
+    const changedValue = ruleChoices[changedRuleId][direction];
+    for (const [narrowerRuleId, broaderRuleId] of NUMERICAL_PERMISSION_HIERARCHIES) {
+      if (changedRuleId === narrowerRuleId && ranks[ruleChoices[broaderRuleId][direction]] > ranks[changedValue]) {
+        ruleChoices[broaderRuleId][direction] = changedValue;
+      } else if (changedRuleId === broaderRuleId && ranks[ruleChoices[narrowerRuleId][direction]] < ranks[changedValue]) {
+        ruleChoices[narrowerRuleId][direction] = changedValue;
+      }
+    }
+    return ruleChoices;
+  }
+
+  function writeNumericalPermissionChoices(ruleChoices) {
+    for (const rule of NUMERICAL_REWRITE_RULES) {
+      for (const direction of ["forward", "reverse"]) {
+        const value = ruleChoices[rule.id][direction];
+        const input = document.querySelector(`input[name="numerical-${rule.id}-${direction}"][value="${value}"]`);
+        if (input) input.checked = true;
+      }
+    }
+  }
+
+  function synchronizeNumericalPermissionHierarchy(changedInput) {
+    const ruleChoices = readNumericalPermissionChoices();
+    applyMonotonicNumericalPermissions(
+      ruleChoices,
+      changedInput.dataset.numericalRule,
+      changedInput.dataset.numericalDirection
+    );
+    writeNumericalPermissionChoices(ruleChoices);
   }
 
   function sameExpressionText(first, second) {
@@ -140,15 +205,7 @@
       instruction: "",
       completionMessage: ""
     };
-    draft.settings.numericalRewrite = {
-      rules: Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
-        rule.id,
-        {
-          forward: document.querySelector(`input[name="numerical-${rule.id}-forward"]:checked`).value,
-          reverse: document.querySelector(`input[name="numerical-${rule.id}-reverse"]:checked`).value
-        }
-      ]))
-    };
+    draft.settings.numericalRewrite = { rules: readNumericalPermissionChoices() };
     draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
     draft.settings.excludedDefaultTools = [];
   }
@@ -629,6 +686,10 @@
       if (!idWasEdited) byId("exerciseId").value = slugify(event.target.value);
     });
     byId("exerciseId").addEventListener("input", () => { idWasEdited = true; });
+    byId("numericalPermissionsTable").addEventListener("change", event => {
+      const input = event.target.closest("input[data-numerical-rule][data-numerical-direction]");
+      if (input) synchronizeNumericalPermissionHierarchy(input);
+    });
     byId("setupForm").addEventListener("submit", event => {
       event.preventDefault();
       if (validateSetup(true)) setPhase(2);

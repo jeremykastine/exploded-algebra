@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260920-numerical-permissions">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260920-vertical-numerical-permissions">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260920-automatic-major-steps"></script>
+  <script defer src="exercise-builder.js?v=20260920-vertical-numerical-permissions"></script>
 </head>
 <body>
   <main>
@@ -24,8 +24,8 @@
         </div>
         <fieldset>
           <legend>Numerical manipulation permissions</legend>
-          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression.</p>
-          <div id="numericalPermissionsTable" class="numerical-permissions" role="table" aria-label="Numerical manipulation permissions" aria-describedby="numericalPermissionHelp"></div>
+          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression. Within addition and multiplication, the simpler rule must be at least as permissive as the broader rule, so changing either setting may update its related setting.</p>
+          <div id="numericalPermissionsTable" class="numerical-permissions" role="list" aria-label="Numerical manipulation permissions" aria-describedby="numericalPermissionHelp"></div>
           <p class="field-help fixed-numerical-note">Always fixed: (−1)(−1) → 1, inverse(1) → 1, and inverse(−1) → −1 are automatic. Their reverse directions are manual.</p>
         </fieldset>
 
