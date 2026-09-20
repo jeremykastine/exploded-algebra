@@ -29,9 +29,21 @@ assert(!builderHtml.includes("builder-header") && !builderHtml.includes("phase-n
 assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to Solving") && !builderHtml.includes("Edit Starting Expression") && !builderHtml.includes("Edit Setup"), "The builder must not provide backward phase navigation");
 assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
 assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraftNow") && !builderJs.includes("scheduleSave") && !builderJs.includes("readSavedDraft"), "The streamlined builder must not save or resume drafts");
-assert(builderHtml.includes('<option value="expression-terms" selected>') && builderHtml.includes('<option value="unrestricted" selected>'), "Setup must select the most generous numerical manipulation levels by default");
-assert(builderHtml.includes('id="allowNegativeOne" type="checkbox" checked') && builderHtml.includes('id="allowInverses" type="checkbox" checked'), "Negative-one and inverse numerical manipulations must be enabled by default");
-assert(builderJs.includes('addition: "expression-terms"') && builderJs.includes('multiplication: "unrestricted"') && builderJs.includes('allowNegativeOne: true') && builderJs.includes('allowInverses: true'), "In-memory setup defaults must match the fully permissive form defaults");
+for (const ruleId of [
+  "positiveAdditionNoCarry",
+  "positiveAdditionWithCarry",
+  "positiveMultiplicationOneSignificantFigure",
+  "positiveMultiplicationUnrestricted",
+  "signedAddition",
+  "signedMultiplication",
+  "fractionSimplification"
+]) {
+  assert(builderJs.includes(`id: "${ruleId}"`), `Setup must define numerical rule ${ruleId}`);
+}
+assert(builderJs.includes('{ forward: "automatic", reverse: "manual" }'), "Setup must default every configurable numerical rule to Automatic forward and Manual reverse");
+assert(builderJs.includes('value="automatic" checked') && builderJs.includes('value="manual" checked') && builderJs.includes('value="not-allowed"'), "Setup must render the required forward and reverse radio choices");
+assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes("Their reverse directions are manual"), "Setup must render the permission matrix and explain the fixed numerical rules");
+assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
 assert(builderHtml.includes('name="includeUndo" value="no" checked') && !builderHtml.includes('name="includeUndo" value="yes" checked'), "Undo recording must be off by default in Setup");
 assert(builderJs.includes("includeUndoActions: false"), "The in-memory undo-recording default must match Setup");
 assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("exerciseTitle").value = timestamp'), "The exercise name must default to a timestamp");

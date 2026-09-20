@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260917-phase4-delete-step">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260920-numerical-permissions">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260917-phase4-delete-step"></script>
+  <script defer src="exercise-builder.js?v=20260920-numerical-permissions"></script>
 </head>
 <body>
   <main>
@@ -24,27 +24,9 @@
         </div>
         <fieldset>
           <legend>Numerical manipulation permissions</legend>
-          <div class="field-grid two-columns">
-            <label>Addition
-              <select id="additionPermission">
-                <option value="none">None</option>
-                <option value="no-carry">No carrying</option>
-                <option value="flat">Flat sums with carrying</option>
-                <option value="expression-terms" selected>Unrestricted expression terms</option>
-              </select>
-            </label>
-            <label>Multiplication
-              <select id="multiplicationPermission">
-                <option value="none">None</option>
-                <option value="one-significant-figure">One significant figure per factor</option>
-                <option value="unrestricted" selected>Unrestricted</option>
-              </select>
-            </label>
-            <div class="check-stack">
-              <label class="check-label"><input id="allowNegativeOne" type="checkbox" checked> Allow −1 in numerical manipulations</label>
-              <label class="check-label"><input id="allowInverses" type="checkbox" checked> Allow inverses in numerical manipulations</label>
-            </div>
-          </div>
+          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression.</p>
+          <div id="numericalPermissionsTable" class="numerical-permissions" role="table" aria-label="Numerical manipulation permissions" aria-describedby="numericalPermissionHelp"></div>
+          <p class="field-help fixed-numerical-note">Always fixed: (−1)(−1) → 1, inverse(1) → 1, and inverse(−1) → −1 are automatic. Their reverse directions are manual.</p>
         </fieldset>
 
         <fieldset>
@@ -86,7 +68,7 @@
   </main>
 
   <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260919-double-wide-settings"></iframe>
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260920-numerical-permissions"></iframe>
   </div>
 </body>
 </html>

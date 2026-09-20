@@ -5,6 +5,15 @@
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
   const FORMAT_VERSION = 1;
   const VARIABLES = ["x"];
+  const NUMERICAL_REWRITE_RULES = [
+    { id: "positiveAdditionNoCarry", label: "Positive addition — no carrying", example: "23 + 14 ↔ 37" },
+    { id: "positiveAdditionWithCarry", label: "Positive addition — with carrying", example: "48 + 37 ↔ 85" },
+    { id: "positiveMultiplicationOneSignificantFigure", label: "Positive multiplication — two one-significant-figure factors", example: "7 · 8 ↔ 56" },
+    { id: "positiveMultiplicationUnrestricted", label: "Positive multiplication — unrestricted", example: "24 · 37 ↔ 888" },
+    { id: "signedAddition", label: "Flat sums with negative-one factors", example: "8 + (−1) · 12 ↔ (−1) · 4" },
+    { id: "signedMultiplication", label: "Flat products with negative-one factors", example: "(−1) · 4 · 7 ↔ (−1) · 28" },
+    { id: "fractionSimplification", label: "Fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)" }
+  ];
 
   const byId = id => document.getElementById(id);
   const workspace = byId("eaWorkspace");
@@ -24,10 +33,10 @@
       metadata: { title: "", id: "", instruction: "", completionMessage: "" },
       settings: {
         numericalRewrite: {
-          addition: "expression-terms",
-          multiplication: "unrestricted",
-          allowNegativeOne: true,
-          allowInverses: true
+          rules: Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
+            rule.id,
+            { forward: "automatic", reverse: "manual" }
+          ]))
         },
         includeUndoActions: false,
         excludedDefaultTools: [],
@@ -101,6 +110,25 @@
     byId("exerciseId").value = slugify(timestamp);
   }
 
+  function renderNumericalPermissionTable() {
+    const target = byId("numericalPermissionsTable");
+    const header = (label, role) => `<div class="numerical-permission-cell numerical-permission-header" role="${role}">${label}</div>`;
+    target.innerHTML = [
+      header("Numerical change", "columnheader"),
+      header("Forward", "columnheader"),
+      header("Reverse", "columnheader"),
+      ...NUMERICAL_REWRITE_RULES.flatMap(rule => {
+        const forwardName = `numerical-${rule.id}-forward`;
+        const reverseName = `numerical-${rule.id}-reverse`;
+        return [
+          `<div class="numerical-permission-cell numerical-rule-name" role="rowheader"><strong>${escapeHtml(rule.label)}</strong><small>${escapeHtml(rule.example)}</small></div>`,
+          `<div class="numerical-permission-cell" role="cell"><div class="permission-options" role="radiogroup" aria-label="${escapeHtml(rule.label)} forward"><label><input type="radio" name="${forwardName}" value="automatic" checked> Automatic</label><label><input type="radio" name="${forwardName}" value="manual"> Manual</label><label><input type="radio" name="${forwardName}" value="not-allowed"> Not allowed</label></div></div>`,
+          `<div class="numerical-permission-cell" role="cell"><div class="permission-options" role="radiogroup" aria-label="${escapeHtml(rule.label)} reverse"><label><input type="radio" name="${reverseName}" value="manual" checked> Manual</label><label><input type="radio" name="${reverseName}" value="not-allowed"> Not allowed</label></div></div>`
+        ];
+      })
+    ].join("");
+  }
+
   function sameExpressionText(first, second) {
     return String(first || "").replace(/\s+/g, "") === String(second || "").replace(/\s+/g, "");
   }
@@ -113,10 +141,13 @@
       completionMessage: ""
     };
     draft.settings.numericalRewrite = {
-      addition: byId("additionPermission").value,
-      multiplication: byId("multiplicationPermission").value,
-      allowNegativeOne: byId("allowNegativeOne").checked,
-      allowInverses: byId("allowInverses").checked
+      rules: Object.fromEntries(NUMERICAL_REWRITE_RULES.map(rule => [
+        rule.id,
+        {
+          forward: document.querySelector(`input[name="numerical-${rule.id}-forward"]:checked`).value,
+          reverse: document.querySelector(`input[name="numerical-${rule.id}-reverse"]:checked`).value
+        }
+      ]))
     };
     draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
     draft.settings.excludedDefaultTools = [];
@@ -676,6 +707,7 @@
     });
   }
 
+  renderNumericalPermissionTable();
   initializeSetupDefaults();
   installEventHandlers();
   waitForApi().catch(error => window.alert(error.message));

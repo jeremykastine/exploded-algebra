@@ -3697,7 +3697,7 @@ Promise.resolve().then(() => {
         }
 
         function getDemoTargetToolCandidates(toolName) {
-            if (["doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne", "rewriteNegOneToInvNegOne"].includes(toolName)) {
+            if (["automaticNumericalRewrite", "doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne", "rewriteNegOneToInvNegOne"].includes(toolName)) {
                 return uniqueToolKeys([toolName, "numericalRewrite"]);
             }
             if (toolName === "numericalEquivalence" || isNumericalRewriteTool(toolName)) {
@@ -3793,7 +3793,7 @@ Promise.resolve().then(() => {
                     if (["commute", "commuteTerms", "commuteFactors"].includes(targetTool)) {
                         targetButton = container.querySelector("button[data-contextual-commute]");
                     }
-                    if (["numericalRewrite", "doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne"].includes(targetTool)) {
+                    if (["automaticNumericalRewrite", "numericalRewrite", "doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne"].includes(targetTool)) {
                         targetButton = container.querySelector("button[data-contextual-numerical-rewrite]");
                     }
                     if (targetTool === "cancelOpposites") {
@@ -7554,43 +7554,84 @@ ctx.font = SETTINGS.textFont;
             return "Level 3 allows any expression made entirely of numbers.";
         }
 
-        const NUMERICAL_REWRITE_ADDITION_MODES = ["none", "no-carry", "flat", "expression-terms"];
-        const NUMERICAL_REWRITE_MULTIPLICATION_MODES = ["none", "one-significant-figure", "unrestricted"];
+        const NUMERICAL_REWRITE_RULE_IDS = [
+            "positiveAdditionNoCarry",
+            "positiveAdditionWithCarry",
+            "positiveMultiplicationOneSignificantFigure",
+            "positiveMultiplicationUnrestricted",
+            "signedAddition",
+            "signedMultiplication",
+            "fractionSimplification"
+        ];
+        const NUMERICAL_REWRITE_FORWARD_MODES = ["automatic", "manual", "not-allowed"];
+        const NUMERICAL_REWRITE_REVERSE_MODES = ["manual", "not-allowed"];
+
+        function makeNumericalRewriteRules(forwardMode = "not-allowed", reverseMode = "not-allowed") {
+            return Object.fromEntries(NUMERICAL_REWRITE_RULE_IDS.map(ruleId => [
+                ruleId,
+                { forward: forwardMode, reverse: reverseMode }
+            ]));
+        }
 
         function numericalRewriteProfileFromLegacyLevel(level) {
             const legacyLevel = clampArithmeticLevel(level, 0);
+            const rules = makeNumericalRewriteRules();
             if (legacyLevel === 0) {
-                return {
-                    addition: "no-carry",
-                    multiplication: "one-significant-figure",
-                    allowNegativeOne: false,
-                    allowInverses: false
-                };
+                rules.positiveAdditionNoCarry = { forward: "manual", reverse: "manual" };
+                rules.positiveMultiplicationOneSignificantFigure = { forward: "manual", reverse: "manual" };
+                return { rules };
             }
             if (legacyLevel === 1) {
-                return {
-                    addition: "flat",
-                    multiplication: "unrestricted",
-                    allowNegativeOne: false,
-                    allowInverses: false
-                };
+                [
+                    "positiveAdditionNoCarry",
+                    "positiveAdditionWithCarry",
+                    "positiveMultiplicationOneSignificantFigure",
+                    "positiveMultiplicationUnrestricted"
+                ].forEach(ruleId => {
+                    rules[ruleId] = { forward: "manual", reverse: "manual" };
+                });
+                return { rules };
             }
-            return {
-                addition: "expression-terms",
-                multiplication: "unrestricted",
-                allowNegativeOne: true,
-                allowInverses: legacyLevel >= 3
-            };
+            NUMERICAL_REWRITE_RULE_IDS.forEach(ruleId => {
+                if (ruleId !== "fractionSimplification" || legacyLevel >= 3) {
+                    rules[ruleId] = { forward: "manual", reverse: "manual" };
+                }
+            });
+            return { rules };
+        }
+
+        function numericalRewriteProfileFromLegacyDefinition(profile) {
+            const rules = makeNumericalRewriteRules();
+            if (profile.addition !== "none") {
+                rules.positiveAdditionNoCarry = { forward: "manual", reverse: "manual" };
+            }
+            if (["flat", "expression-terms"].includes(profile.addition)) {
+                rules.positiveAdditionWithCarry = { forward: "manual", reverse: "manual" };
+            }
+            if (profile.multiplication !== "none") {
+                rules.positiveMultiplicationOneSignificantFigure = { forward: "manual", reverse: "manual" };
+            }
+            if (profile.multiplication === "unrestricted") {
+                rules.positiveMultiplicationUnrestricted = { forward: "manual", reverse: "manual" };
+            }
+            if (profile.allowNegativeOne === true && profile.addition !== "none") {
+                rules.signedAddition = { forward: "manual", reverse: "manual" };
+            }
+            if (profile.allowNegativeOne === true && profile.multiplication !== "none") {
+                rules.signedMultiplication = { forward: "manual", reverse: "manual" };
+            }
+            if (profile.allowInverses === true) {
+                rules.fractionSimplification = { forward: "manual", reverse: "manual" };
+            }
+            return { rules };
         }
 
         function getNumericalRewriteProfile(level = getCurrentLevel()) {
             if (level && level.numericalRewrite && typeof level.numericalRewrite === "object") {
-                return {
-                    addition: level.numericalRewrite.addition,
-                    multiplication: level.numericalRewrite.multiplication,
-                    allowNegativeOne: level.numericalRewrite.allowNegativeOne === true,
-                    allowInverses: level.numericalRewrite.allowInverses === true
-                };
+                if (level.numericalRewrite.rules) {
+                    return clonePlainData(level.numericalRewrite);
+                }
+                return numericalRewriteProfileFromLegacyDefinition(level.numericalRewrite);
             }
             return numericalRewriteProfileFromLegacyLevel(getArithmeticLevelForCurrentLevel());
         }
@@ -7599,38 +7640,47 @@ ctx.font = SETTINGS.textFont;
             if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
                 throw new Error(`${sourceName} has an invalid numericalRewrite profile.`);
             }
-            if (!NUMERICAL_REWRITE_ADDITION_MODES.includes(profile.addition)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite.addition setting.`);
-            }
-            if (!NUMERICAL_REWRITE_MULTIPLICATION_MODES.includes(profile.multiplication)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite.multiplication setting.`);
-            }
-            ["allowNegativeOne", "allowInverses"].forEach(fieldName => {
-                if (typeof profile[fieldName] !== "boolean") {
-                    throw new Error(`${sourceName} has an invalid numericalRewrite.${fieldName} setting.`);
+            if (profile.rules !== undefined) {
+                if (!profile.rules || typeof profile.rules !== "object" || Array.isArray(profile.rules)) {
+                    throw new Error(`${sourceName} has an invalid numericalRewrite.rules setting.`);
                 }
-            });
+                NUMERICAL_REWRITE_RULE_IDS.forEach(ruleId => {
+                    const rule = profile.rules[ruleId];
+                    if (!rule || !NUMERICAL_REWRITE_FORWARD_MODES.includes(rule.forward) ||
+                        !NUMERICAL_REWRITE_REVERSE_MODES.includes(rule.reverse)) {
+                        throw new Error(`${sourceName} has an invalid numericalRewrite.rules.${ruleId} setting.`);
+                    }
+                });
+                return;
+            }
+            const legacyAdditionModes = ["none", "no-carry", "flat", "expression-terms"];
+            const legacyMultiplicationModes = ["none", "one-significant-figure", "unrestricted"];
+            if (!legacyAdditionModes.includes(profile.addition) ||
+                !legacyMultiplicationModes.includes(profile.multiplication) ||
+                typeof profile.allowNegativeOne !== "boolean" ||
+                typeof profile.allowInverses !== "boolean") {
+                throw new Error(`${sourceName} has an invalid legacy numericalRewrite profile.`);
+            }
+        }
+
+        function getNumericalRewriteRuleSetting(ruleId, profile = getNumericalRewriteProfile()) {
+            return profile.rules[ruleId] || { forward: "not-allowed", reverse: "not-allowed" };
         }
 
         function getNumericalRewriteProfileSummaryItems(profile) {
-            const additionDescriptions = {
-                none: "Addition: not allowed",
-                "no-carry": "Addition: flat whole-number sums without carrying",
-                flat: "Addition: any flat whole-number sum",
-                "expression-terms": "Addition: sums of permitted numerical expressions"
+            const labels = {
+                positiveAdditionNoCarry: "Positive addition without carrying",
+                positiveAdditionWithCarry: "Positive addition with carrying",
+                positiveMultiplicationOneSignificantFigure: "Two one-significant-figure positive factors",
+                positiveMultiplicationUnrestricted: "Unrestricted positive multiplication",
+                signedAddition: "Flat sums with negative-one factors",
+                signedMultiplication: "Flat products with negative-one factors",
+                fractionSimplification: "Fraction simplification"
             };
-            const multiplicationDescriptions = {
-                none: "Multiplication: not allowed",
-                "one-significant-figure": "Multiplication: factors with one significant figure",
-                unrestricted: "Multiplication: unrestricted"
-            };
-            const items = [
-                additionDescriptions[profile.addition],
-                multiplicationDescriptions[profile.multiplication],
-                `Negative one: ${profile.allowNegativeOne ? "allowed" : "not allowed"}`
-            ];
-            items.push(`Inverses: ${profile.allowInverses ? "allowed" : "not allowed"}`);
-            return items;
+            return NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
+                const rule = getNumericalRewriteRuleSetting(ruleId, profile);
+                return `${labels[ruleId]}: forward ${rule.forward}; reverse ${rule.reverse}`;
+            });
         }
 
         function greatestCommonDivisorBigInt(a, b) {
@@ -7756,92 +7806,217 @@ ctx.font = SETTINGS.textFont;
             return true;
         }
 
-        function validateNumericalRewriteStructure(node, profile, roleLabel) {
-            if (node.type === "value") {
-                const text = String(node.value);
-                if (/^\d+$/.test(text)) {
-                    return { ok: true };
-                }
-                if (text === "-1") {
-                    return profile.allowNegativeOne
-                        ? { ok: true }
-                        : { ok: false, error: `The ${roleLabel} expression uses negative one, which is not allowed here.` };
-                }
-                return { ok: false, error: `The ${roleLabel} expression may contain only nonnegative whole numbers and, when allowed, the negative unit.` };
-            }
-
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return { ok: false, error: `The ${roleLabel} expression has an incomplete operation.` };
-            }
-
-            if (node.type === "sum") {
-                if (profile.addition === "none") {
-                    return { ok: false, error: `Addition is not allowed in the ${roleLabel} expression.` };
-                }
-                if (profile.addition === "no-carry" || profile.addition === "flat") {
-                    const allWholeNumberLeaves = node.args.every(child => getWholeNumberBigIntFromNode(child) !== null);
-                    if (!allWholeNumberLeaves) {
-                        return { ok: false, error: `The ${roleLabel} expression allows only a flat sum of nonnegative whole numbers.` };
-                    }
-                    if (profile.addition === "no-carry" && !isNoCarryWholeNumberNodeAddition(node.args)) {
-                        return { ok: false, error: `The ${roleLabel} sum requires carrying, which is not allowed here.` };
-                    }
-                    return { ok: true };
-                }
-            }
-
-            if (node.type === "prod" && profile.multiplication === "none") {
-                return { ok: false, error: `Multiplication is not allowed in the ${roleLabel} expression.` };
-            }
-            if (node.type === "inv" && !profile.allowInverses) {
-                return { ok: false, error: `Inverses are not allowed in the ${roleLabel} expression.` };
-            }
-            if (!["sum", "prod", "inv"].includes(node.type)) {
-                return { ok: false, error: `The ${roleLabel} expression contains an unsupported numerical operation.` };
-            }
-
-            for (const child of node.args) {
-                const childCheck = validateNumericalRewriteStructure(child, profile, roleLabel);
-                if (!childCheck.ok) {
-                    return childCheck;
-                }
-            }
-
-            if (node.type === "prod" && profile.multiplication === "one-significant-figure") {
-                for (const factor of node.args) {
-                    const factorValue = evaluateNumericalRewriteNodeExactly(factor);
-                    const isAllowedNegativeUnit = profile.allowNegativeOne && factorValue &&
-                        factorValue.denominator === 1n && factorValue.numerator === -1n;
-                    if (!factorValue || factorValue.denominator !== 1n ||
-                        (!isAllowedNegativeUnit && !isOneSignificantFigureBigInt(factorValue.numerator))) {
-                        return { ok: false, error: `Every factor in the ${roleLabel} expression must have one significant figure.` };
-                    }
-                }
-            }
-
-            if (node.type === "inv") {
-                const innerValue = evaluateNumericalRewriteNodeExactly(node.args[0]);
-                if (!innerValue || innerValue.numerator === 0n) {
-                    return { ok: false, error: `The ${roleLabel} expression contains an inverse of zero.` };
-                }
-            }
-            return { ok: true };
+        function numericalRewriteNodeContainsInverse(node) {
+            return !!node && (node.type === "inv" || node.args.some(numericalRewriteNodeContainsInverse));
         }
 
-        function validateNumericalRewriteExpression(node, profile, roleLabel) {
+        function numericalRewriteNodeIsEntirelyNumerical(node) {
+            return !!evaluateNumericalRewriteNodeExactly(node);
+        }
+
+        function isFlatSignedIntegerProduct(node) {
+            if (!node || node.type !== "prod" || node.args.length < 2) {
+                return false;
+            }
+            let hasNegativeOne = false;
+            let hasWholeNumber = false;
+            for (const factor of node.args) {
+                if (factor.type !== "value") {
+                    return false;
+                }
+                if (String(factor.value) === "-1") {
+                    hasNegativeOne = true;
+                } else if (/^\d+$/.test(String(factor.value))) {
+                    hasWholeNumber = true;
+                } else {
+                    return false;
+                }
+            }
+            return hasNegativeOne && hasWholeNumber;
+        }
+
+        function isFlatSignedIntegerTerm(node) {
+            return getWholeNumberBigIntFromNode(node) !== null ||
+                isExactNumericalRewriteValue(node, "-1") ||
+                isFlatSignedIntegerProduct(node);
+        }
+
+        function classifyNumericalRewriteCategory(node) {
             if (!node) {
-                return { ok: false, error: `There is no ${roleLabel} expression to check.` };
+                return null;
             }
             const normalized = normalizeExpressionTree(cloneNode(node));
-            const structureCheck = validateNumericalRewriteStructure(normalized, profile, roleLabel);
-            if (!structureCheck.ok) {
-                return structureCheck;
+            if (!numericalRewriteNodeIsEntirelyNumerical(normalized)) {
+                return null;
             }
-            const value = evaluateNumericalRewriteNodeExactly(normalized);
+            if (["prod", "inv"].includes(normalized.type) && numericalRewriteNodeContainsInverse(normalized)) {
+                return "fractionSimplification";
+            }
+            if (normalized.type === "sum" && normalized.args.length >= 2) {
+                if (normalized.args.every(child => getWholeNumberBigIntFromNode(child) !== null)) {
+                    return isNoCarryWholeNumberNodeAddition(normalized.args)
+                        ? "positiveAdditionNoCarry"
+                        : "positiveAdditionWithCarry";
+                }
+                if (normalized.args.every(isFlatSignedIntegerTerm) &&
+                    normalized.args.some(term => isExactNumericalRewriteValue(term, "-1") || isFlatSignedIntegerProduct(term))) {
+                    return "signedAddition";
+                }
+                return null;
+            }
+            if (normalized.type === "prod" && normalized.args.length >= 2) {
+                if (isFlatSignedIntegerProduct(normalized)) {
+                    return "signedMultiplication";
+                }
+                const factors = normalized.args.map(getWholeNumberBigIntFromNode);
+                if (factors.every(value => value !== null)) {
+                    return factors.length === 2 && factors.every(isOneSignificantFigureBigInt)
+                        ? "positiveMultiplicationOneSignificantFigure"
+                        : "positiveMultiplicationUnrestricted";
+                }
+            }
+            return null;
+        }
+
+        function makeCanonicalNumericalRewriteNode(value) {
             if (!value) {
-                return { ok: false, error: `The ${roleLabel} expression could not be evaluated exactly.` };
+                return null;
             }
-            return { ok: true, value };
+            const negative = value.numerator < 0n;
+            const absoluteNumerator = negative ? -value.numerator : value.numerator;
+            if (value.denominator === 1n) {
+                if (!negative) {
+                    return valueNode(absoluteNumerator.toString());
+                }
+                if (absoluteNumerator === 1n) {
+                    return valueNode("-1");
+                }
+                return makeProductFromFactors([valueNode("-1"), valueNode(absoluteNumerator.toString())]);
+            }
+            const factors = [];
+            if (negative) {
+                factors.push(valueNode("-1"));
+            }
+            if (absoluteNumerator !== 1n) {
+                factors.push(valueNode(absoluteNumerator.toString()));
+            }
+            factors.push(makeInverseNode(valueNode(value.denominator.toString())));
+            return makeProductFromFactors(factors);
+        }
+
+        function getCanonicalNumericalRewriteNode(node) {
+            return makeCanonicalNumericalRewriteNode(
+                evaluateNumericalRewriteNodeExactly(normalizeExpressionTree(cloneNode(node)))
+            );
+        }
+
+        function numericalRewriteNodesHaveSameStructure(first, second) {
+            return !!first && !!second && sameExpressionForMatching(
+                normalizeExpressionTree(cloneNode(first)),
+                normalizeExpressionTree(cloneNode(second))
+            );
+        }
+
+        function getNumericalRewriteComplexity(node) {
+            const score = { nodes: 0, digits: 0, magnitude: 0n };
+            const visit = current => {
+                score.nodes += 1;
+                if (current.type === "value") {
+                    const text = String(current.value);
+                    if (/^\d+$/.test(text)) {
+                        score.digits += text.length;
+                        score.magnitude += BigInt(text);
+                    } else if (text === "-1") {
+                        score.digits += 1;
+                        score.magnitude += 1n;
+                    }
+                }
+                current.args.forEach(visit);
+            };
+            visit(node);
+            return score;
+        }
+
+        function compareNumericalRewriteComplexity(first, second) {
+            const a = getNumericalRewriteComplexity(first);
+            const b = getNumericalRewriteComplexity(second);
+            if (a.nodes !== b.nodes) return a.nodes < b.nodes ? -1 : 1;
+            if (a.digits !== b.digits) return a.digits < b.digits ? -1 : 1;
+            if (a.magnitude !== b.magnitude) return a.magnitude < b.magnitude ? -1 : 1;
+            return 0;
+        }
+
+        function getAutomaticNumericalRewriteData() {
+            const selectedNode = cloneSelectedRangeNode();
+            const ruleId = classifyNumericalRewriteCategory(selectedNode);
+            if (!ruleId || getNumericalRewriteRuleSetting(ruleId).forward !== "automatic") {
+                return null;
+            }
+            const replacement = getCanonicalNumericalRewriteNode(selectedNode);
+            if (!replacement || numericalRewriteNodesHaveSameStructure(selectedNode, replacement)) {
+                return null;
+            }
+            return { ruleId, replacement };
+        }
+
+        function canUseManualNumericalRewrite() {
+            const selectedNode = cloneSelectedRangeNode();
+            if (!selectedNode || !numericalRewriteNodeIsEntirelyNumerical(selectedNode)) {
+                return false;
+            }
+            if (isAlwaysAllowedNumericalRewriteEndpoint(selectedNode)) {
+                return true;
+            }
+            const ruleId = classifyNumericalRewriteCategory(selectedNode);
+            if (ruleId && getNumericalRewriteRuleSetting(ruleId).forward === "manual") {
+                return true;
+            }
+            if (ruleId === "fractionSimplification" &&
+                getNumericalRewriteRuleSetting(ruleId).reverse === "manual") {
+                return true;
+            }
+            const canonical = getCanonicalNumericalRewriteNode(selectedNode);
+            return numericalRewriteNodesHaveSameStructure(selectedNode, canonical) &&
+                NUMERICAL_REWRITE_RULE_IDS.some(candidateRuleId =>
+                    candidateRuleId !== "fractionSimplification" &&
+                    getNumericalRewriteRuleSetting(candidateRuleId).reverse === "manual"
+                );
+        }
+
+        function validateManualNumericalRewriteExchange(originalNode, proposedNode) {
+            const original = normalizeExpressionTree(cloneNode(originalNode));
+            const proposed = normalizeExpressionTree(cloneNode(proposedNode));
+            if (isAlwaysAllowedNumericalRewriteExchange(original, proposed)) {
+                return { ok: true };
+            }
+            if (numericalRewriteNodesHaveSameStructure(original, proposed)) {
+                return { ok: false, error: "Build a different equivalent numerical expression." };
+            }
+            const originalRuleId = classifyNumericalRewriteCategory(original);
+            const proposedRuleId = classifyNumericalRewriteCategory(proposed);
+
+            if (originalRuleId === "fractionSimplification" && proposedRuleId === "fractionSimplification") {
+                const comparison = compareNumericalRewriteComplexity(proposed, original);
+                const forwardAllowed = getNumericalRewriteRuleSetting(originalRuleId).forward === "manual";
+                const reverseAllowed = getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual";
+                if ((comparison <= 0 && forwardAllowed) || (comparison > 0 && reverseAllowed)) {
+                    return { ok: true };
+                }
+            } else {
+                if (originalRuleId && getNumericalRewriteRuleSetting(originalRuleId).forward === "manual") {
+                    const canonicalOriginal = getCanonicalNumericalRewriteNode(original);
+                    if (numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)) {
+                        return { ok: true };
+                    }
+                }
+                if (proposedRuleId && getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual") {
+                    const canonicalProposed = getCanonicalNumericalRewriteNode(proposed);
+                    if (numericalRewriteNodesHaveSameStructure(original, canonicalProposed)) {
+                        return { ok: true };
+                    }
+                }
+            }
+            return { ok: false, error: "That equivalent rewrite is not permitted by this exercise's forward and reverse numerical-manipulation settings." };
         }
 
         function exactRationalsAreEqual(first, second) {
@@ -8471,6 +8646,7 @@ ctx.font = SETTINGS.textFont;
                 evaluate: canEvaluate(),
                 numericalEquivalence: canNumericalEquivalence(),
                 numericalRewrite: canNumericalRewrite(),
+                automaticNumericalRewrite: !!getAutomaticNumericalRewriteData(),
                 arithmeticLevel0: canNumericalRewrite(),
                 arithmeticLevel1: canNumericalRewrite(),
                 arithmeticLevel2: canNumericalRewrite(),
@@ -9790,7 +9966,6 @@ ctx.font = SETTINGS.textFont;
             } else if (builder.tool === "cancelOpposites") {
                 replacement = makeSumFromTerms([cloneNode(completed), makeProductFromFactors([valueNode("-1"), cloneNode(completed)])]);
             } else if (isNumericalRewriteTool(builder.tool)) {
-                const profile = getNumericalRewriteProfile();
                 const originalValue = evaluateNumericalRewriteNodeExactly(
                     normalizeExpressionTree(cloneNode(builder.originalSelectedNode))
                 );
@@ -9807,19 +9982,12 @@ ctx.font = SETTINGS.textFont;
                     return builderValidationFailed("The proposed entry does not have the same numerical value.");
                 }
 
-                const isAlwaysAllowedExchange = isAlwaysAllowedNumericalRewriteExchange(
-                    normalizeExpressionTree(cloneNode(builder.originalSelectedNode)),
+                const permissionCheck = validateManualNumericalRewriteExchange(
+                    builder.originalSelectedNode,
                     completed
                 );
-                if (!isAlwaysAllowedExchange) {
-                    const originalCheck = validateNumericalRewriteExpression(builder.originalSelectedNode, profile, "original");
-                    if (!originalCheck.ok) {
-                        return builderValidationFailed(originalCheck.error);
-                    }
-                    const replacementCheck = validateNumericalRewriteExpression(completed, profile, "proposed");
-                    if (!replacementCheck.ok) {
-                        return builderValidationFailed("That structure is not permitted on this exercise.");
-                    }
+                if (!permissionCheck.ok) {
+                    return builderValidationFailed(permissionCheck.error);
                 }
                 replacement = completed;
             } else if (builder.tool === "numericalEquivalence") {
@@ -10103,6 +10271,11 @@ ctx.font = SETTINGS.textFont;
                 isExactNumericalRewriteValue(node.args[0], "-1");
         }
 
+        function isExactInverseOfOne(node) {
+            return !!node && node.type === "inv" && node.args.length === 1 &&
+                isExactNumericalRewriteValue(node.args[0], "1");
+        }
+
         function isAlwaysAllowedNumericalRewriteExchange(originalNode, proposedNode) {
             const originalIsOne = isExactNumericalRewriteValue(originalNode, "1");
             const proposedIsOne = isExactNumericalRewriteValue(proposedNode, "1");
@@ -10110,6 +10283,8 @@ ctx.font = SETTINGS.textFont;
             const proposedIsNegativeOne = isExactNumericalRewriteValue(proposedNode, "-1");
             return (isExactDoubleNegativeProduct(originalNode) && proposedIsOne) ||
                 (originalIsOne && isExactDoubleNegativeProduct(proposedNode)) ||
+                (isExactInverseOfOne(originalNode) && proposedIsOne) ||
+                (originalIsOne && isExactInverseOfOne(proposedNode)) ||
                 (isExactInverseOfNegativeOne(originalNode) && proposedIsNegativeOne) ||
                 (originalIsNegativeOne && isExactInverseOfNegativeOne(proposedNode));
         }
@@ -10118,19 +10293,22 @@ ctx.font = SETTINGS.textFont;
             return isExactNumericalRewriteValue(node, "1") ||
                 isExactNumericalRewriteValue(node, "-1") ||
                 isExactDoubleNegativeProduct(node) ||
+                isExactInverseOfOne(node) ||
                 isExactInverseOfNegativeOne(node);
         }
 
         function canNumericalRewrite() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (isAlwaysAllowedNumericalRewriteEndpoint(selectedNode)) {
-                return true;
+            return !!getAutomaticNumericalRewriteData() || canUseManualNumericalRewrite();
+        }
+
+        function applyAutomaticNumericalRewrite() {
+            const data = getAutomaticNumericalRewriteData();
+            if (!data) {
+                return false;
             }
-            return validateNumericalRewriteExpression(
-                selectedNode,
-                getNumericalRewriteProfile(),
-                "selected"
-            ).ok;
+            replaceSelectedRange(data.replacement);
+            finishOperation();
+            return true;
         }
 
         function applyFactorNumber() {
@@ -11149,6 +11327,10 @@ ctx.font = SETTINGS.textFont;
             if (getDoubleNegativeData()) {
                 return { toolName: "doubleNegative", label: "Automatically cancel two negative-one factors" };
             }
+            const configuredRewrite = getAutomaticNumericalRewriteData();
+            if (configuredRewrite) {
+                return { toolName: "automaticNumericalRewrite", label: "Automatically simplify numerical expression" };
+            }
             return null;
         }
 
@@ -11157,7 +11339,7 @@ ctx.font = SETTINGS.textFont;
             if (automatic) {
                 return { ...automatic, mode: "automatic" };
             }
-            return canNumericalRewrite()
+            return canUseManualNumericalRewrite()
                 ? { toolName: "numericalRewrite", label: "Open Manual Numerical Manipulation", mode: "manual" }
                 : null;
         }
@@ -11698,6 +11880,9 @@ function renderToolArea() {
             }
             if (toolName === "zeroProduct") {
                 return applyZeroProduct;
+            }
+            if (toolName === "automaticNumericalRewrite") {
+                return applyAutomaticNumericalRewrite;
             }
             if (isInverseRewriteTool(toolName)) {
                 return () => applyInverseRewrite(toolName);

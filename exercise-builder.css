@@ -45,6 +45,54 @@ legend { padding: 0 7px; font-weight: 800; }
 .check-label, .radio-row label { display: flex; grid: none; align-items: center; gap: 8px; min-height: 34px; font-weight: 500; }
 .radio-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
 
+.numerical-permissions {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.7fr) minmax(250px, 1fr) minmax(170px, .72fr);
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.numerical-permission-cell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.numerical-permission-cell:nth-child(3n) { border-right: 0; }
+.numerical-permission-cell:nth-last-child(-n + 3) { border-bottom: 0; }
+.numerical-permission-header {
+  justify-content: center;
+  background: var(--soft);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.numerical-rule-name { display: grid; gap: 2px; }
+.numerical-rule-name strong { font-size: 13px; }
+.numerical-rule-name small { line-height: 1.3; }
+.permission-options {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 12px;
+}
+.permission-options label {
+  display: flex;
+  grid: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.fixed-numerical-note { margin: 10px 0 0; }
+
 .workspace-shell { height: min(68vh, 720px); min-height: 470px; overflow: hidden; padding: 0; }
 .workspace-shell iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 #workspaceShell { display: none; }
@@ -136,4 +184,7 @@ body.phase3-recording #workspaceShell {
   .step-carousel-navigation { gap: 5px; }
   .step-carousel-navigation .secondary-button { min-width: 0; padding: 7px 8px; }
   .step-math-view { font-size: 18px; }
+  .numerical-permissions { grid-template-columns: minmax(170px, 1.2fr) minmax(220px, 1fr) minmax(150px, .75fr); overflow-x: auto; }
+  .numerical-permission-cell { padding: 9px 8px; }
+  .permission-options { gap: 6px 8px; }
 }

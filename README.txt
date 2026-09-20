@@ -71,25 +71,34 @@ expressions use the same blue shading as an initial selection.
 Each exercise specifies Numerical Rewrite permissions with this structure:
 
   "numericalRewrite": {
-    "addition": "none" | "no-carry" | "flat" | "expression-terms",
-    "multiplication": "none" | "one-significant-figure" | "unrestricted",
-    "allowNegativeOne": true | false,
-    "allowInverses": true | false
+    "rules": {
+      "positiveAdditionNoCarry": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveAdditionWithCarry": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveMultiplicationOneSignificantFigure": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "positiveMultiplicationUnrestricted": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "signedAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "signedMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "fractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" }
+    }
   }
 
-`no-carry` permits only flat sums of nonnegative whole-number literals whose
-columns do not require carrying. `flat` permits flat whole-number sums with or
-without carrying. `expression-terms` permits sums whose terms are any otherwise
-allowed numerical expressions. One-significant-figure multiplication checks the
-exact value of each factor; unrestricted multiplication permits any factors that
-otherwise satisfy the profile. Negative numbers other than the atomic negative
-unit are not accepted. An inverse of zero is rejected.
-Both the selected expression and its proposed replacement must satisfy the same
-profile, and equivalence is checked with exact integer/fraction arithmetic.
+The seven categories are deliberately disjoint: the no-carry and binary
+one-significant-figure cases use their narrower rows, while carrying addition
+and broader positive multiplication use the next rows. Signed arithmetic is
+flat and represents negative numbers with negative-one factors. Fraction
+simplification applies to numerical products involving inverses. Forward
+Automatic evaluates to a canonical exact integer or fraction; Forward Manual
+opens the Expression Builder; Not allowed disables that direction. Reverse is
+never automatic. Manual rewrites must be exactly equivalent and match the
+enabled category and direction.
 
-Older custom files that contain `arithmeticLevel` instead of `numericalRewrite`
-are mapped to a compatible profile when loaded. New move-history downloads retain
-the explicit `numericalRewrite` profile.
+Three simplifications are fixed rather than exercise-configurable:
+`(-1)(-1) -> 1`, `inverse(1) -> 1`, and `inverse(-1) -> -1` are always automatic,
+and each reverse direction is always manual.
+
+Older custom files that contain `arithmeticLevel` or the previous broad
+`numericalRewrite` profile are mapped to compatible manual rules when loaded.
+New move-history downloads retain the explicit rule matrix.
 
 Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
 Selecting a literal 1 adds a Product of Inverses choice
