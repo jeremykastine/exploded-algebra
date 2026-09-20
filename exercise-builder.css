@@ -91,8 +91,6 @@ legend { padding: 0 7px; font-weight: 800; }
   font-size: 13px;
   font-weight: 500;
 }
-.fixed-numerical-note { margin: 10px 0 0; }
-
 .workspace-shell { height: min(68vh, 720px); min-height: 470px; overflow: hidden; padding: 0; }
 .workspace-shell iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
 #workspaceShell { display: none; }

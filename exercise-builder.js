@@ -13,7 +13,8 @@
     { id: "nonnegativeFractionSimplification", label: "Non-negative fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "signedFractionSimplification", label: "Signed fraction simplification", example: "(−1) · 18 · inverse(24) ↔ (−1) · 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic"], reverse: ["manual"], fixed: true },
-    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic"], reverse: ["manual"], fixed: true }
+    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic"], reverse: ["manual"], fixed: true },
+    { id: "doubleNegative", label: "Negative one times negative one", example: "(−1) · (−1) ↔ 1", forward: ["automatic"], reverse: ["manual"], fixed: true }
   ];
   const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES.filter(rule => !rule.fixed);
   const NUMERICAL_PERMISSION_LABELS = {

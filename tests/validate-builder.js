@@ -37,20 +37,23 @@ for (const ruleId of [
   "nonnegativeFractionSimplification",
   "signedFractionSimplification",
   "inverseOne",
-  "inverseNegativeOne"
+  "inverseNegativeOne",
+  "doubleNegative"
 ]) {
   assert(builderJs.includes(`id: "${ruleId}"`), `Setup must define numerical rule ${ruleId}`);
 }
 assert(builderJs.includes('{ forward: rule.forward[0], reverse: rule.reverse[0] }'), "Setup must default every configurable numerical rule to its first forward and reverse options");
 assert(builderJs.includes('automatic: "Automatic"') && builderJs.includes('manual: "Manual"') && builderJs.includes('"not-allowed": "Not allowed"'), "Setup must render the required forward and reverse radio choices");
-assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"') && builderHtml.includes("its reverse direction is manual"), "Setup must render the permission outline and explain the remaining fixed negative-one product rule");
+assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"'), "Setup must render the numerical permission outline");
 assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') && builderJs.includes('class="permission-direction-title">Forward') && builderJs.includes('class="permission-direction-title">Reverse'), "Every numerical rule and direction must be vertically outlined");
 assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(".permission-direction") && /\.permission-options \{[^}]*display: grid;/.test(builderCss) && !/\.numerical-permissions \{[^}]*grid-template-columns:/.test(builderCss), "The numerical permission outline must keep rules, directions, and choices vertically stacked without a wide table grid");
 assert(builderJs.includes('id: "positiveAddition"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number addition must not offer Not allowed in either direction");
 assert(builderJs.includes('id: "positiveMultiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number multiplication must not offer Not allowed in either direction");
 assert(builderJs.includes('id: "nonnegativeFractionSimplification"') && builderJs.includes('id: "signedFractionSimplification"'), "Phase 1 must provide separate non-negative and signed fraction categories");
-assert(builderJs.includes('id: "inverseOne"') && builderJs.includes('id: "inverseNegativeOne"') && builderJs.match(/fixed: true/g)?.length === 2, "Inverse of one and inverse of negative one must appear as fixed full list entries");
-assert(builderJs.includes("CONFIGURABLE_NUMERICAL_REWRITE_RULES") && builderJs.includes(".filter(rule => !rule.fixed)"), "Fixed inverse rows must not add redundant fields to exported numerical permissions");
+assert(builderJs.includes('id: "inverseOne"') && builderJs.includes('id: "inverseNegativeOne"') && builderJs.includes('id: "doubleNegative"') && builderJs.match(/fixed: true/g)?.length === 3, "The two inverse rules and negative-one product must appear as fixed full list entries");
+assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 9 after fixed items 7 and 8");
+assert(!builderHtml.includes("fixed-numerical-note"), "The fixed negative-one product must not remain as a separate note below the list");
+assert(builderJs.includes("CONFIGURABLE_NUMERICAL_REWRITE_RULES") && builderJs.includes(".filter(rule => !rule.fixed)"), "Fixed rows must not add redundant fields to exported numerical permissions");
 assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("positiveAdditionWithCarry") && !builderJs.includes("positiveMultiplicationOneSignificantFigure") && !builderJs.includes("positiveMultiplicationUnrestricted"), "Setup must not expose carrying or significant-figure permission categories");
 assert(!builderJs.includes("NUMERICAL_PERMISSION_HIERARCHIES") && !builderJs.includes("applyMonotonicNumericalPermissions"), "Setup must not retain hierarchy code for removed categories");
 assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
