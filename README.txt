@@ -49,12 +49,14 @@ current state are visible. Each button is opaque, but the control clusters have
 no panel background. Clear Selection appears only with the post-selection
 actions and is blocked in guided demonstrations, where off-target selections
 and empty-workspace clicks are ignored. The conventional steps remain visible
-above a draggable horizontal divider and scroll vertically when their chosen
-height is too small.
+above the controls and scroll vertically. Their Large, Medium, or Small text
+preference is responsive rather than a fixed pixel size: it refits after
+content, panel, viewport, device-input, and orientation changes without wrapping
+a step. In landscape, the steps panel snaps to exactly two rows and follows the
+current work at the bottom.
 The settings screen replaces the exploded-expression workspace while open. It
-provides plus/minus controls for button size and conventional-steps font size.
-The steps panel automatically refits its height to the rendered expressions
-when the font size changes.
+provides controls for the responsive conventional-steps text preference and
+operation-bar appearance.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. Numerical Rewrite shows its exercise-specific permissions as a

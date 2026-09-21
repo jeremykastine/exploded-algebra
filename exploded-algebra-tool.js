@@ -1424,27 +1424,16 @@ Promise.resolve().then(() => {
         let stableExpressionState = null;
 
         let internalClipboardText = "";
-        let stepsVisibleLineCount = 3;
-        let stepsVisibleLineLayout = "";
+        let stepsTextSizePreference = "medium";
         let stepsFontRecalculationFrame = null;
-        const STEPS_VISIBLE_LINE_MIN = 1;
-        const STEPS_VISIBLE_LINE_MAX = 3;
-        const STEPS_VISIBLE_LINE_STORAGE_KEY = "explodedAlgebraStepsVisibleLinesV1";
-        const LANDSCAPE_STEPS_VISIBLE_LINE_MIN = 5;
-        const LANDSCAPE_STEPS_VISIBLE_LINE_MAX = 7;
-        const LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT = 6;
-        const LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY = "explodedAlgebraLandscapeStepsVisibleLinesV1";
+        const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];
+        const STEPS_TEXT_SIZE_STORAGE_KEY = "explodedAlgebraStepsTextSizeV1";
+        const STEPS_LINE_HEIGHT_RATIO = 1.2;
 
         function isLandscapePanelLayout() {
             return window.matchMedia
                 ? window.matchMedia("(orientation: landscape)").matches
                 : window.innerWidth > window.innerHeight;
-        }
-
-        function getStepsVisibleLineRange() {
-            return isLandscapePanelLayout()
-                ? { min: LANDSCAPE_STEPS_VISIBLE_LINE_MIN, max: LANDSCAPE_STEPS_VISIBLE_LINE_MAX }
-                : { min: STEPS_VISIBLE_LINE_MIN, max: STEPS_VISIBLE_LINE_MAX };
         }
 
         function refreshQuickSettingButtons() {
@@ -1453,13 +1442,12 @@ Promise.resolve().then(() => {
                 const valueElement = button.querySelector("[data-setting-value]");
                 let value = "";
                 let nextValue = "";
-                if (setting === "steps-lines") {
-                    const range = getStepsVisibleLineRange();
-                    value = `${stepsVisibleLineCount} ${stepsVisibleLineCount === 1 ? "Line" : "Lines"}`;
-                    const nextLineCount = stepsVisibleLineCount >= range.max
-                        ? range.min
-                        : stepsVisibleLineCount + 1;
-                    nextValue = `${nextLineCount} ${nextLineCount === 1 ? "Line" : "Lines"}`;
+                if (setting === "steps-text-size") {
+                    const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
+                    const nextIndex = (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length;
+                    value = stepsTextSizePreference[0].toUpperCase() + stepsTextSizePreference.slice(1);
+                    const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
+                    nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
                 } else if (setting === "bar-style") {
                     const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
                     const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
@@ -1497,52 +1485,133 @@ Promise.resolve().then(() => {
             appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
         }
 
-        function loadSavedStepsVisibleLineCount() {
-            const landscapeLayout = isLandscapePanelLayout();
-            const minimum = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_MIN : STEPS_VISIBLE_LINE_MIN;
-            const maximum = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_MAX : STEPS_VISIBLE_LINE_MAX;
-            const fallback = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT : STEPS_VISIBLE_LINE_MAX;
-            const storageKey = landscapeLayout
-                ? LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY
-                : STEPS_VISIBLE_LINE_STORAGE_KEY;
+        function loadSavedStepsTextSizePreference() {
             try {
-                const savedLineCount = Number(window.localStorage.getItem(storageKey));
-                return Number.isInteger(savedLineCount) && savedLineCount >= minimum && savedLineCount <= maximum
-                    ? savedLineCount
-                    : fallback;
+                const savedPreference = window.localStorage.getItem(STEPS_TEXT_SIZE_STORAGE_KEY);
+                return STEPS_TEXT_SIZE_OPTIONS.includes(savedPreference) ? savedPreference : "medium";
             } catch (error) {
-                return fallback;
+                return "medium";
             }
         }
 
-        function syncStepsVisibleLineCountForOrientation() {
-            const layout = isLandscapePanelLayout() ? "landscape" : "portrait";
-            if (layout === stepsVisibleLineLayout) {
-                return;
+        function setStepsTextSizePreference(preference, persist = false) {
+            stepsTextSizePreference = STEPS_TEXT_SIZE_OPTIONS.includes(preference) ? preference : "medium";
+            if (persist) {
+                try {
+                    window.localStorage.setItem(STEPS_TEXT_SIZE_STORAGE_KEY, stepsTextSizePreference);
+                } catch (error) {}
             }
-            stepsVisibleLineLayout = layout;
-            setStepsVisibleLineCount(loadSavedStepsVisibleLineCount());
+            refreshQuickSettingButtons();
+            scheduleStepsFontSizeRecalculation();
         }
 
-        function calculateStepsFontSizeForVisibleLines(lineCount = stepsVisibleLineCount) {
+        function getStepSizingRows() {
+            return leftPanel
+                ? Array.from(leftPanel.querySelectorAll(".solution-step"))
+                    .filter(row => row.getClientRects().length && window.getComputedStyle(row).display !== "none")
+                : [];
+        }
+
+        function getStepsPanelPadding() {
             if (!leftPanel) {
-                return 15;
+                return { horizontal: 0, vertical: 0 };
             }
-            const panelBounds = leftPanel.getBoundingClientRect();
-            const panelStyle = window.getComputedStyle(leftPanel);
-            const panelPadding = (parseFloat(panelStyle.paddingTop) || 0) + (parseFloat(panelStyle.paddingBottom) || 0);
-            const lineHeightRatio = 1.2;
-            const availableHeight = Math.max(1, panelBounds.height - panelPadding);
-            const targetSize = Math.floor(availableHeight / (lineCount * lineHeightRatio));
-            return Math.max(8, Math.min(96, targetSize));
+            const style = window.getComputedStyle(leftPanel);
+            return {
+                horizontal: (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0),
+                vertical: (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
+            };
         }
 
-        function recalculateStepsFontSize() {
-            if (!appContainer) {
+        function calculateContextualStepsFontSizes() {
+            const viewportWidth = Math.max(1, getViewportWidth());
+            const viewportHeight = Math.max(1, getViewportHeight());
+            const shortViewportEdge = Math.min(viewportWidth, viewportHeight);
+            const coarsePointer = typeof window.matchMedia === "function"
+                && window.matchMedia("(pointer: coarse)").matches;
+            const compactDevice = shortViewportEdge < 500;
+            const baseMedium = Math.max(
+                compactDevice ? 15 : 17,
+                Math.min(coarsePointer ? 24 : 26, shortViewportEdge * (compactDevice ? 0.044 : 0.032))
+            );
+            return {
+                large: Math.round(baseMedium * 1.28 * 10) / 10,
+                medium: Math.round(baseMedium * 10) / 10,
+                small: Math.round(baseMedium * 0.78 * 10) / 10
+            };
+        }
+
+        function measureStepRowNaturalWidth(row) {
+            const rowStyle = window.getComputedStyle(row);
+            const gap = parseFloat(rowStyle.columnGap || rowStyle.gap) || 0;
+            const visibleChildren = Array.from(row.children)
+                .filter(child => window.getComputedStyle(child).display !== "none");
+            return visibleChildren.reduce((width, child) => {
+                const math = child.matches(".math-block, .problem-expression")
+                    ? child.querySelector(".katex, .katex-placeholder")
+                    : null;
+                const measuredElement = math || child;
+                return width + Math.max(
+                    measuredElement.scrollWidth || 0,
+                    measuredElement.getBoundingClientRect().width
+                );
+            }, Math.max(0, visibleChildren.length - 1) * gap);
+        }
+
+        function fitStepsFontSizeToPanelWidth(preferredSize) {
+            if (!leftPanel || !appContainer) {
+                return preferredSize;
+            }
+            const padding = getStepsPanelPadding();
+            const availableWidth = Math.max(1, leftPanel.clientWidth - padding.horizontal - 12);
+            appContainer.style.setProperty("--steps-font-size", `${preferredSize}px`);
+            const rows = getStepSizingRows();
+            const widestRow = rows.reduce((width, row) => (
+                Math.max(width, measureStepRowNaturalWidth(row))
+            ), 0);
+            if (!widestRow || widestRow <= availableWidth) {
+                return preferredSize;
+            }
+            return Math.max(8, Math.floor(preferredSize * availableWidth / widestRow * 10) / 10);
+        }
+
+        function getTwoRowPanelHeight(fontSize) {
+            const rows = getStepSizingRows();
+            const relevantRows = rows.slice(-2);
+            const fallbackRowHeight = Math.ceil(fontSize * STEPS_LINE_HEIGHT_RATIO);
+            const rowsHeight = relevantRows.reduce((height, row) => (
+                height + Math.max(fallbackRowHeight, Math.ceil(row.getBoundingClientRect().height))
+            ), 0) + Math.max(0, 2 - relevantRows.length) * fallbackRowHeight;
+            return Math.ceil(rowsHeight + getStepsPanelPadding().vertical);
+        }
+
+        function recalculateResponsiveStepsLayout() {
+            if (!appContainer || !leftPanel || document.body.classList.contains("settings-active")) {
                 return;
             }
-            const calculatedSize = calculateStepsFontSizeForVisibleLines();
-            appContainer.style.setProperty("--steps-font-size", `${calculatedSize}px`);
+            const sizes = calculateContextualStepsFontSizes();
+            const preferredSize = sizes[stepsTextSizePreference] || sizes.medium;
+            let fittedSize = fitStepsFontSizeToPanelWidth(preferredSize);
+            appContainer.style.setProperty("--steps-font-size", `${fittedSize}px`);
+
+            let twoRowHeight = getTwoRowPanelHeight(fittedSize);
+            if (!isLandscapePanelLayout() && twoRowHeight > getMaximumTopPanelHeight()) {
+                fittedSize = Math.max(
+                    8,
+                    Math.floor(fittedSize * getMaximumTopPanelHeight() / twoRowHeight * 10) / 10
+                );
+                appContainer.style.setProperty("--steps-font-size", `${fittedSize}px`);
+                twoRowHeight = getTwoRowPanelHeight(fittedSize);
+            }
+            appContainer.style.setProperty("--steps-two-row-height", `${twoRowHeight}px`);
+            if (isLandscapePanelLayout()) {
+                requestAnimationFrame(() => {
+                    leftPanel.scrollTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);
+                    applyResponsiveMainButtonSize();
+                });
+            } else {
+                updateTopPanelHeight(getCurrentLevel(), twoRowHeight);
+            }
         }
 
         function scheduleStepsFontSizeRecalculation() {
@@ -1551,27 +1620,8 @@ Promise.resolve().then(() => {
             }
             stepsFontRecalculationFrame = requestAnimationFrame(() => {
                 stepsFontRecalculationFrame = null;
-                recalculateStepsFontSize();
+                recalculateResponsiveStepsLayout();
             });
-        }
-
-        function setStepsVisibleLineCount(lineCount, persist = false) {
-            const range = getStepsVisibleLineRange();
-            const boundedLineCount = Math.max(
-                range.min,
-                Math.min(range.max, Math.round(Number(lineCount) || stepsVisibleLineCount))
-            );
-            stepsVisibleLineCount = boundedLineCount;
-            if (persist) {
-                try {
-                    const storageKey = isLandscapePanelLayout()
-                        ? LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY
-                        : STEPS_VISIBLE_LINE_STORAGE_KEY;
-                    window.localStorage.setItem(storageKey, String(boundedLineCount));
-                } catch (error) {}
-            }
-            refreshQuickSettingButtons();
-            scheduleStepsFontSizeRecalculation();
         }
 
         const handlePanelOrientationChange = () => {
@@ -2047,7 +2097,12 @@ Promise.resolve().then(() => {
             if (!topPanelResizeHandle) {
                 return;
             }
-            if (isLandscapePanelLayout()) {
+            const landscapeLayout = isLandscapePanelLayout();
+            if (bottomPanelResizeHandle) {
+                bottomPanelResizeHandle.toggleAttribute("aria-disabled", landscapeLayout);
+                bottomPanelResizeHandle.tabIndex = landscapeLayout ? -1 : 0;
+            }
+            if (landscapeLayout) {
                 const viewportWidth = getViewportWidth();
                 const requestedWidth = userLandscapeSidebarRatio === null
                     ? viewportWidth * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO
@@ -2072,11 +2127,15 @@ Promise.resolve().then(() => {
             if (rememberUserChoice) {
                 userTopPanelHeight = clampedHeight;
             }
-            appContainer.style.setProperty("--top-panel-height", `${Math.round(clampedHeight)}px`);
-            scheduleStepsFontSizeRecalculation();
+            const roundedHeight = Math.round(clampedHeight);
+            const nextHeight = `${roundedHeight}px`;
+            if (appContainer.style.getPropertyValue("--top-panel-height") !== nextHeight) {
+                appContainer.style.setProperty("--top-panel-height", nextHeight);
+                scheduleStepsFontSizeRecalculation();
+            }
             if (topPanelResizeHandle) {
                 topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
-                topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
+                topPanelResizeHandle.setAttribute("aria-valuenow", String(roundedHeight));
             }
         }
 
@@ -2176,7 +2235,7 @@ Promise.resolve().then(() => {
             return probe;
         }
 
-        function updateTopPanelHeight(level = getCurrentLevel()) {
+        function updateTopPanelHeight(level = getCurrentLevel(), minimumTwoRowHeight = null) {
             if (!appContainer || !leftPanel || !level) {
                 return;
             }
@@ -2184,8 +2243,14 @@ Promise.resolve().then(() => {
                 updatePanelResizeHandleOrientation();
                 return;
             }
+            const minimumHeight = Math.max(
+                TOP_PANEL_MIN_HEIGHT,
+                Number(minimumTwoRowHeight) || getTwoRowPanelHeight(
+                    parseFloat(window.getComputedStyle(appContainer).getPropertyValue("--steps-font-size")) || 15
+                )
+            );
             if (userTopPanelHeight !== null) {
-                userTopPanelHeight = Math.min(userTopPanelHeight, getMaximumTopPanelHeight());
+                userTopPanelHeight = Math.max(minimumHeight, Math.min(userTopPanelHeight, getMaximumTopPanelHeight()));
                 setTopPanelHeight(userTopPanelHeight);
                 return;
             }
@@ -2202,10 +2267,11 @@ Promise.resolve().then(() => {
                 total + Math.max(column.scrollHeight, column.getBoundingClientRect().height)
             ), 0);
             const fittedHeight = Math.ceil(contentHeight + verticalPadding(panelStyle) + 4);
-            setTopPanelHeight(fittedHeight);
+            setTopPanelHeight(Math.max(minimumHeight, fittedHeight));
         }
 
         function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
+            scheduleStepsFontSizeRecalculation();
             if (topPanelHeightFrame !== null) {
                 cancelAnimationFrame(topPanelHeightFrame);
             }
@@ -2300,6 +2366,9 @@ Promise.resolve().then(() => {
             };
 
             bottomPanelResizeHandle.addEventListener("pointerdown", event => {
+                if (isLandscapePanelLayout()) {
+                    return;
+                }
                 if (event.pointerType === "mouse" && event.button !== 0) {
                     return;
                 }
@@ -2323,6 +2392,9 @@ Promise.resolve().then(() => {
             bottomPanelResizeHandle.addEventListener("pointercancel", finishResize);
             bottomPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
             bottomPanelResizeHandle.addEventListener("keydown", event => {
+                if (isLandscapePanelLayout()) {
+                    return;
+                }
                 const currentHeight = bottomControlsPanel.getBoundingClientRect().height;
                 let nextHeight = null;
                 if (event.key === "ArrowUp") nextHeight = currentHeight + 8;
@@ -4671,7 +4743,7 @@ Promise.resolve().then(() => {
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
-            syncStepsVisibleLineCountForOrientation();
+            setStepsTextSizePreference(loadSavedStepsTextSizePreference());
             updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
@@ -4769,6 +4841,23 @@ Promise.resolve().then(() => {
             }
             if (document.fonts && document.fonts.ready) {
                 document.fonts.ready.then(scheduleResponsiveLayoutRecalculation);
+            }
+            if (typeof ResizeObserver === "function") {
+                const stepsPanelResizeObserver = new ResizeObserver(() => {
+                    scheduleStepsFontSizeRecalculation();
+                });
+                stepsPanelResizeObserver.observe(leftPanel);
+                stepsPanelResizeObserver.observe(appContainer);
+            }
+            if (typeof MutationObserver === "function") {
+                const stepsPanelContentObserver = new MutationObserver(() => {
+                    scheduleStepsFontSizeRecalculation();
+                });
+                stepsPanelContentObserver.observe(levelContent, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
             }
             if (modeChoiceBackdrop) {
                 modeChoiceBackdrop.addEventListener("click", event => {
@@ -5030,12 +5119,12 @@ ctx.font = SETTINGS.textFont;
         }
 
         function cycleQuickSetting(setting) {
-            if (setting === "steps-lines") {
-                const range = getStepsVisibleLineRange();
-                const nextLineCount = stepsVisibleLineCount >= range.max
-                    ? range.min
-                    : stepsVisibleLineCount + 1;
-                setStepsVisibleLineCount(nextLineCount, true);
+            if (setting === "steps-text-size") {
+                const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
+                const nextPreference = STEPS_TEXT_SIZE_OPTIONS[
+                    (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length
+                ];
+                setStepsTextSizePreference(nextPreference, true);
                 return;
             }
             if (setting === "bar-style") {
@@ -5339,7 +5428,6 @@ ctx.font = SETTINGS.textFont;
             }
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
-                syncStepsVisibleLineCountForOrientation();
                 updatePanelResizeHandleOrientation();
                 setBottomPanelHeight(
                     userBottomPanelHeight === null ? getMaximumBottomPanelHeight() : userBottomPanelHeight

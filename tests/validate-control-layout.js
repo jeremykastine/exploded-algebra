@@ -42,14 +42,14 @@ assert(
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
 assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="levelMenuPanel"'), "Settings must live directly in the pre-selection toolbar");
-["steps-lines", "bar-style", "bar-shading"].forEach(setting => {
+["steps-text-size", "bar-style", "bar-shading"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing inline ${setting} setting button`);
 });
 assert(!playerHtml.includes('data-workspace-setting="handedness"') && !playerJs.includes("setLeftHandedLayout"), "The left-handedness option must be removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1 / span 2; grid-row: 1; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }'));
@@ -237,15 +237,20 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-builder-comparison-precedence'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-responsive-steps-text'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
-assert(playerJs.includes('const STEPS_VISIBLE_LINE_MIN = 1;') && playerJs.includes('const STEPS_VISIBLE_LINE_MAX = 3;'));
-assert(playerJs.includes('function calculateStepsFontSizeForVisibleLines'));
-assert(playerJs.includes('function setStepsVisibleLineCount'));
+assert(playerJs.includes('const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];'));
+assert(playerJs.includes('function calculateContextualStepsFontSizes'));
+assert(playerJs.includes('function fitStepsFontSizeToPanelWidth'));
+assert(playerJs.includes('function recalculateResponsiveStepsLayout'));
+assert(playerJs.includes('function setStepsTextSizePreference'));
 assert(playerJs.includes('scheduleStepsFontSizeRecalculation();'));
-assert(playerJs.includes('const lineHeightRatio = 1.2;'));
+assert(playerJs.includes('const STEPS_LINE_HEIGHT_RATIO = 1.2;'));
+assert(playerJs.includes('window.matchMedia("(pointer: coarse)").matches'));
+assert(playerJs.includes('new ResizeObserver'));
+assert(playerJs.includes('new MutationObserver'));
 assert(/\.problem-statement,[\s\S]*?\.step-column \{[\s\S]*?line-height: 1\.2;/.test(playerHtml));
 assert(/\.solution-column,[\s\S]*?padding: 0 6px;/.test(playerHtml));
 assert(/\.solution-step,[\s\S]*?padding: 0;[\s\S]*?line-height: inherit;/.test(playerHtml));
@@ -262,9 +267,8 @@ assert(playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;"));
 assert(playerJs.includes("const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;"));
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;"));
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;"));
-assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_MIN = 5;"));
-assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_MAX = 7;"));
-assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT = 6;"));
+assert(playerJs.includes('appContainer.style.setProperty("--steps-two-row-height"'));
+assert(playerJs.includes('leftPanel.scrollTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);'));
 assert(playerJs.includes("function setLandscapeSidebarWidth(width, rememberUserChoice = false)"));
 assert(playerJs.includes('topPanelResizeHandle.setAttribute("aria-orientation", "vertical")'));
 assert(playerJs.includes('window.addEventListener("orientationchange", handlePanelOrientationChange)'));
@@ -273,16 +277,16 @@ assert(
     "Landscape must use a one-sixth-to-one-third resizable left column and a full-height right workspace"
 );
 assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 50dvh\);/.test(playerHtml),
-    "Landscape controls must stay below the horizontal divider and at or below half the viewport height"
+    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows:\s*var\(--steps-two-row-height\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
+    "Landscape panel one must snap to the responsive height of exactly two step rows"
 );
 assert(
     /\.top-panel-resize-handle,[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?cursor: col-resize;/.test(playerHtml),
     "The former top-panel handle must become the full-height vertical landscape divider"
 );
 assert(
-    /\.bottom-panel-resize-handle,[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 2;[\s\S]*?cursor: row-resize;/.test(playerHtml),
-    "The controls handle must remain horizontal inside the landscape left column"
+    /\.bottom-panel-resize-handle,[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 2;[\s\S]*?cursor: default;[\s\S]*?pointer-events: none;/.test(playerHtml),
+    "The landscape horizontal divider must remain snapped to the two-row panel height"
 );
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 

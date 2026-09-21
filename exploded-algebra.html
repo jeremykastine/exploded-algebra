@@ -2857,6 +2857,7 @@
             --main-key-gap: 6px;
             --main-icon-size: 28px;
             --steps-font-size: 15px;
+            --steps-two-row-height: 50px;
             --main-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
             --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
             --main-keypad-height: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap));
@@ -3693,6 +3694,7 @@
         .solution-step,
         .solution-step.completed-step {
             display: flex;
+            flex-wrap: nowrap;
             align-items: center;
             gap: 0.45em;
             width: 100%;
@@ -3708,6 +3710,11 @@
             min-width: 0;
             margin: 0;
             line-height: inherit;
+            white-space: nowrap;
+        }
+        .solution-step .katex,
+        .solution-step .katex-html {
+            white-space: nowrap;
         }
         .solution-column .katex {
             line-height: 1.2;
@@ -4212,7 +4219,7 @@
         }
         .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="steps-lines"] { grid-column: 1 / span 2; grid-row: 1; }
+        .workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1 / span 2; grid-row: 1; }
         .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }
         .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }
@@ -4450,9 +4457,9 @@
                     var(--divider-size)
                     minmax(0, 1fr);
                 grid-template-rows:
-                    minmax(0, 1fr)
+                    var(--steps-two-row-height)
                     var(--divider-size)
-                    min(var(--bottom-panel-height), 50dvh);
+                    minmax(0, 1fr);
             }
 
             .left-panel,
@@ -4493,7 +4500,8 @@
                 width: 100%;
                 height: var(--divider-size);
                 min-height: var(--divider-size);
-                cursor: row-resize;
+                cursor: default;
+                pointer-events: none;
             }
 
             .bottom-controls-panel,
@@ -4574,9 +4582,9 @@
                     <span class="workspace-finish-recording-label" aria-hidden="true">All<br>Done</span>
                 </button>
                 <div class="workspace-tool-group workspace-settings-group" aria-label="Display settings">
-                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-lines" data-hold-description="Cycle the number of conventional-step lines fitted in the panel: one through three in portrait and five through seven in landscape.">
-                        <span class="workspace-setting-name" aria-hidden="true">Steps Size</span>
-                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">3 Lines</span>
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-text-size" data-hold-description="Cycle the conventional steps text size through large, medium, and small. The exact size adapts to the screen and panel.">
+                        <span class="workspace-setting-name" aria-hidden="true">Steps Text</span>
+                        <span class="workspace-setting-value" data-setting-value aria-hidden="true">Medium</span>
                     </button>
                     <button type="button" class="workspace-setting-button" data-workspace-setting="bar-style" data-hold-description="Cycle the visual style used for addition and multiplication.">
                         <span class="workspace-setting-name" aria-hidden="true">Bar Style</span>
@@ -4681,7 +4689,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260921-builder-comparison-precedence"></script>
-    <script src="exploded-algebra-tool.js?v=20260921-builder-comparison-precedence"></script>
+    <script src="exploded-algebra-tool.js?v=20260921-responsive-steps-text"></script>
 
 </body>
 </html>
