@@ -59,6 +59,27 @@ assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
+assert(
+    !playerHtml.includes('body.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
+    "Student Expression Builder must not hide the KaTeX steps panel"
+);
+assert(
+    playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {') &&
+        playerHtml.includes('body.authoring-session.expression-builder-active .app-container,'),
+    "Only Exercise Builder authoring may omit the student steps panel"
+);
+assert(
+    /body:not\(\.authoring-session\)\.expression-builder-active\.builder-review-active \.app-container,[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
+    "Student Expression Builder Peek must retain the portrait KaTeX steps row"
+);
+assert(
+    /@media \(orientation: landscape\) \{[\s\S]*?body:not\(\.authoring-session\)\.expression-builder-active\.builder-review-active \.left-panel,[\s\S]*?grid-row: 1;/.test(playerHtml),
+    "Student Expression Builder Peek must retain the landscape KaTeX steps column"
+);
+assert(
+    /builderActive &&[\s\S]*?!authoringSessionActive &&[\s\S]*?isLeftPanelShowingToolMenu\(\)[\s\S]*?renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
+    "Entering student Expression Builder must restore KaTeX steps if another panel had replaced them"
+);
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }'));
@@ -261,7 +282,7 @@ assert(
     /\.bottom-panel-resize-handle,[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 2;[\s\S]*?cursor: row-resize;/.test(playerHtml),
     "The controls handle must remain horizontal inside the landscape left column"
 );
-assert(playerJs.includes('document.body.classList.toggle("selection-active", selectionActive);\n            applyResponsiveMainButtonSize();'));
+assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 const integerFormMatch = playerJs.match(/function getNumericalRewriteIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getInverseIntegerData/);
 const inverseIntegerFormMatch = playerJs.match(/function getInverseIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getFractionSimplificationCategory/);

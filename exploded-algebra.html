@@ -4032,17 +4032,17 @@
         body.expression-builder-active.builder-entry-mode .builder-rewrite-preview {
             display: none !important;
         }
-        body.expression-builder-active.builder-entry-mode .left-panel {
+        body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {
             display: none !important;
         }
-        body.expression-builder-active.builder-entry-mode .app-container,
-        body.expression-builder-active.builder-entry-mode.left-handed .app-container {
+        body.authoring-session.expression-builder-active.builder-entry-mode .app-container,
+        body.authoring-session.expression-builder-active.builder-entry-mode.left-handed .app-container {
             grid-template-rows: minmax(0, 1fr);
         }
-        body.expression-builder-active.builder-entry-mode .main {
+        body.authoring-session.expression-builder-active.builder-entry-mode .main {
             grid-row: 1;
         }
-        body.expression-builder-active.builder-entry-mode .divider {
+        body.authoring-session.expression-builder-active.builder-entry-mode .divider {
             display: none !important;
         }
 
@@ -4140,16 +4140,13 @@
             left: max(12px, env(safe-area-inset-left));
         }
 
-        /* Authoring and Expression Builder omit the conventional-notation row,
-           while retaining the same independent controls panel. */
+        /* Exercise Builder authoring omits the student conventional-notation
+           row while retaining the independent controls panel. Student
+           Expression Builder continues to use the full three-panel layout. */
         body.authoring-session:not(.expression-builder-active) .app-container,
         body.authoring-session:not(.expression-builder-active).left-handed .app-container,
-        body.expression-builder-active .app-container,
-        body.expression-builder-active.left-handed .app-container,
-        body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
-        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container,
-        body.expression-builder-active.builder-entry-mode .app-container,
-        body.expression-builder-active.builder-entry-mode.left-handed .app-container {
+        body.authoring-session.expression-builder-active .app-container,
+        body.authoring-session.expression-builder-active.left-handed .app-container {
             grid-template-rows:
                 minmax(0, 1fr)
                 var(--divider-size)
@@ -4157,19 +4154,16 @@
         }
         body.authoring-session:not(.expression-builder-active) .main,
         body.authoring-session:not(.expression-builder-active).left-handed .main,
-        body.expression-builder-active .main,
-        body.expression-builder-active.left-handed .main,
-        body.authoring-session.authoring-initial-session.expression-builder-active .main,
-        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main,
-        body.expression-builder-active.builder-entry-mode .main { grid-row: 1; }
+        body.authoring-session.expression-builder-active .main,
+        body.authoring-session.expression-builder-active.left-handed .main { grid-row: 1; }
         body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle,
-        body.expression-builder-active .bottom-panel-resize-handle { grid-row: 2; }
+        body.authoring-session.expression-builder-active .bottom-panel-resize-handle { grid-row: 2; }
         body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
         body.authoring-session:not(.expression-builder-active) .quadrant-tools,
         body.authoring-session:not(.expression-builder-active) .quadrant-menu,
         body.authoring-session:not(.expression-builder-active) .main-action-panel,
-        body.expression-builder-active .bottom-controls-panel { grid-row: 3; }
-        body.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
+        body.authoring-session.expression-builder-active .bottom-controls-panel { grid-row: 3; }
+        body.authoring-session.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
             display: block !important;
         }
 
@@ -4188,6 +4182,23 @@
         }
         body.builder-review-active .main,
         body.builder-review-active.left-handed .main { grid-row: 1; }
+
+        /* Student Expression Builder always retains the KaTeX steps panel.
+           During Peek, the controls row is removed but the steps remain above
+           the expression workspace. */
+        @media (orientation: portrait) {
+            body:not(.authoring-session).expression-builder-active.builder-review-active .app-container,
+            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .app-container {
+                grid-template-rows:
+                    min(var(--top-panel-height), 25dvh)
+                    var(--divider-size)
+                    minmax(0, 1fr);
+            }
+            body:not(.authoring-session).expression-builder-active.builder-review-active .main,
+            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .main {
+                grid-row: 3;
+            }
+        }
 
         /* Every controls state uses the full resizable panel as the same
            six-column by four-row placement grid. */
@@ -4547,6 +4558,15 @@
                 height: auto;
                 min-width: 0;
                 min-height: 0;
+            }
+
+            body:not(.authoring-session).expression-builder-active.builder-review-active .app-container,
+            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .app-container {
+                grid-template-rows: minmax(0, 1fr);
+            }
+            body:not(.authoring-session).expression-builder-active.builder-review-active .left-panel,
+            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .left-panel {
+                grid-row: 1;
             }
 
             body.settings-active .app-container,

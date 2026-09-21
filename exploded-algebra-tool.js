@@ -11953,6 +11953,13 @@ function renderToolArea() {
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
             document.body.classList.remove("builder-grouping-mode", "builder-grouping-selection");
             document.body.classList.toggle("selection-active", selectionActive);
+            if (
+                builderActive &&
+                !authoringSessionActive &&
+                (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim())
+            ) {
+                renderLevelInfo(currentLevelIndex);
+            }
             applyResponsiveMainButtonSize();
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
