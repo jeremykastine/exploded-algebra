@@ -64,21 +64,21 @@ assert(
     "Student Expression Builder must not hide the KaTeX steps panel"
 );
 assert(
-    playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {') &&
-        playerHtml.includes('body.authoring-session.expression-builder-active .app-container,'),
-    "Only Exercise Builder authoring may omit the student steps panel"
+    playerHtml.includes('body.authoring-session:not(.expression-builder-active) .left-panel,') &&
+        !playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
+    "Instructor Expression Builder must show the live conventional panel and hide it only outside entry"
 );
 assert(
-    /body:not\(\.authoring-session\)\.expression-builder-active\.builder-review-active \.app-container,[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
-    "Student Expression Builder Peek must retain the portrait KaTeX steps row"
+    /body\.expression-builder-active\.builder-review-active \.app-container,[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
+    "Expression Builder Peek must retain the portrait conventional row"
 );
 assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?body:not\(\.authoring-session\)\.expression-builder-active\.builder-review-active \.left-panel,[\s\S]*?grid-row: 1;/.test(playerHtml),
-    "Student Expression Builder Peek must retain the landscape KaTeX steps column"
+    /@media \(orientation: landscape\) \{[\s\S]*?body\.expression-builder-active\.builder-review-active \.left-panel,[\s\S]*?grid-row: 1;/.test(playerHtml),
+    "Expression Builder Peek must retain the landscape conventional column"
 );
 assert(
-    /builderActive &&[\s\S]*?!authoringSessionActive &&[\s\S]*?isLeftPanelShowingToolMenu\(\)[\s\S]*?renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
-    "Entering student Expression Builder must restore KaTeX steps if another panel had replaced them"
+    /if \(builderActive\) \{\s*renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
+    "Every Expression Builder refresh must update panel one's live conventional expression"
 );
 assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
@@ -237,7 +237,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-combined-arithmetic-permissions'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-live-builder-conventional'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

@@ -2173,6 +2173,78 @@ function expressionToKatex(rootOrData) {
     return render(root);
 }
 
+function expressionBuilderToKatex(rootOrData) {
+    const root = exprFromData(rootOrData);
+    const isNegativeProduct = node => node && !node.isBuilderSequence && node.type === "prod" &&
+        node.args.length > 1 && node.args[0].type === "value" && node.args[0].value === "-1";
+    const containsBuilderSequence = node => !!node && (
+        node.isBuilderSequence || (node.args || []).some(containsBuilderSequence)
+    );
+
+    const renderBuilderNode = (node, parentType = null, explicitlyGrouped = false) => {
+        if (!node) {
+            return "";
+        }
+        if (node.isBuilderPlaceholder) {
+            return "\\square";
+        }
+        if (node.isBuilderSequence) {
+            const parts = [];
+            const operators = Array.isArray(node.builderOperators) ? node.builderOperators : [];
+            node.args.forEach((child, index) => {
+                const groupedChild = !child.isBuilderSequence && (child.type === "sum" || child.type === "prod");
+                parts.push(renderBuilderNode(child, null, groupedChild));
+                const operator = operators[index];
+                if (operator === "sum") {
+                    parts.push(" + ");
+                } else if (operator === "prod") {
+                    parts.push(" \\cdot ");
+                }
+            });
+            return parts.join("");
+        }
+        if (node.type === "inv") {
+            const denominator = renderBuilderNode(node.args[0], "inv") || "\\phantom{0}";
+            return `\\frac{1}{${denominator}}`;
+        }
+        if (node.type === "value") {
+            return escapeKatexValue(node.value);
+        }
+        if (!containsBuilderSequence(node) && (node.type === "sum" || node.type === "prod")) {
+            const conventional = expressionToKatex(node);
+            const needsParentheses = explicitlyGrouped || (
+                node.type === "sum" && (parentType === "prod" || parentType === "inv")
+            );
+            return needsParentheses ? `\\left(${conventional}\\right)` : conventional;
+        }
+        if (node.type === "sum") {
+            const body = node.args.map((term, index) => {
+                if (isNegativeProduct(term)) {
+                    const positive = new ExprNode("prod", term.args.slice(1), null);
+                    return `${index === 0 ? "-" : " - "}${renderBuilderNode(positive, "sum")}`;
+                }
+                return `${index === 0 ? "" : " + "}${renderBuilderNode(term, "sum")}`;
+            }).join("");
+            return explicitlyGrouped || parentType === "prod" || parentType === "inv"
+                ? `\\left(${body}\\right)`
+                : body;
+        }
+        if (node.type === "prod") {
+            if (isNegativeProduct(node)) {
+                const positive = new ExprNode("prod", node.args.slice(1), null);
+                const body = `-${renderBuilderNode(positive, parentType)}`;
+                return explicitlyGrouped ? `\\left(${body}\\right)` : body;
+            }
+            const body = node.args.map(factor => renderBuilderNode(factor, "prod")).join(" \\cdot ");
+            return explicitlyGrouped ? `\\left(${body}\\right)` : body;
+        }
+
+        return "?";
+    };
+
+    return renderBuilderNode(root);
+}
+
 function renderExpressionInto(target, rootOrData, options = {}) {
     const targetElement = typeof target === "string" ? document.querySelector(target) : target;
     if (!targetElement) {
@@ -2247,6 +2319,7 @@ window.ExplodedAlgebraRenderer = {
     renderExpressionSvgMarkup,
     renderExpressionInto,
     expressionToKatex,
+    expressionBuilderToKatex,
     renderMiniOopsSvg,
     renderAllInDocument
 };

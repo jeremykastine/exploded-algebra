@@ -3988,9 +3988,9 @@
             font-weight: 600;
         }
 
-        /* Exercise Builder authoring removes only the student step strip. The
-           recording phase otherwise keeps the same workspace and settings UI
-           students use. */
+        /* Exercise Builder authoring hides the step strip only outside active
+           expression entry. During entry, panel one shows the live conventional
+           form of the expression being built. */
         body.authoring-session:not(.expression-builder-active) .app-container,
         body.authoring-session:not(.expression-builder-active).left-handed .app-container {
             --top-panel-height: 0px;
@@ -4000,21 +4000,13 @@
         body.authoring-session:not(.expression-builder-active).left-handed .main {
             grid-row: 1;
         }
-        body.authoring-session .left-panel,
-        body.authoring-session .top-panel-resize-handle,
+        body.authoring-session:not(.expression-builder-active) .left-panel,
+        body.authoring-session:not(.expression-builder-active) .top-panel-resize-handle,
         body.authoring-session.authoring-initial-session .quadrant-menu {
             display: none !important;
         }
         body.authoring-session .quadrant-tools {
             margin-right: max(8px, env(safe-area-inset-right));
-        }
-        body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
-        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container {
-            grid-template-rows: minmax(0, 1fr);
-        }
-        body.authoring-session.authoring-initial-session.expression-builder-active .main,
-        body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main {
-            grid-row: 1;
         }
         body.expression-builder-active .builder-rewrite-preview.single-expression .builder-rewrite-content {
             display: block;
@@ -4030,19 +4022,6 @@
             opacity: 1;
         }
         body.expression-builder-active.builder-entry-mode .builder-rewrite-preview {
-            display: none !important;
-        }
-        body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {
-            display: none !important;
-        }
-        body.authoring-session.expression-builder-active.builder-entry-mode .app-container,
-        body.authoring-session.expression-builder-active.builder-entry-mode.left-handed .app-container {
-            grid-template-rows: minmax(0, 1fr);
-        }
-        body.authoring-session.expression-builder-active.builder-entry-mode .main {
-            grid-row: 1;
-        }
-        body.authoring-session.expression-builder-active.builder-entry-mode .divider {
             display: none !important;
         }
 
@@ -4140,29 +4119,22 @@
             left: max(12px, env(safe-area-inset-left));
         }
 
-        /* Exercise Builder authoring omits the student conventional-notation
-           row while retaining the independent controls panel. Student
-           Expression Builder continues to use the full three-panel layout. */
+        /* Outside active expression entry, authoring omits the student step
+           strip while retaining the independent controls panel. */
         body.authoring-session:not(.expression-builder-active) .app-container,
-        body.authoring-session:not(.expression-builder-active).left-handed .app-container,
-        body.authoring-session.expression-builder-active .app-container,
-        body.authoring-session.expression-builder-active.left-handed .app-container {
+        body.authoring-session:not(.expression-builder-active).left-handed .app-container {
             grid-template-rows:
                 minmax(0, 1fr)
                 var(--divider-size)
                 min(var(--bottom-panel-height), 33.333dvh);
         }
         body.authoring-session:not(.expression-builder-active) .main,
-        body.authoring-session:not(.expression-builder-active).left-handed .main,
-        body.authoring-session.expression-builder-active .main,
-        body.authoring-session.expression-builder-active.left-handed .main { grid-row: 1; }
-        body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle,
-        body.authoring-session.expression-builder-active .bottom-panel-resize-handle { grid-row: 2; }
+        body.authoring-session:not(.expression-builder-active).left-handed .main { grid-row: 1; }
+        body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle { grid-row: 2; }
         body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
         body.authoring-session:not(.expression-builder-active) .quadrant-tools,
         body.authoring-session:not(.expression-builder-active) .quadrant-menu,
-        body.authoring-session:not(.expression-builder-active) .main-action-panel,
-        body.authoring-session.expression-builder-active .bottom-controls-panel { grid-row: 3; }
+        body.authoring-session:not(.expression-builder-active) .main-action-panel { grid-row: 3; }
         body.authoring-session.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
             display: block !important;
         }
@@ -4176,26 +4148,19 @@
         body.expression-builder-active.builder-entry-mode.builder-review-active .bottom-panel-resize-handle {
             display: none !important;
         }
-        body.builder-review-active .app-container,
-        body.builder-review-active.left-handed .app-container {
-            grid-template-rows: minmax(0, 1fr);
-        }
-        body.builder-review-active .main,
-        body.builder-review-active.left-handed .main { grid-row: 1; }
-
-        /* Student Expression Builder always retains the KaTeX steps panel.
-           During Peek, the controls row is removed but the steps remain above
-           the expression workspace. */
+        /* Expression Builder always retains the live conventional panel.
+           During Peek, the controls row is removed but panel one remains above
+           the expression workspace for students and authors alike. */
         @media (orientation: portrait) {
-            body:not(.authoring-session).expression-builder-active.builder-review-active .app-container,
-            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .app-container {
+            body.expression-builder-active.builder-review-active .app-container,
+            body.expression-builder-active.builder-review-active.left-handed .app-container {
                 grid-template-rows:
                     min(var(--top-panel-height), 25dvh)
                     var(--divider-size)
                     minmax(0, 1fr);
             }
-            body:not(.authoring-session).expression-builder-active.builder-review-active .main,
-            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .main {
+            body.expression-builder-active.builder-review-active .main,
+            body.expression-builder-active.builder-review-active.left-handed .main {
                 grid-row: 3;
             }
         }
@@ -4560,12 +4525,12 @@
                 min-height: 0;
             }
 
-            body:not(.authoring-session).expression-builder-active.builder-review-active .app-container,
-            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .app-container {
+            body.expression-builder-active.builder-review-active .app-container,
+            body.expression-builder-active.builder-review-active.left-handed .app-container {
                 grid-template-rows: minmax(0, 1fr);
             }
-            body:not(.authoring-session).expression-builder-active.builder-review-active .left-panel,
-            body:not(.authoring-session).expression-builder-active.builder-review-active.left-handed .left-panel {
+            body.expression-builder-active.builder-review-active .left-panel,
+            body.expression-builder-active.builder-review-active.left-handed .left-panel {
                 grid-row: 1;
             }
 
@@ -4710,8 +4675,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260921-compact-builder-operations"></script>
-    <script src="exploded-algebra-tool.js?v=20260921-combined-arithmetic-permissions"></script>
+    <script src="exploded-algebra-renderer.js?v=20260921-live-builder-conventional"></script>
+    <script src="exploded-algebra-tool.js?v=20260921-live-builder-conventional"></script>
 
 </body>
 </html>

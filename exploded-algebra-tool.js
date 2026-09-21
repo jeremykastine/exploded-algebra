@@ -4164,6 +4164,27 @@ Promise.resolve().then(() => {
                 return;
             }
 
+            const activeBuilder = uiState.mode === "edit" && uiState.stage === "builder"
+                ? uiState.expressionBuilder
+                : null;
+            if (activeBuilder) {
+                const liveKatex = ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)
+                    || "\\phantom{0}";
+                levelContent.innerHTML = `
+                    <div class="textbook-solution builder-conventional-live">
+                        <section class="solution-section solution-column" aria-label="Current expression in conventional notation">
+                            <div class="solution-step current-step builder-conventional-step">
+                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(liveKatex)}"></span></div>
+                            </div>
+                        </section>
+                    </div>
+                `;
+                renderMoveHistoryControls(level);
+                renderLeftPanelMath();
+                scheduleTopPanelHeightUpdate(level);
+                return;
+            }
+
             const completion = getStepCompletionStates(level);
             const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
             const firstStepIsInitialExpression = !!firstStep && expressionTextsMatch(
@@ -11990,11 +12011,7 @@ function renderToolArea() {
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
             document.body.classList.remove("builder-grouping-mode", "builder-grouping-selection");
             document.body.classList.toggle("selection-active", selectionActive);
-            if (
-                builderActive &&
-                !authoringSessionActive &&
-                (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim())
-            ) {
+            if (builderActive) {
                 renderLevelInfo(currentLevelIndex);
             }
             applyResponsiveMainButtonSize();
@@ -12042,7 +12059,7 @@ function renderToolArea() {
                     mainActionPanel.replaceChildren();
                     mainActionPanel.classList.add("hidden");
                 }
-                if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
+                if (isLeftPanelShowingToolMenu() || levelContent.querySelector(".builder-conventional-live") || !levelContent.innerHTML.trim()) {
                     renderLevelInfo(currentLevelIndex);
                 }
                 return;
@@ -12051,7 +12068,7 @@ function renderToolArea() {
             if (!mainActionPanel) {
                 return;
             }
-            if (isLeftPanelShowingToolMenu() || !levelContent.innerHTML.trim()) {
+            if (isLeftPanelShowingToolMenu() || levelContent.querySelector(".builder-conventional-live") || !levelContent.innerHTML.trim()) {
                 renderLevelInfo(currentLevelIndex);
             }
             mainActionPanel.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
