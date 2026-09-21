@@ -2175,13 +2175,30 @@ function expressionToKatex(rootOrData) {
 
 function expressionBuilderToKatex(rootOrData) {
     const root = exprFromData(rootOrData);
-    const isNegativeProduct = node => node && !node.isBuilderSequence && node.type === "prod" &&
+    const isNegativeProduct = node => node && node.type === "prod" &&
         node.args.length > 1 && node.args[0].type === "value" && node.args[0].value === "-1";
-    const containsBuilderSequence = node => !!node && (
-        node.isBuilderSequence || (node.args || []).some(containsBuilderSequence)
-    );
 
-    const renderBuilderNode = (node, parentType = null, explicitlyGrouped = false) => {
+    const buildSequenceTree = sequence => {
+        if (!sequence || !sequence.args.length) {
+            return null;
+        }
+        const operators = Array.isArray(sequence.builderOperators) ? sequence.builderOperators : [];
+        const sumTerms = [];
+        let currentProduct = sequence.args[0];
+        for (let index = 0; index < sequence.args.length - 1; index++) {
+            const next = sequence.args[index + 1];
+            if (operators[index] === "prod") {
+                currentProduct = new ExprNode("prod", [currentProduct, next], null);
+            } else {
+                sumTerms.push(currentProduct);
+                currentProduct = next;
+            }
+        }
+        sumTerms.push(currentProduct);
+        return sumTerms.length === 1 ? sumTerms[0] : new ExprNode("sum", sumTerms, null);
+    };
+
+    const renderBuilderNode = (node, parentType = null) => {
         if (!node) {
             return "";
         }
@@ -2189,19 +2206,19 @@ function expressionBuilderToKatex(rootOrData) {
             return "\\square";
         }
         if (node.isBuilderSequence) {
-            const parts = [];
             const operators = Array.isArray(node.builderOperators) ? node.builderOperators : [];
-            node.args.forEach((child, index) => {
-                const groupedChild = !child.isBuilderSequence && (child.type === "sum" || child.type === "prod");
-                parts.push(renderBuilderNode(child, null, groupedChild));
-                const operator = operators[index];
-                if (operator === "sum") {
-                    parts.push(" + ");
-                } else if (operator === "prod") {
-                    parts.push(" \\cdot ");
-                }
-            });
-            return parts.join("");
+            const resolvedByPrecedence = buildSequenceTree(node);
+            const body = resolvedByPrecedence ? renderBuilderNode(resolvedByPrecedence, parentType) : "";
+            const trailingOperator = operators.length >= node.args.length
+                ? operators[node.args.length - 1]
+                : null;
+            if (trailingOperator === "sum") {
+                return `${body} + `;
+            }
+            if (trailingOperator === "prod") {
+                return `${body} \\cdot `;
+            }
+            return body;
         }
         if (node.type === "inv") {
             const denominator = renderBuilderNode(node.args[0], "inv") || "\\phantom{0}";
@@ -2209,13 +2226,6 @@ function expressionBuilderToKatex(rootOrData) {
         }
         if (node.type === "value") {
             return escapeKatexValue(node.value);
-        }
-        if (!containsBuilderSequence(node) && (node.type === "sum" || node.type === "prod")) {
-            const conventional = expressionToKatex(node);
-            const needsParentheses = explicitlyGrouped || (
-                node.type === "sum" && (parentType === "prod" || parentType === "inv")
-            );
-            return needsParentheses ? `\\left(${conventional}\\right)` : conventional;
         }
         if (node.type === "sum") {
             const body = node.args.map((term, index) => {
@@ -2225,18 +2235,44 @@ function expressionBuilderToKatex(rootOrData) {
                 }
                 return `${index === 0 ? "" : " + "}${renderBuilderNode(term, "sum")}`;
             }).join("");
-            return explicitlyGrouped || parentType === "prod" || parentType === "inv"
+            return parentType === "prod"
                 ? `\\left(${body}\\right)`
                 : body;
         }
         if (node.type === "prod") {
             if (isNegativeProduct(node)) {
                 const positive = new ExprNode("prod", node.args.slice(1), null);
-                const body = `-${renderBuilderNode(positive, parentType)}`;
-                return explicitlyGrouped ? `\\left(${body}\\right)` : body;
+                return `-${renderBuilderNode(positive, parentType)}`;
             }
-            const body = node.args.map(factor => renderBuilderNode(factor, "prod")).join(" \\cdot ");
-            return explicitlyGrouped ? `\\left(${body}\\right)` : body;
+            const compactFactors = [];
+            for (const factor of node.args) {
+                const variable = factor.type === "value" && /^[A-Za-z]$/.test(String(factor.value))
+                    ? String(factor.value)
+                    : null;
+                const previous = compactFactors[compactFactors.length - 1];
+                if (variable && previous && previous.variable === variable) {
+                    previous.count += 1;
+                } else {
+                    compactFactors.push({ node: factor, variable, count: 1 });
+                }
+            }
+            const factors = compactFactors.map(item => item.variable && item.count > 1
+                ? `${escapeKatexValue(item.variable)}^{${item.count}}`
+                : renderBuilderNode(item.node, "prod"));
+            return factors.map((factor, index) => {
+                if (index === 0) {
+                    return factor;
+                }
+                const previousNode = compactFactors[index - 1].node;
+                const currentNode = compactFactors[index].node;
+                const canJuxtapose = (
+                    previousNode.type === "value" && /^-?\d/.test(String(previousNode.value)) &&
+                    (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
+                ) || (
+                    previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
+                );
+                return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
+            }).join("");
         }
 
         return "?";

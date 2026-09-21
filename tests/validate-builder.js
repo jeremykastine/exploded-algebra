@@ -126,6 +126,8 @@ assert(builderJs.includes('byId("completeExerciseButton").addEventListener("clic
 assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 4 All Done must automatically open a preview tab");
 assert(/const previewUrl = `exploded-algebra\.html\?source=builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)") && playerJs.includes('class="textbook-solution builder-conventional-live"'), "Every active Expression Builder must render its live conventional expression in panel one");
+assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode)") && playerJs.includes('class="solution-step builder-conventional-selected"'), "Panel one must show the selected expression above the live construction");
+assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.includes('class="builder-conventional-arrow"'), "Initial-expression authoring must omit the nonexistent selected row while rewrites show the selected-to-new transition");
 assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
 assert(playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Instructor Expression Builder must retain the conventional-notation panel");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
@@ -296,7 +298,12 @@ const groupedBuilder = builderSequence([
   value("2"),
   new renderer.ExprNode("prod", [value("3"), value("4")])
 ], ["sum"]);
-assert(renderer.expressionBuilderToKatex(groupedBuilder) === "2 + \\left(3 \\cdot 4\\right)", "An explicitly resolved Builder operation must gain parentheses in conventional notation");
+assert(renderer.expressionBuilderToKatex(groupedBuilder) === "2 + 3 \\cdot 4", "A resolved product inside a sum must not receive unnecessary parentheses");
+const necessaryParenthesesBuilder = builderSequence([
+  new renderer.ExprNode("sum", [value("2"), value("3")]),
+  value("4")
+], ["prod"]);
+assert(renderer.expressionBuilderToKatex(necessaryParenthesesBuilder) === "\\left(2 + 3\\right) \\cdot 4", "A resolved sum multiplied on the outside must retain necessary parentheses");
 const danglingBuilder = builderSequence([value("2")], ["sum"]);
 assert(renderer.expressionBuilderToKatex(danglingBuilder) === "2 + ", "A pending Builder operation must remain visible before its next value is entered");
 const inverseBuilder = new renderer.ExprNode("inv", [flatBuilder]);

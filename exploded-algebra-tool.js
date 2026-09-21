@@ -4170,10 +4170,22 @@ Promise.resolve().then(() => {
             if (activeBuilder) {
                 const liveKatex = ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)
                     || "\\phantom{0}";
+                const selectedKatex = activeBuilder.tool === "authorInitial" || !activeBuilder.originalSelectedNode
+                    ? ""
+                    : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
+                const selectedExpressionHtml = selectedKatex
+                    ? `
+                        <div class="solution-step builder-conventional-selected" aria-label="Selected expression">
+                            <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(selectedKatex)}"></span></div>
+                        </div>
+                    `
+                    : "";
                 levelContent.innerHTML = `
                     <div class="textbook-solution builder-conventional-live">
                         <section class="solution-section solution-column" aria-label="Current expression in conventional notation">
-                            <div class="solution-step current-step builder-conventional-step">
+                            ${selectedExpressionHtml}
+                            <div class="solution-step current-step builder-conventional-step" aria-label="Expression being constructed">
+                                ${selectedKatex ? '<span class="builder-conventional-arrow" aria-hidden="true">→</span>' : ""}
                                 <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(liveKatex)}"></span></div>
                             </div>
                         </section>
