@@ -61,7 +61,7 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
-    builderPotentialFill: "rgb(231, 218, 244)",
+    builderRecentFill: "rgb(231, 218, 244)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -893,63 +893,20 @@ function measureNodeWithContext(node, drawingContext, settings) {
             cursorX += child.layout.width + itemPadding * 2 + operatorSize;
             cursorY += child.layout.height + itemPadding * 2 + operatorSize;
         });
-        const expectsValue = node.args.length === 0 || (node.builderOperators || []).length >= node.args.length;
-        const isCurrentSequence = node.isBuilderCurrentSequence !== false;
-        const placeholderWidth = Math.max(32, Number(settings.builderPlaceholderWidth) || 24);
-        const placeholderHeight = minimumHeight;
-        const placeholder = expectsValue && isCurrentSequence
-            ? {
-                kind: "value",
-                x: node.args.length ? cursorX - itemPadding : itemPadding,
-                y: node.args.length ? cursorY - itemPadding : itemPadding,
-                width: placeholderWidth,
-                height: placeholderHeight
-            }
-            : null;
-        if (placeholder) {
-            right = Math.max(right, placeholder.x + placeholder.width + itemPadding);
-            bottom = Math.max(bottom, placeholder.y + placeholder.height + itemPadding);
+        const pendingOperatorIndex = node.args.length - 1;
+        const hasPendingOperator = pendingOperatorIndex >= 0 &&
+            (node.builderOperators || []).length >= node.args.length;
+        if (hasPendingOperator) {
+            const last = node.args[pendingOperatorIndex];
+            const lastOffset = offsets[pendingOperatorIndex];
+            right = Math.max(right, lastOffset.x + last.layout.width + itemPadding + operatorSize + itemPadding);
+            bottom = Math.max(bottom, lastOffset.y + last.layout.height + itemPadding + operatorSize + itemPadding);
         }
-        const potentialBoxes = placeholder ? [placeholder] : [];
-        const lastIndex = node.args.length - 1;
-        const last = node.args[lastIndex];
-        if (!expectsValue && isCurrentSequence && last) {
-            const lastOffset = offsets[lastIndex];
-            let nextEdgeX = lastOffset.x + last.layout.width;
-            let nextEdgeY = lastOffset.y + last.layout.height;
-            if (last.isBuilderActive && last.type === "value" && /^\d+$/.test(String(last.value))) {
-                const digitWidth = Math.max(14, parseFontSize(settings.textFont) * 0.72);
-                const digitHeight = Math.max(18, parseFontSize(settings.textFont) * 1.05);
-                const digitBox = {
-                    kind: "digit",
-                    x: lastOffset.x + last.layout.width + Math.max(3, itemPadding * 0.35),
-                    y: lastOffset.y + (last.layout.height - digitHeight) / 2,
-                    width: digitWidth,
-                    height: digitHeight
-                };
-                potentialBoxes.push(digitBox);
-                nextEdgeX = Math.max(nextEdgeX, digitBox.x + digitBox.width);
-                nextEdgeY = Math.max(nextEdgeY, digitBox.y + digitBox.height);
-            }
-            potentialBoxes.push({
-                kind: "operation",
-                x: nextEdgeX + itemPadding,
-                y: nextEdgeY + itemPadding,
-                width: operatorSize,
-                height: operatorSize
-            });
-        }
-        potentialBoxes.forEach(box => {
-            right = Math.max(right, box.x + box.width + itemPadding);
-            bottom = Math.max(bottom, box.y + box.height + itemPadding);
-        });
         node.layout.width = Math.max(32 + itemPadding * 2, right);
         node.layout.height = Math.max(minimumHeight + itemPadding * 2, bottom);
         node.layout.builderItemPadding = itemPadding;
         node.layout.builderOperatorSize = operatorSize;
         node.layout.builderItemOffsets = offsets;
-        node.layout.builderPlaceholderBox = placeholder;
-        node.layout.builderPotentialBoxes = potentialBoxes;
         node.layout.childBoxes = [];
         node.layout.builderOperatorBoxes = [];
         node.layout.vLines = [0, node.layout.width];
@@ -1105,28 +1062,17 @@ function placeNodeWithSettings(node, x, y, settings) {
         });
         const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
         const operatorSize = node.layout.builderOperatorSize || Math.max(30, parseFontSize(settings.textFont) * 1.5);
-        const potentialBoxes = (node.layout.builderPotentialBoxes || []).map(box => ({
-            ...box,
-            x: x + box.x,
-            y: y + box.y
-        }));
-        const placeholder = potentialBoxes.find(box => box.kind === "value") || null;
-        const digitPotential = potentialBoxes.find(box => box.kind === "digit") || null;
-        node.layout.builderPotentialBoxes = potentialBoxes;
-        node.layout.builderPlaceholderBox = placeholder;
         node.layout.builderItemOutlineBoxes = node.args.map(child => {
-            const includeDigitPotential = !!digitPotential && child.isBuilderActive &&
-                child.type === "value" && /^\d+$/.test(String(child.value));
-            const left = Math.min(child.left(), includeDigitPotential ? digitPotential.x : child.left()) - itemPadding;
-            const top = Math.min(child.top(), includeDigitPotential ? digitPotential.y : child.top()) - itemPadding;
-            const right = Math.max(child.right(), includeDigitPotential ? digitPotential.x + digitPotential.width : child.right()) + itemPadding;
-            const bottom = Math.max(child.bottom(), includeDigitPotential ? digitPotential.y + digitPotential.height : child.bottom()) + itemPadding;
+            const left = child.left() - itemPadding;
+            const top = child.top() - itemPadding;
+            const right = child.right() + itemPadding;
+            const bottom = child.bottom() + itemPadding;
             return { x: left, y: top, width: right - left, height: bottom - top };
         });
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
             const right = node.args[index + 1];
-            if (!left || (!right && !(placeholder && index === node.args.length - 1))) {
+            if (!left || (!right && index !== node.args.length - 1)) {
                 return null;
             }
             return {
@@ -1207,6 +1153,50 @@ function drawNodeRecursiveToContext(
     separatorForeground = () => null
 ) {
     if (node.isBuilderSequence) {
+        const recentFill = settings.builderRecentFill || "rgb(231, 218, 244)";
+        drawingContext.save();
+        drawingContext.fillStyle = recentFill;
+        drawingContext.font = settings.textFont;
+        node.args.forEach((child, index) => {
+            const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
+                child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
+            if (!child.isBuilderActive && !freshInverse) {
+                return;
+            }
+            if (child.type === "value" && /^\d+$/.test(String(child.value))) {
+                const lastDigit = String(child.value).slice(-1);
+                const digitMetrics = drawingContext.measureText(lastDigit);
+                const digitWidth = Math.max(1, digitMetrics.width || 0);
+                drawingContext.fillRect(
+                    child.right() - digitWidth,
+                    child.top(),
+                    digitWidth,
+                    child.layout.height
+                );
+                return;
+            }
+            if (child.type === "inv" || isNegativeUnit(child)) {
+                const outline = (node.layout.builderItemOutlineBoxes || [])[index];
+                if (outline) {
+                    drawingContext.fillRect(outline.x, outline.y, outline.width, outline.height);
+                    return;
+                }
+            }
+            drawingContext.fillRect(child.left(), child.top(), child.layout.width, child.layout.height);
+        });
+        const pendingOperatorIndex = node.args.length - 1;
+        const pendingOperator = (node.layout.builderOperatorBoxes || []).find(box =>
+            !box.groupable && pendingOperatorIndex >= 0
+        );
+        if (pendingOperator) {
+            drawingContext.fillRect(
+                pendingOperator.x,
+                pendingOperator.y,
+                pendingOperator.width,
+                pendingOperator.height
+            );
+        }
+        drawingContext.restore();
         for (const child of node.args) {
             drawNodeRecursiveToContext(
                 child,
@@ -1221,10 +1211,6 @@ function drawNodeRecursiveToContext(
         const foreground = nodeForeground(node) || settings.expressionStrokeFill || "black";
         drawingContext.save();
         drawingContext.setLineDash([]);
-        drawingContext.fillStyle = settings.builderPotentialFill || "rgb(231, 218, 244)";
-        (node.layout.builderPotentialBoxes || []).forEach(potential => {
-            drawingContext.fillRect(potential.x, potential.y, potential.width, potential.height);
-        });
         drawingContext.fillStyle = foreground;
         drawingContext.strokeStyle = foreground;
         drawingContext.lineWidth = Math.max(1.25, getStructuralStrokeWidth(settings));
