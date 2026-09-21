@@ -51,8 +51,9 @@ assert(
 );
 assert(
     playerJs.includes('class="view-step-guidance-button"')
+        && playerJs.includes('aria-label="View guidance" title="View guidance">?</button>')
         && playerJs.includes('showStepGuidance(Number(button.dataset.stepGuidanceIndex), "button")'),
-    "The active step must expose guidance through its button"
+    "The active step must expose guidance through a compact question-mark button"
 );
 assert(
     !playerJs.includes('step-card step-hold-target'),

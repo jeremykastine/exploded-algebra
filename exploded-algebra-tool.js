@@ -4310,7 +4310,7 @@ Promise.resolve().then(() => {
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
                 const guidanceHtml = isCurrent && getStepGuidanceForDisplay(step).length
-                    ? `<button type="button" class="view-step-guidance-button" data-step-guidance-index="${index}" data-hold-description="Open the guidance for this step.">View Guidance</button>`
+                    ? `<button type="button" class="view-step-guidance-button" data-step-guidance-index="${index}" data-hold-description="Open the guidance for this step." aria-label="View guidance" title="View guidance">?</button>`
                     : "";
                 return `
                     <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}"${finalOnlyMode ? ' aria-label="Target final expression"' : ""}>

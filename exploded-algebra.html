@@ -3733,15 +3733,19 @@
         }
         .view-step-guidance-button {
             flex: 0 0 auto;
+            width: auto;
+            min-width: 0;
             min-height: 0;
-            padding: 0.12em 0.4em;
-            border: 1px solid #7650a5;
-            border-radius: 0.25em;
-            background: #f2ebfa;
-            color: #4d2877;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            appearance: none;
+            background: transparent;
+            color: #7650a5;
             font: inherit;
-            font-size: 0.65em;
-            line-height: 1.2;
+            font-size: 1em;
+            line-height: 1;
             font-weight: 700;
             white-space: nowrap;
             cursor: pointer;
@@ -4689,7 +4693,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260921-builder-comparison-precedence"></script>
-    <script src="exploded-algebra-tool.js?v=20260921-responsive-steps-text"></script>
+    <script src="exploded-algebra-tool.js?v=20260921-compact-guidance-control"></script>
 
 </body>
 </html>
