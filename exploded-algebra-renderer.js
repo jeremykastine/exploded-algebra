@@ -62,6 +62,7 @@ const SETTINGS = {
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     builderRecentFill: "rgb(231, 218, 244)",
+    builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -878,35 +879,39 @@ function measureNodeWithContext(node, drawingContext, settings) {
         for (const child of node.args) {
             measureNodeWithContext(child, drawingContext, settings);
         }
-        const itemPadding = Math.max(7, gap * 0.45);
-        const operatorSize = Math.max(30, parseFontSize(settings.textFont) * 1.5);
-        const minimumHeight = Math.max(28, parseFontSize(settings.textFont) * 1.4);
+        const fontSize = parseFontSize(settings.textFont);
+        const outerPadding = Math.max(2, fontSize * 0.1);
+        const operatorSize = Math.max(22, fontSize * 1.1);
+        const operatorCornerOffset = operatorSize / (2 * Math.SQRT2);
+        const minimumWidth = Math.max(14, fontSize * 0.7);
+        const minimumHeight = Math.max(20, fontSize);
         const offsets = [];
-        let cursorX = itemPadding;
-        let cursorY = itemPadding;
+        const operatorOffsets = [];
+        let cursorX = outerPadding;
+        let cursorY = outerPadding;
         let right = 0;
         let bottom = 0;
-        node.args.forEach(child => {
+        node.args.forEach((child, index) => {
             offsets.push({ x: cursorX, y: cursorY });
-            right = Math.max(right, cursorX + child.layout.width + itemPadding);
-            bottom = Math.max(bottom, cursorY + child.layout.height + itemPadding);
-            cursorX += child.layout.width + itemPadding * 2 + operatorSize;
-            cursorY += child.layout.height + itemPadding * 2 + operatorSize;
+            right = Math.max(right, cursorX + child.layout.width + outerPadding);
+            bottom = Math.max(bottom, cursorY + child.layout.height + outerPadding);
+            if ((node.builderOperators || [])[index]) {
+                const centerX = cursorX + child.layout.width + operatorCornerOffset;
+                const centerY = cursorY + child.layout.height + operatorCornerOffset;
+                operatorOffsets[index] = { centerX, centerY };
+                right = Math.max(right, centerX + operatorSize / 2 + outerPadding);
+                bottom = Math.max(bottom, centerY + operatorSize / 2 + outerPadding);
+                cursorX += child.layout.width + operatorCornerOffset * 2;
+                cursorY += child.layout.height + operatorCornerOffset * 2;
+            }
         });
-        const pendingOperatorIndex = node.args.length - 1;
-        const hasPendingOperator = pendingOperatorIndex >= 0 &&
-            (node.builderOperators || []).length >= node.args.length;
-        if (hasPendingOperator) {
-            const last = node.args[pendingOperatorIndex];
-            const lastOffset = offsets[pendingOperatorIndex];
-            right = Math.max(right, lastOffset.x + last.layout.width + itemPadding + operatorSize + itemPadding);
-            bottom = Math.max(bottom, lastOffset.y + last.layout.height + itemPadding + operatorSize + itemPadding);
-        }
-        node.layout.width = Math.max(32 + itemPadding * 2, right);
-        node.layout.height = Math.max(minimumHeight + itemPadding * 2, bottom);
-        node.layout.builderItemPadding = itemPadding;
+        node.layout.width = Math.max(minimumWidth + outerPadding * 2, right);
+        node.layout.height = Math.max(minimumHeight + outerPadding * 2, bottom);
+        node.layout.builderOuterPadding = outerPadding;
         node.layout.builderOperatorSize = operatorSize;
+        node.layout.builderOperatorCornerOffset = operatorCornerOffset;
         node.layout.builderItemOffsets = offsets;
+        node.layout.builderOperatorOffsets = operatorOffsets;
         node.layout.childBoxes = [];
         node.layout.builderOperatorBoxes = [];
         node.layout.vLines = [0, node.layout.width];
@@ -1060,24 +1065,20 @@ function placeNodeWithSettings(node, x, y, settings) {
             placeNodeWithSettings(child, x + offset.x, y + offset.y, settings);
             node.layout.childBoxes.push(childBox(child));
         });
-        const itemPadding = node.layout.builderItemPadding || Math.max(7, getComponentGap(settings) * 0.45);
-        const operatorSize = node.layout.builderOperatorSize || Math.max(30, parseFontSize(settings.textFont) * 1.5);
-        node.layout.builderItemOutlineBoxes = node.args.map(child => {
-            const left = child.left() - itemPadding;
-            const top = child.top() - itemPadding;
-            const right = child.right() + itemPadding;
-            const bottom = child.bottom() + itemPadding;
-            return { x: left, y: top, width: right - left, height: bottom - top };
-        });
+        const operatorSize = node.layout.builderOperatorSize || Math.max(22, parseFontSize(settings.textFont) * 1.1);
+        const operatorOffsets = node.layout.builderOperatorOffsets || [];
         node.layout.builderOperatorBoxes = (node.builderOperators || []).map((operator, index) => {
             const left = node.args[index];
             const right = node.args[index + 1];
+            const offset = operatorOffsets[index];
             if (!left || (!right && index !== node.args.length - 1)) {
                 return null;
             }
+            const centerX = x + (offset ? offset.centerX : left.right() - x + operatorSize / (2 * Math.SQRT2));
+            const centerY = y + (offset ? offset.centerY : left.bottom() - y + operatorSize / (2 * Math.SQRT2));
             return {
-                x: left.right() + itemPadding,
-                y: left.bottom() + itemPadding,
+                x: centerX - operatorSize / 2,
+                y: centerY - operatorSize / 2,
                 width: operatorSize,
                 height: operatorSize,
                 operator,
@@ -1155,9 +1156,21 @@ function drawNodeRecursiveToContext(
     if (node.isBuilderSequence) {
         const recentFill = settings.builderRecentFill || "rgb(231, 218, 244)";
         drawingContext.save();
+        drawingContext.fillStyle = settings.builderOperationFill || "rgb(235, 235, 235)";
+        (node.layout.builderOperatorBoxes || []).forEach(box => {
+            drawingContext.beginPath();
+            drawingContext.arc(
+                box.x + box.width / 2,
+                box.y + box.height / 2,
+                box.width / 2,
+                0,
+                Math.PI * 2
+            );
+            drawingContext.fill();
+        });
         drawingContext.fillStyle = recentFill;
         drawingContext.font = settings.textFont;
-        node.args.forEach((child, index) => {
+        node.args.forEach(child => {
             const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
                 child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
             if (!child.isBuilderActive && !freshInverse) {
@@ -1176,26 +1189,18 @@ function drawNodeRecursiveToContext(
                 return;
             }
             if (child.type === "inv" || isNegativeUnit(child)) {
-                const outline = (node.layout.builderItemOutlineBoxes || [])[index];
-                if (outline) {
-                    drawingContext.fillRect(outline.x, outline.y, outline.width, outline.height);
-                    return;
-                }
+                const highlightPadding = 3;
+                drawingContext.fillRoundedRect(
+                    child.left() - highlightPadding,
+                    child.top() - highlightPadding,
+                    child.layout.width + highlightPadding * 2,
+                    child.layout.height + highlightPadding * 2,
+                    4
+                );
+                return;
             }
             drawingContext.fillRect(child.left(), child.top(), child.layout.width, child.layout.height);
         });
-        const pendingOperatorIndex = node.args.length - 1;
-        const pendingOperator = (node.layout.builderOperatorBoxes || []).find(box =>
-            !box.groupable && pendingOperatorIndex >= 0
-        );
-        if (pendingOperator) {
-            drawingContext.fillRect(
-                pendingOperator.x,
-                pendingOperator.y,
-                pendingOperator.width,
-                pendingOperator.height
-            );
-        }
         drawingContext.restore();
         for (const child of node.args) {
             drawNodeRecursiveToContext(
@@ -1214,15 +1219,6 @@ function drawNodeRecursiveToContext(
         drawingContext.fillStyle = foreground;
         drawingContext.strokeStyle = foreground;
         drawingContext.lineWidth = Math.max(1.25, getStructuralStrokeWidth(settings));
-        (node.layout.builderItemOutlineBoxes || []).forEach(outline => {
-            drawingContext.setLineDash([]);
-            drawingContext.strokeRect(
-                outline.x,
-                outline.y,
-                outline.width,
-                outline.height
-            );
-        });
         drawingContext.font = settings.textFont;
         drawingContext.textAlign = "center";
         drawingContext.textBaseline = "middle";
