@@ -4349,7 +4349,7 @@
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             grid-template-rows: repeat(4, minmax(0, 1fr));
-            gap: var(--main-key-gap);
+            gap: 0;
             overflow: hidden;
         }
         .bottom-controls-panel > .quadrant-tools,
@@ -4404,6 +4404,48 @@
         body.selection-active:not(.expression-builder-active) .bottom-controls-panel,
         body.selection-active:not(.expression-builder-active) .main-action-panel .intent-category-actions {
             gap: 0;
+        }
+
+        /* Every bottom-panel mode uses the same continuous, square-celled
+           treatment as post-selection. Each overlay omits track lines that
+           would otherwise cut through a merged control. */
+        .bottom-controls-panel .workspace-toolbar button,
+        .bottom-controls-panel .builder-keypad-panel button,
+        .bottom-controls-panel .main-action-panel button {
+            position: relative;
+            z-index: 1;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+        .bottom-controls-panel .workspace-toolbar button.is-active {
+            background: #e8f1ff;
+        }
+        .bottom-controls-panel .workspace-toolbar button:disabled,
+        .bottom-controls-panel .builder-keypad-panel button:disabled {
+            background: #ececec;
+        }
+        .controls-grid-overlay {
+            z-index: 5;
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            align-self: stretch;
+            justify-self: stretch;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            color: #777;
+            pointer-events: none;
+        }
+        .controls-grid-lines {
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.25;
+            vector-effect: non-scaling-stroke;
+        }
+        body.left-handed .builder-keypad-panel .controls-grid-overlay {
+            transform: scaleX(-1);
+            transform-origin: center;
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
@@ -4466,6 +4508,9 @@
                         <span class="workspace-setting-value" aria-hidden="true">History</span>
                     </button>
                 </div>
+                <svg class="controls-grid-overlay pre-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M200 1 V399 M400 1 V399 M1 100 H599 M1 200 H599 M1 300 H599"/>
+                </svg>
             </div>
             </div>
             <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
@@ -4486,6 +4531,9 @@
                     </div>
                 </div>
                 <div id="builderCommandPanel" class="builder-command-panel"></div>
+                <svg class="controls-grid-overlay builder-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 100 H100 M200 100 H599 M1 200 H599 M1 300 H100 M200 300 H599"/>
+                </svg>
             </div>
         </div>
         <div id="bottomPanelResizeHandle" class="divider bottom-panel-resize-handle" role="separator" aria-label="Resize controls panel" aria-orientation="horizontal" aria-valuemin="96" tabindex="0"></div>
