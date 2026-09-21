@@ -4447,6 +4447,125 @@
             transform: scaleX(-1);
             transform-origin: center;
         }
+
+        /* Landscape uses a bounded, resizable left column for conventional
+           steps and controls, leaving the full-height right side to the
+           Exploded Algebra workspace. Rotation switches to this grid without
+           reloading or rebuilding the active exercise. */
+        @media (orientation: landscape) {
+            .app-container,
+            body.left-handed .app-container,
+            body.expression-builder-active .app-container,
+            body.expression-builder-active.left-handed .app-container,
+            body.authoring-session:not(.expression-builder-active) .app-container,
+            body.authoring-session:not(.expression-builder-active).left-handed .app-container,
+            body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
+            body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container,
+            body.expression-builder-active.builder-entry-mode .app-container,
+            body.expression-builder-active.builder-entry-mode.left-handed .app-container {
+                --landscape-sidebar-width: 33.333vw;
+                grid-template-columns:
+                    clamp(16.667vw, var(--landscape-sidebar-width), 33.333vw)
+                    var(--divider-size)
+                    minmax(0, 1fr);
+                grid-template-rows:
+                    minmax(0, 1fr)
+                    var(--divider-size)
+                    min(var(--bottom-panel-height), 50dvh);
+            }
+
+            .left-panel,
+            body.left-handed .left-panel {
+                grid-column: 1;
+                grid-row: 1;
+                width: auto;
+                min-width: 0;
+                max-width: none;
+                height: auto;
+                min-height: 0;
+                overflow-x: hidden;
+                overflow-y: auto;
+                border: 0;
+                background: #fafafa;
+            }
+
+            .top-panel-resize-handle,
+            body.authoring-session .top-panel-resize-handle {
+                grid-column: 2;
+                grid-row: 1 / -1;
+                display: block !important;
+                width: var(--divider-size);
+                min-width: var(--divider-size);
+                height: 100%;
+                min-height: 0;
+                cursor: col-resize;
+            }
+            .top-panel-resize-handle::after {
+                inset: 0 -5px;
+            }
+
+            .bottom-panel-resize-handle,
+            body.expression-builder-active .bottom-panel-resize-handle,
+            body.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
+                grid-column: 1;
+                grid-row: 2;
+                width: 100%;
+                height: var(--divider-size);
+                min-height: var(--divider-size);
+                cursor: row-resize;
+            }
+
+            .bottom-controls-panel,
+            body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
+            body.expression-builder-active .bottom-controls-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+
+            .quadrant-tools,
+            body.left-handed .quadrant-tools,
+            .quadrant-menu,
+            body.left-handed .quadrant-menu,
+            .main-action-panel,
+            body.left-handed .main-action-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+
+            .main,
+            body.left-handed .main,
+            body.authoring-session:not(.expression-builder-active) .main,
+            body.authoring-session:not(.expression-builder-active).left-handed .main,
+            body.expression-builder-active .main,
+            body.expression-builder-active.left-handed .main,
+            body.authoring-session.authoring-initial-session.expression-builder-active .main,
+            body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main,
+            body.expression-builder-active.builder-entry-mode .main {
+                grid-column: 3;
+                grid-row: 1 / -1;
+                width: auto;
+                height: auto;
+                min-width: 0;
+                min-height: 0;
+            }
+
+            body.settings-active .app-container,
+            body.settings-active.left-handed .app-container {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: minmax(0, 1fr);
+            }
+            body.settings-active .main,
+            body.settings-active.left-handed .main {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            body.settings-active .top-panel-resize-handle,
+            body.settings-active .bottom-panel-resize-handle,
+            body.step-guidance-active .bottom-panel-resize-handle,
+            body.builder-review-active .bottom-panel-resize-handle {
+                display: none !important;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -4465,7 +4584,7 @@
                     <span class="workspace-finish-recording-label" aria-hidden="true">All<br>Done</span>
                 </button>
                 <div class="workspace-tool-group workspace-settings-group" aria-label="Display settings">
-                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-lines" data-hold-description="Cycle between fitting one, two, or three lines in the visible steps panel height.">
+                    <button type="button" class="workspace-setting-button" data-workspace-setting="steps-lines" data-hold-description="Cycle the number of conventional-step lines fitted in the panel: one through three in portrait and five through seven in landscape.">
                         <span class="workspace-setting-name" aria-hidden="true">Steps Size</span>
                         <span class="workspace-setting-value" data-setting-value aria-hidden="true">3 Lines</span>
                     </button>
@@ -4572,7 +4691,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260917-builder-purple-fill"></script>
-    <script src="exploded-algebra-tool.js?v=20260920-selection-viewport"></script>
+    <script src="exploded-algebra-tool.js?v=20260921-landscape-panels"></script>
 
 </body>
 </html>

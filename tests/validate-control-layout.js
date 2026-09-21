@@ -214,7 +214,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260920-selection-viewport'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-landscape-panels'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -236,6 +236,31 @@ assert(!playerJs.includes("mainButtonSize"));
 assert(!playerHtml.includes("Button size"));
 assert(playerJs.includes("function installBottomPanelResizing()"));
 assert(playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;"));
+assert(playerJs.includes("const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;"));
+assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;"));
+assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;"));
+assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_MIN = 5;"));
+assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_MAX = 7;"));
+assert(playerJs.includes("const LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT = 6;"));
+assert(playerJs.includes("function setLandscapeSidebarWidth(width, rememberUserChoice = false)"));
+assert(playerJs.includes('topPanelResizeHandle.setAttribute("aria-orientation", "vertical")'));
+assert(playerJs.includes('window.addEventListener("orientationchange", handlePanelOrientationChange)'));
+assert(
+    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns:\s*clamp\(16\.667vw, var\(--landscape-sidebar-width\), 33\.333vw\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
+    "Landscape must use a one-sixth-to-one-third resizable left column and a full-height right workspace"
+);
+assert(
+    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 50dvh\);/.test(playerHtml),
+    "Landscape controls must stay below the horizontal divider and at or below half the viewport height"
+);
+assert(
+    /\.top-panel-resize-handle,[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?cursor: col-resize;/.test(playerHtml),
+    "The former top-panel handle must become the full-height vertical landscape divider"
+);
+assert(
+    /\.bottom-panel-resize-handle,[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 2;[\s\S]*?cursor: row-resize;/.test(playerHtml),
+    "The controls handle must remain horizontal inside the landscape left column"
+);
 assert(playerJs.includes('document.body.classList.toggle("selection-active", selectionActive);\n            applyResponsiveMainButtonSize();'));
 
 const integerFormMatch = playerJs.match(/function getNumericalRewriteIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getInverseIntegerData/);

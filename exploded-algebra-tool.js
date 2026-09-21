@@ -1425,10 +1425,27 @@ Promise.resolve().then(() => {
 
         let internalClipboardText = "";
         let stepsVisibleLineCount = 3;
+        let stepsVisibleLineLayout = "";
         let stepsFontRecalculationFrame = null;
         const STEPS_VISIBLE_LINE_MIN = 1;
         const STEPS_VISIBLE_LINE_MAX = 3;
         const STEPS_VISIBLE_LINE_STORAGE_KEY = "explodedAlgebraStepsVisibleLinesV1";
+        const LANDSCAPE_STEPS_VISIBLE_LINE_MIN = 5;
+        const LANDSCAPE_STEPS_VISIBLE_LINE_MAX = 7;
+        const LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT = 6;
+        const LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY = "explodedAlgebraLandscapeStepsVisibleLinesV1";
+
+        function isLandscapePanelLayout() {
+            return window.matchMedia
+                ? window.matchMedia("(orientation: landscape)").matches
+                : window.innerWidth > window.innerHeight;
+        }
+
+        function getStepsVisibleLineRange() {
+            return isLandscapePanelLayout()
+                ? { min: LANDSCAPE_STEPS_VISIBLE_LINE_MIN, max: LANDSCAPE_STEPS_VISIBLE_LINE_MAX }
+                : { min: STEPS_VISIBLE_LINE_MIN, max: STEPS_VISIBLE_LINE_MAX };
+        }
 
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
@@ -1437,9 +1454,10 @@ Promise.resolve().then(() => {
                 let value = "";
                 let nextValue = "";
                 if (setting === "steps-lines") {
+                    const range = getStepsVisibleLineRange();
                     value = `${stepsVisibleLineCount} ${stepsVisibleLineCount === 1 ? "Line" : "Lines"}`;
-                    const nextLineCount = stepsVisibleLineCount >= STEPS_VISIBLE_LINE_MAX
-                        ? STEPS_VISIBLE_LINE_MIN
+                    const nextLineCount = stepsVisibleLineCount >= range.max
+                        ? range.min
                         : stepsVisibleLineCount + 1;
                     nextValue = `${nextLineCount} ${nextLineCount === 1 ? "Line" : "Lines"}`;
                 } else if (setting === "bar-style") {
@@ -1480,14 +1498,30 @@ Promise.resolve().then(() => {
         }
 
         function loadSavedStepsVisibleLineCount() {
+            const landscapeLayout = isLandscapePanelLayout();
+            const minimum = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_MIN : STEPS_VISIBLE_LINE_MIN;
+            const maximum = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_MAX : STEPS_VISIBLE_LINE_MAX;
+            const fallback = landscapeLayout ? LANDSCAPE_STEPS_VISIBLE_LINE_DEFAULT : STEPS_VISIBLE_LINE_MAX;
+            const storageKey = landscapeLayout
+                ? LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY
+                : STEPS_VISIBLE_LINE_STORAGE_KEY;
             try {
-                const savedLineCount = Number(window.localStorage.getItem(STEPS_VISIBLE_LINE_STORAGE_KEY));
-                return Number.isInteger(savedLineCount) && savedLineCount >= STEPS_VISIBLE_LINE_MIN && savedLineCount <= STEPS_VISIBLE_LINE_MAX
+                const savedLineCount = Number(window.localStorage.getItem(storageKey));
+                return Number.isInteger(savedLineCount) && savedLineCount >= minimum && savedLineCount <= maximum
                     ? savedLineCount
-                    : stepsVisibleLineCount;
+                    : fallback;
             } catch (error) {
-                return stepsVisibleLineCount;
+                return fallback;
             }
+        }
+
+        function syncStepsVisibleLineCountForOrientation() {
+            const layout = isLandscapePanelLayout() ? "landscape" : "portrait";
+            if (layout === stepsVisibleLineLayout) {
+                return;
+            }
+            stepsVisibleLineLayout = layout;
+            setStepsVisibleLineCount(loadSavedStepsVisibleLineCount());
         }
 
         function calculateStepsFontSizeForVisibleLines(lineCount = stepsVisibleLineCount) {
@@ -1522,14 +1556,18 @@ Promise.resolve().then(() => {
         }
 
         function setStepsVisibleLineCount(lineCount, persist = false) {
+            const range = getStepsVisibleLineRange();
             const boundedLineCount = Math.max(
-                STEPS_VISIBLE_LINE_MIN,
-                Math.min(STEPS_VISIBLE_LINE_MAX, Math.round(Number(lineCount) || stepsVisibleLineCount))
+                range.min,
+                Math.min(range.max, Math.round(Number(lineCount) || stepsVisibleLineCount))
             );
             stepsVisibleLineCount = boundedLineCount;
             if (persist) {
                 try {
-                    window.localStorage.setItem(STEPS_VISIBLE_LINE_STORAGE_KEY, String(boundedLineCount));
+                    const storageKey = isLandscapePanelLayout()
+                        ? LANDSCAPE_STEPS_VISIBLE_LINE_STORAGE_KEY
+                        : STEPS_VISIBLE_LINE_STORAGE_KEY;
+                    window.localStorage.setItem(storageKey, String(boundedLineCount));
                 } catch (error) {}
             }
             refreshQuickSettingButtons();
@@ -1945,8 +1983,12 @@ Promise.resolve().then(() => {
         const TOP_PANEL_MAX_VIEWPORT_RATIO = 0.25;
         const BOTTOM_PANEL_MIN_HEIGHT = 96;
         const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;
+        const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;
+        const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;
+        const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;
         let topPanelHeightFrame = null;
         let userTopPanelHeight = null;
+        let userLandscapeSidebarRatio = null;
         let topPanelResizeState = null;
         let userBottomPanelHeight = null;
         let bottomPanelResizeState = null;
@@ -1957,16 +1999,65 @@ Promise.resolve().then(() => {
                 : window.innerHeight;
         }
 
+        function getViewportWidth() {
+            return window.visualViewport && window.visualViewport.width
+                ? window.visualViewport.width
+                : window.innerWidth;
+        }
+
         function getMaximumTopPanelHeight() {
             return Math.max(TOP_PANEL_MIN_HEIGHT, Math.floor(getViewportHeight() * TOP_PANEL_MAX_VIEWPORT_RATIO));
         }
 
         function getMaximumBottomPanelHeight() {
-            return Math.max(1, Math.floor(getViewportHeight() * BOTTOM_PANEL_MAX_VIEWPORT_RATIO));
+            const maximumRatio = isLandscapePanelLayout()
+                ? LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO
+                : BOTTOM_PANEL_MAX_VIEWPORT_RATIO;
+            return Math.max(1, Math.floor(getViewportHeight() * maximumRatio));
         }
 
         function getMinimumBottomPanelHeight() {
             return Math.min(BOTTOM_PANEL_MIN_HEIGHT, getMaximumBottomPanelHeight());
+        }
+
+        function setLandscapeSidebarWidth(width, rememberUserChoice = false) {
+            if (!appContainer) {
+                return;
+            }
+            const viewportWidth = getViewportWidth();
+            const minimumWidth = Math.floor(viewportWidth * LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO);
+            const maximumWidth = Math.floor(viewportWidth * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO);
+            const clampedWidth = Math.max(minimumWidth, Math.min(Number(width) || maximumWidth, maximumWidth));
+            if (rememberUserChoice) {
+                userLandscapeSidebarRatio = clampedWidth / Math.max(1, viewportWidth);
+            }
+            appContainer.style.setProperty("--landscape-sidebar-width", `${Math.round(clampedWidth)}px`);
+            if (topPanelResizeHandle && isLandscapePanelLayout()) {
+                topPanelResizeHandle.setAttribute("aria-label", "Resize left panels");
+                topPanelResizeHandle.setAttribute("aria-orientation", "vertical");
+                topPanelResizeHandle.setAttribute("aria-valuemin", String(minimumWidth));
+                topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumWidth));
+                topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedWidth)));
+            }
+            applyResponsiveMainButtonSize();
+            scheduleStepsFontSizeRecalculation();
+        }
+
+        function updatePanelResizeHandleOrientation() {
+            if (!topPanelResizeHandle) {
+                return;
+            }
+            if (isLandscapePanelLayout()) {
+                const viewportWidth = getViewportWidth();
+                const requestedWidth = userLandscapeSidebarRatio === null
+                    ? viewportWidth * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO
+                    : viewportWidth * userLandscapeSidebarRatio;
+                setLandscapeSidebarWidth(requestedWidth);
+                return;
+            }
+            topPanelResizeHandle.setAttribute("aria-label", "Resize conventional steps panel");
+            topPanelResizeHandle.setAttribute("aria-orientation", "horizontal");
+            topPanelResizeHandle.setAttribute("aria-valuemin", String(TOP_PANEL_MIN_HEIGHT));
         }
 
         function setTopPanelHeight(height, rememberUserChoice = false) {
@@ -2089,6 +2180,10 @@ Promise.resolve().then(() => {
             if (!appContainer || !leftPanel || !level) {
                 return;
             }
+            if (isLandscapePanelLayout()) {
+                updatePanelResizeHandleOrientation();
+                return;
+            }
             if (userTopPanelHeight !== null) {
                 userTopPanelHeight = Math.min(userTopPanelHeight, getMaximumTopPanelHeight());
                 setTopPanelHeight(userTopPanelHeight);
@@ -2137,9 +2232,12 @@ Promise.resolve().then(() => {
                     return;
                 }
                 const panelBounds = leftPanel.getBoundingClientRect();
+                const containerBounds = appContainer.getBoundingClientRect();
                 topPanelResizeState = {
                     pointerId: event.pointerId,
-                    panelTop: panelBounds.top
+                    landscape: isLandscapePanelLayout(),
+                    panelTop: panelBounds.top,
+                    containerLeft: containerBounds.left
                 };
                 if (topPanelResizeHandle.setPointerCapture) {
                     topPanelResizeHandle.setPointerCapture(event.pointerId);
@@ -2150,13 +2248,31 @@ Promise.resolve().then(() => {
                 if (!topPanelResizeState || event.pointerId !== topPanelResizeState.pointerId) {
                     return;
                 }
-                setTopPanelHeight(event.clientY - topPanelResizeState.panelTop, true);
+                if (topPanelResizeState.landscape) {
+                    setLandscapeSidebarWidth(event.clientX - topPanelResizeState.containerLeft, true);
+                } else {
+                    setTopPanelHeight(event.clientY - topPanelResizeState.panelTop, true);
+                }
                 event.preventDefault();
             });
             topPanelResizeHandle.addEventListener("pointerup", finishResize);
             topPanelResizeHandle.addEventListener("pointercancel", finishResize);
             topPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
             topPanelResizeHandle.addEventListener("keydown", event => {
+                if (isLandscapePanelLayout()) {
+                    const currentWidth = leftPanel.getBoundingClientRect().width;
+                    let nextWidth = null;
+                    if (event.key === "ArrowLeft") nextWidth = currentWidth - 8;
+                    if (event.key === "ArrowRight") nextWidth = currentWidth + 8;
+                    if (event.key === "Home") nextWidth = getViewportWidth() * LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO;
+                    if (event.key === "End") nextWidth = getViewportWidth() * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO;
+                    if (nextWidth === null) {
+                        return;
+                    }
+                    setLandscapeSidebarWidth(nextWidth, true);
+                    event.preventDefault();
+                    return;
+                }
                 const currentHeight = leftPanel.getBoundingClientRect().height;
                 let nextHeight = null;
                 if (event.key === "ArrowUp") nextHeight = currentHeight - 8;
@@ -4522,7 +4638,8 @@ Promise.resolve().then(() => {
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
-            setStepsVisibleLineCount(loadSavedStepsVisibleLineCount());
+            syncStepsVisibleLineCountForOrientation();
+            updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             if (workspaceToolbar) {
@@ -4881,8 +4998,9 @@ ctx.font = SETTINGS.textFont;
 
         function cycleQuickSetting(setting) {
             if (setting === "steps-lines") {
-                const nextLineCount = stepsVisibleLineCount >= STEPS_VISIBLE_LINE_MAX
-                    ? STEPS_VISIBLE_LINE_MIN
+                const range = getStepsVisibleLineRange();
+                const nextLineCount = stepsVisibleLineCount >= range.max
+                    ? range.min
                     : stepsVisibleLineCount + 1;
                 setStepsVisibleLineCount(nextLineCount, true);
                 return;
@@ -5188,6 +5306,8 @@ ctx.font = SETTINGS.textFont;
             }
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
+                syncStepsVisibleLineCountForOrientation();
+                updatePanelResizeHandleOrientation();
                 setBottomPanelHeight(
                     userBottomPanelHeight === null ? getMaximumBottomPanelHeight() : userBottomPanelHeight
                 );
