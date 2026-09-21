@@ -30,10 +30,8 @@ assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to 
 assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
 assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraftNow") && !builderJs.includes("scheduleSave") && !builderJs.includes("readSavedDraft"), "The streamlined builder must not save or resume drafts");
 for (const ruleId of [
-  "positiveAddition",
-  "positiveMultiplication",
-  "signedAddition",
-  "signedMultiplication",
+  "nonnegativeArithmetic",
+  "signedArithmetic",
   "nonnegativeFractionSimplification",
   "signedFractionSimplification",
   "inverseOne",
@@ -48,16 +46,17 @@ assert(builderJs.includes('automatic: "Automatic"') && builderJs.includes('manua
 assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"'), "Setup must render the numerical permission outline");
 assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') && builderJs.includes('class="permission-direction-title">Forward') && builderJs.includes('class="permission-direction-title">Reverse'), "Every numerical rule and direction must be vertically outlined");
 assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(".permission-direction") && /\.permission-options \{[^}]*display: grid;/.test(builderCss) && !/\.numerical-permissions \{[^}]*grid-template-columns:/.test(builderCss), "The numerical permission outline must keep rules, directions, and choices vertically stacked without a wide table grid");
-assert(builderJs.includes('id: "positiveAddition"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number addition must not offer Not allowed in either direction");
-assert(builderJs.includes('id: "positiveMultiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Positive whole-number multiplication must not offer Not allowed in either direction");
+assert(builderJs.includes('id: "nonnegativeArithmetic"') && builderJs.includes('label: "Nonnegative addition and multiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Nonnegative addition and multiplication must share one always-available permission row");
+assert(builderJs.includes('id: "signedArithmetic"') && builderJs.includes('label: "Signed number addition and multiplication"') && builderJs.includes('forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"]'), "Signed addition and multiplication must share one permission row");
 assert(builderJs.includes('id: "nonnegativeFractionSimplification"') && builderJs.includes('id: "signedFractionSimplification"'), "Phase 1 must provide separate non-negative and signed fraction categories");
 for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
   const rulePattern = new RegExp(`id: "${ruleId}"[^\\n]*forward: \\["automatic", "manual"\\][^\\n]*reverse: \\["manual"\\]`);
   assert(rulePattern.test(builderJs), `${ruleId} must offer Automatic and Manual forward with Manual reverse`);
 }
-assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 9 after items 7 and 8");
+assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 7 after items 5 and 6");
 assert(!builderHtml.includes("fixed-numerical-note"), "The negative-one product must not appear as a separate note below the list");
-assert(builderJs.includes("const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;"), "All nine numerical rules must be exported with their selected permissions");
+assert(builderJs.includes("const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;"), "All seven numerical rules must be exported with their selected permissions");
+assert(!builderJs.includes('id: "positiveAddition"') && !builderJs.includes('id: "positiveMultiplication"') && !builderJs.includes('id: "signedAddition"') && !builderJs.includes('id: "signedMultiplication"'), "Setup must not expose separate addition and multiplication permission rows");
 assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("positiveAdditionWithCarry") && !builderJs.includes("positiveMultiplicationOneSignificantFigure") && !builderJs.includes("positiveMultiplicationUnrestricted"), "Setup must not expose carrying or significant-figure permission categories");
 assert(!builderJs.includes("NUMERICAL_PERMISSION_HIERARCHIES") && !builderJs.includes("applyMonotonicNumericalPermissions"), "Setup must not retain hierarchy code for removed categories");
 assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");

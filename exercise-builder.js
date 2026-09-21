@@ -6,10 +6,8 @@
   const FORMAT_VERSION = 1;
   const VARIABLES = ["x"];
   const NUMERICAL_REWRITE_RULES = [
-    { id: "positiveAddition", label: "Non-negative whole-number addition", example: "23 + 14 ↔ 37", forward: ["automatic", "manual"], reverse: ["manual"] },
-    { id: "signedAddition", label: "Signed whole-number addition", example: "8 + (−1) · 12 ↔ (−1) · 4", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
-    { id: "positiveMultiplication", label: "Non-negative whole-number multiplication", example: "24 · 37 ↔ 888", forward: ["automatic", "manual"], reverse: ["manual"] },
-    { id: "signedMultiplication", label: "Signed whole-number multiplication", example: "(−1) · 4 · 7 ↔ (−1) · 28", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
+    { id: "nonnegativeArithmetic", label: "Nonnegative addition and multiplication", example: "23 + 14 ↔ 37; 24 · 37 ↔ 888", forward: ["automatic", "manual"], reverse: ["manual"] },
+    { id: "signedArithmetic", label: "Signed number addition and multiplication", example: "8 + (−1) · 12 ↔ (−1) · 4; (−1) · 4 · 7 ↔ (−1) · 28", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "nonnegativeFractionSimplification", label: "Non-negative fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "signedFractionSimplification", label: "Signed fraction simplification", example: "(−1) · 18 · inverse(24) ↔ (−1) · 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
     { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic", "manual"], reverse: ["manual"] },

@@ -72,26 +72,29 @@ Each exercise specifies Numerical Rewrite permissions with this structure:
 
   "numericalRewrite": {
     "rules": {
-      "positiveAddition": { "forward": "automatic" | "manual", "reverse": "manual" },
-      "positiveMultiplication": { "forward": "automatic" | "manual", "reverse": "manual" },
-      "signedAddition": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "signedMultiplication": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "nonnegativeArithmetic": { "forward": "automatic" | "manual", "reverse": "manual" },
+      "signedArithmetic": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
       "nonnegativeFractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "signedFractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" }
+      "signedFractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
+      "inverseOne": { "forward": "automatic" | "manual", "reverse": "manual" },
+      "inverseNegativeOne": { "forward": "automatic" | "manual", "reverse": "manual" },
+      "doubleNegative": { "forward": "automatic" | "manual", "reverse": "manual" }
     }
   }
 
-Non-negative whole-number addition and multiplication have no carrying or
+Nonnegative whole-number addition and multiplication share one permission and
+have no carrying or
 significant-figure restrictions. Any narrower expectations belong in the
 exercise's recorded steps rather than its numerical-manipulation permissions.
 They are always available: their forward direction may be Automatic or Manual,
 and their reverse direction is always Manual.
-Signed arithmetic is flat and represents negative numbers with negative-one
-factors. The six configurable categories are mutually exclusive: non-negative
-sums, signed sums containing a negative-one term, non-negative products, signed
-products containing a negative-one factor, non-negative integer-over-integer
-fractions, and signed integer-over-integer fractions containing a negative-one
-factor in the numerator or denominator. Fraction simplification produces the
+Signed number addition and multiplication share one permission. Signed
+arithmetic is flat and represents negative numbers with negative-one factors.
+The four arithmetic and fraction categories are mutually exclusive:
+nonnegative addition or multiplication, signed addition or multiplication,
+nonnegative integer-over-integer fractions, and signed integer-over-integer
+fractions containing a negative-one factor in the numerator or denominator.
+Fraction simplification produces the
 canonical reduced integer or fraction, removing the inverse when the result is
 an integer. Reverse Manual may expand an integer or reduced fraction into an
 equivalent structure in its enabled fraction category. Forward Automatic
@@ -100,15 +103,15 @@ Expression Builder; Not allowed disables that direction. Reverse is never
 automatic. Manual rewrites must be exactly equivalent and match the enabled
 category and direction.
 
-Three simplifications are fixed rather than exercise-configurable:
-`(-1)(-1) -> 1`, `inverse(1) -> 1`, and `inverse(-1) -> -1` are always automatic,
-and each reverse direction is always manual. The two inverse rules appear as
-full entries in Exercise Builder Phase 1. Long-holding Numerical Manipulation in
-the player displays all current configurable and fixed direction settings.
+`(-1)(-1) ↔ 1`, `inverse(1) ↔ 1`, and `inverse(-1) ↔ -1` also appear as full
+permission entries in Exercise Builder Phase 1. Long-holding Numerical
+Manipulation in the player displays all current direction settings.
 
-Older custom files that contain `arithmeticLevel`, a previous broad
-`numericalRewrite` profile, the seven-rule granular profile, or the five-rule
-profile are mapped to the six current configurable rules when loaded. New
+Older custom files that contain separate addition and multiplication rules,
+`arithmeticLevel`, a previous broad `numericalRewrite` profile, the seven-rule
+granular profile, or the five-rule profile are mapped to the current combined
+rules when loaded. If an older file assigns different permissions to addition
+and multiplication, migration keeps the more restrictive choice. New
 move-history downloads retain the explicit rule matrix.
 
 Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.

@@ -198,18 +198,20 @@ assert(playerJs.includes('function resolveAutomaticNumericalRewriteTool()'));
 assert(/function resolveAutomaticNumericalRewriteTool\(\) \{[\s\S]*?getAutomaticNumericalRewriteData\(\)/.test(playerJs), "Automatic numerical manipulation must use the configured rule profile for every numerical category");
 assert(/function classifyNumericalRewriteCategory\(node\) \{[\s\S]*?return "inverseOne";[\s\S]*?return "inverseNegativeOne";[\s\S]*?return "doubleNegative";/.test(playerJs), "Inverse-one and double-negative expressions must be classified through their configurable numerical rules");
 assert(playerJs.includes('function classifyNumericalRewriteCategory(node)'));
-assert(playerJs.includes('"positiveAddition"') && playerJs.includes('"positiveMultiplication"'));
-assert(playerJs.includes('return "positiveAddition";') && playerJs.includes('return "positiveMultiplication";'));
+assert(playerJs.includes('"nonnegativeArithmetic"') && playerJs.includes('"signedArithmetic"'));
+assert(playerJs.includes('return "nonnegativeArithmetic";') && playerJs.includes('return "signedArithmetic";'));
 assert(!playerJs.includes('return isNoCarryWholeNumberNodeAddition(normalized.args)') && !playerJs.includes('factors.every(isOneSignificantFigureBigInt)'));
 assert(playerJs.includes('LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('function normalizeNumericalRewriteRules(rules)'));
-assert(playerJs.includes('"signedAddition"') && playerJs.includes('"signedMultiplication"') && playerJs.includes('"nonnegativeFractionSimplification"') && playerJs.includes('"signedFractionSimplification"'));
-assert(playerJs.includes('normalized[ruleId].forward === "automatic" ? "automatic" : "manual"') && playerJs.includes('reverse: "manual"'), "Positive addition and multiplication must normalize to Automatic or Manual forward and Manual reverse");
+assert(playerJs.includes('SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('"signedAddition"') && playerJs.includes('"signedMultiplication"'), "Profiles with the former four arithmetic rows must remain loadable");
+assert(playerJs.includes('const mergeRestrictiveRules = sourceRules =>') && playerJs.includes('forwardPriority') && playerJs.includes('reversePriority'), "Separate legacy arithmetic permissions must merge conservatively");
+assert(playerJs.includes('normalized.nonnegativeArithmetic.forward === "automatic" ? "automatic" : "manual"') && playerJs.includes('reverse: "manual"'), "Nonnegative arithmetic must normalize to Automatic or Manual forward and Manual reverse");
 assert(playerJs.includes('function getNumericalRewriteIntegerData(node)') && playerJs.includes('function getInverseIntegerData(node)') && playerJs.includes('function getFractionSimplificationCategory(node)'), "Fraction simplification must distinguish non-negative and signed integer-over-integer forms");
 assert(playerJs.includes('const fractionCategory = getFractionSimplificationCategory(normalized)') && !playerJs.includes('numericalRewriteNodeContainsInverse'), "Fraction simplification must classify only supported numerator and denominator structures");
 assert(playerJs.includes('PREVIOUS_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('? "nonnegativeFractionSimplification"') && playerJs.includes('? "signedFractionSimplification"'), "Previous single-fraction-rule profiles must migrate into both current fraction categories");
 assert(playerJs.includes('numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)') && playerJs.includes('numericalRewriteNodesHaveSameStructure(original, canonicalProposed)'), "Manual fraction rewrites must use canonical forward and equivalent reverse validation");
 assert(/function makeCanonicalNumericalRewriteNode\(value\)[\s\S]*?value\.denominator === 1n[\s\S]*?return valueNode\(absoluteNumerator\.toString\(\)\)/.test(playerJs), "Canonical fraction simplification must remove the inverse when the result is a whole number");
 assert(playerJs.includes('inverseOne: "Inverse of one"') && playerJs.includes('inverseNegativeOne: "Inverse of negative one"') && playerJs.includes('doubleNegative: "Negative one times negative one"'), "The Numerical Manipulation hold description must label all three newly configurable rules");
+assert(playerJs.includes('nonnegativeArithmetic: "Nonnegative addition and multiplication"') && playerJs.includes('signedArithmetic: "Signed number addition and multiplication"'), "The Numerical Manipulation summary must use the two combined arithmetic labels");
 assert(playerJs.includes('const PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('applyLegacyFixedNumericalRewriteDefaults'), "Profiles created before the three fixed rules became configurable must preserve their former behavior");
 assert(/function getIntentCategoryDescriptionHtml\(categoryId\)[\s\S]*?categoryId === "numericalRewrite"[\s\S]*?getNumericalRewriteProfileSummaryItems\(getNumericalRewriteProfile\(\)\)/.test(playerJs), "Long-holding Numerical Manipulation must display the current exercise's complete permission summary");
 assert(playerJs.includes('class="numerical-permission-summary"') && playerHtml.includes('.press-hold-popover .numerical-permission-summary'), "The complete Numerical Manipulation hold summary must remain compact enough for phone screens");
@@ -235,7 +237,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-landscape-panels'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260921-combined-arithmetic-permissions'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -283,6 +285,57 @@ assert(
     "The controls handle must remain horizontal inside the landscape left column"
 );
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
+
+const normalizeRulesMatch = playerJs.match(/function normalizeNumericalRewriteRules\(rules\) \{([\s\S]*?)\n        \}\n\n        function getNumericalRewriteProfile/);
+assert(normalizeRulesMatch, "Numerical permission normalization must remain testable");
+const normalizationContext = {
+    clonePlainData(value) { return JSON.parse(JSON.stringify(value)); },
+    NUMERICAL_REWRITE_RULE_IDS: [
+        "nonnegativeArithmetic",
+        "signedArithmetic",
+        "nonnegativeFractionSimplification",
+        "signedFractionSimplification",
+        "inverseOne",
+        "inverseNegativeOne",
+        "doubleNegative"
+    ]
+};
+vm.createContext(normalizationContext);
+vm.runInContext(`
+function makeNumericalRewriteRules(forwardMode = "not-allowed", reverseMode = "not-allowed") {
+    return Object.fromEntries(NUMERICAL_REWRITE_RULE_IDS.map(ruleId => [ruleId, { forward: forwardMode, reverse: reverseMode }]));
+}
+function applyLegacyFixedNumericalRewriteDefaults(rules) {
+    for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
+        rules[ruleId] = { forward: "automatic", reverse: "manual" };
+    }
+    return rules;
+}
+function normalizeNumericalRewriteRules(rules) {${normalizeRulesMatch[1]}
+}
+this.normalizeNumericalRewriteRules = normalizeNumericalRewriteRules;
+`, normalizationContext);
+const migratedSeparateRules = normalizationContext.normalizeNumericalRewriteRules({
+    positiveAddition: { forward: "automatic", reverse: "manual" },
+    positiveMultiplication: { forward: "manual", reverse: "manual" },
+    signedAddition: { forward: "automatic", reverse: "manual" },
+    signedMultiplication: { forward: "not-allowed", reverse: "not-allowed" },
+    nonnegativeFractionSimplification: { forward: "manual", reverse: "manual" },
+    signedFractionSimplification: { forward: "manual", reverse: "manual" },
+    inverseOne: { forward: "manual", reverse: "manual" },
+    inverseNegativeOne: { forward: "automatic", reverse: "manual" },
+    doubleNegative: { forward: "manual", reverse: "manual" }
+});
+assert.deepEqual(
+    JSON.parse(JSON.stringify(migratedSeparateRules.nonnegativeArithmetic)),
+    { forward: "manual", reverse: "manual" },
+    "Differing nonnegative addition/multiplication settings must migrate to the more restrictive combined setting"
+);
+assert.deepEqual(
+    JSON.parse(JSON.stringify(migratedSeparateRules.signedArithmetic)),
+    { forward: "not-allowed", reverse: "not-allowed" },
+    "Differing signed addition/multiplication settings must migrate to the more restrictive combined setting"
+);
 
 const integerFormMatch = playerJs.match(/function getNumericalRewriteIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getInverseIntegerData/);
 const inverseIntegerFormMatch = playerJs.match(/function getInverseIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getFractionSimplificationCategory/);

@@ -7698,6 +7698,15 @@ ctx.font = SETTINGS.textFont;
         }
 
         const NUMERICAL_REWRITE_RULE_IDS = [
+            "nonnegativeArithmetic",
+            "signedArithmetic",
+            "nonnegativeFractionSimplification",
+            "signedFractionSimplification",
+            "inverseOne",
+            "inverseNegativeOne",
+            "doubleNegative"
+        ];
+        const SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS = [
             "positiveAddition",
             "signedAddition",
             "positiveMultiplication",
@@ -7752,11 +7761,9 @@ ctx.font = SETTINGS.textFont;
         function numericalRewriteProfileFromLegacyLevel(level) {
             const legacyLevel = clampArithmeticLevel(level, 0);
             const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
-            rules.positiveAddition = { forward: "manual", reverse: "manual" };
-            rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
+            rules.nonnegativeArithmetic = { forward: "manual", reverse: "manual" };
             if (legacyLevel >= 2) {
-                rules.signedAddition = { forward: "manual", reverse: "manual" };
-                rules.signedMultiplication = { forward: "manual", reverse: "manual" };
+                rules.signedArithmetic = { forward: "manual", reverse: "manual" };
             }
             if (legacyLevel >= 3) {
                 rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
@@ -7767,13 +7774,13 @@ ctx.font = SETTINGS.textFont;
 
         function numericalRewriteProfileFromLegacyDefinition(profile) {
             const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
-            rules.positiveAddition = { forward: "manual", reverse: "manual" };
-            rules.positiveMultiplication = { forward: "manual", reverse: "manual" };
-            if (profile.allowNegativeOne === true && profile.addition !== "none") {
-                rules.signedAddition = { forward: "manual", reverse: "manual" };
-            }
-            if (profile.allowNegativeOne === true && profile.multiplication !== "none") {
-                rules.signedMultiplication = { forward: "manual", reverse: "manual" };
+            rules.nonnegativeArithmetic = { forward: "manual", reverse: "manual" };
+            if (
+                profile.allowNegativeOne === true &&
+                profile.addition !== "none" &&
+                profile.multiplication !== "none"
+            ) {
+                rules.signedArithmetic = { forward: "manual", reverse: "manual" };
             }
             if (profile.allowInverses === true) {
                 rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
@@ -7789,12 +7796,41 @@ ctx.font = SETTINGS.textFont;
                     normalized[targetRuleId] = clonePlainData(rules[sourceRuleId]);
                 }
             };
-            copyRule("positiveAddition", rules.positiveAddition ? "positiveAddition" :
-                (rules.positiveAdditionWithCarry ? "positiveAdditionWithCarry" : "positiveAdditionNoCarry"));
-            copyRule("positiveMultiplication", rules.positiveMultiplication ? "positiveMultiplication" :
-                (rules.positiveMultiplicationUnrestricted ? "positiveMultiplicationUnrestricted" : "positiveMultiplicationOneSignificantFigure"));
-            copyRule("signedAddition", "signedAddition");
-            copyRule("signedMultiplication", "signedMultiplication");
+            const mergeRestrictiveRules = sourceRules => {
+                const presentRules = sourceRules.filter(Boolean);
+                if (!presentRules.length) {
+                    return null;
+                }
+                const forwardPriority = { automatic: 0, manual: 1, "not-allowed": 2 };
+                const reversePriority = { manual: 0, "not-allowed": 1 };
+                return {
+                    forward: presentRules.reduce((mostRestrictive, rule) => (
+                        forwardPriority[rule.forward] > forwardPriority[mostRestrictive]
+                            ? rule.forward
+                            : mostRestrictive
+                    ), "automatic"),
+                    reverse: presentRules.reduce((mostRestrictive, rule) => (
+                        reversePriority[rule.reverse] > reversePriority[mostRestrictive]
+                            ? rule.reverse
+                            : mostRestrictive
+                    ), "manual")
+                };
+            };
+            if (rules.nonnegativeArithmetic) {
+                copyRule("nonnegativeArithmetic", "nonnegativeArithmetic");
+            } else {
+                const additionRule = rules.positiveAddition || rules.positiveAdditionWithCarry || rules.positiveAdditionNoCarry;
+                const multiplicationRule = rules.positiveMultiplication || rules.positiveMultiplicationUnrestricted || rules.positiveMultiplicationOneSignificantFigure;
+                normalized.nonnegativeArithmetic = mergeRestrictiveRules([additionRule, multiplicationRule]) || normalized.nonnegativeArithmetic;
+            }
+            if (rules.signedArithmetic) {
+                copyRule("signedArithmetic", "signedArithmetic");
+            } else {
+                normalized.signedArithmetic = mergeRestrictiveRules([
+                    rules.signedAddition,
+                    rules.signedMultiplication
+                ]) || normalized.signedArithmetic;
+            }
             copyRule("nonnegativeFractionSimplification", rules.nonnegativeFractionSimplification
                 ? "nonnegativeFractionSimplification"
                 : "fractionSimplification");
@@ -7804,12 +7840,10 @@ ctx.font = SETTINGS.textFont;
             copyRule("inverseOne", "inverseOne");
             copyRule("inverseNegativeOne", "inverseNegativeOne");
             copyRule("doubleNegative", "doubleNegative");
-            for (const ruleId of ["positiveAddition", "positiveMultiplication"]) {
-                normalized[ruleId] = {
-                    forward: normalized[ruleId].forward === "automatic" ? "automatic" : "manual",
-                    reverse: "manual"
-                };
-            }
+            normalized.nonnegativeArithmetic = {
+                forward: normalized.nonnegativeArithmetic.forward === "automatic" ? "automatic" : "manual",
+                reverse: "manual"
+            };
             for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
                 normalized[ruleId] = {
                     forward: normalized[ruleId].forward === "manual" ? "manual" : "automatic",
@@ -7840,6 +7874,9 @@ ctx.font = SETTINGS.textFont;
                 const hasCurrentRules = NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
                     Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
                 );
+                const hasSeparateArithmeticRules = SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
+                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
+                );
                 const hasPreFixedRules = PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
                     Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
                 );
@@ -7851,11 +7888,13 @@ ctx.font = SETTINGS.textFont;
                 );
                 const ruleIds = hasCurrentRules
                     ? NUMERICAL_REWRITE_RULE_IDS
-                    : (hasPreFixedRules
-                        ? PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS
-                        : (hasPreviousRules
-                            ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
-                            : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null)));
+                    : (hasSeparateArithmeticRules
+                        ? SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS
+                        : (hasPreFixedRules
+                            ? PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS
+                            : (hasPreviousRules
+                                ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
+                                : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null))));
                 if (!ruleIds) {
                     throw new Error(`${sourceName} has an incomplete numericalRewrite.rules setting.`);
                 }
@@ -7889,10 +7928,8 @@ ctx.font = SETTINGS.textFont;
 
         function getNumericalRewriteProfileSummaryItems(profile) {
             const labels = {
-                positiveAddition: "Non-negative whole-number addition",
-                positiveMultiplication: "Non-negative whole-number multiplication",
-                signedAddition: "Signed whole-number addition",
-                signedMultiplication: "Signed whole-number multiplication",
+                nonnegativeArithmetic: "Nonnegative addition and multiplication",
+                signedArithmetic: "Signed number addition and multiplication",
                 nonnegativeFractionSimplification: "Non-negative fraction simplification",
                 signedFractionSimplification: "Signed fraction simplification",
                 inverseOne: "Inverse of one",
@@ -8113,21 +8150,21 @@ ctx.font = SETTINGS.textFont;
             }
             if (normalized.type === "sum" && normalized.args.length >= 2) {
                 if (normalized.args.every(child => getWholeNumberBigIntFromNode(child) !== null)) {
-                    return "positiveAddition";
+                    return "nonnegativeArithmetic";
                 }
                 if (normalized.args.every(isFlatSignedIntegerTerm) &&
                     normalized.args.some(term => isExactNumericalRewriteValue(term, "-1") || isFlatSignedIntegerProduct(term))) {
-                    return "signedAddition";
+                    return "signedArithmetic";
                 }
                 return null;
             }
             if (normalized.type === "prod" && normalized.args.length >= 2) {
                 if (isFlatSignedIntegerProduct(normalized)) {
-                    return "signedMultiplication";
+                    return "signedArithmetic";
                 }
                 const factors = normalized.args.map(getWholeNumberBigIntFromNode);
                 if (factors.every(value => value !== null)) {
-                    return "positiveMultiplication";
+                    return "nonnegativeArithmetic";
                 }
             }
             return null;
