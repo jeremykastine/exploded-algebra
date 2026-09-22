@@ -62,10 +62,8 @@ Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. Numerical Rewrite shows its exercise-specific permissions as a
 bulleted list, and its action button is marked with bold `123`. Operation display
-settings, handedness, Reset, and Download Move History
-appear on the settings screen rather than in the action or expression-builder
-panels. Handedness reflects each button layout, while the numeric Expression
-Builder keypad moves as a single block so its internal order remains familiar.
+settings, Reset, and Download Move History appear on the settings screen rather
+than in the action or expression-builder panels.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. In Expression Builder, the original and proposed
@@ -76,12 +74,13 @@ that same button, before the next value is entered, cycle it through the higher
 levels and back to the lowest. The former Move Up button's grid cell remains
 blank. Values, x, negative one, and inverses never insert an operation
 implicitly.
-The rightmost Builder column contains x in its top row, then a one-and-a-half-row
-multiplication button and a one-and-a-half-row addition button. The three-column
-number pad sits immediately to its left, with Inverse in the bottom-right keypad
-position. The two left control columns are unchanged. Level cycling flattens a
-lifted sum into an immediately surrounding sum, and likewise for products, while
-retaining meaningful grouping across unlike operations.
+The rightmost Builder column contains a double-height multiplication button
+above a double-height addition button. The three-column number pad sits
+immediately to its left, with negative one, zero, and Inverse across its bottom
+row. The next column to the left contains x, Backspace, and a double-height
+Submit button; the leftmost column retains Peek and the view controls. Level
+cycling flattens a lifted sum into an immediately surrounding sum, and likewise
+for products, while retaining meaningful grouping across unlike operations.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

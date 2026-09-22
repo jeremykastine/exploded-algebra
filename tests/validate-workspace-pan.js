@@ -33,7 +33,7 @@ assert(
     "The entire workspace must suppress native touch scrolling while Pan is active"
 );
 assert(
-    /\.quadrant-tools,\s*body\.left-handed \.quadrant-tools,\s*\.quadrant-menu,\s*body\.left-handed \.quadrant-menu,\s*\.main-action-panel,\s*body\.left-handed \.main-action-panel\s*\{[\s\S]*?grid-row: 5;/.test(playerHtml),
+    /\.quadrant-tools,\s*\.quadrant-menu,\s*\.main-action-panel\s*\{[\s\S]*?grid-row: 5;/.test(playerHtml),
     "Button clusters must occupy the dedicated controls row"
 );
 assert(

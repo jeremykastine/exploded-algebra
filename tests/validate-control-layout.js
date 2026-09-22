@@ -47,7 +47,7 @@ assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="
 ["steps-text-size", "bar-style", "bar-shading"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing inline ${setting} setting button`);
 });
-assert(!playerHtml.includes('data-workspace-setting="handedness"') && !playerJs.includes("setLeftHandedLayout"), "The left-handedness option must be removed");
+assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
@@ -71,11 +71,11 @@ assert(
     "Instructor Expression Builder must show the live conventional panel and hide it only outside entry"
 );
 assert(
-    /body\.expression-builder-active\.builder-review-active \.app-container,[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
+    /body\.expression-builder-active\.builder-review-active \.app-container\s*\{[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
     "Expression Builder Peek must retain the portrait conventional row"
 );
 assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?body\.expression-builder-active\.builder-review-active \.left-panel,[\s\S]*?grid-row: 1;/.test(playerHtml),
+    /@media \(orientation: landscape\) \{[\s\S]*?body\.expression-builder-active\.builder-review-active \.left-panel\s*\{[\s\S]*?grid-row: 1;/.test(playerHtml),
     "Expression Builder Peek must retain the landscape conventional column"
 );
 assert(
@@ -103,11 +103,6 @@ expectedContextualButtonPositions.forEach(([pair, column, row]) => {
         `Contextual control ${pair} must occupy column ${column}, row ${row}`
     );
 });
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 5; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-left"] { grid-column: 3 / span 2; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 1 / span 2; }'));
-assert(playerHtml.includes('body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 6; }'));
 assert(/\.quadrant-tools \.workspace-toolbar,[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml));
 
@@ -184,7 +179,6 @@ assert(playerJs.includes('M22 29 H78 M68 19 L78 29 L68 39') && playerJs.includes
 assert(playerJs.includes('M70 78 V22 M60 32 L70 22 L80 32') && playerJs.includes('M30 22 V78 M20 68 L30 78 L40 68'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, reverse: true'));
 assert(!playerJs.includes('buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, reverse: true'));
-assert(/body\.left-handed \.main-action-panel \[data-branch-pair="left"\],[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(/\.main-action-panel \.branch-pair-overlay \{[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(playerJs.includes('function resolveContextualRulePair(pairName)'));
 assert(playerJs.includes('if (canFactorProductOfInverses())') && playerJs.includes('if (canDistributeInverseOverProduct())'));
@@ -231,7 +225,6 @@ assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.incl
 assert(playerJs.includes('M300 1 V200') && playerJs.includes('M500 1 V200') && playerJs.includes('M200 300 H599'));
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
-assert(/body\.left-handed \.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?transform: scaleX\(-1\);/.test(playerHtml));
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(playerHtml.includes('class="controls-grid-overlay pre-selection-grid-overlay"'), "Pre-selection must draw the same continuous grid treatment as post-selection");
 assert(playerHtml.includes('class="controls-grid-overlay builder-grid-overlay"'), "Expression Builder must draw the same continuous grid treatment as post-selection");
@@ -239,7 +232,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260922-builder-column-layout'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260922-builder-six-column-layout'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

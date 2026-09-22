@@ -806,7 +806,7 @@ Promise.resolve().then(() => {
         }
 
         function buildIntentCategoryMenuHtml() {
-            // CSS maps every direct control into the handedness-aware keypad.
+            // CSS maps every direct control into the shared six-column keypad.
             // Auto numerical manipulation is intentionally a visible placeholder
             // until authoring controls define its exact permissions.
             return `<div class="panel-menu-title">Choose an action</div>

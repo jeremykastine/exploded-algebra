@@ -284,7 +284,7 @@
             display: none;
         }
 
-        
+
         .textbook-solution {
             color: #222222;
         }
@@ -1857,8 +1857,7 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #ddd;
         }
-        .level-menu-actions .reset-exercise-button,
-        .level-menu-actions .handedness-toggle-button {
+        .level-menu-actions .reset-exercise-button{
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2017,8 +2016,7 @@
             padding: 8px;
             border-radius: 6px;
         }
-        .reset-exercise-button,
-        .handedness-toggle-button {
+        .reset-exercise-button{
             width: 44px;
             height: 44px;
             min-width: 44px;
@@ -2026,8 +2024,7 @@
             padding: 8px;
             border-radius: 6px;
         }
-        .reset-exercise-button svg,
-        .handedness-toggle-button svg { width: 100%; height: 100%; pointer-events: none; }
+        .reset-exercise-button svg{ width: 100%; height: 100%; pointer-events: none; }
 
         .main {
             position: relative;
@@ -2454,42 +2451,26 @@
             min-height: 0;
         }
 
-        body.left-handed .app-container {
-            grid-template-columns: var(--control-rail-width) minmax(0, 1fr);
-        }
-        body.left-handed .quadrant-tools {
-            grid-column: 1;
-            border-right: 1px solid #cfcfcf;
-            border-left: 0;
-        }
-        body.left-handed .main { grid-column: 2; }
-        body.left-handed .quadrant-menu {
-            grid-column: 1;
-            border-right: 1px solid #cfcfcf;
-            border-left: 0;
-        }
-        body.left-handed .left-panel { grid-column: 2; }
-        body.left-handed .level-menu-panel {
-            right: auto;
-            left: max(6px, env(safe-area-inset-left));
-        }
+
+
+
+
+
+
 
         /* Bottom controls and calculator-style expression builder. */
-        .app-container,
-        body.left-handed .app-container {
+        .app-container{
             --control-strip-height: 58px;
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows: minmax(0, 1fr) var(--control-strip-height) var(--top-panel-height);
         }
 
-        .main,
-        body.left-handed .main {
+        .main{
             grid-column: 1;
             grid-row: 1;
         }
 
-        .quadrant-tools,
-        body.left-handed .quadrant-tools {
+        .quadrant-tools{
             position: relative;
             z-index: 70;
             grid-column: 1;
@@ -2509,11 +2490,7 @@
             scrollbar-width: thin;
         }
 
-        body.left-handed .quadrant-tools {
-            padding-right: max(8px, env(safe-area-inset-right));
-            padding-left: calc(58px + max(6px, env(safe-area-inset-left)));
-            border-right: 0;
-        }
+
 
         .quadrant-tool-actions,
         .workspace-toolbar,
@@ -2553,7 +2530,6 @@
         .quadrant-tools.two-column-tools button,
         .quadrant-tools button,
         .reset-exercise-button,
-        .handedness-toggle-button,
         .workspace-toolbar button {
             flex: 0 0 44px;
             width: 44px;
@@ -2563,8 +2539,7 @@
             padding: 8px;
         }
 
-        .quadrant-menu,
-        body.left-handed .quadrant-menu {
+        .quadrant-menu{
             position: relative;
             z-index: 80;
             grid-column: 1;
@@ -2576,14 +2551,9 @@
             background: #f3f3f3;
         }
 
-        body.left-handed .quadrant-menu {
-            justify-self: start;
-            border-right: 1px solid #cfcfcf;
-            border-left: 0;
-        }
 
-        .left-panel,
-        body.left-handed .left-panel {
+
+        .left-panel{
             grid-column: 1;
             grid-row: 3;
         }
@@ -2597,8 +2567,7 @@
             width: 100vw;
         }
 
-        body.expression-builder-active .app-container,
-        body.expression-builder-active.left-handed .app-container {
+        body.expression-builder-active .app-container{
             grid-template-rows: minmax(0, 1fr);
         }
 
@@ -2663,19 +2632,9 @@
 
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
-        .builder-keypad-panel .builder-variable-button,
-        .builder-keypad-panel .builder-prod-button,
-        .builder-keypad-panel .builder-sum-button {
-            position: absolute;
-            right: 0;
-            left: auto;
-            width: calc(100% / 6);
-            grid-column: auto;
-            grid-row: auto;
-        }
-        .builder-keypad-panel .builder-variable-button { top: 0; height: 25%; }
-        .builder-keypad-panel .builder-prod-button { top: 25%; height: 37.5%; }
-        .builder-keypad-panel .builder-sum-button { top: 62.5%; height: 37.5%; }
+        .builder-keypad-panel .builder-variable-button { grid-column: 2; grid-row: 1; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 6; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 6; grid-row: 3 / span 2; }
 
         .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 1; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 4; grid-row: 1; }
@@ -2690,7 +2649,7 @@
 
         .builder-keypad-panel .builder-negative-one-button { grid-column: 3; grid-row: 4; }
         .builder-keypad-panel .builder-inv-button { grid-column: 5; grid-row: 4; }
-        .builder-keypad-panel .builder-undo-button { grid-column: 2; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-undo-button { grid-column: 2; grid-row: 2; }
         .builder-keypad-panel .builder-action-row button.builder-submit-button {
             grid-column: 2;
             grid-row: 3 / span 2;
@@ -2804,13 +2763,11 @@
         }
 
         @media (max-width: 520px) {
-            .app-container,
-            body.left-handed .app-container {
+            .app-container{
                 --control-strip-height: 54px;
             }
 
-            .quadrant-tools,
-            body.left-handed .quadrant-tools {
+            .quadrant-tools{
                 gap: 5px;
                 padding-top: 4px;
                 padding-bottom: 4px;
@@ -2819,7 +2776,6 @@
             .quadrant-tools.two-column-tools button,
             .quadrant-tools button,
             .reset-exercise-button,
-            .handedness-toggle-button,
             .workspace-toolbar button {
                 flex-basis: 42px;
                 width: 42px;
@@ -2836,8 +2792,7 @@
         }
 
         /* Transparent, bottom-corner keypad treatment for main controls. */
-        .app-container,
-        body.left-handed .app-container {
+        .app-container{
             --main-key-size: 44px;
             --main-key-gap: 6px;
             --main-icon-size: 28px;
@@ -2857,14 +2812,12 @@
                 calc(var(--workspace-panel-split) - var(--divider-half-size));
         }
 
-        .main,
-        body.left-handed .main {
+        .main{
             grid-column: 1;
             grid-row: 3;
         }
 
-        .left-panel,
-        body.left-handed .left-panel {
+        .left-panel{
             grid-column: 1;
             grid-row: 1;
             overflow-x: auto;
@@ -2895,8 +2848,7 @@
         .divider:hover,
         .divider:focus-visible { background: #aaa; }
 
-        .quadrant-tools,
-        body.left-handed .quadrant-tools {
+        .quadrant-tools{
             position: relative;
             z-index: 70;
             grid-column: 1;
@@ -2949,12 +2901,12 @@
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5; grid-row: 2; }
 
-        body.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 5; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 4; }
-        body.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3; }
-        body.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 2; }
-        body.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; }
-        body.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
+
+
+
+
+
+
 
         body.authoring-recording-session .app-container {
             --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
@@ -2972,13 +2924,13 @@
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; }
         body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 2; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 6; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 5; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-mode="select"] { grid-column: 1; }
-        body.authoring-recording-session.left-handed .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 1; }
+
+
+
+
+
+
+
 
         .workspace-undo-label {
             display: block;
@@ -3007,8 +2959,7 @@
             display: none;
         }
 
-        .quadrant-menu,
-        body.left-handed .quadrant-menu {
+        .quadrant-menu{
             position: relative;
             z-index: 80;
             grid-column: 1;
@@ -3235,36 +3186,29 @@
             stroke-width: 1.25;
             vector-effect: non-scaling-stroke;
         }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 1 / span 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 6; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="multiplicative-inverse"] { grid-column: 6; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="double-inverse"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="zero-product"] { grid-column: 4; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="multiplicative-identity"] { grid-column: 3; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="additive-inverse"] { grid-column: 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="additive-identity"] { grid-column: 1; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="inverse"] { grid-column: 5; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-left"] { grid-column: 3 / span 2; }
-        body.left-handed .main-action-panel .intent-category-actions > [data-contextual-rule-pair="distribute-right"] { grid-column: 1 / span 2; }
-        body.left-handed .main-action-panel [data-branch-pair="inverse"] { grid-column: 5; }
-        body.left-handed .main-action-panel [data-branch-pair="left"] { grid-column: 3 / span 2; }
-        body.left-handed .main-action-panel [data-branch-pair="right"] { grid-column: 1 / span 2; }
-        body.left-handed .main-action-panel [data-reverse-pair="additive-identity"] { grid-column: 1; }
-        body.left-handed .main-action-panel [data-reverse-pair="multiplicative-identity"] { grid-column: 3; }
-        body.left-handed .main-action-panel [data-reverse-pair="additive-inverse"] { grid-column: 2; }
-        body.left-handed .main-action-panel [data-reverse-pair="multiplicative-inverse"] { grid-column: 6; }
-        body.left-handed .main-action-panel [data-reverse-pair="double-inverse"] { grid-column: 5; }
-        body.left-handed .main-action-panel [data-reverse-pair="zero-product"] { grid-column: 4; }
-        body.left-handed .main-action-panel [data-branch-pair="left"],
-        body.left-handed .main-action-panel [data-branch-pair="right"] {
-            transform: scaleX(-1);
-            transform-origin: center;
-        }
-        body.left-handed .main-action-panel .post-selection-grid-overlay {
-            transform: scaleX(-1);
-            transform-origin: center;
-        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         .main-action-panel .direct-rule-icon {
             position: relative;
             display: inline-flex;
@@ -3459,64 +3403,28 @@
             background: rgba(255, 255, 255, 0.95);
         }
 
-        body.left-handed .quadrant-tools {
-            justify-self: start;
-            margin-right: 0;
-            margin-left: max(12px, env(safe-area-inset-left));
-        }
-        body.left-handed .quadrant-menu {
-            justify-self: start;
-            margin-right: 0;
-            margin-left: max(12px, env(safe-area-inset-left));
-        }
-        body.left-handed .main-action-panel {
-            right: auto;
-            left: auto;
-            justify-self: start;
-            margin-right: 0;
-            margin-left: max(12px, env(safe-area-inset-left));
-            align-items: flex-start;
-            justify-content: flex-start;
-        }
-        body.left-handed .main-action-panel .panel-tool-menu,
-        body.left-handed .main-action-panel .intent-category-list,
-        body.left-handed .main-action-panel .intent-category-actions,
-        body.left-handed .main-action-panel .intent-category-row,
-        body.left-handed .main-action-panel .tool-grid,
-        body.left-handed .main-action-panel .tool-form-grid,
-        body.left-handed .main-action-panel .tool-row,
-        body.left-handed .main-action-panel .tool-form-row,
-        body.left-handed .main-action-panel .insert-choice-list,
-        body.left-handed .main-action-panel .builder-action-row {
-            align-items: flex-start;
-            justify-content: flex-start;
-        }
-        body.left-handed .main-action-panel .tool-row,
-        body.left-handed .main-action-panel .tool-form-row,
-        body.left-handed .main-action-panel .builder-action-row {
-            flex-direction: row-reverse;
-        }
-        body.left-handed .main-action-panel .tool-grid { flex-flow: row-reverse wrap; }
-        body.left-handed .level-menu-actions .reset-exercise-button { grid-column: 2; grid-row: 1; }
-        body.left-handed .level-menu-actions .handedness-toggle-button { grid-column: 1; grid-row: 1; }
-        body.left-handed .layout-size-buttons { flex-direction: row-reverse; }
+
+
+
+
+
+
+
+
+
         body.expression-builder-active .quadrant-menu,
-        body.expression-builder-active.left-handed .quadrant-menu,
         body.expression-builder-active .quadrant-tools,
-        body.expression-builder-active.left-handed .quadrant-tools,
         body.expression-builder-active .main-action-panel { display: none; }
 
         body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }
 
-        body.expression-builder-active .app-container,
-        body.expression-builder-active.left-handed .app-container {
+        body.expression-builder-active .app-container{
             grid-template-rows:
                 calc(100% - var(--workspace-panel-split) - var(--divider-half-size))
                 var(--divider-size)
                 calc(var(--workspace-panel-split) - var(--divider-half-size));
         }
-        body.expression-builder-active .left-panel,
-        body.expression-builder-active.left-handed .left-panel {
+        body.expression-builder-active .left-panel{
             display: flex;
             overflow: auto;
         }
@@ -3541,33 +3449,28 @@
             font-size: 13px;
         }
 
-        body.left-handed .builder-keypad-panel {
-            right: auto;
-            left: max(12px, env(safe-area-inset-left));
-        }
+
         /* Mirror the builder controls, but translate the numeric keypad as one
            unit so its internal calculator ordering remains unchanged. */
-        body.left-handed .builder-keypad-panel .builder-variable-button,
-        body.left-handed .builder-keypad-panel .builder-prod-button,
-        body.left-handed .builder-keypad-panel .builder-sum-button { right: auto; left: 0; }
-        body.left-handed .builder-keypad-panel .builder-inv-button { grid-column: 4; grid-row: 4; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 2; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 3; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="9"] { grid-column: 4; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="4"] { grid-column: 2; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="5"] { grid-column: 3; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="6"] { grid-column: 4; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="1"] { grid-column: 2; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="2"] { grid-column: 3; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="3"] { grid-column: 4; }
-        body.left-handed .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 3; }
-        body.left-handed .builder-keypad-panel .builder-negative-one-button { grid-column: 2; }
-        body.left-handed .builder-keypad-panel .builder-undo-button { grid-column: 5; grid-row: 1 / span 2; }
-        body.left-handed .builder-keypad-panel .builder-review-button { grid-column: 6; grid-row: 1; }
-        body.left-handed .builder-keypad-panel .builder-submit-button { grid-column: 5; grid-row: 3 / span 2; }
-        body.left-handed .builder-keypad-panel .builder-reset-view-button { grid-column: 6; grid-row: 4; }
-        body.left-handed .builder-keypad-panel .builder-zoom-out-button { grid-column: 6; grid-row: 3; }
-        body.left-handed .builder-keypad-panel .builder-zoom-in-button { grid-column: 6; grid-row: 2; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         .builder-rewrite-original,
         .builder-rewrite-proposal {
@@ -3583,8 +3486,7 @@
         }
 
         @media (max-width: 520px) {
-            .app-container,
-            body.left-handed .app-container {
+            .app-container{
                 --main-key-size: 42px;
                 --main-key-gap: 5px;
                 --main-icon-size: 26px;
@@ -3607,28 +3509,21 @@
 
         /* Vertically scrolling conventional steps with a user-adjustable panel. */
         .app-container,
-        body.left-handed .app-container,
-        body.expression-builder-active .app-container,
-        body.expression-builder-active.left-handed .app-container {
+        body.expression-builder-active .app-container{
             grid-template-rows: min(var(--top-panel-height), 25dvh) var(--divider-size) minmax(0, 1fr);
         }
-        .left-panel,
-        body.left-handed .left-panel {
+        .left-panel{
             grid-row: 1;
             overflow-x: hidden;
             overflow-y: auto;
             scroll-behavior: auto;
         }
-        .main,
-        body.left-handed .main {
+        .main{
             grid-row: 3;
         }
         .quadrant-tools,
-        body.left-handed .quadrant-tools,
         .quadrant-menu,
-        body.left-handed .quadrant-menu,
-        .main-action-panel,
-        body.left-handed .main-action-panel {
+        .main-action-panel{
             grid-row: 3;
         }
         .top-panel-resize-handle {
@@ -3736,12 +3631,10 @@
         }
 
         /* Full-canvas settings view. */
-        body.settings-active .app-container,
-        body.settings-active.left-handed .app-container {
+        body.settings-active .app-container{
             grid-template-rows: minmax(0, 1fr);
         }
-        body.settings-active .main,
-        body.settings-active.left-handed .main {
+        body.settings-active .main{
             grid-column: 1;
             grid-row: 1;
         }
@@ -3772,10 +3665,7 @@
             background: #fff;
             box-shadow: none;
         }
-        body.left-handed .level-menu-panel {
-            inset: 0;
-            width: auto;
-        }
+
         .level-menu-panel.hidden { display: none; }
         .level-menu-title {
             width: min(520px, 100%);
@@ -3823,7 +3713,7 @@
             flex-direction: row;
             gap: 4px;
         }
-        body.left-handed .layout-size-buttons { flex-direction: row; }
+
         .level-menu-panel .level-menu-actions button,
         .level-menu-panel .completion-export-button,
         .exit-settings-button {
@@ -3862,33 +3752,10 @@
             font-weight: 600;
             line-height: 1;
         }
-        .handedness-choice {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            min-width: 0;
-            margin: 0;
-            padding: 9px 12px 10px;
-            border: 1px solid #d5d5d5;
-            border-radius: 8px;
-        }
-        .handedness-choice legend {
-            padding: 0 5px;
-            color: #333;
-            font-size: 14px;
-            font-weight: 700;
-        }
-        .handedness-choice label {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            min-height: 30px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .handedness-choice input { margin: 0; }
+
+
+
+
         .settings-expression-sample {
             flex: 0 1 100px;
             min-width: 58px;
@@ -3991,13 +3858,11 @@
         /* Exercise Builder authoring hides the step strip only outside active
            expression entry. During entry, panel one shows the live conventional
            form of the expression being built. */
-        body.authoring-session:not(.expression-builder-active) .app-container,
-        body.authoring-session:not(.expression-builder-active).left-handed .app-container {
+        body.authoring-session:not(.expression-builder-active) .app-container{
             --top-panel-height: 0px;
             grid-template-rows: minmax(0, 1fr);
         }
-        body.authoring-session:not(.expression-builder-active) .main,
-        body.authoring-session:not(.expression-builder-active).left-handed .main {
+        body.authoring-session:not(.expression-builder-active) .main{
             grid-row: 1;
         }
         body.authoring-session:not(.expression-builder-active) .left-panel,
@@ -4029,9 +3894,7 @@
            expression workspace. Button dimensions are fitted to this row by
            applyResponsiveMainButtonSize(). */
         .app-container,
-        body.left-handed .app-container,
-        body.expression-builder-active .app-container,
-        body.expression-builder-active.left-handed .app-container {
+        body.expression-builder-active .app-container{
             --bottom-panel-height: 33.333dvh;
             --post-keypad-height: calc(var(--main-key-size) * 4 + var(--main-key-gap) * 3);
             grid-template-columns: minmax(0, 1fr);
@@ -4042,8 +3905,7 @@
                 var(--divider-size)
                 min(var(--bottom-panel-height), 33.333dvh);
         }
-        .main,
-        body.left-handed .main { grid-row: 3; }
+        .main{ grid-row: 3; }
         .bottom-panel-resize-handle {
             grid-column: 1;
             grid-row: 4;
@@ -4067,17 +3929,13 @@
             pointer-events: auto;
         }
         .quadrant-tools,
-        body.left-handed .quadrant-tools,
         .quadrant-menu,
-        body.left-handed .quadrant-menu,
-        .main-action-panel,
-        body.left-handed .main-action-panel {
+        .main-action-panel{
             grid-row: 5;
             align-self: center;
             margin-bottom: 0;
         }
-        .quadrant-menu,
-        body.left-handed .quadrant-menu {
+        .quadrant-menu{
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             grid-template-rows: repeat(4, minmax(0, 1fr));
@@ -4089,7 +3947,7 @@
             grid-column: 5;
             grid-row: 3;
         }
-        body.left-handed .quadrant-menu .settings-button { grid-column: 1; }
+
         body.selection-active:not(.expression-builder-active) .quadrant-menu {
             grid-template-columns: repeat(6, minmax(0, 1fr));
             grid-template-rows: repeat(4, minmax(0, 1fr));
@@ -4099,11 +3957,11 @@
             grid-column: 6;
             grid-row: 4;
         }
-        body.selection-active.left-handed:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 1; }
+
         body.authoring-recording-session .quadrant-menu {
             grid-template-columns: repeat(6, var(--main-key-size));
         }
-        body.authoring-recording-session:not(.selection-active):not(.left-handed) .quadrant-menu .settings-button { grid-column: 6; }
+        body.authoring-recording-session:not(.selection-active) .quadrant-menu .settings-button { grid-column: 6; }
         .main-action-panel {
             width: var(--workspace-keypad-width);
             height: var(--post-keypad-height);
@@ -4114,22 +3972,17 @@
             right: var(--main-control-edge);
             bottom: calc((var(--bottom-panel-height) - var(--builder-keypad-height)) / 2);
         }
-        body.left-handed .builder-keypad-panel {
-            right: auto;
-            left: max(12px, env(safe-area-inset-left));
-        }
+
 
         /* Outside active expression entry, authoring omits the student step
            strip while retaining the independent controls panel. */
-        body.authoring-session:not(.expression-builder-active) .app-container,
-        body.authoring-session:not(.expression-builder-active).left-handed .app-container {
+        body.authoring-session:not(.expression-builder-active) .app-container{
             grid-template-rows:
                 minmax(0, 1fr)
                 var(--divider-size)
                 min(var(--bottom-panel-height), 33.333dvh);
         }
-        body.authoring-session:not(.expression-builder-active) .main,
-        body.authoring-session:not(.expression-builder-active).left-handed .main { grid-row: 1; }
+        body.authoring-session:not(.expression-builder-active) .main{ grid-row: 1; }
         body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle { grid-row: 2; }
         body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
         body.authoring-session:not(.expression-builder-active) .quadrant-tools,
@@ -4152,15 +4005,13 @@
            During Peek, the controls row is removed but panel one remains above
            the expression workspace for students and authors alike. */
         @media (orientation: portrait) {
-            body.expression-builder-active.builder-review-active .app-container,
-            body.expression-builder-active.builder-review-active.left-handed .app-container {
+            body.expression-builder-active.builder-review-active .app-container{
                 grid-template-rows:
                     min(var(--top-panel-height), 25dvh)
                     var(--divider-size)
                     minmax(0, 1fr);
             }
-            body.expression-builder-active.builder-review-active .main,
-            body.expression-builder-active.builder-review-active.left-handed .main {
+            body.expression-builder-active.builder-review-active .main{
                 grid-row: 3;
             }
         }
@@ -4168,11 +4019,8 @@
         /* Every controls state uses the full resizable panel as the same
            six-column by four-row placement grid. */
         .quadrant-tools,
-        body.left-handed .quadrant-tools,
         .quadrant-menu,
-        body.left-handed .quadrant-menu,
-        .main-action-panel,
-        body.left-handed .main-action-panel {
+        .main-action-panel{
             align-self: stretch;
             justify-self: stretch;
             width: 100%;
@@ -4185,7 +4033,6 @@
         .quadrant-tools.two-column-tools .workspace-toolbar,
         body.authoring-recording-session .workspace-toolbar,
         .quadrant-menu,
-        body.left-handed .quadrant-menu,
         body.selection-active:not(.expression-builder-active) .quadrant-menu,
         body.authoring-recording-session .quadrant-menu {
             display: grid;
@@ -4302,14 +4149,7 @@
             min-height: 0;
             margin: 0;
         }
-        body.left-handed .builder-keypad-panel {
-            right: 0;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: min(var(--bottom-panel-height), 33.333dvh);
-            margin: 0;
-        }
+
         .builder-keypad-panel button,
         .builder-keypad-panel .panel-tool-menu button,
         .builder-keypad-panel .builder-action-row button {
@@ -4368,11 +4208,7 @@
             max-width: none;
             max-height: none;
         }
-        body.left-handed .bottom-controls-panel > .builder-keypad-panel {
-            right: auto;
-            bottom: auto;
-            left: auto;
-        }
+
         .bottom-controls-panel > .main-action-panel.hidden,
         .bottom-controls-panel > .builder-keypad-panel.hidden {
             display: none;
@@ -4419,10 +4255,7 @@
             stroke-width: 1.25;
             vector-effect: non-scaling-stroke;
         }
-        body.left-handed .builder-keypad-panel .controls-grid-overlay {
-            transform: scaleX(-1);
-            transform-origin: center;
-        }
+
 
         /* Landscape uses a bounded, resizable left column for conventional
            steps and controls, leaving the full-height right side to the
@@ -4430,15 +4263,10 @@
            reloading or rebuilding the active exercise. */
         @media (orientation: landscape) {
             .app-container,
-            body.left-handed .app-container,
             body.expression-builder-active .app-container,
-            body.expression-builder-active.left-handed .app-container,
             body.authoring-session:not(.expression-builder-active) .app-container,
-            body.authoring-session:not(.expression-builder-active).left-handed .app-container,
             body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
-            body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .app-container,
-            body.expression-builder-active.builder-entry-mode .app-container,
-            body.expression-builder-active.builder-entry-mode.left-handed .app-container {
+            body.expression-builder-active.builder-entry-mode .app-container{
                 --landscape-sidebar-width: 33.333vw;
                 grid-template-columns:
                     clamp(16.667vw, var(--landscape-sidebar-width), 33.333vw)
@@ -4450,8 +4278,7 @@
                     minmax(0, 1fr);
             }
 
-            .left-panel,
-            body.left-handed .left-panel {
+            .left-panel{
                 grid-column: 1;
                 grid-row: 1;
                 width: auto;
@@ -4500,23 +4327,16 @@
             }
 
             .quadrant-tools,
-            body.left-handed .quadrant-tools,
             .quadrant-menu,
-            body.left-handed .quadrant-menu,
-            .main-action-panel,
-            body.left-handed .main-action-panel {
+            .main-action-panel{
                 grid-column: 1;
                 grid-row: 3;
             }
 
             .main,
-            body.left-handed .main,
             body.authoring-session:not(.expression-builder-active) .main,
-            body.authoring-session:not(.expression-builder-active).left-handed .main,
             body.expression-builder-active .main,
-            body.expression-builder-active.left-handed .main,
             body.authoring-session.authoring-initial-session.expression-builder-active .main,
-            body.authoring-session.authoring-initial-session.expression-builder-active.left-handed .main,
             body.expression-builder-active.builder-entry-mode .main {
                 grid-column: 3;
                 grid-row: 1 / -1;
@@ -4526,22 +4346,18 @@
                 min-height: 0;
             }
 
-            body.expression-builder-active.builder-review-active .app-container,
-            body.expression-builder-active.builder-review-active.left-handed .app-container {
+            body.expression-builder-active.builder-review-active .app-container{
                 grid-template-rows: minmax(0, 1fr);
             }
-            body.expression-builder-active.builder-review-active .left-panel,
-            body.expression-builder-active.builder-review-active.left-handed .left-panel {
+            body.expression-builder-active.builder-review-active .left-panel{
                 grid-row: 1;
             }
 
-            body.settings-active .app-container,
-            body.settings-active.left-handed .app-container {
+            body.settings-active .app-container{
                 grid-template-columns: minmax(0, 1fr);
                 grid-template-rows: minmax(0, 1fr);
             }
-            body.settings-active .main,
-            body.settings-active.left-handed .main {
+            body.settings-active .main{
                 grid-column: 1;
                 grid-row: 1;
             }
@@ -4637,7 +4453,7 @@
                 </div>
                 <div id="builderCommandPanel" class="builder-command-panel"></div>
                 <svg class="controls-grid-overlay builder-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 100 H100 M200 100 H599 M1 200 H100 M200 200 H500 M500 250 H599 M1 300 H100 M200 300 H500"/>
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 100 H500 M1 200 H599 M1 300 H100 M200 300 H500"/>
                 </svg>
             </div>
         </div>
@@ -4676,8 +4492,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260922-builder-column-layout"></script>
-    <script src="exploded-algebra-tool.js?v=20260922-builder-column-layout"></script>
+    <script src="exploded-algebra-renderer.js?v=20260922-builder-six-column-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260922-builder-six-column-layout"></script>
 
 </body>
 </html>
