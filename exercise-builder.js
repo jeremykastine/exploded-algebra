@@ -32,6 +32,10 @@
   let initialCommitInProgress = false;
   let currentCurationIndex = 0;
   let currentCurationMode = "view";
+  let curationStage = "select";
+  let curationSelectionIndex = 0;
+  let curationSelectionSource = [];
+  let curationKeepDecisions = [];
   let draft = makeFreshDraft();
 
   function makeFreshDraft() {
@@ -423,6 +427,79 @@
     await finishRecording(snapshot, api);
   }
 
+  function startCurationSelection() {
+    curationStage = "select";
+    curationSelectionIndex = 0;
+    curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates || []));
+    curationKeepDecisions = curationSelectionSource.map(() => null);
+    renderCurationTable();
+  }
+
+  function restartCurationSelection() {
+    curationSelectionIndex = 0;
+    curationKeepDecisions = curationSelectionSource.map(() => null);
+    renderCurationTable();
+  }
+
+  function finishCurationSelection() {
+    const kept = curationSelectionSource.filter((candidate, index) => curationKeepDecisions[index] === true);
+    if (!kept.length) {
+      window.alert("Keep at least one recorded expression.");
+      return;
+    }
+    const originalFirst = curationSelectionSource[0];
+    if (originalFirst && originalFirst.isInitial && !kept.some(candidate => candidate.isInitial)) {
+      kept.unshift(originalFirst);
+    }
+    for (let index = 1; index < kept.length; index += 1) {
+      const previousKept = kept[index - 1];
+      const candidate = kept[index];
+      if (!candidate.isInitial) {
+        candidate.beforeExpression = previousKept.expression;
+        candidate.beforeKatex = previousKept.afterKatex;
+        const sourceIndex = curationSelectionSource.findIndex(item => item.key === candidate.key);
+        const previousSourceIndex = curationSelectionSource.findIndex(item => item.key === previousKept.key);
+        const firstRemovedAfterPrevious = curationSelectionSource
+          .slice(Math.max(0, previousSourceIndex + 1), Math.max(0, sourceIndex))
+          .find(item => Number.isInteger(item.actionStartIndex));
+        if (firstRemovedAfterPrevious) candidate.actionStartIndex = firstRemovedAfterPrevious.actionStartIndex;
+      }
+    }
+    draft.recording.candidates = kept;
+    curationStage = "edit";
+    currentCurationIndex = 0;
+    currentCurationMode = "view";
+    renderCurationTable();
+  }
+
+  function renderCurationSelection() {
+    const container = byId("curationTable");
+    const candidates = curationSelectionSource;
+    if (!candidates.length) {
+      container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
+      return;
+    }
+    curationSelectionIndex = Math.max(0, Math.min(curationSelectionIndex, candidates.length - 1));
+    const candidate = candidates[curationSelectionIndex];
+    const decision = curationKeepDecisions[curationSelectionIndex];
+    container.innerHTML = `
+      <article class="step-selection-slide card" data-selection-index="${curationSelectionIndex}">
+        <header class="step-selection-header">
+          <span class="step-number">Step ${candidate.isInitial ? 0 : curationSelectionIndex}</span>
+          <button type="button" class="secondary-button restart-selection-button" data-curation-restart>Start Over</button>
+        </header>
+        <div class="step-selection-expression" data-selection-expression aria-label="Recorded expression"></div>
+        <div class="step-selection-actions" role="group" aria-label="Keep or delete this step">
+          <button type="button" class="primary-button" data-curation-decision="keep">Keep</button>
+          <button type="button" class="secondary-button delete-step-button" data-curation-decision="delete">Delete</button>
+        </div>
+        ${decision === null ? "" : `<p class="selection-decision-status">Marked ${decision ? "Keep" : "Delete"}</p>`}
+      </article>`;
+    renderKatex(container.querySelector("[data-selection-expression]"), candidate.afterKatex || candidate.beforeKatex || candidate.expression);
+    byId("deleteStepButton").hidden = true;
+    byId("completeExerciseButton").hidden = true;
+  }
+
   function deleteCurationCandidateAt(candidates, index) {
     if (!Array.isArray(candidates) || index <= 0 || index >= candidates.length - 1) {
       return false;
@@ -450,6 +527,10 @@
   }
 
   function renderCurationTable() {
+    if (curationStage === "select") {
+      renderCurationSelection();
+      return;
+    }
     const container = byId("curationTable");
     const candidates = draft.recording.candidates || [];
     if (!candidates.length) {
@@ -539,6 +620,10 @@
     draft.recording.candidates = [makeInitialCurationCandidate(api), ...draft.recording.candidates];
     currentCurationIndex = 0;
     currentCurationMode = "view";
+    curationStage = "select";
+    curationSelectionIndex = 0;
+    curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates));
+    curationKeepDecisions = curationSelectionSource.map(() => null);
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
@@ -663,6 +748,22 @@
       candidate[field] = event.target.value;
     });
     byId("curationTable").addEventListener("click", event => {
+      const restartButton = event.target.closest("[data-curation-restart]");
+      if (restartButton) {
+        restartCurationSelection();
+        return;
+      }
+      const decisionButton = event.target.closest("[data-curation-decision]");
+      if (decisionButton && curationStage === "select") {
+        curationKeepDecisions[curationSelectionIndex] = decisionButton.dataset.curationDecision === "keep";
+        if (curationSelectionIndex < curationSelectionSource.length - 1) {
+          curationSelectionIndex += 1;
+          renderCurationTable();
+        } else {
+          finishCurationSelection();
+        }
+        return;
+      }
       const modeButton = event.target.closest("[data-curation-mode]");
       if (modeButton) {
         currentCurationMode = modeButton.dataset.curationMode;
