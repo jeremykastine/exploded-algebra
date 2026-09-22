@@ -213,10 +213,10 @@ assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Mat
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
 assert(/if \(pointerStart\.mode === "commute"\)[\s\S]{0,500}releaseWorkspacePointer\(\);[\s\S]{0,100}return;[\s\S]{0,200}const movement =/.test(playerJs), "Commute choices must bypass the ordinary tap-movement threshold");
-assert(playerJs.includes('unresolvedOperation = { type: null }') && playerJs.includes('unresolvedOperation.type !== type'), "Submit must accept only one uniform type of unresolved operation");
-assert(playerJs.includes('return new ExprNode(node.builderOperators[0], completedArgs, null)'), "Submit must collapse uniformly unresolved sums or products");
+assert(playerJs.includes('let currentProduct = completedArgs[0]') && playerJs.includes('completedTerms.push(currentProduct)'), "Submit must resolve unresolved multiplication before unresolved addition");
+assert(!/getIntegratedBuilderCompletedRoot[\s\S]{0,250}builder\.currentPath\.length/.test(playerJs), "A complete expression must be submittable while entry remains inside an inverse");
 
-const collapseMatch = playerJs.match(/function collapseCompletedIntegratedBuilderNode\(node, unresolvedOperation = \{ type: null \}\) \{([\s\S]*?)\n        \}\n\n        function getIntegratedBuilderCompletedRoot/);
+const collapseMatch = playerJs.match(/function collapseCompletedIntegratedBuilderNode\(node\) \{([\s\S]*?)\n        \}\n\n        function getIntegratedBuilderCompletedRoot/);
 assert(collapseMatch, "Integrated-builder completion logic must remain testable");
 const collapseContext = {
   ExprNode: class ExprNode {
@@ -231,7 +231,7 @@ const collapseContext = {
   }
 };
 vm.createContext(collapseContext);
-vm.runInContext(`function collapseCompletedIntegratedBuilderNode(node, unresolvedOperation = { type: null }) {${collapseMatch[1]}\n}\nthis.collapseCompletedIntegratedBuilderNode = collapseCompletedIntegratedBuilderNode;`, collapseContext);
+vm.runInContext(`function collapseCompletedIntegratedBuilderNode(node) {${collapseMatch[1]}\n}\nthis.collapseCompletedIntegratedBuilderNode = collapseCompletedIntegratedBuilderNode;`, collapseContext);
 const pendingSequence = (args, builderOperators) => ({
   type: "sum",
   args,
@@ -252,7 +252,26 @@ assert(uniformProduct && uniformProduct.type === "prod" && uniformProduct.args.l
 const mixedOperations = collapseContext.collapseCompletedIntegratedBuilderNode(
   pendingSequence([testValue("2"), testValue("3"), testValue("4")], ["sum", "prod"])
 );
-assert(mixedOperations === null, "Submit must still reject mixed unresolved operations");
+assert(mixedOperations && mixedOperations.type === "sum" && mixedOperations.args[1].type === "prod", "Submit must resolve mixed operations using multiplication-before-addition precedence");
+const completeOpenInverse = {
+  type: "inv",
+  args: [pendingSequence([testValue("3")], [])],
+  value: null,
+  isBuilderInverseOpen: true
+};
+const productWithOpenInverse = collapseContext.collapseCompletedIntegratedBuilderNode(
+  pendingSequence([testValue("2"), completeOpenInverse], ["prod"])
+);
+assert(productWithOpenInverse && productWithOpenInverse.type === "prod" && productWithOpenInverse.args[1].type === "inv", "Submit must accept a well-formed inverse without requiring Exit Inverse");
+const incompleteOpenInverse = {
+  type: "inv",
+  args: [pendingSequence([], [])],
+  value: null,
+  isBuilderInverseOpen: true
+};
+assert(collapseContext.collapseCompletedIntegratedBuilderNode(
+  pendingSequence([testValue("2"), incompleteOpenInverse], ["prod"])
+) === null, "Submit must remain disabled when an inverse contains a genuinely missing entry");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
 assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activeTool);') && playerJs.includes('${disabled ? " disabled" : ""}'), "The x button must remain visible and become disabled only when variables are unavailable");
@@ -264,6 +283,7 @@ assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must no
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
 assert(rendererJs.includes('builderRecentFill: "rgb(231, 218, 244)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat light-purple fill for the most recently entered item");
+assert(rendererJs.includes('node.isBuilderInverseOpen || node.isBuilderActive') && rendererJs.includes('settings.builderRecentForeground || "rgb(112, 64, 160)"'), "A highlighted inverse must tint its perimeter, denominator, numerator one, and fraction bar purple");
 assert(rendererJs.includes('const lastDigit = String(child.value).slice(-1)'), "Builder must highlight the newest digit rather than a future landing position");
 assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('builderPlaceholderBox'), "Builder layout must not retain future-entry placeholder boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");

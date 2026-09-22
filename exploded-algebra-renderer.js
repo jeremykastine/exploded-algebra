@@ -62,6 +62,7 @@ const SETTINGS = {
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     builderRecentFill: "rgb(231, 218, 244)",
+    builderRecentForeground: "rgb(112, 64, 160)",
     builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
@@ -1173,7 +1174,9 @@ function drawNodeRecursiveToContext(
         node.args.forEach(child => {
             const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
                 child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
-            if (!child.isBuilderActive && !freshInverse) {
+            const highlightedInverse = child.type === "inv" &&
+                (child.isBuilderInverseOpen || child.isBuilderActive);
+            if (!child.isBuilderActive && !freshInverse && !highlightedInverse) {
                 return;
             }
             if (child.type === "value" && /^\d+$/.test(String(child.value))) {
@@ -1279,8 +1282,13 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
     const denominatorHeight = node.layout.inverseDenominatorBoxHeight || 0;
     const cornerRadius = node.layout.inverseCornerRadius || getInverseCornerRadius(settings);
 
+    const builderHighlighted = node.isBuilderInverseOpen || node.isBuilderActive;
+    const builderFill = settings.builderRecentFill || "rgb(231, 218, 244)";
+
     drawingContext.save();
-    drawingContext.fillStyle = settings.inverseFillColor || "black";
+    drawingContext.fillStyle = builderHighlighted
+        ? builderFill
+        : settings.inverseFillColor || "black";
     drawingContext.fillRoundedRect(
         node.left(),
         node.top(),
@@ -1288,13 +1296,18 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
         node.layout.height,
         cornerRadius
     );
-    drawingContext.fillStyle = settings.inverseDenominatorFill || "white";
+    drawingContext.fillStyle = builderHighlighted
+        ? builderFill
+        : settings.inverseDenominatorFill || "white";
     drawingContext.fillRect(denominatorLeft, denominatorTop, denominatorWidth, denominatorHeight);
     drawingContext.restore();
 }
 
 function drawInverseForegroundToContext(node, drawingContext, settings) {
-    const operatorColor = settings.inverseOperatorColor || "white";
+    const builderHighlighted = node.isBuilderInverseOpen || node.isBuilderActive;
+    const operatorColor = builderHighlighted
+        ? settings.builderRecentForeground || "rgb(112, 64, 160)"
+        : settings.inverseOperatorColor || "white";
     const numeratorCenterX = (node.left() + node.right()) / 2;
     const numeratorCenterY = node.top() +
         (node.layout.inverseOuterPadding || getInverseOuterPadding(settings)) +

@@ -10281,8 +10281,8 @@ ctx.font = SETTINGS.textFont;
             return evaluateBuilderWholeNumberExpression(builder.originalSelectedNode);
         }
 
-        function collapseCompletedIntegratedBuilderNode(node, unresolvedOperation = { type: null }) {
-            if (!node || node.isBuilderInverseOpen) return null;
+        function collapseCompletedIntegratedBuilderNode(node) {
+            if (!node) return null;
             if (node.isBuilderSequence) {
                 if (builderSequenceExpectsValue(node) ||
                     node.args.length === 0 ||
@@ -10290,35 +10290,60 @@ ctx.font = SETTINGS.textFont;
                     return null;
                 }
                 for (const type of node.builderOperators) {
-                    if (!["sum", "prod"].includes(type) ||
-                        unresolvedOperation.type && unresolvedOperation.type !== type) {
+                    if (!["sum", "prod"].includes(type)) {
                         return null;
                     }
-                    unresolvedOperation.type = type;
                 }
                 const completedArgs = [];
                 for (const child of node.args) {
-                    const completed = collapseCompletedIntegratedBuilderNode(child, unresolvedOperation);
+                    const completed = collapseCompletedIntegratedBuilderNode(child);
                     if (!completed) return null;
                     completedArgs.push(completed);
                 }
-                if (completedArgs.length === 1) {
-                    return completedArgs[0];
+
+                // Match the live conventional-notation translation: unresolved
+                // multiplication binds first, and the resulting factors are then
+                // joined by any unresolved additions. Explicitly grouped children
+                // remain children, so a previously resolved sum used as a factor
+                // keeps its intended grouping.
+                const completedTerms = [];
+                let currentProduct = completedArgs[0];
+                node.builderOperators.forEach((type, index) => {
+                    const next = completedArgs[index + 1];
+                    if (type === "prod") {
+                        const factors = [];
+                        if (currentProduct.type === "prod") factors.push(...currentProduct.args);
+                        else factors.push(currentProduct);
+                        if (next.type === "prod") factors.push(...next.args);
+                        else factors.push(next);
+                        currentProduct = new ExprNode("prod", factors, null);
+                    } else {
+                        completedTerms.push(currentProduct);
+                        currentProduct = next;
+                    }
+                });
+                completedTerms.push(currentProduct);
+                if (completedTerms.length === 1) {
+                    return completedTerms[0];
                 }
-                return new ExprNode(node.builderOperators[0], completedArgs, null);
+                const addends = [];
+                completedTerms.forEach(term => {
+                    if (term.type === "sum") addends.push(...term.args);
+                    else addends.push(term);
+                });
+                return new ExprNode("sum", addends, null);
             }
             const completedArgs = [];
             for (const child of node.args) {
-                const completed = collapseCompletedIntegratedBuilderNode(child, unresolvedOperation);
+                const completed = collapseCompletedIntegratedBuilderNode(child);
                 if (!completed) return null;
                 completedArgs.push(completed);
             }
-            node.args = completedArgs;
-            return node;
+            return new ExprNode(node.type, completedArgs, node.value);
         }
 
         function getIntegratedBuilderCompletedRoot(builder = uiState.expressionBuilder) {
-            if (!isIntegratedExpressionBuilder(builder) || builder.currentPath.length || !builder.root.isBuilderSequence) {
+            if (!isIntegratedExpressionBuilder(builder) || !builder.root.isBuilderSequence) {
                 return null;
             }
             return collapseCompletedIntegratedBuilderNode(cloneBuilderNodeForHistory(builder.root));
@@ -10333,7 +10358,7 @@ ctx.font = SETTINGS.textFont;
                 ? getIntegratedBuilderCompletedRoot(builder)
                 : builder.root;
             if (!proposedRoot) {
-                return builderValidationFailed("Group the entries until one expression remains.");
+                return builderValidationFailed("Complete the missing entry before submitting.");
             }
             const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
             if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
