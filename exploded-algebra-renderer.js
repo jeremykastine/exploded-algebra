@@ -61,8 +61,6 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
-    builderRecentFill: "rgb(125, 55, 190)",
-    builderRecentAlpha: 0.2,
     builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
@@ -1239,78 +1237,6 @@ function drawNodeRecursiveToContext(
     );
 }
 
-function drawBuilderRecentHighlightsToContext(node, drawingContext, settings, parent = null) {
-    if (!node) {
-        return;
-    }
-    for (const child of node.args || []) {
-        drawBuilderRecentHighlightsToContext(child, drawingContext, settings, node);
-    }
-    const emptyInverseInput = node.isBuilderSequence && node.isBuilderCurrentSequence &&
-        node.args.length === 0 && parent && parent.type === "inv" && parent.isBuilderInverseOpen;
-    const trailingOperationIndex = node.isBuilderSequence ? node.args.length - 1 : -1;
-    const trailingOperationBox = node.isBuilderSequence && node.isBuilderCurrentSequence &&
-        trailingOperationIndex >= 0 && node.builderOperators.length === node.args.length
-        ? (node.layout.builderOperatorBoxes || [])[trailingOperationIndex]
-        : null;
-    if (!node.isBuilderActive && !emptyInverseInput && !trailingOperationBox) {
-        return;
-    }
-
-    drawingContext.save();
-    drawingContext.fillStyle = settings.builderRecentFill || "rgb(125, 55, 190)";
-    drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
-        ? settings.builderRecentAlpha
-        : 0.2;
-    drawingContext.font = settings.textFont;
-
-    if (emptyInverseInput) {
-        drawingContext.fillRoundedRect(
-            node.left(),
-            node.top(),
-            node.layout.width,
-            node.layout.height,
-            4
-        );
-    }
-
-    if (trailingOperationBox) {
-        drawingContext.beginPath();
-        drawingContext.arc(
-            trailingOperationBox.x + trailingOperationBox.width / 2,
-            trailingOperationBox.y + trailingOperationBox.height / 2,
-            trailingOperationBox.width / 2,
-            0,
-            Math.PI * 2
-        );
-        drawingContext.fill();
-    }
-
-    if (node.isBuilderActive && node.type === "value" && /^\d+$/.test(String(node.value))) {
-        const lastDigit = String(node.value).slice(-1);
-        const digitMetrics = drawingContext.measureText(lastDigit);
-        const digitWidth = Math.max(1, digitMetrics.width || 0);
-        drawingContext.fillRect(
-            node.right() - digitWidth,
-            node.top(),
-            digitWidth,
-            node.layout.height
-        );
-    } else if (node.isBuilderActive && (node.type === "inv" || isNegativeUnit(node))) {
-        const highlightPadding = 3;
-        drawingContext.fillRoundedRect(
-            node.left() - highlightPadding,
-            node.top() - highlightPadding,
-            node.layout.width + highlightPadding * 2,
-            node.layout.height + highlightPadding * 2,
-            4
-        );
-    } else if (node.isBuilderActive && !node.isBuilderSequence) {
-        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
-    }
-    drawingContext.restore();
-}
-
 function drawInverseBackgroundToContext(node, drawingContext, settings) {
     const denominatorLeft = node.left() + (node.layout.inverseDenominatorBoxLeft || 0);
     const denominatorTop = node.top() + (node.layout.inverseDenominatorBoxTop || 0);
@@ -2091,7 +2017,6 @@ function renderExpressionSvgMarkup(root, options = {}) {
         (node, separatorIndex) => compiledShading.separatorForegrounds.get(`${node.id}:${separatorIndex}`) || null
     );
     drawOutlinesToContext(compiledOutlines, drawingContext);
-    drawBuilderRecentHighlightsToContext(root, drawingContext, settings);
     return svg.outerHTML;
 }
 
@@ -2390,7 +2315,6 @@ window.ExplodedAlgebraRenderer = {
     compileOutlines,
     drawOutlinesToContext,
     drawNodeRecursiveToContext,
-    drawBuilderRecentHighlightsToContext,
     drawNodeToContext,
     drawValueNodeToContext,
     renderExpressionSvgMarkup,

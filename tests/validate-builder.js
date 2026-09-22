@@ -136,10 +136,11 @@ assert(playerJs.includes('navigationSource === "builder"'), "Player must accept 
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
 assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
-assert(playerJs.includes('flowVersion: 3'), "Shared Expression Builder must use the integrated flow");
+assert(playerJs.includes('flowVersion: 4'), "Shared Expression Builder must use the level-navigation flow");
 assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated entry must provide pending Sum and Product operations");
 assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
-assert(playerJs.includes('data-builder-action="exitInverse"'), "Integrated entry must provide Exit Inverse");
+assert(playerJs.includes('data-builder-action="moveUpOperation"'), "Integrated entry must provide Move Up One Level");
+assert(!playerJs.includes('data-builder-action="exitInverse"'), "The live builder must not retain the special-purpose Exit Inverse button");
 assert(playerJs.includes('data-builder-action="undo"'), "Integrated entry must provide a unified Undo control");
 assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder must not render a separate Cancel button");
 assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
@@ -157,7 +158,7 @@ assert(playerJs.includes('"<p>None given</p>"'), "Empty student Step Guidance mu
 assert(playerHtml.includes(".builder-keypad-panel .builder-review-button:disabled"), "The unavailable starting-expression eye button must be visibly grayed out");
 assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
 assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 4; }'), "The x button must occupy Backspace's former position in the six-column grid");
-assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 3; grid-row: 1; }') && playerHtml.includes('.builder-keypad-panel .builder-exit-inv-button { grid-column: 3; grid-row: 2; }'), "Inverse and Exit Inverse must top the column beside the number pad");
+assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 3; grid-row: 1; }') && playerHtml.includes('.builder-keypad-panel .builder-move-up-button { grid-column: 3; grid-row: 2; }'), "Inverse and Move Up must top the column beside the number pad");
 assert(playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 3; grid-row: 4; }') && playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 3; grid-row: 3; }'), "Addition and multiplication must bottom the column beside the number pad");
 assert(playerHtml.includes('.builder-keypad-panel .builder-undo-button { grid-column: 2; grid-row: 1 / span 2; }') && playerHtml.includes('button.builder-submit-button {\n            grid-column: 2;\n            grid-row: 3 / span 2;'), "Backspace and Submit must each occupy half of x's former column");
 assert(playerHtml.includes('.builder-keypad-panel .builder-zoom-in-button { grid-column: 1; grid-row: 2; }') && playerHtml.includes('.builder-keypad-panel .builder-reset-view-button { grid-column: 1; grid-row: 4; }'), "Builder zoom and reset controls must sit below Peek");
@@ -168,47 +169,22 @@ assert(playerHtml.includes('body.left-handed .builder-keypad-panel .builder-vari
 assert(!playerJs.includes('data-builder-view-action="pan"') && !playerHtml.includes('builder-pan-button'), "Integrated Expression Builder must not show a separate Pan button");
 assert(playerJs.includes('data-builder-view-action="zoomIn"') && playerJs.includes('data-builder-view-action="zoomOut"') && playerJs.includes('data-builder-view-action="resetZoom"'), "Integrated Expression Builder must retain zoom and reset controls");
 assert(playerJs.includes('const panningView = !integratedBuilder && uiState.workspaceMode === "pan"'), "Integrated Expression Builder gestures must not depend on the main workspace Pan mode");
-assert(playerJs.includes('workspacePointerStart.mode = "builderPan"') && playerJs.includes('["pan", "builderOperator", "builderPan"]'), "Dragging the integrated Expression Builder canvas must transition from operator targeting to panning");
-assert(/pointerStart\.mode === "builderOperator" && movement > tapTolerance[\s\S]*?setWorkspacePan/.test(playerJs), "An Expression Builder drag ending before a move event must still pan instead of resolving an operation");
+assert(playerJs.includes('["pan", "builderPan"]') && !playerJs.includes('["pan", "builderOperator", "builderPan"]'), "The integrated Expression Builder canvas must be dedicated to drag-panning rather than operation grouping");
 const whitespacePanHandler = playerJs.match(/svgContainer\.addEventListener\("pointerdown", e => \{([\s\S]*?)\n        \}\);\n\n        workspaceSvg\.addEventListener\("pointerdown"/);
-assert(whitespacePanHandler && whitespacePanHandler[1].includes('isIntegratedExpressionBuilder(uiState.expressionBuilder)') && whitespacePanHandler[1].includes('? "builderOperator"') && whitespacePanHandler[1].includes('? "pan"'), "Expression Builder tap-or-pan gestures must begin on workspace whitespace");
+assert(whitespacePanHandler && whitespacePanHandler[1].includes('isIntegratedExpressionBuilder(uiState.expressionBuilder)') && whitespacePanHandler[1].includes('? "builderPan"') && whitespacePanHandler[1].includes('? "pan"'), "Expression Builder panning must begin on workspace whitespace");
 assert(/\.builder-keypad-panel\s*\{[\s\S]*?pointer-events:\s*none;[\s\S]*?\}/.test(playerHtml), "The transparent Expression Builder keypad grid must not block workspace whitespace");
 assert(/\.builder-keypad-panel button,[\s\S]*?\.builder-keypad-panel \.builder-action-row button\s*\{[\s\S]*?pointer-events:\s*auto;[\s\S]*?\}/.test(playerHtml), "Expression Builder buttons must remain interactive inside the click-through keypad grid");
 assert(!/if \(isIntegratedExpressionBuilder\(\) && !builderReviewActive\)[\s\S]*?workspaceZoom = Math\.max/.test(playerJs), "Integrated Expression Builder must not automatically fit or zoom the expression");
 assert(playerJs.includes('M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11'), "Integrated Expression Builder Undo must use the backspace icon");
-assert(playerJs.includes('builder-exit-arrow-line') && playerJs.includes('M14 18 27 29'), "Exit Inverse must use a down-right arrow from the denominator");
-assert(playerJs.includes('getClosestIntegratedBuilderOperatorTarget') && playerJs.includes('groupIntegratedBuilderOperator(value)'), "Canvas operation taps must resolve the nearest unresolved operation");
-const closestOperatorMatch = playerJs.match(/function getClosestIntegratedBuilderOperatorTarget\(x, y\) \{([\s\S]*?)\n        \}\n\n        function findNodePathByReference/);
-assert(closestOperatorMatch, "Nearest unresolved operation targeting must remain testable");
-const closestOperatorContext = {
-  uiState: {
-    expressionBuilder: {
-      root: {
-        isBuilderSequence: true,
-        layout: {
-          builderOperatorBoxes: [
-            { x: 10, y: 10, width: 10, height: 10, groupable: true },
-            { x: 100, y: 100, width: 10, height: 10, groupable: true }
-          ]
-        }
-      }
-    }
-  },
-  isIntegratedExpressionBuilder: () => true,
-  visitIntegratedBuilderSequences: (root, path, visit) => visit(root, path)
-};
-vm.createContext(closestOperatorContext);
-vm.runInContext(`function getClosestIntegratedBuilderOperatorTarget(x, y) {${closestOperatorMatch[1]}\n}\nthis.getClosestIntegratedBuilderOperatorTarget = getClosestIntegratedBuilderOperatorTarget;`, closestOperatorContext);
-assert(closestOperatorContext.getClosestIntegratedBuilderOperatorTarget(-1000, -1000).index === 0, "A distant press must choose the nearest unresolved operation rather than no operation");
-assert(closestOperatorContext.getClosestIntegratedBuilderOperatorTarget(1000, 1000).index === 1, "Nearest-operation targeting must work throughout the workspace");
-assert(playerJs.includes('visitIntegratedBuilderSequences(builder.root'), "Operation taps must search every unresolved scope");
-assert(playerJs.includes('flattenIntegratedBuilderOperation(type, left, right)'), "Consecutive sums and products must flatten as they are grouped");
-assert(!playerJs.includes('sequence.args.length !== 1 || sequence.builderOperators.length'), "Exit Inverse must not require its contents to be grouped first");
+assert(playerJs.includes('aria-label="Move the most recent operation up one level"') && playerJs.includes('event.key === "ArrowRight"'), "Move Up must have a generic icon, accessible label, and keyboard shortcut");
+assert(/function placeIntegratedBuilderOperationAtLowestLevel[\s\S]*?uniformType === type[\s\S]*?sequence\.builderOperators\.push\(type\)[\s\S]*?makeBuilderSequence\(\[sequence\.args\[latestValueIndex\]\], \[type\]\)/.test(playerJs), "Matching operations must flatten immediately while different operations nest at the latest value");
+assert(/function moveIntegratedBuilderOperationUp[\s\S]*?getIntegratedBuilderLastOperation[\s\S]*?builderSequencePrefix[\s\S]*?rememberIntegratedBuilderOperation/.test(playerJs), "Move Up must relocate the most recently entered operation one level");
+assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation/.test(playerJs) && /builderDraft: builder \? \{[\s\S]*?lastOperation/.test(playerJs), "Undo and authoring drafts must preserve the most recent operation target");
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode'), "Submit must validate unresolved sequences nested inside inverses");
 assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.includes('String(last.value) === "-1"'), "A digit entered after -1 must insert an implicit product");
-assert(playerJs.includes('String(value) === "x"') && playerJs.includes('sequence.builderOperators.push("prod")'), "Entering x after a completed value must insert an implicit product");
+assert(playerJs.includes('String(value) === "x"') && playerJs.includes('placeIntegratedBuilderOperationAtLowestLevel(builder, implicitOperation)'), "Entering x after a completed value must insert an implicit product at the lowest level");
 assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
-assert(/function enterIntegratedBuilderInverse[\s\S]*?needsImplicitProduct[\s\S]*?sequence\.builderOperators\.push\("prod"\)/.test(playerJs), "Entering an inverse after a completed value must insert an implicit product");
+assert(/function enterIntegratedBuilderInverse[\s\S]*?needsImplicitProduct[\s\S]*?placeIntegratedBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Entering an inverse after a completed value must insert an implicit product at the lowest level");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
@@ -282,13 +258,7 @@ assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must 
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
-assert(rendererJs.includes('builderRecentFill: "rgb(125, 55, 190)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat saturated-purple fill for the most recently entered item");
-assert(rendererJs.includes('builderRecentAlpha: 0.2') && rendererJs.includes('function drawBuilderRecentHighlightsToContext'), "Every purple Builder highlight must use the shared twenty-percent-opacity overlay");
-assert(rendererJs.includes('parent.type === "inv" && parent.isBuilderInverseOpen') && rendererJs.includes('node.builderOperators.length === node.args.length'), "Builder highlighting must distinguish a newly opened inverse input from a newly entered trailing operation");
-assert(/node\.isBuilderActive && \(node\.type === "inv" \|\| isNegativeUnit\(node\)\)[\s\S]{0,250}drawingContext\.fillRoundedRect/.test(rendererJs), "An exited inverse must receive a full overlay across its perimeter, denominator, numerator one, and fraction bar");
-assert(rendererJs.indexOf('drawBuilderRecentHighlightsToContext(root, drawingContext, settings);') > rendererJs.indexOf('drawOutlinesToContext(compiledOutlines, drawingContext);'), "Static Builder purple must be the final renderer layer");
-assert(/drawDemoSelectionPrompt\(\);[\s\S]{0,250}drawBuilderRecentHighlightsToContext\(expressionRoot, ctx, SETTINGS\);/.test(playerJs), "Interactive Builder purple must be the final workspace layer");
-assert(rendererJs.includes('const lastDigit = String(node.value).slice(-1)'), "Builder must highlight the newest digit rather than a future landing position");
+assert(!rendererJs.includes('builderRecentFill') && !rendererJs.includes('drawBuilderRecentHighlightsToContext') && !playerJs.includes('drawBuilderRecentHighlightsToContext'), "Expression Builder must not render purple entry highlighting");
 assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('builderPlaceholderBox'), "Builder layout must not retain future-entry placeholder boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
@@ -365,67 +335,13 @@ const activeVariableSequence = new renderer.ExprNode("sum", [activeVariable]);
 activeVariableSequence.isBuilderSequence = true;
 activeVariableSequence.builderOperators = [];
 renderer.layoutExpressionWithSettings(activeVariableSequence, fakeContext, renderer.SETTINGS, 20, 20);
-const makeHighlightContext = () => {
-  const calls = [];
-  return {
-    calls,
-    font: "20px Verdana",
-    save() {},
-    restore() {},
-    beginPath() {},
-    fill() { calls.push({ type: "fill" }); },
-    arc(...args) { calls.push({ type: "arc", args }); },
-    fillRect(...args) { calls.push({ type: "rect", args }); },
-    fillRoundedRect(...args) { calls.push({ type: "rounded", args }); },
-    measureText(text) {
-      return { width: String(text).length * 12, actualBoundingBoxLeft: 0, actualBoundingBoxRight: String(text).length * 12, actualBoundingBoxAscent: 15, actualBoundingBoxDescent: 5 };
-    }
-  };
-};
-const trailingOperationSequence = builderSequence([value("2")], ["sum"]);
-trailingOperationSequence.isBuilderCurrentSequence = true;
-renderer.layoutExpressionWithSettings(trailingOperationSequence, fakeContext, renderer.SETTINGS, 20, 20);
-const trailingOperationHighlight = makeHighlightContext();
-renderer.drawBuilderRecentHighlightsToContext(trailingOperationSequence, trailingOperationHighlight, renderer.SETTINGS);
-assert(trailingOperationHighlight.calls.filter(call => call.type === "arc").length === 1, "A newly entered operation must be the only purple-highlighted symbol");
-
-const emptyInverseSequence = builderSequence([], []);
-emptyInverseSequence.isBuilderCurrentSequence = true;
-const newlyOpenedInverse = new renderer.ExprNode("inv", [emptyInverseSequence]);
-newlyOpenedInverse.isBuilderInverseOpen = true;
-const newInverseOuterSequence = builderSequence([newlyOpenedInverse], []);
-renderer.layoutExpressionWithSettings(newInverseOuterSequence, fakeContext, renderer.SETTINGS, 20, 20);
-const emptyInverseHighlight = makeHighlightContext();
-renderer.drawBuilderRecentHighlightsToContext(newInverseOuterSequence, emptyInverseHighlight, renderer.SETTINGS);
-const emptyInputOverlays = emptyInverseHighlight.calls.filter(call => call.type === "rounded");
-assert(emptyInputOverlays.length === 1 && nearlyEqual(emptyInputOverlays[0].args[0], emptyInverseSequence.left()), "Opening an inverse must highlight only its empty input area");
-
-emptyInverseSequence.isBuilderCurrentSequence = false;
-newlyOpenedInverse.isBuilderInverseOpen = false;
-newlyOpenedInverse.isBuilderActive = true;
-newInverseOuterSequence.isBuilderCurrentSequence = true;
-const exitedInverseHighlight = makeHighlightContext();
-renderer.drawBuilderRecentHighlightsToContext(newInverseOuterSequence, exitedInverseHighlight, renderer.SETTINGS);
-const exitedInverseOverlays = exitedInverseHighlight.calls.filter(call => call.type === "rounded");
-assert(exitedInverseOverlays.length === 1 && nearlyEqual(exitedInverseOverlays[0].args[0], newlyOpenedInverse.left() - 3), "Exiting an inverse must move the highlight to the entire inverse unit");
-const groupedLastValue = value("34");
-groupedLastValue.isBuilderActive = true;
-const groupedEntry = new renderer.ExprNode("prod", [value("2"), groupedLastValue]);
-const groupedEntrySequence = builderSequence([groupedEntry], []);
-groupedEntrySequence.isBuilderCurrentSequence = true;
-renderer.layoutExpressionWithSettings(groupedEntrySequence, fakeContext, renderer.SETTINGS, 20, 20);
-const groupedEntryHighlight = makeHighlightContext();
-renderer.drawBuilderRecentHighlightsToContext(groupedEntrySequence, groupedEntryHighlight, renderer.SETTINGS);
-const groupedEntryOverlays = groupedEntryHighlight.calls.filter(call => call.type === "rect");
-assert(groupedEntryOverlays.length === 1 && nearlyEqual(groupedEntryOverlays[0].args[0], groupedLastValue.right() - 12), "Grouping must preserve the highlight on the actual last-entered digit inside the grouped structure");
-assert(/function clearIntegratedBuilderActiveState\(node\)[\s\S]{0,250}\(node\.args \|\| \[\]\)\.forEach\(clearIntegratedBuilderActiveState\)/.test(playerJs), "Entering the next symbol must recursively clear a prior highlight retained inside grouped structure");
 const inversePending = new renderer.ExprNode("inv", [pending]);
 inversePending.isBuilderInverseOpen = true;
 const outerPending = new renderer.ExprNode("sum", [inversePending]);
 outerPending.isBuilderSequence = true;
 outerPending.builderOperators = [];
 renderer.layoutExpressionWithSettings(outerPending, fakeContext, renderer.SETTINGS, 20, 20);
-assert(inversePending.args[0].layout.builderOperatorBoxes.length === 1, "Open inverses must retain a nested tappable builder sequence");
+assert(inversePending.args[0].layout.builderOperatorBoxes.length === 1, "Open inverses must retain their nested builder sequence");
 assert(inversePending.layout.width > inversePending.args[0].layout.width, "The inverse template must surround its pending contents");
 const inverseDiagonal = new renderer.ExprNode("sum", [value("2"), inversePending, value("x")]);
 inverseDiagonal.isBuilderSequence = true;
