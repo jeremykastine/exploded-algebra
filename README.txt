@@ -52,8 +52,9 @@ and empty-workspace clicks are ignored. The conventional steps remain visible
 above the controls and scroll vertically. Their Large, Medium, or Small text
 preference is responsive rather than a fixed pixel size: it refits after
 content, panel, viewport, device-input, and orientation changes without wrapping
-a step. In landscape, the steps panel snaps to exactly two rows and follows the
-current work at the bottom.
+a step. In student portrait mode and in landscape, the steps panel snaps to
+exactly its bottom two rows and follows the current work at the bottom whenever
+its content changes.
 The settings screen replaces the exploded-expression workspace while open. It
 provides controls for the responsive conventional-steps text preference and
 operation-bar appearance.

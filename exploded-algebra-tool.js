@@ -1436,6 +1436,10 @@ Promise.resolve().then(() => {
                 : window.innerWidth > window.innerHeight;
         }
 
+        function isStudentPortraitPanelLayout() {
+            return !authoringSessionActive && !isLandscapePanelLayout();
+        }
+
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
                 const setting = button.dataset.workspaceSetting;
@@ -1604,7 +1608,11 @@ Promise.resolve().then(() => {
                 twoRowHeight = getTwoRowPanelHeight(fittedSize);
             }
             appContainer.style.setProperty("--steps-two-row-height", `${twoRowHeight}px`);
-            if (isLandscapePanelLayout()) {
+            const shouldSnapToBottomTwoRows = isLandscapePanelLayout() || isStudentPortraitPanelLayout();
+            if (shouldSnapToBottomTwoRows) {
+                if (isStudentPortraitPanelLayout()) {
+                    setTopPanelHeight(twoRowHeight);
+                }
                 requestAnimationFrame(() => {
                     leftPanel.scrollTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);
                     applyResponsiveMainButtonSize();
@@ -4923,7 +4931,7 @@ Promise.resolve().then(() => {
                 const stepsPanelContentObserver = new MutationObserver(() => {
                     scheduleStepsFontSizeRecalculation();
                 });
-                stepsPanelContentObserver.observe(levelContent, {
+                stepsPanelContentObserver.observe(leftPanel, {
                     childList: true,
                     subtree: true,
                     characterData: true
