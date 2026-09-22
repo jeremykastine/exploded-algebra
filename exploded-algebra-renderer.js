@@ -61,8 +61,8 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
-    builderRecentFill: "rgb(112, 64, 160)",
-    builderRecentAlpha: 0.1,
+    builderRecentFill: "rgb(125, 55, 190)",
+    builderRecentAlpha: 0.2,
     builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
@@ -1251,10 +1251,10 @@ function drawBuilderRecentHighlightsToContext(node, drawingContext, settings) {
     }
 
     drawingContext.save();
-    drawingContext.fillStyle = settings.builderRecentFill || "rgb(112, 64, 160)";
+    drawingContext.fillStyle = settings.builderRecentFill || "rgb(125, 55, 190)";
     drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
         ? settings.builderRecentAlpha
-        : 0.1;
+        : 0.2;
     drawingContext.font = settings.textFont;
     node.args.forEach(child => {
         const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&

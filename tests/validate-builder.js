@@ -282,8 +282,8 @@ assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must 
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
-assert(rendererJs.includes('builderRecentFill: "rgb(112, 64, 160)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat dark-purple fill for the most recently entered item");
-assert(rendererJs.includes('builderRecentAlpha: 0.1') && rendererJs.includes('function drawBuilderRecentHighlightsToContext'), "Every purple Builder highlight must use the shared ten-percent-opacity overlay");
+assert(rendererJs.includes('builderRecentFill: "rgb(125, 55, 190)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat saturated-purple fill for the most recently entered item");
+assert(rendererJs.includes('builderRecentAlpha: 0.2') && rendererJs.includes('function drawBuilderRecentHighlightsToContext'), "Every purple Builder highlight must use the shared twenty-percent-opacity overlay");
 assert(rendererJs.includes('(child.isBuilderInverseOpen || child.isBuilderActive)') && /if \(child\.type === "inv" \|\| isNegativeUnit\(child\)\)[\s\S]{0,250}drawingContext\.fillRoundedRect/.test(rendererJs), "A highlighted inverse must receive a full overlay across its perimeter, denominator, numerator one, and fraction bar");
 assert(rendererJs.indexOf('drawBuilderRecentHighlightsToContext(root, drawingContext, settings);') > rendererJs.indexOf('drawOutlinesToContext(compiledOutlines, drawingContext);'), "Static Builder purple must be the final renderer layer");
 assert(/drawDemoSelectionPrompt\(\);[\s\S]{0,250}drawBuilderRecentHighlightsToContext\(expressionRoot, ctx, SETTINGS\);/.test(playerJs), "Interactive Builder purple must be the final workspace layer");
