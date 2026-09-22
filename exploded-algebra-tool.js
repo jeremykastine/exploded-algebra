@@ -4869,6 +4869,10 @@ Promise.resolve().then(() => {
                         downloadCurrentMoveHistory();
                         return;
                     }
+                    if (button.dataset.workspaceAction === "showNumericalRestrictions") {
+                        showNumericalRestrictionsPeek();
+                        return;
+                    }
                     if (button.dataset.workspaceAction === "authoringFinishRecording") {
                         notifyAuthoringHost("finish-recording");
                         return;
@@ -5013,6 +5017,11 @@ Promise.resolve().then(() => {
             scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
+                if (pressHoldPopover && !pressHoldPopover.classList.contains("hidden") &&
+                    !event.target.closest('[data-workspace-action="showNumericalRestrictions"]') &&
+                    !pressHoldPopover.contains(event.target)) {
+                    hidePressHoldPopover();
+                }
                 if (uiState.mode !== "inspect") {
                     return;
                 }
@@ -8146,6 +8155,18 @@ ctx.font = SETTINGS.textFont;
             });
             return items;
         }
+
+        function showNumericalRestrictionsPeek() {
+            if (!pressHoldPopover) return;
+            const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
+            pressHoldPopover.innerHTML = `
+                <div class="press-hold-popover-content">
+                    <span class="press-hold-popover-title">Numerical Manipulation</span>
+                    <ul class="numerical-permission-summary">${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+                </div>`;
+            pressHoldPopover.classList.remove("hidden");
+        }
+
 
         function greatestCommonDivisorBigInt(a, b) {
             let x = a < 0n ? -a : a;
