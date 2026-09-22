@@ -431,12 +431,16 @@
     curationStage = "select";
     curationSelectionIndex = 0;
     curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates || []));
-    curationKeepDecisions = curationSelectionSource.map(() => true);
+    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
+      index === 0 || index === curationSelectionSource.length - 1
+    );
     renderCurationTable();
   }
 
   function restartCurationSelection() {
-    curationKeepDecisions = curationSelectionSource.map(() => true);
+    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
+      index === 0 || index === curationSelectionSource.length - 1
+    );
     renderCurationTable();
   }
 
@@ -482,7 +486,6 @@
       <article class="step-selection-list card">
         <header class="step-selection-header">
           <h2>Choose Steps to Show</h2>
-          <button type="button" class="secondary-button restart-selection-button" data-curation-restart>Reset to Show All</button>
         </header>
         <div class="step-selection-rows">
           ${candidates.map((candidate, index) => {
@@ -492,8 +495,10 @@
                 <div class="step-selection-row-label">Step ${candidate.isInitial ? 0 : index}</div>
                 <div class="step-selection-expression" data-selection-expression="${index}" aria-label="Recorded expression for step ${candidate.isInitial ? 0 : index}"></div>
                 <div class="step-visibility-choice" role="radiogroup" aria-label="Visibility for step ${candidate.isInitial ? 0 : index}">
-                  <label><input type="radio" name="step-visibility-${index}" value="show"${shown ? " checked" : ""}> Show</label>
-                  <label><input type="radio" name="step-visibility-${index}" value="hide"${shown ? "" : " checked"}> Hide</label>
+                  ${index === 0 || index === candidates.length - 1
+                    ? '<span class="step-visibility-fixed">Show</span>'
+                    : `<label><input type="radio" name="step-visibility-${index}" value="show"${shown ? " checked" : ""}> Show</label>
+                       <label><input type="radio" name="step-visibility-${index}" value="hide"${shown ? "" : " checked"}> Hide</label>`}
                 </div>
               </section>`;
           }).join("")}
@@ -635,7 +640,9 @@
     curationStage = "select";
     curationSelectionIndex = 0;
     curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates));
-    curationKeepDecisions = curationSelectionSource.map(() => true);
+    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
+      index === 0 || index === curationSelectionSource.length - 1
+    );
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
@@ -760,11 +767,6 @@
       candidate[field] = event.target.value;
     });
     byId("curationTable").addEventListener("click", event => {
-      const restartButton = event.target.closest("[data-curation-restart]");
-      if (restartButton) {
-        restartCurationSelection();
-        return;
-      }
       const visibilityChoice = event.target.closest('input[type="radio"][name^="step-visibility-"]');
       if (visibilityChoice && curationStage === "select") {
         const row = visibilityChoice.closest("[data-selection-index]");
