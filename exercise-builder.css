@@ -135,6 +135,27 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-selection-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .step-selection-actions button { width: 100%; }
 .selection-decision-status { margin: 10px 0 0; color: var(--muted); text-align: center; font-weight: 700; }
+.step-selection-list { width: min(100%, 900px); margin: 0 auto; padding: clamp(16px, 3vw, 28px); }
+.step-selection-header h2 { margin: 0; font-size: 20px; }
+.step-selection-rows { display: grid; gap: 10px; margin-top: 18px; }
+.step-selection-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+.step-selection-row-label { font-weight: 800; white-space: nowrap; }
+.step-selection-row .step-selection-expression { margin: 0; }
+.step-visibility-choice { display: flex; gap: 10px; align-items: center; white-space: nowrap; }
+.step-visibility-choice label { display: inline-flex; gap: 5px; align-items: center; font-weight: 700; cursor: pointer; }
+.step-selection-finish { display: flex; justify-content: center; margin-top: 20px; }
+.step-selection-finish button { width: min(100%, 320px); }
+@media (max-width: 650px) {
+  .step-selection-row { grid-template-columns: 1fr; gap: 7px; }
+  .step-visibility-choice { justify-content: flex-start; }
+}
 .step-carousel { display: grid; gap: 14px; width: min(100%, 780px); margin: 0 auto; }
 .step-carousel-slide { min-width: 0; min-height: 430px; padding: clamp(16px, 3vw, 28px); }
 .step-slide-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
