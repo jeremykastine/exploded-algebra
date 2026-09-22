@@ -76,6 +76,12 @@ that same button, before the next value is entered, cycle it through the higher
 levels and back to the lowest. The former Move Up button's grid cell remains
 blank. Values, x, negative one, and inverses never insert an operation
 implicitly.
+The rightmost Builder column contains x in its top row, then a one-and-a-half-row
+multiplication button and a one-and-a-half-row addition button. The three-column
+number pad sits immediately to its left, with Inverse in the bottom-right keypad
+position. The two left control columns are unchanged. Level cycling flattens a
+lifted sum into an immediately surrounding sum, and likewise for products, while
+retaining meaningful grouping across unlike operations.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

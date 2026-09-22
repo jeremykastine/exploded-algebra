@@ -30,6 +30,7 @@ const functionNames = [
     "directBuilderOperationPrefix",
     "pathStartsWith",
     "makeDirectBuilderOperation",
+    "installLiftedDirectBuilderOperation",
     "combineDirectBuilderContext",
     "cycleDirectBuilderOperationToLowestLevel",
     "canMoveDirectBuilderOperationUp",
@@ -70,6 +71,17 @@ const makeBuilder = root => ({
 });
 const assertJsonEqual = (actual, expected, message) => {
     assert.equal(JSON.stringify(actual), JSON.stringify(expected), message);
+};
+const assertNoAdjacentMatchingOperations = node => {
+    if (!node || !Array.isArray(node.args)) return;
+    node.args.forEach(child => {
+        assert.notEqual(
+            child && child.type,
+            node.type === "sum" || node.type === "prod" ? node.type : "",
+            `A ${node.type} must not directly contain another ${node.type}`
+        );
+        assertNoAdjacentMatchingOperations(child);
+    });
 };
 
 const flattened = makeBuilder(value("2"));
@@ -112,10 +124,25 @@ assertJsonEqual(flattenedAfterMove.lastOperation, { path: [1, 1], index: 0 }, "A
 assert.equal(context.api.insertDirectBuilderOperation("sum"), true, "A repeated addition press must move the deepest pending operation across its surrounding product");
 context.api.setDirectBuilderCurrentValue(flattenedAfterMove, "5");
 assert.equal(flattenedAfterMove.root.type, "sum", "A moved operation must flatten when it reaches a matching exploded level");
-assert.equal(flattenedAfterMove.root.args.length, 2, "One press must cross exactly one surrounding level");
-assert.equal(flattenedAfterMove.root.args[1].type, "sum", "Moving must retain an explicit grouped sub-sum");
-assert.equal(flattenedAfterMove.root.args[1].args[0].type, "prod", "Moving the latest sum must preserve the product below it");
-assert.equal(flattenedAfterMove.root.args[1].args[1].value, "5", "The moved operation must retain its latest right input");
+assert.equal(flattenedAfterMove.root.args.length, 3, "A moved addition must flatten into the matching outer sum");
+assert.equal(flattenedAfterMove.root.args[1].type, "prod", "Moving the latest sum must preserve the product below it");
+assert.equal(flattenedAfterMove.root.args[2].value, "5", "The moved operation must retain its latest right input");
+assertNoAdjacentMatchingOperations(flattenedAfterMove.root);
+
+const sumInsideProduct = makeBuilder(new context.ExprNode("prod", [
+    value("2"),
+    new context.ExprNode("sum", [value("3"), value("4")], null)
+], null));
+sumInsideProduct.currentPath = [1, 1];
+context.uiState.expressionBuilder = sumInsideProduct;
+assert.equal(context.api.insertDirectBuilderOperation("prod"), true, "A multiplication must begin at the lowest level inside the sum");
+assert.equal(context.api.insertDirectBuilderOperation("prod"), true, "A repeated multiplication must lift into the matching outer product");
+context.api.setDirectBuilderCurrentValue(sumInsideProduct, "5");
+assert.equal(sumInsideProduct.root.type, "prod");
+assert.equal(sumInsideProduct.root.args.length, 3, "A lifted multiplication must flatten into the matching outer product");
+assert.equal(sumInsideProduct.root.args[1].type, "sum", "The intervening sum must retain its grouping inside the product");
+assert.equal(sumInsideProduct.root.args[2].value, "5");
+assertNoAdjacentMatchingOperations(sumInsideProduct.root);
 
 const groupedCycle = makeBuilder(new context.ExprNode("sum", [value("2"), value("3"), value("4")], null));
 groupedCycle.currentPath = [2];
@@ -149,6 +176,7 @@ assert.equal(context.api.isBuilderPlaceholder(groupedCycle.root.args[2].args[1])
 context.api.setDirectBuilderCurrentValue(groupedCycle, "5");
 assertJsonEqual(groupedCycle.root.args[2].args.map(node => node.value), ["4", "5"], "Entering the value after cycling must complete 2 + 3 + 4 × 5");
 assert.equal(groupedCycle.moveCycle, null, "Completing the cycle must clear its saved starting position");
+assertNoAdjacentMatchingOperations(groupedCycle.root);
 
 const inverseBuilder = makeBuilder(new context.ExprNode("inv", [value("2")], null));
 inverseBuilder.currentPath = [0];
@@ -163,6 +191,7 @@ assertJsonEqual(inverseBuilder.lastOperation, { path: [], index: 0 }, "Leaving a
 assert.equal(context.api.insertDirectBuilderOperation("sum"), true, "Another addition press must cycle the pending operation back inside the inverse");
 assert.equal(inverseBuilder.root.type, "inv");
 assert.equal(inverseBuilder.root.args[0].type, "sum");
+assertNoAdjacentMatchingOperations(inverseBuilder.root);
 
 const explicitOnly = makeBuilder(value("2"));
 context.uiState.expressionBuilder = explicitOnly;

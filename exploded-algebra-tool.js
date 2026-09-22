@@ -9987,6 +9987,29 @@ ctx.font = SETTINGS.textFont;
             return new ExprNode(type, args, null);
         }
 
+        function installLiftedDirectBuilderOperation(builder, path, lifted) {
+            const operationIndex = lifted.args.length - 2;
+            if (path.length > 0) {
+                const parentPath = path.slice(0, -1);
+                const childIndex = path[path.length - 1];
+                const parent = getNodeAtPath(builder.root, parentPath);
+                if (parent && parent.type === lifted.type) {
+                    parent.args.splice(childIndex, 1, ...lifted.args);
+                    const flattenedOperationIndex = childIndex + operationIndex;
+                    rememberIntegratedBuilderOperation(
+                        builder,
+                        parentPath,
+                        flattenedOperationIndex,
+                        true
+                    );
+                    return parentPath.concat(flattenedOperationIndex + 1);
+                }
+            }
+            builder.root = setNodeAtPath(builder.root, path, lifted);
+            rememberIntegratedBuilderOperation(builder, path, operationIndex, true);
+            return path.concat(operationIndex + 1);
+        }
+
         function combineDirectBuilderContext(type, left, right) {
             const args = [];
             if (left && left.type === type) {
@@ -10081,36 +10104,42 @@ ctx.font = SETTINGS.textFont;
                     left
                 );
                 const lifted = makeDirectBuilderOperation(latest.type, contextLeft, right);
-                containingNode.args.splice(operationIndex - 1, 2, lifted);
-                if (containingNode.args.length === 1) {
-                    builder.root = setNodeAtPath(builder.root, containingPath, lifted);
-                    newRightPath = containingPath.concat(lifted.args.length - 1);
+                if (containingNode.type === latest.type) {
+                    containingNode.args.splice(operationIndex - 1, 2, ...lifted.args);
+                    const flattenedOperationIndex = operationIndex + lifted.args.length - 3;
+                    newRightPath = containingPath.concat(flattenedOperationIndex + 1);
                     rememberIntegratedBuilderOperation(
                         builder,
                         containingPath,
-                        lifted.args.length - 2,
+                        flattenedOperationIndex,
                         true
                     );
                 } else {
-                    const liftedPath = containingPath.concat(operationIndex - 1);
-                    newRightPath = liftedPath.concat(lifted.args.length - 1);
-                    rememberIntegratedBuilderOperation(
-                        builder,
-                        liftedPath,
-                        lifted.args.length - 2,
-                        true
-                    );
+                    containingNode.args.splice(operationIndex - 1, 2, lifted);
+                    if (containingNode.args.length === 1) {
+                        newRightPath = installLiftedDirectBuilderOperation(
+                            builder,
+                            containingPath,
+                            lifted
+                        );
+                    } else {
+                        const liftedPath = containingPath.concat(operationIndex - 1);
+                        newRightPath = liftedPath.concat(lifted.args.length - 1);
+                        rememberIntegratedBuilderOperation(
+                            builder,
+                            liftedPath,
+                            lifted.args.length - 2,
+                            true
+                        );
+                    }
                 }
             } else {
                 containingNode.args[operationIndex] = left;
                 const lifted = makeDirectBuilderOperation(latest.type, containingNode, right);
-                builder.root = setNodeAtPath(builder.root, containingPath, lifted);
-                newRightPath = containingPath.concat(lifted.args.length - 1);
-                rememberIntegratedBuilderOperation(
+                newRightPath = installLiftedDirectBuilderOperation(
                     builder,
                     containingPath,
-                    lifted.args.length - 2,
-                    true
+                    lifted
                 );
             }
 
