@@ -431,20 +431,19 @@
     curationStage = "select";
     curationSelectionIndex = 0;
     curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates || []));
-    curationKeepDecisions = curationSelectionSource.map(() => null);
+    curationKeepDecisions = curationSelectionSource.map(() => true);
     renderCurationTable();
   }
 
   function restartCurationSelection() {
-    curationSelectionIndex = 0;
-    curationKeepDecisions = curationSelectionSource.map(() => null);
+    curationKeepDecisions = curationSelectionSource.map(() => true);
     renderCurationTable();
   }
 
   function finishCurationSelection() {
-    const kept = curationSelectionSource.filter((candidate, index) => curationKeepDecisions[index] === true);
+    const kept = curationSelectionSource.filter((candidate, index) => curationKeepDecisions[index] !== false);
     if (!kept.length) {
-      window.alert("Keep at least one recorded expression.");
+      window.alert("Show at least one recorded expression.");
       return;
     }
     const originalFirst = curationSelectionSource[0];
@@ -479,23 +478,36 @@
       container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
       return;
     }
-    curationSelectionIndex = Math.max(0, Math.min(curationSelectionIndex, candidates.length - 1));
-    const candidate = candidates[curationSelectionIndex];
-    const decision = curationKeepDecisions[curationSelectionIndex];
     container.innerHTML = `
-      <article class="step-selection-slide card" data-selection-index="${curationSelectionIndex}">
+      <article class="step-selection-list card">
         <header class="step-selection-header">
-          <span class="step-number">Step ${candidate.isInitial ? 0 : curationSelectionIndex}</span>
-          <button type="button" class="secondary-button restart-selection-button" data-curation-restart>Start Over</button>
+          <h2>Choose Steps to Show</h2>
+          <button type="button" class="secondary-button restart-selection-button" data-curation-restart>Reset to Show All</button>
         </header>
-        <div class="step-selection-expression" data-selection-expression aria-label="Recorded expression"></div>
-        <div class="step-selection-actions" role="group" aria-label="Keep or delete this step">
-          <button type="button" class="primary-button" data-curation-decision="keep">Keep</button>
-          <button type="button" class="secondary-button delete-step-button" data-curation-decision="delete">Delete</button>
+        <div class="step-selection-rows">
+          ${candidates.map((candidate, index) => {
+            const shown = curationKeepDecisions[index] !== false;
+            return `
+              <section class="step-selection-row" data-selection-index="${index}">
+                <div class="step-selection-row-label">Step ${candidate.isInitial ? 0 : index}</div>
+                <div class="step-selection-expression" data-selection-expression="${index}" aria-label="Recorded expression for step ${candidate.isInitial ? 0 : index}"></div>
+                <div class="step-visibility-choice" role="radiogroup" aria-label="Visibility for step ${candidate.isInitial ? 0 : index}">
+                  <label><input type="radio" name="step-visibility-${index}" value="show"${shown ? " checked" : ""}> Show</label>
+                  <label><input type="radio" name="step-visibility-${index}" value="hide"${shown ? "" : " checked"}> Hide</label>
+                </div>
+              </section>`;
+          }).join("")}
         </div>
-        ${decision === null ? "" : `<p class="selection-decision-status">Marked ${decision ? "Keep" : "Delete"}</p>`}
+        <div class="step-selection-finish">
+          <button type="button" class="primary-button" data-curation-finish-selection>Continue to Edit Steps</button>
+        </div>
       </article>`;
-    renderKatex(container.querySelector("[data-selection-expression]"), candidate.afterKatex || candidate.beforeKatex || candidate.expression);
+    candidates.forEach((candidate, index) => {
+      renderKatex(
+        container.querySelector(`[data-selection-expression="${index}"]`),
+        candidate.afterKatex || candidate.beforeKatex || candidate.expression
+      );
+    });
     byId("deleteStepButton").hidden = true;
     byId("completeExerciseButton").hidden = true;
   }
@@ -623,7 +635,7 @@
     curationStage = "select";
     curationSelectionIndex = 0;
     curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates));
-    curationKeepDecisions = curationSelectionSource.map(() => null);
+    curationKeepDecisions = curationSelectionSource.map(() => true);
     draft.recording.finalExpression = snapshot.currentExpression;
     draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
     draft.recording.finished = true;
@@ -753,15 +765,18 @@
         restartCurationSelection();
         return;
       }
-      const decisionButton = event.target.closest("[data-curation-decision]");
-      if (decisionButton && curationStage === "select") {
-        curationKeepDecisions[curationSelectionIndex] = decisionButton.dataset.curationDecision === "keep";
-        if (curationSelectionIndex < curationSelectionSource.length - 1) {
-          curationSelectionIndex += 1;
-          renderCurationTable();
-        } else {
-          finishCurationSelection();
+      const visibilityChoice = event.target.closest('input[type="radio"][name^="step-visibility-"]');
+      if (visibilityChoice && curationStage === "select") {
+        const row = visibilityChoice.closest("[data-selection-index]");
+        const index = Number(row && row.dataset.selectionIndex);
+        if (Number.isInteger(index) && index >= 0 && index < curationKeepDecisions.length) {
+          curationKeepDecisions[index] = visibilityChoice.value === "show";
         }
+        return;
+      }
+      const finishSelectionButton = event.target.closest("[data-curation-finish-selection]");
+      if (finishSelectionButton && curationStage === "select") {
+        finishCurationSelection();
         return;
       }
       const modeButton = event.target.closest("[data-curation-mode]");
