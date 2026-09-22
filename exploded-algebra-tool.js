@@ -9755,9 +9755,15 @@ ctx.font = SETTINGS.textFont;
             return !sequence || sequence.args.length === 0 || sequence.builderOperators.length >= sequence.args.length;
         }
 
+        function clearIntegratedBuilderActiveState(node) {
+            if (!node) return;
+            node.isBuilderActive = false;
+            (node.args || []).forEach(clearIntegratedBuilderActiveState);
+        }
+
         function finalizeIntegratedBuilderValue(sequence) {
             const last = sequence && sequence.args[sequence.args.length - 1];
-            if (last) last.isBuilderActive = false;
+            clearIntegratedBuilderActiveState(last);
         }
 
         function appendIntegratedBuilderDigit(digit) {
@@ -9974,8 +9980,6 @@ ctx.font = SETTINGS.textFont;
             const right = sequence.args[index + 1];
             if (!left || !right) return false;
             pushExpressionBuilderUndoState();
-            left.isBuilderActive = false;
-            right.isBuilderActive = false;
             sequence.args.splice(index, 2, flattenIntegratedBuilderOperation(type, left, right));
             sequence.builderOperators.splice(index, 1);
             const relocatedActivePath = findNodePathByReference(builder.root, activeSequence);

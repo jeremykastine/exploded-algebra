@@ -1239,14 +1239,21 @@ function drawNodeRecursiveToContext(
     );
 }
 
-function drawBuilderRecentHighlightsToContext(node, drawingContext, settings) {
+function drawBuilderRecentHighlightsToContext(node, drawingContext, settings, parent = null) {
     if (!node) {
         return;
     }
     for (const child of node.args || []) {
-        drawBuilderRecentHighlightsToContext(child, drawingContext, settings);
+        drawBuilderRecentHighlightsToContext(child, drawingContext, settings, node);
     }
-    if (!node.isBuilderSequence) {
+    const emptyInverseInput = node.isBuilderSequence && node.isBuilderCurrentSequence &&
+        node.args.length === 0 && parent && parent.type === "inv" && parent.isBuilderInverseOpen;
+    const trailingOperationIndex = node.isBuilderSequence ? node.args.length - 1 : -1;
+    const trailingOperationBox = node.isBuilderSequence && node.isBuilderCurrentSequence &&
+        trailingOperationIndex >= 0 && node.builderOperators.length === node.args.length
+        ? (node.layout.builderOperatorBoxes || [])[trailingOperationIndex]
+        : null;
+    if (!node.isBuilderActive && !emptyInverseInput && !trailingOperationBox) {
         return;
     }
 
@@ -1256,39 +1263,51 @@ function drawBuilderRecentHighlightsToContext(node, drawingContext, settings) {
         ? settings.builderRecentAlpha
         : 0.2;
     drawingContext.font = settings.textFont;
-    node.args.forEach(child => {
-        const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
-            child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
-        const highlightedInverse = child.type === "inv" &&
-            (child.isBuilderInverseOpen || child.isBuilderActive);
-        if (!child.isBuilderActive && !freshInverse && !highlightedInverse) {
-            return;
-        }
-        if (child.type === "value" && /^\d+$/.test(String(child.value))) {
-            const lastDigit = String(child.value).slice(-1);
-            const digitMetrics = drawingContext.measureText(lastDigit);
-            const digitWidth = Math.max(1, digitMetrics.width || 0);
-            drawingContext.fillRect(
-                child.right() - digitWidth,
-                child.top(),
-                digitWidth,
-                child.layout.height
-            );
-            return;
-        }
-        if (child.type === "inv" || isNegativeUnit(child)) {
-            const highlightPadding = 3;
-            drawingContext.fillRoundedRect(
-                child.left() - highlightPadding,
-                child.top() - highlightPadding,
-                child.layout.width + highlightPadding * 2,
-                child.layout.height + highlightPadding * 2,
-                4
-            );
-            return;
-        }
-        drawingContext.fillRect(child.left(), child.top(), child.layout.width, child.layout.height);
-    });
+
+    if (emptyInverseInput) {
+        drawingContext.fillRoundedRect(
+            node.left(),
+            node.top(),
+            node.layout.width,
+            node.layout.height,
+            4
+        );
+    }
+
+    if (trailingOperationBox) {
+        drawingContext.beginPath();
+        drawingContext.arc(
+            trailingOperationBox.x + trailingOperationBox.width / 2,
+            trailingOperationBox.y + trailingOperationBox.height / 2,
+            trailingOperationBox.width / 2,
+            0,
+            Math.PI * 2
+        );
+        drawingContext.fill();
+    }
+
+    if (node.isBuilderActive && node.type === "value" && /^\d+$/.test(String(node.value))) {
+        const lastDigit = String(node.value).slice(-1);
+        const digitMetrics = drawingContext.measureText(lastDigit);
+        const digitWidth = Math.max(1, digitMetrics.width || 0);
+        drawingContext.fillRect(
+            node.right() - digitWidth,
+            node.top(),
+            digitWidth,
+            node.layout.height
+        );
+    } else if (node.isBuilderActive && (node.type === "inv" || isNegativeUnit(node))) {
+        const highlightPadding = 3;
+        drawingContext.fillRoundedRect(
+            node.left() - highlightPadding,
+            node.top() - highlightPadding,
+            node.layout.width + highlightPadding * 2,
+            node.layout.height + highlightPadding * 2,
+            4
+        );
+    } else if (node.isBuilderActive && !node.isBuilderSequence) {
+        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
+    }
     drawingContext.restore();
 }
 

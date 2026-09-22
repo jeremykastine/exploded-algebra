@@ -284,10 +284,11 @@ assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unres
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
 assert(rendererJs.includes('builderRecentFill: "rgb(125, 55, 190)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat saturated-purple fill for the most recently entered item");
 assert(rendererJs.includes('builderRecentAlpha: 0.2') && rendererJs.includes('function drawBuilderRecentHighlightsToContext'), "Every purple Builder highlight must use the shared twenty-percent-opacity overlay");
-assert(rendererJs.includes('(child.isBuilderInverseOpen || child.isBuilderActive)') && /if \(child\.type === "inv" \|\| isNegativeUnit\(child\)\)[\s\S]{0,250}drawingContext\.fillRoundedRect/.test(rendererJs), "A highlighted inverse must receive a full overlay across its perimeter, denominator, numerator one, and fraction bar");
+assert(rendererJs.includes('parent.type === "inv" && parent.isBuilderInverseOpen') && rendererJs.includes('node.builderOperators.length === node.args.length'), "Builder highlighting must distinguish a newly opened inverse input from a newly entered trailing operation");
+assert(/node\.isBuilderActive && \(node\.type === "inv" \|\| isNegativeUnit\(node\)\)[\s\S]{0,250}drawingContext\.fillRoundedRect/.test(rendererJs), "An exited inverse must receive a full overlay across its perimeter, denominator, numerator one, and fraction bar");
 assert(rendererJs.indexOf('drawBuilderRecentHighlightsToContext(root, drawingContext, settings);') > rendererJs.indexOf('drawOutlinesToContext(compiledOutlines, drawingContext);'), "Static Builder purple must be the final renderer layer");
 assert(/drawDemoSelectionPrompt\(\);[\s\S]{0,250}drawBuilderRecentHighlightsToContext\(expressionRoot, ctx, SETTINGS\);/.test(playerJs), "Interactive Builder purple must be the final workspace layer");
-assert(rendererJs.includes('const lastDigit = String(child.value).slice(-1)'), "Builder must highlight the newest digit rather than a future landing position");
+assert(rendererJs.includes('const lastDigit = String(node.value).slice(-1)'), "Builder must highlight the newest digit rather than a future landing position");
 assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('builderPlaceholderBox'), "Builder layout must not retain future-entry placeholder boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
@@ -364,6 +365,60 @@ const activeVariableSequence = new renderer.ExprNode("sum", [activeVariable]);
 activeVariableSequence.isBuilderSequence = true;
 activeVariableSequence.builderOperators = [];
 renderer.layoutExpressionWithSettings(activeVariableSequence, fakeContext, renderer.SETTINGS, 20, 20);
+const makeHighlightContext = () => {
+  const calls = [];
+  return {
+    calls,
+    font: "20px Verdana",
+    save() {},
+    restore() {},
+    beginPath() {},
+    fill() { calls.push({ type: "fill" }); },
+    arc(...args) { calls.push({ type: "arc", args }); },
+    fillRect(...args) { calls.push({ type: "rect", args }); },
+    fillRoundedRect(...args) { calls.push({ type: "rounded", args }); },
+    measureText(text) {
+      return { width: String(text).length * 12, actualBoundingBoxLeft: 0, actualBoundingBoxRight: String(text).length * 12, actualBoundingBoxAscent: 15, actualBoundingBoxDescent: 5 };
+    }
+  };
+};
+const trailingOperationSequence = builderSequence([value("2")], ["sum"]);
+trailingOperationSequence.isBuilderCurrentSequence = true;
+renderer.layoutExpressionWithSettings(trailingOperationSequence, fakeContext, renderer.SETTINGS, 20, 20);
+const trailingOperationHighlight = makeHighlightContext();
+renderer.drawBuilderRecentHighlightsToContext(trailingOperationSequence, trailingOperationHighlight, renderer.SETTINGS);
+assert(trailingOperationHighlight.calls.filter(call => call.type === "arc").length === 1, "A newly entered operation must be the only purple-highlighted symbol");
+
+const emptyInverseSequence = builderSequence([], []);
+emptyInverseSequence.isBuilderCurrentSequence = true;
+const newlyOpenedInverse = new renderer.ExprNode("inv", [emptyInverseSequence]);
+newlyOpenedInverse.isBuilderInverseOpen = true;
+const newInverseOuterSequence = builderSequence([newlyOpenedInverse], []);
+renderer.layoutExpressionWithSettings(newInverseOuterSequence, fakeContext, renderer.SETTINGS, 20, 20);
+const emptyInverseHighlight = makeHighlightContext();
+renderer.drawBuilderRecentHighlightsToContext(newInverseOuterSequence, emptyInverseHighlight, renderer.SETTINGS);
+const emptyInputOverlays = emptyInverseHighlight.calls.filter(call => call.type === "rounded");
+assert(emptyInputOverlays.length === 1 && nearlyEqual(emptyInputOverlays[0].args[0], emptyInverseSequence.left()), "Opening an inverse must highlight only its empty input area");
+
+emptyInverseSequence.isBuilderCurrentSequence = false;
+newlyOpenedInverse.isBuilderInverseOpen = false;
+newlyOpenedInverse.isBuilderActive = true;
+newInverseOuterSequence.isBuilderCurrentSequence = true;
+const exitedInverseHighlight = makeHighlightContext();
+renderer.drawBuilderRecentHighlightsToContext(newInverseOuterSequence, exitedInverseHighlight, renderer.SETTINGS);
+const exitedInverseOverlays = exitedInverseHighlight.calls.filter(call => call.type === "rounded");
+assert(exitedInverseOverlays.length === 1 && nearlyEqual(exitedInverseOverlays[0].args[0], newlyOpenedInverse.left() - 3), "Exiting an inverse must move the highlight to the entire inverse unit");
+const groupedLastValue = value("34");
+groupedLastValue.isBuilderActive = true;
+const groupedEntry = new renderer.ExprNode("prod", [value("2"), groupedLastValue]);
+const groupedEntrySequence = builderSequence([groupedEntry], []);
+groupedEntrySequence.isBuilderCurrentSequence = true;
+renderer.layoutExpressionWithSettings(groupedEntrySequence, fakeContext, renderer.SETTINGS, 20, 20);
+const groupedEntryHighlight = makeHighlightContext();
+renderer.drawBuilderRecentHighlightsToContext(groupedEntrySequence, groupedEntryHighlight, renderer.SETTINGS);
+const groupedEntryOverlays = groupedEntryHighlight.calls.filter(call => call.type === "rect");
+assert(groupedEntryOverlays.length === 1 && nearlyEqual(groupedEntryOverlays[0].args[0], groupedLastValue.right() - 12), "Grouping must preserve the highlight on the actual last-entered digit inside the grouped structure");
+assert(/function clearIntegratedBuilderActiveState\(node\)[\s\S]{0,250}\(node\.args \|\| \[\]\)\.forEach\(clearIntegratedBuilderActiveState\)/.test(playerJs), "Entering the next symbol must recursively clear a prior highlight retained inside grouped structure");
 const inversePending = new renderer.ExprNode("inv", [pending]);
 inversePending.isBuilderInverseOpen = true;
 const outerPending = new renderer.ExprNode("sum", [inversePending]);
