@@ -3,9 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
+const indexHtml = fs.readFileSync(path.resolve(__dirname, "..", "index.html"), "utf8");
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 
+assert(/<p class="last-updated">Last updated: <time datetime="[^"]+">[^<]+ (?:EDT|EST)<\/time><\/p>/.test(indexHtml), "The index must show its last-updated date and Eastern time at the top");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }'));
