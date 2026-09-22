@@ -1654,6 +1654,17 @@ Promise.resolve().then(() => {
             return cloned;
         }
 
+        function cloneBuilderMoveCycle(cycle) {
+            if (!cycle || !cycle.root || !cycle.operation) return null;
+            return {
+                root: cloneBuilderNodeForHistory(cycle.root),
+                operation: {
+                    path: cycle.operation.path.slice(),
+                    index: cycle.operation.index
+                }
+            };
+        }
+
         function isIntegratedExpressionBuilder(builder = uiState.expressionBuilder) {
             return !!builder && builder.flowVersion >= 3;
         }
@@ -1670,7 +1681,8 @@ Promise.resolve().then(() => {
                     lastOperation: builder.lastOperation ? {
                         path: builder.lastOperation.path.slice(),
                         index: builder.lastOperation.index
-                    } : null
+                    } : null,
+                    moveCycle: cloneBuilderMoveCycle(builder.moveCycle)
                 };
             }
             return {
@@ -1728,6 +1740,7 @@ Promise.resolve().then(() => {
                     path: snapshot.lastOperation.path.slice(),
                     index: snapshot.lastOperation.index
                 } : null;
+                builder.moveCycle = cloneBuilderMoveCycle(snapshot.moveCycle);
                 expressionRoot = builder.root;
                 clearSelection();
                 uiState.message = "";
@@ -4548,6 +4561,28 @@ Promise.resolve().then(() => {
             return node;
         }
 
+        function serializeBuilderMoveCycle(cycle) {
+            if (!cycle || !cycle.root || !cycle.operation) return null;
+            return {
+                root: serializeBuilderNode(cycle.root),
+                operation: {
+                    path: cycle.operation.path.slice(),
+                    index: cycle.operation.index
+                }
+            };
+        }
+
+        function reviveBuilderMoveCycle(cycle) {
+            if (!cycle || !cycle.root || !cycle.operation) return null;
+            return {
+                root: reviveBuilderNode(cycle.root),
+                operation: {
+                    path: Array.isArray(cycle.operation.path) ? cycle.operation.path.slice() : [],
+                    index: Number(cycle.operation.index)
+                }
+            };
+        }
+
         function serializeExpressionState(snapshot) {
             if (!snapshot || !snapshot.root) {
                 return null;
@@ -4599,6 +4634,7 @@ Promise.resolve().then(() => {
                         path: Array.isArray(builderDraft.lastOperation.path) ? builderDraft.lastOperation.path.slice() : [],
                         index: Number(builderDraft.lastOperation.index)
                     } : null;
+                    builder.moveCycle = reviveBuilderMoveCycle(builderDraft.moveCycle);
                     builder.history = Array.isArray(builderDraft.history)
                         ? builderDraft.history.map(snapshot => ({
                             root: reviveBuilderNode(snapshot.root),
@@ -4606,7 +4642,8 @@ Promise.resolve().then(() => {
                             lastOperation: snapshot.lastOperation ? {
                                 path: Array.isArray(snapshot.lastOperation.path) ? snapshot.lastOperation.path.slice() : [],
                                 index: Number(snapshot.lastOperation.index)
-                            } : null
+                            } : null,
+                            moveCycle: reviveBuilderMoveCycle(snapshot.moveCycle)
                         }))
                         : [];
                     expressionRoot = builder.root;
@@ -4704,13 +4741,15 @@ Promise.resolve().then(() => {
                         path: builder.lastOperation.path.slice(),
                         index: builder.lastOperation.index
                     } : null,
+                    moveCycle: serializeBuilderMoveCycle(builder.moveCycle),
                     history: (builder.history || []).map(snapshot => ({
                         root: serializeBuilderNode(snapshot.root),
                         currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : [],
                         lastOperation: snapshot.lastOperation ? {
                             path: snapshot.lastOperation.path.slice(),
                             index: snapshot.lastOperation.index
-                        } : null
+                        } : null,
+                        moveCycle: serializeBuilderMoveCycle(snapshot.moveCycle)
                     }))
                 } : null,
                 recorder: solutionRecorder ? clonePlainData(solutionRecorder) : null,
@@ -9939,16 +9978,75 @@ ctx.font = SETTINGS.textFont;
             return path.length >= prefix.length && prefix.every((value, index) => path[index] === value);
         }
 
+        function makeDirectBuilderOperation(type, left, right) {
+            const args = left && left.type === type ? left.args.slice() : [left];
+            args.push(right);
+            return new ExprNode(type, args, null);
+        }
+
+        function combineDirectBuilderContext(type, left, right) {
+            const args = [];
+            if (left && left.type === type) {
+                args.push(...left.args);
+            } else {
+                args.push(left);
+            }
+            if (right && right.type === type) {
+                args.push(...right.args);
+            } else {
+                args.push(right);
+            }
+            return new ExprNode(type, args, null);
+        }
+
+        function cycleDirectBuilderOperationToLowestLevel(builder, latest) {
+            const cycle = cloneBuilderMoveCycle(builder.moveCycle);
+            if (!cycle) return false;
+
+            const rightPath = latest.path.concat(latest.index + 1);
+            const currentRemainder = pathStartsWith(builder.currentPath, rightPath)
+                ? builder.currentPath.slice(rightPath.length)
+                : [];
+            const right = latest.operation.args[latest.index + 1];
+            const restoredRoot = cycle.root;
+            const restoredOperation = getNodeAtPath(restoredRoot, cycle.operation.path);
+            if (!restoredOperation || !["sum", "prod"].includes(restoredOperation.type) ||
+                cycle.operation.index < 0 || cycle.operation.index >= restoredOperation.args.length - 1) {
+                return false;
+            }
+
+            pushExpressionBuilderUndoState();
+            restoredOperation.args[cycle.operation.index + 1] = right;
+            builder.root = restoredRoot;
+            builder.currentPath = cycle.operation.path
+                .concat(cycle.operation.index + 1)
+                .concat(currentRemainder);
+            builder.moveCycle = null;
+            rememberIntegratedBuilderOperation(
+                builder,
+                cycle.operation.path,
+                cycle.operation.index,
+                true
+            );
+            expressionRoot = builder.root;
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
         function canMoveDirectBuilderOperationUp(builder = uiState.expressionBuilder) {
             const latest = getDirectBuilderLastOperation(builder);
-            return !!latest && latest.path.length > 0 &&
-                latest.index === latest.operation.args.length - 2;
+            return !!latest && latest.index === latest.operation.args.length - 2 &&
+                (latest.path.length > 0 || !!builder.moveCycle);
         }
 
         function moveDirectBuilderOperationUp() {
             const builder = uiState.expressionBuilder;
             const latest = getDirectBuilderLastOperation(builder);
             if (!latest || !canMoveDirectBuilderOperationUp(builder)) return false;
+
+            if (latest.path.length === 0) {
+                return cycleDirectBuilderOperationToLowestLevel(builder, latest);
+            }
 
             const rightPath = latest.path.concat(latest.index + 1);
             const currentRemainder = pathStartsWith(builder.currentPath, rightPath)
@@ -9962,33 +10060,55 @@ ctx.font = SETTINGS.textFont;
             if (!containingNode || !Array.isArray(containingNode.args)) return false;
 
             pushExpressionBuilderUndoState();
-            containingNode.args[operationIndex] = left;
+            if (!builder.moveCycle) {
+                builder.moveCycle = {
+                    root: cloneBuilderNodeForHistory(builder.root),
+                    operation: {
+                        path: latest.path.slice(),
+                        index: latest.index
+                    }
+                };
+            }
+
             let newRightPath;
-            if (containingNode.type === latest.type && operationIndex === containingNode.args.length - 1) {
-                const latestSeparator = containingNode.args.length - 1;
-                containingNode.args.push(right);
-                newRightPath = containingPath.concat(containingNode.args.length - 1);
-                rememberIntegratedBuilderOperation(builder, containingPath, latestSeparator);
-            } else if (containingPath.length > 0) {
-                const parentPath = containingPath.slice(0, -1);
-                const containingIndex = containingPath[containingPath.length - 1];
-                const parent = getNodeAtPath(builder.root, parentPath);
-                if (parent && parent.type === latest.type && containingIndex === parent.args.length - 1) {
-                    const latestSeparator = parent.args.length - 1;
-                    parent.args.push(right);
-                    newRightPath = parentPath.concat(parent.args.length - 1);
-                    rememberIntegratedBuilderOperation(builder, parentPath, latestSeparator);
-                } else {
-                    const lifted = new ExprNode(latest.type, [containingNode, right], null);
+            if (["sum", "prod"].includes(containingNode.type) && operationIndex > 0) {
+                const contextLeft = combineDirectBuilderContext(
+                    containingNode.type,
+                    containingNode.args[operationIndex - 1],
+                    left
+                );
+                const lifted = makeDirectBuilderOperation(latest.type, contextLeft, right);
+                containingNode.args.splice(operationIndex - 1, 2, lifted);
+                if (containingNode.args.length === 1) {
                     builder.root = setNodeAtPath(builder.root, containingPath, lifted);
-                    newRightPath = containingPath.concat(1);
-                    rememberIntegratedBuilderOperation(builder, containingPath, 0);
+                    newRightPath = containingPath.concat(lifted.args.length - 1);
+                    rememberIntegratedBuilderOperation(
+                        builder,
+                        containingPath,
+                        lifted.args.length - 2,
+                        true
+                    );
+                } else {
+                    const liftedPath = containingPath.concat(operationIndex - 1);
+                    newRightPath = liftedPath.concat(lifted.args.length - 1);
+                    rememberIntegratedBuilderOperation(
+                        builder,
+                        liftedPath,
+                        lifted.args.length - 2,
+                        true
+                    );
                 }
             } else {
-                const lifted = new ExprNode(latest.type, [containingNode, right], null);
-                builder.root = lifted;
-                newRightPath = [1];
-                rememberIntegratedBuilderOperation(builder, [], 0);
+                containingNode.args[operationIndex] = left;
+                const lifted = makeDirectBuilderOperation(latest.type, containingNode, right);
+                builder.root = setNodeAtPath(builder.root, containingPath, lifted);
+                newRightPath = containingPath.concat(lifted.args.length - 1);
+                rememberIntegratedBuilderOperation(
+                    builder,
+                    containingPath,
+                    lifted.args.length - 2,
+                    true
+                );
             }
 
             builder.currentPath = newRightPath.concat(currentRemainder);
@@ -10005,11 +10125,14 @@ ctx.font = SETTINGS.textFont;
             return sequence.builderOperators.every(operator => operator === type) ? type : null;
         }
 
-        function rememberIntegratedBuilderOperation(builder, path, index) {
+        function rememberIntegratedBuilderOperation(builder, path, index, preserveMoveCycle = false) {
             builder.lastOperation = {
                 path: path.slice(),
                 index
             };
+            if (!preserveMoveCycle) {
+                builder.moveCycle = null;
+            }
         }
 
         function placeIntegratedBuilderOperationAtLowestLevel(builder, type) {
@@ -10422,7 +10545,8 @@ ctx.font = SETTINGS.textFont;
                     flowVersion: 5,
                     root: makePlaceholderNode(),
                     currentPath: [],
-                    lastOperation: null
+                    lastOperation: null,
+                    moveCycle: null
                 };
                 expressionRoot = uiState.expressionBuilder.root;
                 clearSelection();
