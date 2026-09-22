@@ -63,6 +63,7 @@ const SETTINGS = {
     builderPlaceholderHeight: 20,
     builderRecentFill: "rgb(231, 218, 244)",
     builderRecentForeground: "rgb(112, 64, 160)",
+    builderRecentAlpha: 0.5,
     builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
@@ -1170,6 +1171,9 @@ function drawNodeRecursiveToContext(
             drawingContext.fill();
         });
         drawingContext.fillStyle = recentFill;
+        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
+            ? settings.builderRecentAlpha
+            : 0.5;
         drawingContext.font = settings.textFont;
         node.args.forEach(child => {
             const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
@@ -1286,6 +1290,11 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
     const builderFill = settings.builderRecentFill || "rgb(231, 218, 244)";
 
     drawingContext.save();
+    if (builderHighlighted) {
+        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
+            ? settings.builderRecentAlpha
+            : 0.5;
+    }
     drawingContext.fillStyle = builderHighlighted
         ? builderFill
         : settings.inverseFillColor || "black";
@@ -1318,6 +1327,11 @@ function drawInverseForegroundToContext(node, drawingContext, settings) {
     const barThickness = node.layout.inverseBarThickness || getInverseBarThickness(settings);
 
     drawingContext.save();
+    if (builderHighlighted) {
+        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
+            ? settings.builderRecentAlpha
+            : 0.5;
+    }
     drawingContext.fillStyle = operatorColor;
     drawingContext.fillText("1", numeratorCenterX, numeratorCenterY);
     drawingContext.fillRect(barLeft, barTop, barWidth, barThickness);
