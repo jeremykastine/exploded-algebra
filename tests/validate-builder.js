@@ -282,9 +282,11 @@ assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must 
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
-assert(rendererJs.includes('builderRecentFill: "rgb(231, 218, 244)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat light-purple fill for the most recently entered item");
-assert(rendererJs.includes('builderRecentAlpha: 0.5') && rendererJs.match(/drawingContext\.globalAlpha = Number\.isFinite\(settings\.builderRecentAlpha\)/g).length >= 3, "Every purple Builder highlight, including inverse fills and symbols, must use the shared half-opacity setting");
-assert(rendererJs.includes('node.isBuilderInverseOpen || node.isBuilderActive') && rendererJs.includes('settings.builderRecentForeground || "rgb(112, 64, 160)"'), "A highlighted inverse must tint its perimeter, denominator, numerator one, and fraction bar purple");
+assert(rendererJs.includes('builderRecentFill: "rgb(112, 64, 160)"') && !rendererJs.includes('builderPotentialFill'), "Builder must use one flat dark-purple fill for the most recently entered item");
+assert(rendererJs.includes('builderRecentAlpha: 0.1') && rendererJs.includes('function drawBuilderRecentHighlightsToContext'), "Every purple Builder highlight must use the shared ten-percent-opacity overlay");
+assert(rendererJs.includes('(child.isBuilderInverseOpen || child.isBuilderActive)') && /if \(child\.type === "inv" \|\| isNegativeUnit\(child\)\)[\s\S]{0,250}drawingContext\.fillRoundedRect/.test(rendererJs), "A highlighted inverse must receive a full overlay across its perimeter, denominator, numerator one, and fraction bar");
+assert(rendererJs.indexOf('drawBuilderRecentHighlightsToContext(root, drawingContext, settings);') > rendererJs.indexOf('drawOutlinesToContext(compiledOutlines, drawingContext);'), "Static Builder purple must be the final renderer layer");
+assert(/drawDemoSelectionPrompt\(\);[\s\S]{0,250}drawBuilderRecentHighlightsToContext\(expressionRoot, ctx, SETTINGS\);/.test(playerJs), "Interactive Builder purple must be the final workspace layer");
 assert(rendererJs.includes('const lastDigit = String(child.value).slice(-1)'), "Builder must highlight the newest digit rather than a future landing position");
 assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('builderPlaceholderBox'), "Builder layout must not retain future-entry placeholder boxes");
 assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");

@@ -5916,6 +5916,10 @@ ctx.font = SETTINGS.textFont;
 
             drawDemoSelectionPrompt();
 
+            if (integratedBuilder && expressionRoot.isBuilderSequence) {
+                drawBuilderRecentHighlightsToContext(expressionRoot, ctx, SETTINGS);
+            }
+
         }
 
         function drawSelectionAndPreview() {

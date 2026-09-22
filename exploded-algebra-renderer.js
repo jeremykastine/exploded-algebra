@@ -61,9 +61,8 @@ const SETTINGS = {
     operationBarShading: "gradient",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
-    builderRecentFill: "rgb(231, 218, 244)",
-    builderRecentForeground: "rgb(112, 64, 160)",
-    builderRecentAlpha: 0.5,
+    builderRecentFill: "rgb(112, 64, 160)",
+    builderRecentAlpha: 0.1,
     builderOperationFill: "rgb(235, 235, 235)",
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
@@ -1156,7 +1155,6 @@ function drawNodeRecursiveToContext(
     separatorForeground = () => null
 ) {
     if (node.isBuilderSequence) {
-        const recentFill = settings.builderRecentFill || "rgb(231, 218, 244)";
         drawingContext.save();
         drawingContext.fillStyle = settings.builderOperationFill || "rgb(235, 235, 235)";
         (node.layout.builderOperatorBoxes || []).forEach(box => {
@@ -1169,44 +1167,6 @@ function drawNodeRecursiveToContext(
                 Math.PI * 2
             );
             drawingContext.fill();
-        });
-        drawingContext.fillStyle = recentFill;
-        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
-            ? settings.builderRecentAlpha
-            : 0.5;
-        drawingContext.font = settings.textFont;
-        node.args.forEach(child => {
-            const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
-                child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
-            const highlightedInverse = child.type === "inv" &&
-                (child.isBuilderInverseOpen || child.isBuilderActive);
-            if (!child.isBuilderActive && !freshInverse && !highlightedInverse) {
-                return;
-            }
-            if (child.type === "value" && /^\d+$/.test(String(child.value))) {
-                const lastDigit = String(child.value).slice(-1);
-                const digitMetrics = drawingContext.measureText(lastDigit);
-                const digitWidth = Math.max(1, digitMetrics.width || 0);
-                drawingContext.fillRect(
-                    child.right() - digitWidth,
-                    child.top(),
-                    digitWidth,
-                    child.layout.height
-                );
-                return;
-            }
-            if (child.type === "inv" || isNegativeUnit(child)) {
-                const highlightPadding = 3;
-                drawingContext.fillRoundedRect(
-                    child.left() - highlightPadding,
-                    child.top() - highlightPadding,
-                    child.layout.width + highlightPadding * 2,
-                    child.layout.height + highlightPadding * 2,
-                    4
-                );
-                return;
-            }
-            drawingContext.fillRect(child.left(), child.top(), child.layout.width, child.layout.height);
         });
         drawingContext.restore();
         for (const child of node.args) {
@@ -1279,6 +1239,59 @@ function drawNodeRecursiveToContext(
     );
 }
 
+function drawBuilderRecentHighlightsToContext(node, drawingContext, settings) {
+    if (!node) {
+        return;
+    }
+    for (const child of node.args || []) {
+        drawBuilderRecentHighlightsToContext(child, drawingContext, settings);
+    }
+    if (!node.isBuilderSequence) {
+        return;
+    }
+
+    drawingContext.save();
+    drawingContext.fillStyle = settings.builderRecentFill || "rgb(112, 64, 160)";
+    drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
+        ? settings.builderRecentAlpha
+        : 0.1;
+    drawingContext.font = settings.textFont;
+    node.args.forEach(child => {
+        const freshInverse = child.type === "inv" && child.isBuilderInverseOpen &&
+            child.args[0] && child.args[0].isBuilderSequence && child.args[0].args.length === 0;
+        const highlightedInverse = child.type === "inv" &&
+            (child.isBuilderInverseOpen || child.isBuilderActive);
+        if (!child.isBuilderActive && !freshInverse && !highlightedInverse) {
+            return;
+        }
+        if (child.type === "value" && /^\d+$/.test(String(child.value))) {
+            const lastDigit = String(child.value).slice(-1);
+            const digitMetrics = drawingContext.measureText(lastDigit);
+            const digitWidth = Math.max(1, digitMetrics.width || 0);
+            drawingContext.fillRect(
+                child.right() - digitWidth,
+                child.top(),
+                digitWidth,
+                child.layout.height
+            );
+            return;
+        }
+        if (child.type === "inv" || isNegativeUnit(child)) {
+            const highlightPadding = 3;
+            drawingContext.fillRoundedRect(
+                child.left() - highlightPadding,
+                child.top() - highlightPadding,
+                child.layout.width + highlightPadding * 2,
+                child.layout.height + highlightPadding * 2,
+                4
+            );
+            return;
+        }
+        drawingContext.fillRect(child.left(), child.top(), child.layout.width, child.layout.height);
+    });
+    drawingContext.restore();
+}
+
 function drawInverseBackgroundToContext(node, drawingContext, settings) {
     const denominatorLeft = node.left() + (node.layout.inverseDenominatorBoxLeft || 0);
     const denominatorTop = node.top() + (node.layout.inverseDenominatorBoxTop || 0);
@@ -1286,18 +1299,8 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
     const denominatorHeight = node.layout.inverseDenominatorBoxHeight || 0;
     const cornerRadius = node.layout.inverseCornerRadius || getInverseCornerRadius(settings);
 
-    const builderHighlighted = node.isBuilderInverseOpen || node.isBuilderActive;
-    const builderFill = settings.builderRecentFill || "rgb(231, 218, 244)";
-
     drawingContext.save();
-    if (builderHighlighted) {
-        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
-            ? settings.builderRecentAlpha
-            : 0.5;
-    }
-    drawingContext.fillStyle = builderHighlighted
-        ? builderFill
-        : settings.inverseFillColor || "black";
+    drawingContext.fillStyle = settings.inverseFillColor || "black";
     drawingContext.fillRoundedRect(
         node.left(),
         node.top(),
@@ -1305,18 +1308,13 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
         node.layout.height,
         cornerRadius
     );
-    drawingContext.fillStyle = builderHighlighted
-        ? builderFill
-        : settings.inverseDenominatorFill || "white";
+    drawingContext.fillStyle = settings.inverseDenominatorFill || "white";
     drawingContext.fillRect(denominatorLeft, denominatorTop, denominatorWidth, denominatorHeight);
     drawingContext.restore();
 }
 
 function drawInverseForegroundToContext(node, drawingContext, settings) {
-    const builderHighlighted = node.isBuilderInverseOpen || node.isBuilderActive;
-    const operatorColor = builderHighlighted
-        ? settings.builderRecentForeground || "rgb(112, 64, 160)"
-        : settings.inverseOperatorColor || "white";
+    const operatorColor = settings.inverseOperatorColor || "white";
     const numeratorCenterX = (node.left() + node.right()) / 2;
     const numeratorCenterY = node.top() +
         (node.layout.inverseOuterPadding || getInverseOuterPadding(settings)) +
@@ -1327,11 +1325,6 @@ function drawInverseForegroundToContext(node, drawingContext, settings) {
     const barThickness = node.layout.inverseBarThickness || getInverseBarThickness(settings);
 
     drawingContext.save();
-    if (builderHighlighted) {
-        drawingContext.globalAlpha = Number.isFinite(settings.builderRecentAlpha)
-            ? settings.builderRecentAlpha
-            : 0.5;
-    }
     drawingContext.fillStyle = operatorColor;
     drawingContext.fillText("1", numeratorCenterX, numeratorCenterY);
     drawingContext.fillRect(barLeft, barTop, barWidth, barThickness);
@@ -2079,6 +2072,7 @@ function renderExpressionSvgMarkup(root, options = {}) {
         (node, separatorIndex) => compiledShading.separatorForegrounds.get(`${node.id}:${separatorIndex}`) || null
     );
     drawOutlinesToContext(compiledOutlines, drawingContext);
+    drawBuilderRecentHighlightsToContext(root, drawingContext, settings);
     return svg.outerHTML;
 }
 
@@ -2377,6 +2371,7 @@ window.ExplodedAlgebraRenderer = {
     compileOutlines,
     drawOutlinesToContext,
     drawNodeRecursiveToContext,
+    drawBuilderRecentHighlightsToContext,
     drawNodeToContext,
     drawValueNodeToContext,
     renderExpressionSvgMarkup,
