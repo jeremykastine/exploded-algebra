@@ -1658,6 +1658,10 @@ Promise.resolve().then(() => {
             return !!builder && builder.flowVersion >= 3;
         }
 
+        function isDirectNotationExpressionBuilder(builder = uiState.expressionBuilder) {
+            return !!builder && builder.flowVersion >= 5;
+        }
+
         function getBuilderUndoSnapshot(builder) {
             if (isIntegratedExpressionBuilder(builder)) {
                 return {
@@ -1692,6 +1696,9 @@ Promise.resolve().then(() => {
         function expressionBuilderIsEmpty(builder = uiState.expressionBuilder) {
             if (!builder || !builder.root) return true;
             if (isIntegratedExpressionBuilder(builder)) {
+                if (isDirectNotationExpressionBuilder(builder)) {
+                    return builder.currentPath.length === 0 && isBuilderPlaceholder(builder.root);
+                }
                 return builder.currentPath.length === 0 &&
                     builder.root.isBuilderSequence &&
                     builder.root.args.length === 0 &&
@@ -4585,7 +4592,7 @@ Promise.resolve().then(() => {
             authoringInitialExpressionCommitted = false;
             if (builderDraft && builderDraft.root) {
                 const builder = uiState.expressionBuilder;
-                if (builderDraft.flowVersion >= 3 && isIntegratedExpressionBuilder(builder)) {
+                if (builderDraft.flowVersion >= 5 && isDirectNotationExpressionBuilder(builder)) {
                     builder.root = reviveBuilderNode(builderDraft.root);
                     builder.currentPath = Array.isArray(builderDraft.currentPath) ? builderDraft.currentPath.slice() : [];
                     builder.lastOperation = builderDraft.lastOperation ? {
@@ -9722,6 +9729,9 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             if (isIntegratedExpressionBuilder(builder)) {
+                if (isDirectNotationExpressionBuilder(builder)) {
+                    expressionRoot = builder.root;
+                }
                 visitIntegratedBuilderSequences(builder.root, [], (sequence, path) => {
                     sequence.isBuilderCurrentSequence = pathsEqual(path, builder.currentPath || []);
                 });
@@ -9773,6 +9783,218 @@ ctx.font = SETTINGS.textFont;
 
         function builderSequenceExpectsValue(sequence) {
             return !sequence || sequence.args.length === 0 || sequence.builderOperators.length >= sequence.args.length;
+        }
+
+        function getDirectBuilderCurrentNode(builder = uiState.expressionBuilder) {
+            if (!isDirectNotationExpressionBuilder(builder)) return null;
+            return getNodeAtPath(builder.root, builder.currentPath || []);
+        }
+
+        function directBuilderExpectsValue(builder = uiState.expressionBuilder) {
+            return isBuilderPlaceholder(getDirectBuilderCurrentNode(builder));
+        }
+
+        function setDirectBuilderCurrentValue(builder, value) {
+            clearIntegratedBuilderActiveState(builder.root);
+            const active = valueNode(String(value));
+            active.isBuilderActive = true;
+            builder.root = setNodeAtPath(builder.root, builder.currentPath, active);
+            return active;
+        }
+
+        function placeDirectBuilderOperationAtLowestLevel(builder, type) {
+            if (!isDirectNotationExpressionBuilder(builder) || !["sum", "prod"].includes(type)) {
+                return null;
+            }
+            const currentPath = builder.currentPath.slice();
+            const current = getNodeAtPath(builder.root, currentPath);
+            if (!current || isBuilderPlaceholder(current)) return null;
+
+            clearIntegratedBuilderActiveState(builder.root);
+            const emptyRight = makePlaceholderNode();
+            if (currentPath.length > 0) {
+                const parentPath = currentPath.slice(0, -1);
+                const currentIndex = currentPath[currentPath.length - 1];
+                const parent = getNodeAtPath(builder.root, parentPath);
+                if (parent && parent.type === type && currentIndex === parent.args.length - 1) {
+                    const operationIndex = parent.args.length - 1;
+                    parent.args.push(emptyRight);
+                    builder.currentPath = parentPath.concat(parent.args.length - 1);
+                    rememberIntegratedBuilderOperation(builder, parentPath, operationIndex);
+                    return emptyRight;
+                }
+            }
+
+            const operation = new ExprNode(type, [current, emptyRight], null);
+            builder.root = setNodeAtPath(builder.root, currentPath, operation);
+            builder.currentPath = currentPath.concat(1);
+            rememberIntegratedBuilderOperation(builder, currentPath, 0);
+            return emptyRight;
+        }
+
+        function appendDirectBuilderDigit(digit) {
+            const builder = uiState.expressionBuilder;
+            const current = getDirectBuilderCurrentNode(builder);
+            if (!current) return false;
+            if (isBuilderPlaceholder(current)) {
+                pushExpressionBuilderUndoState();
+                setDirectBuilderCurrentValue(builder, digit);
+            } else if (current.type === "value" && /^\d+$/.test(String(current.value))) {
+                pushExpressionBuilderUndoState();
+                current.value += String(digit);
+                current.isBuilderActive = true;
+            } else if (current.type === "value" && String(current.value) === "-1") {
+                pushExpressionBuilderUndoState();
+                if (!placeDirectBuilderOperationAtLowestLevel(builder, "prod")) return false;
+                setDirectBuilderCurrentValue(builder, digit);
+            } else {
+                uiState.message = "Choose an operation before entering another value.";
+                renderToolArea();
+                return false;
+            }
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function enterDirectBuilderValue(value) {
+            const builder = uiState.expressionBuilder;
+            const current = getDirectBuilderCurrentNode(builder);
+            if (!current) return false;
+            let implicitOperation = null;
+            if (!isBuilderPlaceholder(current)) {
+                implicitOperation = String(value) === "-1"
+                    ? "sum"
+                    : String(value) === "x" || current.type === "value" && String(current.value) === "-1"
+                        ? "prod"
+                        : null;
+                if (!implicitOperation) {
+                    uiState.message = "Choose an operation before entering another value.";
+                    renderToolArea();
+                    return false;
+                }
+            }
+
+            pushExpressionBuilderUndoState();
+            if (implicitOperation && !placeDirectBuilderOperationAtLowestLevel(builder, implicitOperation)) {
+                return false;
+            }
+            setDirectBuilderCurrentValue(builder, value);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function insertDirectBuilderOperation(type) {
+            const builder = uiState.expressionBuilder;
+            if (directBuilderExpectsValue(builder)) {
+                uiState.message = "Enter a value before choosing an operation.";
+                renderToolArea();
+                return false;
+            }
+            pushExpressionBuilderUndoState();
+            if (!placeDirectBuilderOperationAtLowestLevel(builder, type)) return false;
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function enterDirectBuilderInverse() {
+            const builder = uiState.expressionBuilder;
+            const current = getDirectBuilderCurrentNode(builder);
+            if (!current) return false;
+            pushExpressionBuilderUndoState();
+            if (!isBuilderPlaceholder(current) &&
+                !placeDirectBuilderOperationAtLowestLevel(builder, "prod")) {
+                return false;
+            }
+            const inner = makePlaceholderNode();
+            const inverse = new ExprNode("inv", [inner], null);
+            inverse.isBuilderInverseOpen = true;
+            builder.root = setNodeAtPath(builder.root, builder.currentPath, inverse);
+            builder.currentPath = builder.currentPath.concat(0);
+            refreshExpressionBuilderPreview();
+            return true;
+        }
+
+        function getDirectBuilderLastOperation(builder = uiState.expressionBuilder) {
+            if (!isDirectNotationExpressionBuilder(builder) || !builder.lastOperation) return null;
+            const operation = getNodeAtPath(builder.root, builder.lastOperation.path || []);
+            const index = Number(builder.lastOperation.index);
+            if (!operation || !["sum", "prod"].includes(operation.type) ||
+                !Number.isInteger(index) || index < 0 || index >= operation.args.length - 1) {
+                return null;
+            }
+            return {
+                operation,
+                path: builder.lastOperation.path.slice(),
+                index,
+                type: operation.type
+            };
+        }
+
+        function directBuilderOperationPrefix(operation, operationIndex) {
+            const args = operation.args.slice(0, operationIndex + 1);
+            return args.length === 1 ? args[0] : new ExprNode(operation.type, args, null);
+        }
+
+        function pathStartsWith(path, prefix) {
+            return path.length >= prefix.length && prefix.every((value, index) => path[index] === value);
+        }
+
+        function canMoveDirectBuilderOperationUp(builder = uiState.expressionBuilder) {
+            const latest = getDirectBuilderLastOperation(builder);
+            return !!latest && latest.path.length > 0 &&
+                latest.index === latest.operation.args.length - 2;
+        }
+
+        function moveDirectBuilderOperationUp() {
+            const builder = uiState.expressionBuilder;
+            const latest = getDirectBuilderLastOperation(builder);
+            if (!latest || !canMoveDirectBuilderOperationUp(builder)) return false;
+
+            const rightPath = latest.path.concat(latest.index + 1);
+            const currentRemainder = pathStartsWith(builder.currentPath, rightPath)
+                ? builder.currentPath.slice(rightPath.length)
+                : [];
+            const right = latest.operation.args[latest.index + 1];
+            const left = directBuilderOperationPrefix(latest.operation, latest.index);
+            const containingPath = latest.path.slice(0, -1);
+            const operationIndex = latest.path[latest.path.length - 1];
+            const containingNode = getNodeAtPath(builder.root, containingPath);
+            if (!containingNode || !Array.isArray(containingNode.args)) return false;
+
+            pushExpressionBuilderUndoState();
+            containingNode.args[operationIndex] = left;
+            let newRightPath;
+            if (containingNode.type === latest.type && operationIndex === containingNode.args.length - 1) {
+                const latestSeparator = containingNode.args.length - 1;
+                containingNode.args.push(right);
+                newRightPath = containingPath.concat(containingNode.args.length - 1);
+                rememberIntegratedBuilderOperation(builder, containingPath, latestSeparator);
+            } else if (containingPath.length > 0) {
+                const parentPath = containingPath.slice(0, -1);
+                const containingIndex = containingPath[containingPath.length - 1];
+                const parent = getNodeAtPath(builder.root, parentPath);
+                if (parent && parent.type === latest.type && containingIndex === parent.args.length - 1) {
+                    const latestSeparator = parent.args.length - 1;
+                    parent.args.push(right);
+                    newRightPath = parentPath.concat(parent.args.length - 1);
+                    rememberIntegratedBuilderOperation(builder, parentPath, latestSeparator);
+                } else {
+                    const lifted = new ExprNode(latest.type, [containingNode, right], null);
+                    builder.root = setNodeAtPath(builder.root, containingPath, lifted);
+                    newRightPath = containingPath.concat(1);
+                    rememberIntegratedBuilderOperation(builder, containingPath, 0);
+                }
+            } else {
+                const lifted = new ExprNode(latest.type, [containingNode, right], null);
+                builder.root = lifted;
+                newRightPath = [1];
+                rememberIntegratedBuilderOperation(builder, [], 0);
+            }
+
+            builder.currentPath = newRightPath.concat(currentRemainder);
+            expressionRoot = builder.root;
+            refreshExpressionBuilderPreview();
+            return true;
         }
 
         function getUniformBuilderOperationType(sequence) {
@@ -9828,6 +10050,9 @@ ctx.font = SETTINGS.textFont;
 
         function appendIntegratedBuilderDigit(digit) {
             const builder = uiState.expressionBuilder;
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return appendDirectBuilderDigit(digit);
+            }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
@@ -9863,6 +10088,9 @@ ctx.font = SETTINGS.textFont;
 
         function enterIntegratedBuilderValue(value) {
             const builder = uiState.expressionBuilder;
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return enterDirectBuilderValue(value);
+            }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
@@ -9895,6 +10123,9 @@ ctx.font = SETTINGS.textFont;
 
         function insertIntegratedBuilderOperation(type) {
             const builder = uiState.expressionBuilder;
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return insertDirectBuilderOperation(type);
+            }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence || !["sum", "prod"].includes(type)) return false;
             if (builderSequenceExpectsValue(sequence)) {
@@ -9911,6 +10142,9 @@ ctx.font = SETTINGS.textFont;
 
         function enterIntegratedBuilderInverse() {
             const builder = uiState.expressionBuilder;
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return enterDirectBuilderInverse();
+            }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
             const needsImplicitProduct = builderSequenceExpectsValue(sequence) === false;
@@ -9954,6 +10188,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function canMoveIntegratedBuilderOperationUp(builder = uiState.expressionBuilder) {
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return canMoveDirectBuilderOperationUp(builder);
+            }
             const latest = getIntegratedBuilderLastOperation(builder);
             return !!latest && latest.path.length > 0 &&
                 latest.index === latest.sequence.builderOperators.length - 1 &&
@@ -9962,6 +10199,9 @@ ctx.font = SETTINGS.textFont;
 
         function moveIntegratedBuilderOperationUp() {
             const builder = uiState.expressionBuilder;
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return moveDirectBuilderOperationUp();
+            }
             const latest = getIntegratedBuilderLastOperation(builder);
             if (!latest || !canMoveIntegratedBuilderOperationUp(builder)) return false;
 
@@ -10179,8 +10419,8 @@ ctx.font = SETTINGS.textFont;
             } else {
                 uiState.expressionBuilder = {
                     ...common,
-                    flowVersion: 4,
-                    root: makeBuilderSequence([]),
+                    flowVersion: 5,
+                    root: makePlaceholderNode(),
                     currentPath: [],
                     lastOperation: null
                 };
@@ -10450,6 +10690,7 @@ ctx.font = SETTINGS.textFont;
 
         function collapseCompletedIntegratedBuilderNode(node) {
             if (!node) return null;
+            if (isBuilderPlaceholder(node)) return null;
             if (node.isBuilderSequence) {
                 if (builderSequenceExpectsValue(node) ||
                     node.args.length === 0 ||
@@ -10510,9 +10751,13 @@ ctx.font = SETTINGS.textFont;
         }
 
         function getIntegratedBuilderCompletedRoot(builder = uiState.expressionBuilder) {
-            if (!isIntegratedExpressionBuilder(builder) || !builder.root.isBuilderSequence) {
+            if (!isIntegratedExpressionBuilder(builder)) {
                 return null;
             }
+            if (isDirectNotationExpressionBuilder(builder)) {
+                return collapseCompletedIntegratedBuilderNode(cloneBuilderNodeForHistory(builder.root));
+            }
+            if (!builder.root.isBuilderSequence) return null;
             return collapseCompletedIntegratedBuilderNode(cloneBuilderNodeForHistory(builder.root));
         }
 
@@ -11446,8 +11691,9 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             if (isIntegratedExpressionBuilder(builder)) {
                 const operationTypes = getBuilderOperationTypes(uiState.activeTool);
-                const sequence = getIntegratedBuilderSequence(builder);
-                const expectsValue = builderSequenceExpectsValue(sequence);
+                const expectsValue = isDirectNotationExpressionBuilder(builder)
+                    ? directBuilderExpectsValue(builder)
+                    : builderSequenceExpectsValue(getIntegratedBuilderSequence(builder));
                 const negativeOneButton = `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`;
                 const buildOperationButton = type => {
                     const glyph = type === "sum" ? "+" : "·";

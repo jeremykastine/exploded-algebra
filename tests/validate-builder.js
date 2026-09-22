@@ -136,7 +136,7 @@ assert(playerJs.includes('navigationSource === "builder"'), "Player must accept 
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
 assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
-assert(playerJs.includes('flowVersion: 4'), "Shared Expression Builder must use the level-navigation flow");
+assert(playerJs.includes('flowVersion: 5'), "Shared Expression Builder must use the direct-notation level-navigation flow");
 assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated entry must provide pending Sum and Product operations");
 assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
 assert(playerJs.includes('data-builder-action="moveUpOperation"'), "Integrated entry must provide Move Up One Level");
@@ -177,14 +177,14 @@ assert(/\.builder-keypad-panel button,[\s\S]*?\.builder-keypad-panel \.builder-a
 assert(!/if \(isIntegratedExpressionBuilder\(\) && !builderReviewActive\)[\s\S]*?workspaceZoom = Math\.max/.test(playerJs), "Integrated Expression Builder must not automatically fit or zoom the expression");
 assert(playerJs.includes('M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11'), "Integrated Expression Builder Undo must use the backspace icon");
 assert(playerJs.includes('aria-label="Move the most recent operation up one level"') && playerJs.includes('event.key === "ArrowRight"'), "Move Up must have a generic icon, accessible label, and keyboard shortcut");
-assert(/function placeIntegratedBuilderOperationAtLowestLevel[\s\S]*?uniformType === type[\s\S]*?sequence\.builderOperators\.push\(type\)[\s\S]*?makeBuilderSequence\(\[sequence\.args\[latestValueIndex\]\], \[type\]\)/.test(playerJs), "Matching operations must flatten immediately while different operations nest at the latest value");
-assert(/function moveIntegratedBuilderOperationUp[\s\S]*?getIntegratedBuilderLastOperation[\s\S]*?builderSequencePrefix[\s\S]*?rememberIntegratedBuilderOperation/.test(playerJs), "Move Up must relocate the most recently entered operation one level");
+assert(/function placeDirectBuilderOperationAtLowestLevel[\s\S]*?parent\.type === type[\s\S]*?parent\.args\.push\(emptyRight\)[\s\S]*?new ExprNode\(type, \[current, emptyRight\]/.test(playerJs), "Matching operations must flatten immediately while different operations become real exploded nodes at the latest value");
+assert(/function moveDirectBuilderOperationUp[\s\S]*?getDirectBuilderLastOperation[\s\S]*?directBuilderOperationPrefix[\s\S]*?rememberIntegratedBuilderOperation/.test(playerJs), "Move Up must relocate the most recently entered exploded operation one level");
 assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation/.test(playerJs) && /builderDraft: builder \? \{[\s\S]*?lastOperation/.test(playerJs), "Undo and authoring drafts must preserve the most recent operation target");
-assert(playerJs.includes('collapseCompletedIntegratedBuilderNode'), "Submit must validate unresolved sequences nested inside inverses");
-assert(playerJs.includes('const autoMultiplyAfterNegativeOne') && playerJs.includes('String(last.value) === "-1"'), "A digit entered after -1 must insert an implicit product");
-assert(playerJs.includes('String(value) === "x"') && playerJs.includes('placeIntegratedBuilderOperationAtLowestLevel(builder, implicitOperation)'), "Entering x after a completed value must insert an implicit product at the lowest level");
+assert(playerJs.includes('collapseCompletedIntegratedBuilderNode') && playerJs.includes('if (isBuilderPlaceholder(node)) return null;'), "Submit must reject an unfinished direct-notation operand");
+assert(/function appendDirectBuilderDigit[\s\S]*?String\(current\.value\) === "-1"[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "A digit entered after -1 must insert an implicit exploded product");
+assert(playerJs.includes('String(value) === "x"') && playerJs.includes('placeDirectBuilderOperationAtLowestLevel(builder, implicitOperation)'), "Entering x after a completed value must insert an implicit product at the lowest level");
 assert(playerJs.includes('String(value) === "-1"') && playerJs.includes('? "sum"'), "Entering -1 after a completed value must insert an implicit sum");
-assert(/function enterIntegratedBuilderInverse[\s\S]*?needsImplicitProduct[\s\S]*?placeIntegratedBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Entering an inverse after a completed value must insert an implicit product at the lowest level");
+assert(/function enterDirectBuilderInverse[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)[\s\S]*?new ExprNode\("inv", \[inner\]/.test(playerJs), "Entering an inverse after a completed value must insert a direct exploded product at the lowest level");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
@@ -204,6 +204,9 @@ const collapseContext = {
   },
   builderSequenceExpectsValue(sequence) {
     return !sequence || sequence.args.length === 0 || sequence.builderOperators.length >= sequence.args.length;
+  },
+  isBuilderPlaceholder(node) {
+    return !!node && !!node.isBuilderPlaceholder;
   }
 };
 vm.createContext(collapseContext);
@@ -254,7 +257,7 @@ assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activ
 assert(!/if \(disabled\) \{\s*builderVariableRail\.replaceChildren\(\);\s*return;\s*\}/.test(playerJs), "A disallowed x must be disabled rather than removed from the keypad");
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
 assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
-assert(playerJs.includes('root.isBuilderSequence = true'), "Builder values must use the diagonal sequence workspace");
+assert(playerJs.includes('flowVersion: 5') && playerJs.includes('root: makePlaceholderNode()'), "New Expression Builder sessions must begin directly in exploded notation rather than a diagonal sequence");
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
