@@ -70,6 +70,12 @@ Builder keypad moves as a single block so its internal order remains familiar.
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. In Expression Builder, the original and proposed
 expressions use the same blue shading as an initial selection.
+Addition and multiplication are always entered explicitly. Their first press
+places the pending operation at its lowest available level; repeated presses of
+that same button, before the next value is entered, cycle it through the higher
+levels and back to the lowest. The former Move Up button's grid cell remains
+blank. Values, x, negative one, and inverses never insert an operation
+implicitly.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

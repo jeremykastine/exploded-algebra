@@ -9890,10 +9890,6 @@ ctx.font = SETTINGS.textFont;
                 pushExpressionBuilderUndoState();
                 current.value += String(digit);
                 current.isBuilderActive = true;
-            } else if (current.type === "value" && String(current.value) === "-1") {
-                pushExpressionBuilderUndoState();
-                if (!placeDirectBuilderOperationAtLowestLevel(builder, "prod")) return false;
-                setDirectBuilderCurrentValue(builder, digit);
             } else {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
@@ -9907,32 +9903,30 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const current = getDirectBuilderCurrentNode(builder);
             if (!current) return false;
-            let implicitOperation = null;
             if (!isBuilderPlaceholder(current)) {
-                implicitOperation = String(value) === "-1"
-                    ? "sum"
-                    : String(value) === "x" || current.type === "value" && String(current.value) === "-1"
-                        ? "prod"
-                        : null;
-                if (!implicitOperation) {
-                    uiState.message = "Choose an operation before entering another value.";
-                    renderToolArea();
-                    return false;
-                }
+                uiState.message = "Choose an operation before entering another value.";
+                renderToolArea();
+                return false;
             }
 
             pushExpressionBuilderUndoState();
-            if (implicitOperation && !placeDirectBuilderOperationAtLowestLevel(builder, implicitOperation)) {
-                return false;
-            }
             setDirectBuilderCurrentValue(builder, value);
             refreshExpressionBuilderPreview();
             return true;
         }
 
+        function canCycleDirectBuilderOperationWithButton(builder, type) {
+            const latest = getDirectBuilderLastOperation(builder);
+            return directBuilderExpectsValue(builder) && !!latest && latest.type === type &&
+                canMoveDirectBuilderOperationUp(builder);
+        }
+
         function insertDirectBuilderOperation(type) {
             const builder = uiState.expressionBuilder;
             if (directBuilderExpectsValue(builder)) {
+                if (canCycleDirectBuilderOperationWithButton(builder, type)) {
+                    return moveDirectBuilderOperationUp();
+                }
                 uiState.message = "Enter a value before choosing an operation.";
                 renderToolArea();
                 return false;
@@ -9947,11 +9941,12 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const current = getDirectBuilderCurrentNode(builder);
             if (!current) return false;
-            pushExpressionBuilderUndoState();
-            if (!isBuilderPlaceholder(current) &&
-                !placeDirectBuilderOperationAtLowestLevel(builder, "prod")) {
+            if (!isBuilderPlaceholder(current)) {
+                uiState.message = "Choose an operation before entering an inverse.";
+                renderToolArea();
                 return false;
             }
+            pushExpressionBuilderUndoState();
             const inner = makePlaceholderNode();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
@@ -10188,9 +10183,7 @@ ctx.font = SETTINGS.textFont;
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
             const extendingNumber = last && last.isBuilderActive && /^\d+$/.test(last.value);
-            const autoMultiplyAfterNegativeOne = !builderSequenceExpectsValue(sequence) &&
-                last && String(last.value) === "-1";
-            if (!builderSequenceExpectsValue(sequence) && !extendingNumber && !autoMultiplyAfterNegativeOne) {
+            if (!builderSequenceExpectsValue(sequence) && !extendingNumber) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
@@ -10199,16 +10192,6 @@ ctx.font = SETTINGS.textFont;
             if (extendingNumber) {
                 last.value += String(digit);
             } else {
-                if (autoMultiplyAfterNegativeOne) {
-                    finalizeIntegratedBuilderValue(sequence);
-                    const targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
-                    if (!targetSequence) return false;
-                    const active = valueNode(String(digit));
-                    active.isBuilderActive = true;
-                    targetSequence.args.push(active);
-                    refreshExpressionBuilderPreview();
-                    return true;
-                }
                 const active = valueNode(String(digit));
                 active.isBuilderActive = true;
                 sequence.args.push(active);
@@ -10224,30 +10207,16 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            const last = sequence.args[sequence.args.length - 1];
-            const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
-            const implicitOperation = !needsImplicitOperation
-                ? null
-                : String(value) === "-1"
-                    ? "sum"
-                    : String(value) === "x" || last && String(last.value) === "-1"
-                        ? "prod"
-                        : null;
-            if (needsImplicitOperation && !implicitOperation) {
+            if (!builderSequenceExpectsValue(sequence)) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
-            let targetSequence = sequence;
-            if (implicitOperation) {
-                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, implicitOperation);
-                if (!targetSequence) return false;
-            }
             const active = valueNode(String(value));
             active.isBuilderActive = true;
-            targetSequence.args.push(active);
+            sequence.args.push(active);
             refreshExpressionBuilderPreview();
             return true;
         }
@@ -10278,19 +10247,17 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            const needsImplicitProduct = builderSequenceExpectsValue(sequence) === false;
-            pushExpressionBuilderUndoState();
-            let targetSequence = sequence;
-            if (needsImplicitProduct) {
-                finalizeIntegratedBuilderValue(sequence);
-                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
-                if (!targetSequence) return false;
+            if (!builderSequenceExpectsValue(sequence)) {
+                uiState.message = "Choose an operation before entering an inverse.";
+                renderToolArea();
+                return false;
             }
+            pushExpressionBuilderUndoState();
             const inner = makeBuilderSequence();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
-            const inverseIndex = targetSequence.args.length;
-            targetSequence.args.push(inverse);
+            const inverseIndex = sequence.args.length;
+            sequence.args.push(inverse);
             builder.currentPath = builder.currentPath.concat(inverseIndex, 0);
             refreshExpressionBuilderPreview();
             return true;
@@ -11749,7 +11716,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Use Sum or Product to make structure first, or enter a value first and then use those buttons to wrap it. Any remaining empty boxes are filled on Submit.";
+            let note = "Enter every value and operation explicitly. Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }
@@ -11830,11 +11797,18 @@ ctx.font = SETTINGS.textFont;
                 const buildOperationButton = type => {
                     const glyph = type === "sum" ? "+" : "·";
                     const shortcut = type === "sum" ? "+" : "*";
-                    const disabled = !operationTypes.includes(type) || expectsValue;
-                    return `<button class="builder-operator-button builder-${type}-button builder-plain-operator-button" data-builder-action="pendingOperation" data-value="${type}" aria-label="Insert ${type === "sum" ? "addition" : "multiplication"}" title="Keyboard shortcut: ${shortcut}"${disabled ? " disabled" : ""}>${glyph}</button>`;
+                    const operationName = type === "sum" ? "addition" : "multiplication";
+                    const cyclesLevel = canCycleDirectBuilderOperationWithButton(builder, type);
+                    const disabled = !operationTypes.includes(type) || expectsValue && !cyclesLevel;
+                    const label = cyclesLevel
+                        ? `Cycle the most recent ${operationName} to its next level`
+                        : `Insert ${operationName}`;
+                    const title = cyclesLevel
+                        ? `Press again to cycle the most recent ${operationName} through its available levels. Keyboard shortcut: ${shortcut}`
+                        : `Keyboard shortcut: ${shortcut}`;
+                    return `<button class="builder-operator-button builder-${type}-button builder-plain-operator-button" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}>${glyph}</button>`;
                 };
                 const inverseDisabled = !operationTypes.includes("inv");
-                const moveUpDisabled = !canMoveIntegratedBuilderOperationUp(builder);
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
                 const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
                 const reviewDisabled = builder.tool === "authorInitial";
@@ -11844,7 +11818,6 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        <button class="builder-operator-button builder-move-up-button" data-builder-action="moveUpOperation" aria-label="Move the most recent operation up one level" title="Move the most recent operation up one level. Keyboard shortcut: Right Arrow"${moveUpDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h6V8m0 0L7 12m4-4 4 4M14 18h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                         <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Take a peek is unavailable while building the starting expression" : "Take a peek at the original expression"}" title="${reviewDisabled ? "No previous expression to peek at" : "Take a peek at the original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
                         <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -12416,8 +12389,8 @@ ctx.font = SETTINGS.textFont;
                 action = "negativeOne";
             } else if (event.key === "Enter") {
                 action = "submit";
-            } else if (event.key === "ArrowRight") {
-                action = integrated ? "moveUpOperation" : "next";
+            } else if (event.key === "ArrowRight" && !integrated) {
+                action = "next";
             } else if (event.key === "Backspace" || event.key === "Delete") {
                 action = integrated ? "undo" : "undoBackspace";
             } else if (event.key === "Escape") {
