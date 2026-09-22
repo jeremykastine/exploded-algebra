@@ -4067,12 +4067,14 @@
         .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }
         .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5 / span 2; grid-row: 3; }
+        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 5 / span 2; grid-row: 4; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
 
         .workspace-toolbar .workspace-setting-button,
         .workspace-toolbar [data-workspace-action="resetExercise"],
-        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] {
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"],
+        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -4427,6 +4429,10 @@
                     <button type="button" class="reset-exercise-button" data-workspace-action="resetExercise" aria-label="Reset exercise" data-hold-description="Restart the current exercise from its original expression.">
                         <span class="workspace-setting-name" aria-hidden="true">Reset</span>
                         <span class="workspace-setting-value" aria-hidden="true">Exercise</span>
+                    </button>
+                    <button type="button" class="numerical-restrictions-button" data-workspace-action="showNumericalRestrictions" aria-label="Numerical manipulation restrictions" data-hold-description="Show the numerical manipulation permissions for this problem.">
+                        <span class="workspace-setting-name" aria-hidden="true">Numerical</span>
+                        <span class="workspace-setting-value" aria-hidden="true">Rules</span>
                     </button>
                     <button type="button" class="move-history-button" data-workspace-action="downloadMoveHistory" aria-label="Download move history" data-hold-description="Download the complete move history for this exercise." hidden>
                         <span class="workspace-setting-name" aria-hidden="true">Move</span>
