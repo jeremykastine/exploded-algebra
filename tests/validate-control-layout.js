@@ -49,6 +49,8 @@ assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="
 });
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
+assert(playerHtml.includes('body.authoring-session .workspace-toolbar [data-workspace-action="resetExercise"] { display: none !important; }'), "Instructor pre-selection must hide Reset Exercise");
+assert(/\.bottom-controls-panel \.workspace-toolbar button\[data-workspace-mode\]\.is-active \{[\s\S]*?z-index: 6;[\s\S]*?box-shadow: inset 0 0 0 4px #205fa8;/.test(playerHtml), "The active Select or Hand tool must use an aligned bold inset outline above the grid overlay");
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1 / span 2; grid-row: 1; }'));

@@ -202,10 +202,9 @@ assertJsonEqual(valueThenX.root.args.map(node => node.value), ["2", "x"], "Impli
 const valueThenNegativeOne = makeBuilder(new context.ExprNode("prod", [value("2"), value("3")], null));
 valueThenNegativeOne.currentPath = [1];
 context.uiState.expressionBuilder = valueThenNegativeOne;
-assert.equal(context.api.enterDirectBuilderValue("-1"), true, "negative one after a value must insert addition");
+assert.equal(context.api.enterDirectBuilderValue("-1"), false, "negative one after a value must require an explicit operation");
 assert.equal(valueThenNegativeOne.root.type, "prod");
-assert.equal(valueThenNegativeOne.root.args[1].type, "sum");
-assertJsonEqual(valueThenNegativeOne.root.args[1].args.map(node => node.value), ["3", "-1"], "Implicit addition before negative one must use the lowest level");
+assert.equal(valueThenNegativeOne.root.args[1].value, "3", "Rejected implicit addition must leave the expression unchanged");
 
 const valueThenInverse = makeBuilder(new context.ExprNode("sum", [value("2"), value("3")], null));
 valueThenInverse.currentPath = [1];

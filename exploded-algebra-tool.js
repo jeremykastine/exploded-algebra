@@ -9953,11 +9953,7 @@ ctx.font = SETTINGS.textFont;
             if (!current) return false;
             let implicitOperation = null;
             if (!isBuilderPlaceholder(current)) {
-                implicitOperation = String(value) === "-1"
-                    ? "sum"
-                    : String(value) === "x" || current.type === "value" && String(current.value) === "-1"
-                        ? "prod"
-                        : null;
+                implicitOperation = String(value) === "x" ? "prod" : null;
                 if (!implicitOperation) {
                     uiState.message = "Choose an operation before entering another value.";
                     renderToolArea();
@@ -10306,15 +10302,12 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            const last = sequence.args[sequence.args.length - 1];
             const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
             const implicitOperation = !needsImplicitOperation
                 ? null
-                : String(value) === "-1"
-                    ? "sum"
-                    : String(value) === "x" || last && String(last.value) === "-1"
-                        ? "prod"
-                        : null;
+                : String(value) === "x"
+                    ? "prod"
+                    : null;
             if (needsImplicitOperation && !implicitOperation) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
@@ -11831,7 +11824,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Multiplication is inserted automatically before x or an inverse, addition before negative one, and multiplication between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
+            let note = "Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Multiplication is inserted automatically before x or an inverse, and between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }
