@@ -8158,11 +8158,38 @@ ctx.font = SETTINGS.textFont;
 
         function showNumericalRestrictionsPeek() {
             if (!pressHoldPopover) return;
-            const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
+            const profile = getNumericalRewriteProfile();
+            const labels = {
+                nonnegativeArithmetic: "Nonnegative addition and multiplication",
+                signedArithmetic: "Signed number addition and multiplication",
+                nonnegativeFractionSimplification: "Non-negative fraction simplification",
+                signedFractionSimplification: "Signed fraction simplification",
+                inverseOne: "Inverse of one",
+                inverseNegativeOne: "Inverse of negative one",
+                doubleNegative: "Negative one times negative one"
+            };
+            const modeLabel = mode => ({
+                automatic: "Automatic",
+                manual: "Manual",
+                "not-allowed": "Not allowed"
+            })[mode] || mode;
+            const rulesHtml = NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
+                const rule = getNumericalRewriteRuleSetting(ruleId, profile);
+                return `<li><span>${escapeHtml(labels[ruleId] || ruleId)}</span>
+                    <ul>
+                        <li>Forward
+                            <ul><li>${escapeHtml(modeLabel(rule.forward))}</li></ul>
+                        </li>
+                        <li>Reverse
+                            <ul><li>${escapeHtml(modeLabel(rule.reverse))}</li></ul>
+                        </li>
+                    </ul>
+                </li>`;
+            }).join("");
             pressHoldPopover.innerHTML = `
                 <div class="press-hold-popover-content">
                     <span class="press-hold-popover-title">Numerical Manipulation</span>
-                    <ul class="numerical-permission-summary">${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+                    <ul class="numerical-permission-summary numerical-permission-tree">${rulesHtml}</ul>
                 </div>`;
             pressHoldPopover.classList.remove("hidden");
         }
