@@ -188,23 +188,26 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   margin: 0 auto;
   padding: clamp(16px, 3vw, 28px);
 }
+.exercise-guidance-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
 .exercise-guidance-card h2,
 .exercise-guidance-card h3 { margin: 0; }
 .exercise-guidance-card h2 { font-size: 22px; }
-.exercise-guidance-card h3 { font-size: 15px; }
-.automatic-guidance-section { display: grid; gap: 10px; }
-.guidance-problem-expression {
-  min-height: 78px;
-  padding: 14px;
-  overflow: auto;
+.exercise-guidance-view {
+  min-height: 420px;
+  padding: clamp(14px, 2.5vw, 24px);
   border-radius: 7px;
   background: var(--soft);
-  font-size: 22px;
+  overflow: auto;
 }
-.guidance-problem-expression .katex-display { margin: 0; }
-.guidance-numerical-restrictions { margin: 0; padding: 14px 14px 14px 34px; border-radius: 7px; background: var(--soft); }
-.guidance-numerical-restrictions > li + li { margin-top: 8px; }
-.guidance-numerical-restrictions ul { margin: 3px 0 0; padding-left: 22px; }
+.exercise-guidance-view h3 { margin: 0 0 10px; font-size: 16px; }
+.exercise-guidance-view h3:not(:first-child) { margin-top: 24px; }
+.exercise-guidance-view p { margin: 8px 0; }
+.guidance-preview-list { margin: 0; padding-left: 24px; }
+.guidance-preview-list > li + li { margin-top: 8px; }
+.guidance-preview-list ul { margin: 3px 0 0; padding-left: 22px; }
+.guidance-math-display { min-height: 68px; padding: 10px; overflow: auto; font-size: 22px; text-align: center; }
+.guidance-math-display .katex-display { margin: 0; }
+.exercise-guidance-editor textarea { min-height: 420px; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; line-height: 1.5; }
 .phase5-controls { display: grid; justify-items: center; gap: 10px; }
 .phase5-controls .status-line { min-height: 1.45em; text-align: center; }
 

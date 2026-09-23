@@ -25,9 +25,12 @@ editing. No exploded-algebra-levels.js file is used.
 The conventional-notation panel uses three textbook-style sections separated by
 horizontal rules. `initialKatex` is the conventional form of the starting
 expression. The running solution shows completed steps plus the one current step.
-The pre-selection Exercise Guidance view automatically includes that problem
-statement and the exercise's numerical-manipulation restrictions. An optional
-top-level `exerciseGuidance` field supplies any additional author guidance.
+The pre-selection Exercise Guidance view includes the problem statement and the
+exercise's numerical-manipulation restrictions. New Exercise Builder exports
+store the complete, author-editable view in the top-level `exerciseGuidance`
+field and set `exerciseGuidanceIsComplete` so the player does not duplicate its
+prefilled sections. Older files still receive the automatic sections and may use
+`exerciseGuidance` for additional author guidance.
 
 The original expression remains the first item in `steps` for matching and move
 history compatibility, but it is displayed only in the problem-statement section.
@@ -165,9 +168,9 @@ the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
 and enough information for High, Medium, and Low assistance. During Phase 3,
 every completed expression-changing manipulation is automatically saved as a
 major step. Phase 4 first chooses which recorded steps to show, then edits only
-their pre- and post-completion notation. Phase 5 shows the automatically included
-problem statement and numerical restrictions and provides one optional Exercise
-Guidance field before export. All Done passes
+their pre- and post-completion notation. Phase 5 provides one field prefilled with
+the problem statement and numerical restrictions, with View and Edit modes for
+reviewing or changing the complete student-facing guidance. All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 

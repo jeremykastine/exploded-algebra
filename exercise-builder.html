@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Exercise Builder — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="exercise-builder.css?v=20260923-exercise-guidance">
+  <link rel="stylesheet" href="exercise-builder.css?v=20260923-combined-guidance">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="exercise-builder.js?v=20260923-exercise-guidance"></script>
+  <script defer src="exercise-builder.js?v=20260923-combined-guidance"></script>
 </head>
 <body>
   <main>
@@ -65,21 +65,18 @@
 
     <section class="phase" data-phase="5" hidden>
       <section class="exercise-guidance-card card" aria-labelledby="exerciseGuidanceHeading">
-        <h2 id="exerciseGuidanceHeading">Exercise Guidance</h2>
-        <p class="field-help">The problem statement and numerical manipulation restrictions are included automatically. Add any other guidance you want the student to see.</p>
+        <header class="exercise-guidance-header">
+          <h2 id="exerciseGuidanceHeading">Exercise Guidance</h2>
+          <div class="step-mode-toggle" role="group" aria-label="Exercise guidance display mode">
+            <button type="button" data-guidance-mode="view" aria-pressed="true">View</button>
+            <button type="button" data-guidance-mode="edit" aria-pressed="false">Edit</button>
+          </div>
+        </header>
+        <p class="field-help">This single field is prefilled with the problem statement and numerical manipulation restrictions. Edit it to add or change anything the student should see.</p>
 
-        <section class="automatic-guidance-section" aria-labelledby="guidanceProblemHeading">
-          <h3 id="guidanceProblemHeading">Problem Statement</h3>
-          <div id="guidanceProblemExpression" class="guidance-problem-expression" aria-label="Problem statement"></div>
-        </section>
-
-        <section class="automatic-guidance-section" aria-labelledby="guidanceRestrictionsHeading">
-          <h3 id="guidanceRestrictionsHeading">Numerical Manipulation Restrictions</h3>
-          <ul id="guidanceNumericalRestrictions" class="guidance-numerical-restrictions"></ul>
-        </section>
-
-        <label for="exerciseGuidance">Additional guidance
-          <textarea id="exerciseGuidance" rows="7" placeholder="Add any other information the student should see."></textarea>
+        <div id="exerciseGuidanceView" class="exercise-guidance-view" aria-label="Exercise guidance preview"></div>
+        <label id="exerciseGuidanceEditor" class="exercise-guidance-editor" for="exerciseGuidance" hidden>Exercise guidance
+          <textarea id="exerciseGuidance" rows="18" spellcheck="false"></textarea>
         </label>
 
         <div class="phase5-controls">
@@ -91,7 +88,7 @@
   </main>
 
   <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260922-builder-level-cycle"></iframe>
+    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=builder&amp;v=20260923-combined-guidance"></iframe>
   </div>
 </body>
 </html>

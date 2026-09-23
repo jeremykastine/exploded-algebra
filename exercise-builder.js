@@ -32,6 +32,7 @@
   let initialCommitInProgress = false;
   let currentCurationIndex = 0;
   let currentCurationMode = "view";
+  let currentGuidanceMode = "view";
   let curationStage = "select";
   let curationSelectionIndex = 0;
   let curationSelectionSource = [];
@@ -205,7 +206,10 @@
       allowedUnavailableTools: [...draft.settings.allowedUnavailableTools],
       includeUndoActions: draft.settings.includeUndoActions
     };
-    if (draft.metadata.exerciseGuidance.trim()) level.exerciseGuidance = draft.metadata.exerciseGuidance.trim();
+    if (draft.metadata.exerciseGuidance.trim()) {
+      level.exerciseGuidance = draft.metadata.exerciseGuidance.trim();
+      level.exerciseGuidanceIsComplete = true;
+    }
     return level;
   }
 
@@ -560,15 +564,135 @@
     return api.validateLevel(buildExportLevel());
   }
 
-  function renderGuidancePhase() {
-    renderKatex(byId("guidanceProblemExpression"), draft.initial.katex || draft.initial.expression);
-    byId("guidanceNumericalRestrictions").innerHTML = NUMERICAL_REWRITE_RULES.map(rule => {
+  function buildPrefilledExerciseGuidance() {
+    const lines = [
+      "## Problem Statement",
+      "",
+      "\\[",
+      draft.initial.katex || draft.initial.expression,
+      "\\]",
+      "",
+      "## Numerical Manipulation Restrictions",
+      ""
+    ];
+    NUMERICAL_REWRITE_RULES.forEach(rule => {
       const setting = draft.settings.numericalRewrite.rules[rule.id];
       const forward = NUMERICAL_PERMISSION_LABELS[setting.forward] || setting.forward;
       const reverse = NUMERICAL_PERMISSION_LABELS[setting.reverse] || setting.reverse;
-      return `<li><span>${escapeHtml(rule.label)}</span><ul><li>Forward — ${escapeHtml(forward)}</li><li>Reverse — ${escapeHtml(reverse)}</li></ul></li>`;
-    }).join("");
-    byId("exerciseGuidance").value = draft.metadata.exerciseGuidance || "";
+      lines.push(`- ${rule.label}`, `  - Forward — ${forward}`, `  - Reverse — ${reverse}`);
+    });
+    return lines.join("\n");
+  }
+
+  function getGuidanceInlineHtml(source) {
+    const text = String(source || "");
+    let cursor = 0;
+    let html = "";
+    while (cursor < text.length) {
+      const start = text.indexOf("\\(", cursor);
+      if (start < 0) {
+        html += escapeHtml(text.slice(cursor));
+        break;
+      }
+      html += escapeHtml(text.slice(cursor, start));
+      const end = text.indexOf("\\)", start + 2);
+      if (end < 0) {
+        html += escapeHtml(text.slice(start));
+        break;
+      }
+      const expression = text.slice(start + 2, end).trim();
+      html += `<span class="guidance-math" data-guidance-math="${escapeHtml(expression)}" data-display-mode="false"></span>`;
+      cursor = end + 2;
+    }
+    return html;
+  }
+
+  function getGuidancePreviewHtml(source) {
+    const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
+    const html = [];
+    let index = 0;
+    while (index < lines.length) {
+      const line = lines[index];
+      const trimmed = line.trim();
+      if (!trimmed) {
+        index += 1;
+        continue;
+      }
+      const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+      if (heading) {
+        html.push(`<h3>${getGuidanceInlineHtml(heading[1])}</h3>`);
+        index += 1;
+        continue;
+      }
+      if (trimmed === "\\[") {
+        const expressionLines = [];
+        index += 1;
+        while (index < lines.length && lines[index].trim() !== "\\]") {
+          expressionLines.push(lines[index]);
+          index += 1;
+        }
+        if (index < lines.length) index += 1;
+        html.push(`<div class="guidance-math guidance-math-display" data-guidance-math="${escapeHtml(expressionLines.join("\n").trim())}" data-display-mode="true"></div>`);
+        continue;
+      }
+      const topBullet = line.match(/^-\s+(.+)$/);
+      if (topBullet) {
+        const items = [];
+        while (index < lines.length) {
+          const itemMatch = lines[index].match(/^-\s+(.+)$/);
+          if (!itemMatch) break;
+          index += 1;
+          const nested = [];
+          while (index < lines.length) {
+            const nestedMatch = lines[index].match(/^\s{2,}-\s+(.+)$/);
+            if (!nestedMatch) break;
+            nested.push(`<li>${getGuidanceInlineHtml(nestedMatch[1])}</li>`);
+            index += 1;
+          }
+          items.push(`<li><span>${getGuidanceInlineHtml(itemMatch[1])}</span>${nested.length ? `<ul>${nested.join("")}</ul>` : ""}</li>`);
+        }
+        html.push(`<ul class="guidance-preview-list">${items.join("")}</ul>`);
+        continue;
+      }
+      html.push(`<p>${getGuidanceInlineHtml(trimmed)}</p>`);
+      index += 1;
+    }
+    return html.join("");
+  }
+
+  function renderGuidancePreview() {
+    const target = byId("exerciseGuidanceView");
+    target.innerHTML = getGuidancePreviewHtml(draft.metadata.exerciseGuidance);
+    target.querySelectorAll("[data-guidance-math]").forEach(node => {
+      const expression = node.dataset.guidanceMath || "";
+      if (!window.katex) {
+        node.textContent = expression;
+        return;
+      }
+      window.katex.render(expression, node, {
+        throwOnError: false,
+        displayMode: node.dataset.displayMode === "true"
+      });
+    });
+  }
+
+  function renderGuidanceMode() {
+    const editing = currentGuidanceMode === "edit";
+    byId("exerciseGuidanceView").hidden = editing;
+    byId("exerciseGuidanceEditor").hidden = !editing;
+    document.querySelectorAll("[data-guidance-mode]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.guidanceMode === currentGuidanceMode));
+    });
+    if (!editing) renderGuidancePreview();
+  }
+
+  function renderGuidancePhase() {
+    if (!draft.metadata.exerciseGuidance.trim()) {
+      draft.metadata.exerciseGuidance = buildPrefilledExerciseGuidance();
+    }
+    byId("exerciseGuidance").value = draft.metadata.exerciseGuidance;
+    currentGuidanceMode = "view";
+    renderGuidanceMode();
   }
 
   function downloadLevel(level) {
@@ -715,6 +839,17 @@
       byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
     });
     byId("continueToGuidanceButton").addEventListener("click", () => setPhase(5));
+    document.querySelectorAll("[data-guidance-mode]").forEach(button => {
+      button.addEventListener("click", () => {
+        currentGuidanceMode = button.dataset.guidanceMode;
+        renderGuidanceMode();
+        if (currentGuidanceMode === "edit") {
+          byId("exerciseGuidance").focus({ preventScroll: true });
+        } else {
+          button.focus({ preventScroll: true });
+        }
+      });
+    });
     byId("exerciseGuidance").addEventListener("input", event => {
       draft.metadata.exerciseGuidance = event.target.value;
     });

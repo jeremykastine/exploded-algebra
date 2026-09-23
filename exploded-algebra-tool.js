@@ -3295,6 +3295,12 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has an invalid ${fieldName}.`);
                 }
             });
+            if (
+                level.exerciseGuidanceIsComplete !== undefined &&
+                typeof level.exerciseGuidanceIsComplete !== "boolean"
+            ) {
+                throw new Error(`${sourceName} has an invalid exerciseGuidanceIsComplete setting.`);
+            }
             if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
                 throw new Error(`${sourceName} has an invalid initialKatex.`);
             }
@@ -8173,6 +8179,60 @@ ctx.font = SETTINGS.textFont;
             );
         }
 
+        function getCompleteExerciseGuidanceHtml(source) {
+            const text = Array.isArray(source) ? source.join("\n\n") : String(source || "");
+            const lines = text.replace(/\r\n?/g, "\n").split("\n");
+            const html = [];
+            let index = 0;
+            while (index < lines.length) {
+                const line = lines[index];
+                const trimmed = line.trim();
+                if (!trimmed) {
+                    index += 1;
+                    continue;
+                }
+                const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
+                if (heading) {
+                    html.push(`<h3>${getMixedInstructionHtml(heading[1])}</h3>`);
+                    index += 1;
+                    continue;
+                }
+                if (trimmed === "\\[") {
+                    const expressionLines = [];
+                    index += 1;
+                    while (index < lines.length && lines[index].trim() !== "\\]") {
+                        expressionLines.push(lines[index]);
+                        index += 1;
+                    }
+                    if (index < lines.length) index += 1;
+                    html.push(`<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(expressionLines.join("\n").trim())}"></span></div>`);
+                    continue;
+                }
+                const topBullet = line.match(/^-\s+(.+)$/);
+                if (topBullet) {
+                    const items = [];
+                    while (index < lines.length) {
+                        const itemMatch = lines[index].match(/^-\s+(.+)$/);
+                        if (!itemMatch) break;
+                        index += 1;
+                        const nested = [];
+                        while (index < lines.length) {
+                            const nestedMatch = lines[index].match(/^\s{2,}-\s+(.+)$/);
+                            if (!nestedMatch) break;
+                            nested.push(`<li>${getMixedInstructionHtml(nestedMatch[1])}</li>`);
+                            index += 1;
+                        }
+                        items.push(`<li><span>${getMixedInstructionHtml(itemMatch[1])}</span>${nested.length ? `<ul>${nested.join("")}</ul>` : ""}</li>`);
+                    }
+                    html.push(`<ul class="numerical-permission-summary numerical-permission-tree">${items.join("")}</ul>`);
+                    continue;
+                }
+                html.push(`<div class="exercise-guidance-instruction">${getMixedInstructionHtml(trimmed)}</div>`);
+                index += 1;
+            }
+            return html.join("");
+        }
+
         function showExerciseGuidance() {
             if (!pressHoldPopover) return;
             const level = getCurrentLevel();
@@ -8188,6 +8248,18 @@ ctx.font = SETTINGS.textFont;
                 ? `<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(problemExpression)}"></span></div>`
                 : "";
             const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
+            if (level.exerciseGuidanceIsComplete && authorGuidance.length) {
+                pressHoldPopover.innerHTML = `
+                    <div class="press-hold-popover-content">
+                        <span class="press-hold-popover-title">Exercise Guidance</span>
+                        <div class="exercise-guidance-complete">${getCompleteExerciseGuidanceHtml(level.exerciseGuidance)}</div>
+                    </div>`;
+                pressHoldPopover.classList.remove("hidden");
+                activeExerciseGuidance = true;
+                document.body.classList.add("exercise-guidance-active");
+                renderPressHoldPopoverMath();
+                return;
+            }
             const authorGuidanceHtml = authorGuidance.length
                 ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
                 : "";
