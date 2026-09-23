@@ -199,6 +199,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   background: var(--soft);
   overflow: auto;
 }
+.exercise-guidance-view[hidden],
+.exercise-guidance-editor[hidden] { display: none !important; }
 .exercise-guidance-view h3 { margin: 0 0 10px; font-size: 16px; }
 .exercise-guidance-view h3:not(:first-child) { margin-top: 24px; }
 .exercise-guidance-view p { margin: 8px 0; }
