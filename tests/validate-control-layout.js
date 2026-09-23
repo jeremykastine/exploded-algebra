@@ -10,9 +10,9 @@ const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra
 assert(/<p class="last-updated">Last updated: <time datetime="[^"]+">[^<]+ (?:EDT|EST)<\/time><\/p>/.test(indexHtml), "The index must show its last-updated date and Eastern time at the top");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
-assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 3; }'));
 assert(
     playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
     "The app must provide a distinct bottom controls panel and resize handle"
@@ -43,26 +43,24 @@ assert(
         /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
-assert(!playerHtml.includes('id="settingsButton"') && !playerHtml.includes('id="levelMenuPanel"'), "Settings must live directly in the pre-selection toolbar");
+assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
 ["steps-text-size", "bar-style", "bar-shading"].forEach(setting => {
-    assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing inline ${setting} setting button`);
+    assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
 });
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
-assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
-assert(playerHtml.includes('body.authoring-session .workspace-toolbar [data-workspace-action="resetExercise"] { display: none !important; }'), "Instructor pre-selection must hide Reset Exercise");
+assert(playerHtml.includes('data-workspace-action="resetExercise"') && playerHtml.includes('data-workspace-action="downloadMoveHistory"'), "The Settings screen must contain Reset Exercise and Move History");
+assert(playerHtml.includes('body.authoring-session #settingsPanel [data-workspace-action="resetExercise"] { display: none !important; }'), "Instructor Settings must hide Reset Exercise");
+assert(playerJs.includes('function openSettingsPanel()') && playerJs.includes('function closeSettingsPanel()'), "The Settings screen must have open and close behavior");
 assert(/\.bottom-controls-panel \.workspace-toolbar button\[data-workspace-mode\]\.is-active \{[\s\S]*?z-index: 6;[\s\S]*?box-shadow: inset 0 0 0 4px #205fa8;/.test(playerHtml), "The active Select or Hand tool must use an aligned bold inset outline above the grid overlay");
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 4; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="showExerciseGuidance"] { grid-column: 6; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 3; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="openSettings"] { grid-column: 1 / span 3; grid-row: 4; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="showExerciseGuidance"] { grid-column: 4 / span 3; grid-row: 4; }'));
+assert(playerHtml.includes('M100 1 V300 M200 1 V300 M300 1 V399 M400 1 V300 M500 1 V300 M1 300 H599'), "Pre-selection grid lines must match the three-row tools and split bottom row");
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(
@@ -236,7 +234,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-exercise-guidance'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-settings-screen'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

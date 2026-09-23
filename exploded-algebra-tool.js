@@ -1363,9 +1363,11 @@ Promise.resolve().then(() => {
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const authoringFinishRecordingButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringFinishRecording"]');
+        const settingsButton = document.getElementById("settingsButton");
+        const settingsPanel = document.getElementById("settingsPanel");
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
-        const moveHistoryButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="downloadMoveHistory"]');
+        const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const pressHoldPopover = document.getElementById("pressHoldPopover");
         const leftPanel = document.getElementById("leftPanel");
@@ -4733,6 +4735,45 @@ Promise.resolve().then(() => {
             notifyAuthoringHost("ready");
         }
 
+        function openSettingsPanel() {
+            if (!settingsPanel || !settingsButton) {
+                return;
+            }
+            hidePressHoldPopover();
+            hideToolOptionMenu();
+            refreshQuickSettingButtons();
+            settingsPanel.classList.remove("hidden");
+            settingsPanel.setAttribute("aria-hidden", "false");
+            document.body.classList.add("settings-active");
+            const firstControl = settingsPanel.querySelector("button:not([hidden]):not([disabled])");
+            if (firstControl) {
+                firstControl.focus();
+            }
+        }
+
+        function closeSettingsPanel() {
+            if (!settingsPanel) {
+                return;
+            }
+            settingsPanel.classList.add("hidden");
+            settingsPanel.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("settings-active");
+            scheduleResponsiveLayoutRecalculation();
+            if (settingsButton) {
+                settingsButton.focus();
+            }
+        }
+
+        function resetCurrentExercise() {
+            if (!window.confirm("Are you sure you want to reset the exercise?")) {
+                return;
+            }
+            if (!assistanceWasSpecifiedByNavigation) {
+                clearAssistanceQueryString();
+            }
+            window.location.reload();
+        }
+
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
@@ -4772,12 +4813,7 @@ Promise.resolve().then(() => {
                         return;
                     }
                     if (button.dataset.workspaceAction === "resetExercise") {
-                        if (window.confirm("Are you sure you want to reset the exercise?")) {
-                            if (!assistanceWasSpecifiedByNavigation) {
-                                clearAssistanceQueryString();
-                            }
-                            window.location.reload();
-                        }
+                        resetCurrentExercise();
                         return;
                     }
                     if (button.dataset.workspaceAction === "downloadMoveHistory") {
@@ -4786,6 +4822,10 @@ Promise.resolve().then(() => {
                     }
                     if (button.dataset.workspaceAction === "showExerciseGuidance") {
                         showExerciseGuidance();
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "openSettings") {
+                        openSettingsPanel();
                         return;
                     }
                     if (button.dataset.workspaceAction === "authoringFinishRecording") {
@@ -4797,6 +4837,29 @@ Promise.resolve().then(() => {
                         return;
                     }
                     setWorkspaceMode(mode);
+                });
+            }
+            if (settingsPanel) {
+                settingsPanel.addEventListener("click", event => {
+                    const button = event.target.closest("button");
+                    if (!button || button.disabled) {
+                        return;
+                    }
+                    if (button.dataset.settingsAction === "close") {
+                        closeSettingsPanel();
+                        return;
+                    }
+                    if (button.dataset.workspaceSetting) {
+                        cycleQuickSetting(button.dataset.workspaceSetting);
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "resetExercise") {
+                        resetCurrentExercise();
+                        return;
+                    }
+                    if (button.dataset.workspaceAction === "downloadMoveHistory") {
+                        downloadCurrentMoveHistory();
+                    }
                 });
             }
             installPressHoldDescriptions();
@@ -4945,6 +5008,10 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
+                if (event.key === "Escape" && document.body.classList.contains("settings-active")) {
+                    closeSettingsPanel();
+                    return;
+                }
                 if (event.key === "Escape" && toolOptionMenu && !toolOptionMenu.classList.contains("hidden")) {
                     const anchor = activeToolOptionAnchor;
                     hideToolOptionMenu();
