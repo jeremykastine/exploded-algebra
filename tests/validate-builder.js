@@ -91,6 +91,7 @@ assert(builderCss.includes(".instruction-math-inline") && builderCss.includes(".
 assert(!builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit recorded-action details");
 assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
 assert(builderJs.includes("const generatedStepKatex = api.generateKatex(expression)") && builderJs.includes("beforeKatex: generatedStepKatex") && builderJs.includes("afterKatex: generatedStepKatex"), "Each recorded step's pre/post fields must default to the same expression");
+assert(!builderJs.includes("candidate.beforeKatex = previousKept.afterKatex"), "Visibility curation must preserve identical default pre/post versions for each retained step");
 assert(builderCss.includes("body.phase2-expression-building > main") && builderCss.includes("body.phase3-recording > main"), "Expression entry and solving must fill the viewport");
 assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
 assert(builderJs.includes("tap each operation in the expression"), "Initial-expression guidance must describe integrated grouping");
@@ -100,26 +101,12 @@ assert(playerJs.includes("setFinishRecordingControlVisible(visible = true)") && 
 assert(/\.workspace-toolbar \[data-workspace-action="authoringFinishRecording"\] \{[\s\S]*?color: #000;[\s\S]*?\}/.test(playerHtml), "The embedded All Done control must use black text");
 assert(!builderJs.includes("recordStepOrFinish") && !builderJs.includes("currentStepIsRecorded") && !builderJs.includes("recordCurrentStep"), "Phase 3 must not retain the manual Record Step workflow");
 assert(builderJs.includes("reconcileRecordedSteps(snapshot)") && builderJs.includes("candidate.actionPrefix === getActionPrefix"), "Automatically saved steps discarded by an unrecorded undo must be removed from the saved path");
-assert(builderJs.includes("const recordedCandidates = draft.recording.candidates || []") && !builderJs.includes("includedCandidates"), "Export must contain all remaining automatic steps after Phase 4 deletion");
+assert(builderJs.includes("const recordedCandidates = draft.recording.candidates || []") && !builderJs.includes("includedCandidates"), "Export must contain all steps retained by the visibility curation pass");
 assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 4 must replace separate test/export controls with one All Done button");
 assert(builderHtml.includes('class="primary-button complete-exercise-button" hidden') && builderJs.includes('byId("completeExerciseButton").hidden = !isFinalSlide'), "Phase 4 All Done must appear only on the final carousel slide");
 assert(/\.complete-exercise-button \{ color: #000; \}/.test(builderCss), "The Phase 4 All Done control must use black text");
-assert(builderHtml.includes('id="deleteStepButton"') && builderHtml.includes('>Delete Step</button>'), "Phase 4 must provide a Delete Step control");
-assert(builderJs.includes('byId("deleteStepButton").hidden = index === 0 || isFinalSlide') && builderJs.includes('byId("deleteStepButton").addEventListener("click", deleteCurrentCurationStep)'), "Delete Step must appear and act only on intermediate slides");
-const deleteCandidateMatch = builderJs.match(/function deleteCurationCandidateAt\(candidates, index\) \{([\s\S]*?)\n  \}\n\n  function deleteCurrentCurationStep/);
-assert(deleteCandidateMatch, "Phase 4 candidate deletion must remain testable");
-const deleteCandidateContext = {};
-vm.createContext(deleteCandidateContext);
-vm.runInContext(`function deleteCurationCandidateAt(candidates, index) {${deleteCandidateMatch[1]}\n}\nthis.deleteCurationCandidateAt = deleteCurationCandidateAt;`, deleteCandidateContext);
-const deletionCandidates = [
-  { isInitial: true },
-  { actionStartIndex: 0, actionEndIndex: 2, beforeExpression: "initial" },
-  { actionStartIndex: 2, actionEndIndex: 4, beforeExpression: "middle" },
-  { actionStartIndex: 4, actionEndIndex: 6, beforeExpression: "later" }
-];
-assert(deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, 1) === true && deletionCandidates.length === 3, "Deleting an intermediate Phase 4 step must remove it immediately");
-assert(deletionCandidates[1].actionStartIndex === 0 && deletionCandidates[1].beforeExpression === "initial", "The next retained step must absorb the deleted step's action range");
-assert(deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, 0) === false && deleteCandidateContext.deleteCurationCandidateAt(deletionCandidates, deletionCandidates.length - 1) === false, "The first and last Phase 4 steps must not be deletable");
+assert(!builderHtml.includes('id="deleteStepButton"') && !builderHtml.includes('>Delete Step</button>'), "Final step editing must not offer deletion after visibility curation is complete");
+assert(!builderJs.includes("deleteCurrentCurationStep") && !builderJs.includes("deleteCurationCandidateAt") && !builderCss.includes("delete-step-button"), "Final step editing must not retain obsolete deletion behavior or styling");
 assert(builderJs.includes("function syncFinishRecordingControl(snapshot)") && builderJs.includes("snapshot.preselectionActive === true") && builderJs.includes("api.setFinishRecordingControlVisible(isAvailable)") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "The Phase 3 All Done control must appear only while the workspace is in preselection");
 assert(builderJs.includes("syncFinishRecordingControl(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
 assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 4 All Done must download the completed JSON");
