@@ -9934,6 +9934,10 @@ ctx.font = SETTINGS.textFont;
                 pushExpressionBuilderUndoState();
                 current.value += String(digit);
                 current.isBuilderActive = true;
+            } else if (current.type === "value" && String(current.value) === "-1") {
+                pushExpressionBuilderUndoState();
+                if (!placeDirectBuilderOperationAtLowestLevel(builder, "prod")) return false;
+                setDirectBuilderCurrentValue(builder, digit);
             } else {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
@@ -9947,13 +9951,24 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const current = getDirectBuilderCurrentNode(builder);
             if (!current) return false;
+            let implicitOperation = null;
             if (!isBuilderPlaceholder(current)) {
-                uiState.message = "Choose an operation before entering another value.";
-                renderToolArea();
-                return false;
+                implicitOperation = String(value) === "-1"
+                    ? "sum"
+                    : String(value) === "x" || current.type === "value" && String(current.value) === "-1"
+                        ? "prod"
+                        : null;
+                if (!implicitOperation) {
+                    uiState.message = "Choose an operation before entering another value.";
+                    renderToolArea();
+                    return false;
+                }
             }
 
             pushExpressionBuilderUndoState();
+            if (implicitOperation && !placeDirectBuilderOperationAtLowestLevel(builder, implicitOperation)) {
+                return false;
+            }
             setDirectBuilderCurrentValue(builder, value);
             refreshExpressionBuilderPreview();
             return true;
@@ -9985,12 +10000,11 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const current = getDirectBuilderCurrentNode(builder);
             if (!current) return false;
-            if (!isBuilderPlaceholder(current)) {
-                uiState.message = "Choose an operation before entering an inverse.";
-                renderToolArea();
+            pushExpressionBuilderUndoState();
+            if (!isBuilderPlaceholder(current) &&
+                !placeDirectBuilderOperationAtLowestLevel(builder, "prod")) {
                 return false;
             }
-            pushExpressionBuilderUndoState();
             const inner = makePlaceholderNode();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
@@ -10256,7 +10270,9 @@ ctx.font = SETTINGS.textFont;
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
             const extendingNumber = last && last.isBuilderActive && /^\d+$/.test(last.value);
-            if (!builderSequenceExpectsValue(sequence) && !extendingNumber) {
+            const autoMultiplyAfterNegativeOne = !builderSequenceExpectsValue(sequence) &&
+                last && String(last.value) === "-1";
+            if (!builderSequenceExpectsValue(sequence) && !extendingNumber && !autoMultiplyAfterNegativeOne) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
@@ -10265,6 +10281,16 @@ ctx.font = SETTINGS.textFont;
             if (extendingNumber) {
                 last.value += String(digit);
             } else {
+                if (autoMultiplyAfterNegativeOne) {
+                    finalizeIntegratedBuilderValue(sequence);
+                    const targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
+                    if (!targetSequence) return false;
+                    const active = valueNode(String(digit));
+                    active.isBuilderActive = true;
+                    targetSequence.args.push(active);
+                    refreshExpressionBuilderPreview();
+                    return true;
+                }
                 const active = valueNode(String(digit));
                 active.isBuilderActive = true;
                 sequence.args.push(active);
@@ -10280,16 +10306,30 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            if (!builderSequenceExpectsValue(sequence)) {
+            const last = sequence.args[sequence.args.length - 1];
+            const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
+            const implicitOperation = !needsImplicitOperation
+                ? null
+                : String(value) === "-1"
+                    ? "sum"
+                    : String(value) === "x" || last && String(last.value) === "-1"
+                        ? "prod"
+                        : null;
+            if (needsImplicitOperation && !implicitOperation) {
                 uiState.message = "Choose an operation before entering another value.";
                 renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
+            let targetSequence = sequence;
+            if (implicitOperation) {
+                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, implicitOperation);
+                if (!targetSequence) return false;
+            }
             const active = valueNode(String(value));
             active.isBuilderActive = true;
-            sequence.args.push(active);
+            targetSequence.args.push(active);
             refreshExpressionBuilderPreview();
             return true;
         }
@@ -10320,17 +10360,19 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence) return false;
-            if (!builderSequenceExpectsValue(sequence)) {
-                uiState.message = "Choose an operation before entering an inverse.";
-                renderToolArea();
-                return false;
-            }
+            const needsImplicitProduct = builderSequenceExpectsValue(sequence) === false;
             pushExpressionBuilderUndoState();
+            let targetSequence = sequence;
+            if (needsImplicitProduct) {
+                finalizeIntegratedBuilderValue(sequence);
+                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
+                if (!targetSequence) return false;
+            }
             const inner = makeBuilderSequence();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
-            const inverseIndex = sequence.args.length;
-            sequence.args.push(inverse);
+            const inverseIndex = targetSequence.args.length;
+            targetSequence.args.push(inverse);
             builder.currentPath = builder.currentPath.concat(inverseIndex, 0);
             refreshExpressionBuilderPreview();
             return true;
@@ -11789,7 +11831,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Enter every value and operation explicitly. Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Any remaining empty boxes are filled on Submit.";
+            let note = "Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Multiplication is inserted automatically before x or an inverse, addition before negative one, and multiplication between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }

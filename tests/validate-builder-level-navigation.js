@@ -193,16 +193,35 @@ assert.equal(inverseBuilder.root.type, "inv");
 assert.equal(inverseBuilder.root.args[0].type, "sum");
 assertNoAdjacentMatchingOperations(inverseBuilder.root);
 
-const explicitOnly = makeBuilder(value("2"));
-context.uiState.expressionBuilder = explicitOnly;
-assert.equal(context.api.enterDirectBuilderValue("x"), false, "x after a value must require an explicit multiplication");
-assert.equal(context.api.enterDirectBuilderValue("-1"), false, "negative one after a value must require an explicit operation");
-assert.equal(context.api.enterDirectBuilderInverse(), false, "an inverse after a value must require an explicit multiplication");
-assert.equal(explicitOnly.root.value, "2", "Rejected implicit entries must leave the expression unchanged");
+const valueThenX = makeBuilder(value("2"));
+context.uiState.expressionBuilder = valueThenX;
+assert.equal(context.api.enterDirectBuilderValue("x"), true, "x after a value must insert multiplication");
+assert.equal(valueThenX.root.type, "prod");
+assertJsonEqual(valueThenX.root.args.map(node => node.value), ["2", "x"], "Implicit multiplication before x must use the lowest level");
+
+const valueThenNegativeOne = makeBuilder(new context.ExprNode("prod", [value("2"), value("3")], null));
+valueThenNegativeOne.currentPath = [1];
+context.uiState.expressionBuilder = valueThenNegativeOne;
+assert.equal(context.api.enterDirectBuilderValue("-1"), true, "negative one after a value must insert addition");
+assert.equal(valueThenNegativeOne.root.type, "prod");
+assert.equal(valueThenNegativeOne.root.args[1].type, "sum");
+assertJsonEqual(valueThenNegativeOne.root.args[1].args.map(node => node.value), ["3", "-1"], "Implicit addition before negative one must use the lowest level");
+
+const valueThenInverse = makeBuilder(new context.ExprNode("sum", [value("2"), value("3")], null));
+valueThenInverse.currentPath = [1];
+context.uiState.expressionBuilder = valueThenInverse;
+assert.equal(context.api.enterDirectBuilderInverse(), true, "an inverse after a value must insert multiplication");
+assert.equal(valueThenInverse.root.type, "sum");
+assert.equal(valueThenInverse.root.args[1].type, "prod");
+assert.equal(valueThenInverse.root.args[1].args[0].value, "3");
+assert.equal(valueThenInverse.root.args[1].args[1].type, "inv");
+assert.equal(context.api.isBuilderPlaceholder(valueThenInverse.root.args[1].args[1].args[0]), true);
+assertJsonEqual(valueThenInverse.currentPath, [1, 1, 0], "Entry must move inside the lowest-level implicitly multiplied inverse");
 
 const negativeOneThenDigit = makeBuilder(value("-1"));
 context.uiState.expressionBuilder = negativeOneThenDigit;
-assert.equal(context.api.appendDirectBuilderDigit("4"), false, "a digit after negative one must require an explicit multiplication");
-assert.equal(negativeOneThenDigit.root.value, "-1");
+assert.equal(context.api.appendDirectBuilderDigit("4"), true, "a digit after negative one must insert multiplication");
+assert.equal(negativeOneThenDigit.root.type, "prod");
+assertJsonEqual(negativeOneThenDigit.root.args.map(node => node.value), ["-1", "4"], "Implicit multiplication after negative one must use the lowest level");
 
 console.log("Expression Builder direct-notation checks passed.");
