@@ -5,6 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Exploded Algebra Tool</title>
+    <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
     <style>
         html, body {
             width: 100%;
@@ -2888,22 +2889,9 @@
 
 
 
-        body.authoring-recording-session .app-container {
-            --workspace-keypad-width: calc(var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-size) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap) + var(--main-key-gap));
-        }
         body.selection-active:not(.expression-builder-active) .app-container {
             --workspace-keypad-width: calc(var(--main-key-size) * 8 + var(--main-key-gap) * 7);
         }
-        body.authoring-recording-session .workspace-toolbar {
-            grid-template-columns: repeat(6, var(--main-key-size));
-        }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 5 / span 2; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 2; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 5; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 6; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; }
 
 
 
@@ -4365,6 +4353,7 @@
 
 </head>
 <body class="no-level-loaded">
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-23T17:49:35-04:00">9/23/26, 5:49 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>

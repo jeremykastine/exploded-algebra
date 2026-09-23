@@ -70,6 +70,17 @@ assert(!builderHtml.includes("Advanced tool permissions") && !builderHtml.includ
 assert(!builderHtml.includes('id="finishRecordingButton"') && !builderCss.includes(".record-step-button"), "Phase 3 must not use a detached checkpoint overlay");
 assert(playerHtml.includes('data-workspace-action="authoringFinishRecording"') && playerHtml.indexOf('data-workspace-action="authoringFinishRecording"') < playerHtml.indexOf('class="workspace-tool-group workspace-selection-group"'), "All Done must be the first control in the Phase 3 preselection toolbar");
 assert(playerHtml.includes('body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 4 / span 3; grid-row: 4; }'), "All Done must occupy the lower-right three cells during recording");
+for (const selector of [
+  '[data-workspace-action="zoomIn"]',
+  '[data-workspace-action="zoomOut"]',
+  '[data-workspace-action="resetZoom"]',
+  '[data-workspace-mode="pan"]',
+  '[data-workspace-mode="select"]',
+  '[data-workspace-action="undoExpression"]'
+]) {
+  assert(!playerHtml.includes(`body.authoring-recording-session .workspace-toolbar ${selector}`), `Instructor recording must not override the shared placement of ${selector}`);
+}
+assert(builderHtml.includes('exploded-algebra.html?authoring=builder&amp;v=20260923-instructor-toolbar'), "The Exercise Builder must load the corrected instructor toolbar layout");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
 assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
 assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");

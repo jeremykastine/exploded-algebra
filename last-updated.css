@@ -1,0 +1,21 @@
+.page-last-updated {
+  position: fixed;
+  z-index: 10000;
+  top: max(3px, env(safe-area-inset-top));
+  right: max(5px, env(safe-area-inset-right));
+  margin: 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #666;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+body.authoring-session > .page-last-updated {
+  display: none;
+}

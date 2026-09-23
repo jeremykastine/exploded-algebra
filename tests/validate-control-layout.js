@@ -6,8 +6,19 @@ const vm = require("node:vm");
 const indexHtml = fs.readFileSync(path.resolve(__dirname, "..", "index.html"), "utf8");
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
+const htmlFileNames = fs.readdirSync(path.resolve(__dirname, ".."))
+    .filter(fileName => fileName.toLowerCase().endsWith(".html"));
+const lastUpdatedCss = fs.readFileSync(path.resolve(__dirname, "..", "last-updated.css"), "utf8");
 
-assert(/<p class="last-updated">Last updated: <time datetime="[^"]+">[^<]+ (?:EDT|EST)<\/time><\/p>/.test(indexHtml), "The index must show its last-updated date and Eastern time at the top");
+const lastUpdatedValues = htmlFileNames.map(fileName => {
+    const html = fs.readFileSync(path.resolve(__dirname, "..", fileName), "utf8");
+    const match = html.match(/<p class="page-last-updated">Last updated: <time datetime="([^"]+)">([^<]+ (?:EDT|EST))<\/time><\/p>/);
+    assert(match, `${fileName} must show its tiny top-right Last updated timestamp in Eastern time`);
+    assert(html.includes('href="last-updated.css?v='), `${fileName} must load the shared Last updated styling`);
+    return `${match[1]}|${match[2]}`;
+});
+assert(new Set(lastUpdatedValues).size === 1, "Every HTML page must carry the same current Last updated timestamp");
+assert(/\.page-last-updated \{[\s\S]*?position: fixed;[\s\S]*?top: max\(3px,[\s\S]*?right: max\(5px,[\s\S]*?font-size: 9px;[\s\S]*?pointer-events: none;/.test(lastUpdatedCss), "The shared Last updated marker must remain tiny, fixed in the top-right, and noninteractive");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 3; }'));
