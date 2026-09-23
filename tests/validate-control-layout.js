@@ -10,9 +10,9 @@ const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra
 assert(/<p class="last-updated">Last updated: <time datetime="[^"]+">[^<]+ (?:EDT|EST)<\/time><\/p>/.test(indexHtml), "The index must show its last-updated date and Eastern time at the top");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
-assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }'));
-assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
-assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }'));
+assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 2; }'));
 assert(
     playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
     "The app must provide a distinct bottom controls panel and resize handle"
@@ -51,16 +51,18 @@ assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !
 assert(playerHtml.includes('data-workspace-action="resetExercise"'), "Reset Exercise must remain available as a pre-selection action");
 assert(playerHtml.includes('body.authoring-session .workspace-toolbar [data-workspace-action="resetExercise"] { display: none !important; }'), "Instructor pre-selection must hide Reset Exercise");
 assert(/\.bottom-controls-panel \.workspace-toolbar button\[data-workspace-mode\]\.is-active \{[\s\S]*?z-index: 6;[\s\S]*?box-shadow: inset 0 0 0 4px #205fa8;/.test(playerHtml), "The active Select or Hand tool must use an aligned bold inset outline above the grid overlay");
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1 / span 2; grid-row: 1; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 4; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 6; grid-row: 3 / span 2; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(
@@ -234,7 +236,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260922-builder-six-column-layout'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-preselection-two-row-layout'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

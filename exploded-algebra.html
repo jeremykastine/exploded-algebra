@@ -4056,18 +4056,18 @@
             min-width: 0;
             min-height: 0;
         }
-        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1 / span 2; grid-row: 1; }
-        .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 1 / span 2; grid-row: 2; }
-        .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 1 / span 2; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 1 / span 2; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }
-        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }
-        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5 / span 2; grid-row: 3; }
-        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 5 / span 2; grid-row: 4; }
+        .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 1; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 2; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 2; }
+        .workspace-toolbar [data-workspace-setting="steps-text-size"] { grid-column: 1; grid-row: 3 / span 2; }
+        .workspace-toolbar [data-workspace-setting="bar-style"] { grid-column: 2; grid-row: 3 / span 2; }
+        .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; grid-row: 3 / span 2; }
+        .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 4; grid-row: 3 / span 2; }
+        .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 3 / span 2; }
+        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 6; grid-row: 3 / span 2; }
         body.authoring-session .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { display: none !important; }
         body.authoring-session .workspace-toolbar [data-workspace-action="resetExercise"] { display: none !important; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
@@ -4105,13 +4105,7 @@
 
         .quadrant-menu { display: none !important; }
 
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 5 / span 2; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 3 / span 2; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomIn"] { grid-column: 3 / span 2; grid-row: 2; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="zoomOut"] { grid-column: 3 / span 2; grid-row: 3; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3 / span 2; grid-row: 4; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5 / span 2; grid-row: 1; }
-        body.authoring-recording-session .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 5 / span 2; grid-row: 2; }
+        body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 6; grid-row: 3 / span 2; }
 
         .main-action-panel .panel-tool-menu,
         .main-action-panel .intent-category-list,
@@ -4444,7 +4438,7 @@
                     </button>
                 </div>
                 <svg class="controls-grid-overlay pre-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M200 1 V399 M400 1 V399 M1 100 H599 M1 200 H599 M1 300 H599"/>
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 200 H599"/>
                 </svg>
             </div>
             </div>
@@ -4507,7 +4501,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260922-builder-six-column-layout"></script>
-    <script src="exploded-algebra-tool.js?v=20260922-builder-six-column-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260923-preselection-two-row-layout"></script>
 
 </body>
 </html>
