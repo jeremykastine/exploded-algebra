@@ -2197,22 +2197,6 @@ Promise.resolve().then(() => {
             applyResponsiveMainButtonSize();
         }
 
-        function getStepGuidanceForDisplay(step) {
-            const explicitGuidance = normalizeTextBlocks(step && step.guidance);
-            const legacyGuidance = [
-                ...normalizeTextBlocks(step && step.introduction),
-                ...normalizeTextBlocks(step && step.conclusion)
-            ];
-            const labelGuidance = step && typeof step.label === "string" && step.label.trim() && step.label.trim().toLowerCase() !== "start"
-                ? [step.label.trim()]
-                : [];
-            return explicitGuidance.length
-                ? explicitGuidance
-                : legacyGuidance.length
-                    ? legacyGuidance
-                    : labelGuidance;
-        }
-
         function renderProbeMath(probe) {
             probe.querySelectorAll(".katex-placeholder").forEach(node => {
                 const expr = node.getAttribute("data-expr") || "";
@@ -2456,8 +2440,7 @@ Promise.resolve().then(() => {
         };
         let pressHoldState = null;
         let suppressedPressHoldClick = null;
-        let activeStepGuidanceIndex = null;
-        let activeStepGuidanceSource = null;
+        let activeExerciseGuidance = false;
 
         function isExpressionBuilderButton(target) {
             return !!target.closest("#builderKeypadPanel");
@@ -2533,35 +2516,8 @@ Promise.resolve().then(() => {
             }
             pressHoldPopover.classList.add("hidden");
             pressHoldPopover.replaceChildren();
-            activeStepGuidanceIndex = null;
-            activeStepGuidanceSource = null;
-            document.body.classList.remove("step-guidance-active");
-        }
-
-        function getStepGuidanceDetails(stepIndex) {
-            const level = getCurrentLevel();
-            if (!level) {
-                return null;
-            }
-            if (stepIndex < 0) {
-                const descriptions = normalizeTextBlocks(level.instruction).length
-                    ? normalizeTextBlocks(level.instruction)
-                    : normalizeTextBlocks(level.introduction);
-                return {
-                    title: "Problem statement",
-                    descriptions,
-                    expression: ""
-                };
-            }
-            const step = level.steps && level.steps[stepIndex];
-            if (!step) {
-                return null;
-            }
-            return {
-                title: "Step guidance",
-                descriptions: getStepGuidanceForDisplay(step),
-                expression: ""
-            };
+            activeExerciseGuidance = false;
+            document.body.classList.remove("exercise-guidance-active");
         }
 
         function getMixedInstructionHtml(source) {
@@ -2594,20 +2550,6 @@ Promise.resolve().then(() => {
             return html;
         }
 
-        function getStepGuidanceHtml(stepIndex) {
-            const details = getStepGuidanceDetails(stepIndex);
-            if (!details) {
-                return "";
-            }
-            const paragraphs = details.descriptions.length
-                ? details.descriptions.map(text => `<div class="step-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")
-                : "<p>None given</p>";
-            const expression = details.expression
-                ? `<div class="step-guidance-expression"><span class="katex-placeholder" data-expr="${escapeHtml(details.expression)}"></span></div>`
-                : "";
-            return `<div class="press-hold-popover-content"><span class="press-hold-popover-title">${escapeHtml(details.title)}</span>${paragraphs}${expression}</div>`;
-        }
-
         function renderPressHoldPopoverMath() {
             if (!pressHoldPopover) {
                 return;
@@ -2625,32 +2567,17 @@ Promise.resolve().then(() => {
             });
         }
 
-        function showStepGuidance(stepIndex, source = "button") {
-            const html = getStepGuidanceHtml(stepIndex);
-            if (!html || !pressHoldPopover) {
-                return false;
-            }
-            activeStepGuidanceIndex = stepIndex;
-            activeStepGuidanceSource = source;
-            pressHoldPopover.innerHTML = html;
-            pressHoldPopover.classList.remove("hidden");
-            document.body.classList.add("step-guidance-active");
-            renderPressHoldPopoverMath();
-            return true;
-        }
-
         function showPressHoldPopover(button) {
             if (!pressHoldPopover || !isPressHoldTargetEligible(button)) {
                 return;
             }
-            activeStepGuidanceIndex = null;
-            activeStepGuidanceSource = null;
-            document.body.classList.remove("step-guidance-active");
+            activeExerciseGuidance = false;
+            document.body.classList.remove("exercise-guidance-active");
             pressHoldPopover.innerHTML = `<div class="press-hold-popover-content">${getPressHoldDescriptionHtml(button)}</div>`;
             pressHoldPopover.classList.remove("hidden");
         }
 
-        function dismissStepGuidance() {
+        function dismissExerciseGuidance() {
             hidePressHoldPopover();
         }
 
@@ -2701,7 +2628,7 @@ Promise.resolve().then(() => {
             titleObserver.observe(document.body, { childList: true, subtree: true });
 
             document.addEventListener("click", event => {
-                if (!activeStepGuidanceSource) {
+                if (!activeExerciseGuidance) {
                     return;
                 }
                 const suppressedTarget = getPressHoldTarget(event.target);
@@ -2714,11 +2641,11 @@ Promise.resolve().then(() => {
                 }
                 event.preventDefault();
                 event.stopImmediatePropagation();
-                dismissStepGuidance();
+                dismissExerciseGuidance();
             }, true);
 
             document.addEventListener("pointerdown", event => {
-                if (activeStepGuidanceSource) {
+                if (activeExerciseGuidance) {
                     return;
                 }
                 const button = getPressHoldTarget(event.target);
@@ -3356,7 +3283,8 @@ Promise.resolve().then(() => {
                 "instruction",
                 "introduction",
                 "conclusion",
-                "completionMessage"
+                "completionMessage",
+                "exerciseGuidance"
             ].forEach(fieldName => {
                 if (level[fieldName] === undefined) {
                     return;
@@ -4345,14 +4273,10 @@ Promise.resolve().then(() => {
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
-                const guidanceHtml = isCurrent && getStepGuidanceForDisplay(step).length
-                    ? `<button type="button" class="view-step-guidance-button" data-step-guidance-index="${index}" data-hold-description="Open the guidance for this step." aria-label="View guidance" title="View guidance">?</button>`
-                    : "";
                 return `
                     <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}"${finalOnlyMode ? ' aria-label="Target final expression"' : ""}>
                         <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
-                            ${guidanceHtml}
                             ${completedCheckHtml}
                         </div>
                     </div>
@@ -4378,17 +4302,8 @@ Promise.resolve().then(() => {
 
             renderLeftPanelMath();
             scheduleTopPanelHeightUpdate(level);
-            levelContent.querySelectorAll(".view-step-guidance-button").forEach(button => {
-                button.addEventListener("click", event => {
-                    event.stopPropagation();
-                    showStepGuidance(Number(button.dataset.stepGuidanceIndex), "button");
-                });
-            });
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
-                    if (event.target.closest(".view-step-guidance-button")) {
-                        return;
-                    }
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
                         // Preview comparison is disabled for now. Leave the listener
                         // here so it can be restored by changing the flag above.
@@ -4869,8 +4784,8 @@ Promise.resolve().then(() => {
                         downloadCurrentMoveHistory();
                         return;
                     }
-                    if (button.dataset.workspaceAction === "showNumericalRestrictions") {
-                        showNumericalRestrictionsPeek();
+                    if (button.dataset.workspaceAction === "showExerciseGuidance") {
+                        showExerciseGuidance();
                         return;
                     }
                     if (button.dataset.workspaceAction === "authoringFinishRecording") {
@@ -5018,7 +4933,7 @@ Promise.resolve().then(() => {
 
             document.addEventListener("click", event => {
                 if (pressHoldPopover && !pressHoldPopover.classList.contains("hidden") &&
-                    !event.target.closest('[data-workspace-action="showNumericalRestrictions"]') &&
+                    !event.target.closest('[data-workspace-action="showExerciseGuidance"]') &&
                     !pressHoldPopover.contains(event.target)) {
                     hidePressHoldPopover();
                 }
@@ -8156,9 +8071,7 @@ ctx.font = SETTINGS.textFont;
             return items;
         }
 
-        function showNumericalRestrictionsPeek() {
-            if (!pressHoldPopover) return;
-            const profile = getNumericalRewriteProfile();
+        function getNumericalRestrictionsTreeHtml(profile) {
             const labels = {
                 nonnegativeArithmetic: "Nonnegative addition and multiplication",
                 signedArithmetic: "Signed number addition and multiplication",
@@ -8173,7 +8086,7 @@ ctx.font = SETTINGS.textFont;
                 manual: "Manual",
                 "not-allowed": "Not allowed"
             })[mode] || mode;
-            const rulesHtml = NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
+            return NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
                 const rule = getNumericalRewriteRuleSetting(ruleId, profile);
                 return `<li><span>${escapeHtml(labels[ruleId] || ruleId)}</span>
                     <ul>
@@ -8182,12 +8095,47 @@ ctx.font = SETTINGS.textFont;
                     </ul>
                 </li>`;
             }).join("");
+        }
+
+        function getProblemStatementKatex(level) {
+            const firstStep = level && Array.isArray(level.steps) ? level.steps[0] : null;
+            return level && level.initialKatex || (
+                firstStep
+                    ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
+                    : level && level.startExpression || ""
+            );
+        }
+
+        function showExerciseGuidance() {
+            if (!pressHoldPopover) return;
+            const level = getCurrentLevel();
+            if (!level) return;
+            const problemText = normalizeTextBlocks(level.instruction).length
+                ? normalizeTextBlocks(level.instruction)
+                : normalizeTextBlocks(level.introduction);
+            const problemTextHtml = problemText
+                .map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`)
+                .join("");
+            const problemExpression = getProblemStatementKatex(level);
+            const problemExpressionHtml = problemExpression
+                ? `<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(problemExpression)}"></span></div>`
+                : "";
+            const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
+            const authorGuidanceHtml = authorGuidance.length
+                ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
+                : "";
+            const rulesHtml = getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile());
             pressHoldPopover.innerHTML = `
                 <div class="press-hold-popover-content">
-                    <span class="press-hold-popover-title">Numerical Manipulation</span>
-                    <ul class="numerical-permission-summary numerical-permission-tree">${rulesHtml}</ul>
+                    <span class="press-hold-popover-title">Exercise Guidance</span>
+                    <section class="exercise-guidance-section"><h3>Problem Statement</h3>${problemTextHtml}${problemExpressionHtml}</section>
+                    <section class="exercise-guidance-section"><h3>Numerical Manipulation Restrictions</h3><ul class="numerical-permission-summary numerical-permission-tree">${rulesHtml}</ul></section>
+                    ${authorGuidanceHtml}
                 </div>`;
             pressHoldPopover.classList.remove("hidden");
+            activeExerciseGuidance = true;
+            document.body.classList.add("exercise-guidance-active");
+            renderPressHoldPopoverMath();
         }
 
 

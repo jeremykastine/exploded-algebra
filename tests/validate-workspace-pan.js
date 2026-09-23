@@ -50,10 +50,10 @@ assert(
     "Step progression must auto-scroll vertically"
 );
 assert(
-    playerJs.includes('class="view-step-guidance-button"')
-        && playerJs.includes('aria-label="View guidance" title="View guidance">?</button>')
-        && playerJs.includes('showStepGuidance(Number(button.dataset.stepGuidanceIndex), "button")'),
-    "The active step must expose guidance through a compact question-mark button"
+    !playerJs.includes('view-step-guidance-button')
+        && !playerJs.includes('showStepGuidance')
+        && playerHtml.includes('data-workspace-action="showExerciseGuidance"'),
+    "Guidance must live in the pre-selection Exercise Guidance control rather than on individual steps"
 );
 assert(
     !playerJs.includes('step-card step-hold-target'),

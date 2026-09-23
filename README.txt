@@ -23,24 +23,24 @@ standalone JSON files remain in the levels folder for hosting, distribution, and
 editing. No exploded-algebra-levels.js file is used.
 
 The conventional-notation panel uses three textbook-style sections separated by
-horizontal rules. `instruction` is the brief textbook direction available with
-the original expression. `initialKatex` is the conventional form of the starting
+horizontal rules. `initialKatex` is the conventional form of the starting
 expression. The running solution shows completed steps plus the one current step.
-Text fields may be one string or an array of strings unless described otherwise.
+The pre-selection Exercise Guidance view automatically includes that problem
+statement and the exercise's numerical-manipulation restrictions. An optional
+top-level `exerciseGuidance` field supplies any additional author guidance.
 
 The original expression remains the first item in `steps` for matching and move
 history compatibility, but it is displayed only in the problem-statement section.
-Subsequent steps are revealed progressively. A step may include one `guidance`
-block, which appears above that step only while it is current. A step may also
-include `beforeKatex` and `afterKatex` conventional-display versions. The before
+Subsequent steps are revealed progressively without individual step guidance. A
+step may include `beforeKatex` and `afterKatex` conventional-display versions. The before
 version is shown while the goal is current; the after version replaces it when the
 step is complete. If either is omitted, the ordinary `katex` version is used. This
 permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
 exact exploded `expression` used to recognize the completed step.
 
-Older files remain compatible: `introduction` falls back to `instruction`, and a
-step's old `introduction` plus `conclusion` are combined into its single above-step
-guidance area. Exercise-wide description fields are no longer used.
+Older files remain compatible: `introduction` falls back to `instruction` in the
+problem-statement portion of Exercise Guidance. Legacy per-step guidance fields
+remain loadable but are no longer displayed.
 
 The exploded expression is anchored at the upper-left of its workspace. The
 idle workspace controls, contextual action choices, and Expression Builder each
@@ -60,8 +60,9 @@ provides controls for the responsive conventional-steps text preference and
 operation-bar appearance.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
-in a text field. Numerical Rewrite shows its exercise-specific permissions as a
-bulleted list, and its action button is marked with bold `123`. Operation display
+in a text field. The Exercise Guidance pre-selection button shows numerical
+permissions as a two-level bulleted list. The Numerical Manipulation action button
+is marked with bold `123`. Operation display
 settings, Reset, and Download Move History appear on the settings screen rather
 than in the action or expression-builder panels.
 
@@ -118,8 +119,8 @@ automatic. Manual rewrites must be exactly equivalent and match the enabled
 category and direction.
 
 `(-1)(-1) ↔ 1`, `inverse(1) ↔ 1`, and `inverse(-1) ↔ -1` also appear as full
-permission entries in Exercise Builder Phase 1. Long-holding Numerical
-Manipulation in the player displays all current direction settings.
+permission entries in Exercise Builder Phase 1. Exercise Guidance in the player
+displays all current direction settings.
 
 Older custom files that contain separate addition and multiplication rules,
 `arithmeticLevel`, a previous broad `numericalRewrite` profile, the seven-rule
@@ -157,14 +158,16 @@ the abandoned branch from the saved path. Zoom in, zoom out, and zoom reset are
 view-only controls and are never retained as solution moves.
 
 The home page links to Introduction.html and Exercises.html.
-It also links to exercise-builder.html, a four-phase authoring application that
-uses the real Exploded Algebra player in an embedded authoring session. Builder
-drafts autosave in localStorage. Completed levels export with formatVersion 1,
+It also links to exercise-builder.html, a five-phase authoring application that
+uses the real Exploded Algebra player in an embedded authoring session. Completed
+levels export with formatVersion 1,
 the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
 and enough information for High, Medium, and Low assistance. During Phase 3,
 every completed expression-changing manipulation is automatically saved as a
-major step. Phase 4 displays every saved step and lets the author delete unwanted
-intermediate steps before export. Test Level passes
+major step. Phase 4 first chooses which recorded steps to show, then edits only
+their pre- and post-completion notation. Phase 5 shows the automatically included
+problem statement and numerical restrictions and provides one optional Exercise
+Guidance field before export. All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 

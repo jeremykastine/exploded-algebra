@@ -350,8 +350,7 @@
             overflow: visible;
         }
 
-        .exercise-guidance,
-        .step-guidance {
+        .exercise-guidance {
             margin: 8px 2px 10px;
             color: #333333;
             font-size: 14px;
@@ -368,8 +367,7 @@
             line-height: 1.3;
         }
 
-        .exercise-footer p:last-child,
-        .step-guidance p:last-child {
+        .exercise-footer p:last-child {
             margin-bottom: 0;
         }
 
@@ -384,15 +382,6 @@
 
         .exercise-guidance li {
             margin: 0 0 6px;
-        }
-
-        .step-guidance p {
-            margin: 0 0 8px;
-        }
-
-        .step-guidance {
-            margin-top: 2px;
-            margin-bottom: 4px;
         }
 
         .completion-export-button {
@@ -1954,15 +1943,6 @@
         }
         .solution-step { min-height: 0; padding: 3px 4px; font-size: inherit; }
         .problem-step-card { margin: 0; }
-        .step-guidance {
-            width: fit-content;
-            max-width: min(260px, 65vw);
-            max-height: none;
-            margin: 0 2px 5px;
-            font-size: 12px;
-            line-height: 1.35;
-        }
-
         .quadrant-tools {
             position: relative;
             grid-column: 2;
@@ -3614,26 +3594,6 @@
         .completed-step-check {
             line-height: 1;
         }
-        .view-step-guidance-button {
-            flex: 0 0 auto;
-            width: auto;
-            min-width: 0;
-            min-height: 0;
-            margin: 0;
-            padding: 0;
-            border: 0;
-            border-radius: 0;
-            appearance: none;
-            background: transparent;
-            color: #7650a5;
-            font: inherit;
-            font-size: 1em;
-            line-height: 1;
-            font-weight: 700;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-
         /* Full-canvas settings view. */
         body.settings-active .app-container{
             grid-template-rows: minmax(0, 1fr);
@@ -3792,7 +3752,7 @@
             color: #fff;
         }
 
-        /* Step guidance shown automatically and when a step is held. */
+        /* Exercise guidance shown from the pre-selection controls. */
         .press-hold-popover-content {
             position: relative;
             z-index: 2;
@@ -3802,15 +3762,22 @@
             gap: 8px;
             width: min(760px, 100%);
         }
-        .press-hold-popover .step-guidance-expression {
+        .press-hold-popover .exercise-guidance-expression {
             margin-top: 8px;
             font-size: clamp(20px, 4vw, 34px);
             font-weight: 700;
         }
-        .press-hold-popover .step-guidance-instruction {
+        .press-hold-popover .exercise-guidance-instruction {
             width: 100%;
             text-align: center;
             white-space: pre-wrap;
+        }
+        .press-hold-popover .exercise-guidance-section {
+            width: min(720px, 100%);
+        }
+        .press-hold-popover .exercise-guidance-section h3 {
+            margin: 8px 0 4px;
+            font-size: 0.95em;
         }
         .press-hold-popover .instruction-math-inline { white-space: normal; }
         .press-hold-popover .instruction-math-display {
@@ -3818,15 +3785,20 @@
             margin: 6px 0;
             white-space: normal;
         }
-        body.step-guidance-active #svgContainer,
-        body.step-guidance-active .quadrant-menu,
-        body.step-guidance-active .quadrant-tools,
-        body.step-guidance-active .main-action-panel,
-        body.step-guidance-active .builder-keypad-panel {
+        body.exercise-guidance-active #svgContainer,
+        body.exercise-guidance-active .quadrant-menu,
+        body.exercise-guidance-active .quadrant-tools,
+        body.exercise-guidance-active .main-action-panel,
+        body.exercise-guidance-active .builder-keypad-panel {
             display: none !important;
         }
-        body.step-guidance-active .press-hold-popover {
+        body.exercise-guidance-active .press-hold-popover {
             background: #fff;
+            justify-content: flex-start;
+            overflow: auto;
+        }
+        body.exercise-guidance-active .press-hold-popover-content {
+            margin: auto 0;
         }
 
         /* Bold, optically consistent Expression Builder symbols. */
@@ -3998,8 +3970,8 @@
 
         body.settings-active .bottom-controls-panel,
         body.settings-active .bottom-panel-resize-handle,
-        body.step-guidance-active .bottom-controls-panel,
-        body.step-guidance-active .bottom-panel-resize-handle,
+        body.exercise-guidance-active .bottom-controls-panel,
+        body.exercise-guidance-active .bottom-panel-resize-handle,
         body.builder-review-active .bottom-controls-panel,
         body.builder-review-active .bottom-panel-resize-handle,
         body.expression-builder-active.builder-entry-mode.builder-review-active .bottom-panel-resize-handle {
@@ -4067,8 +4039,8 @@
         .workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; grid-row: 3 / span 2; }
         .workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 4; grid-row: 3 / span 2; }
         .workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 3 / span 2; }
-        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 6; grid-row: 3 / span 2; }
-        body.authoring-session .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { display: none !important; }
+        .workspace-toolbar [data-workspace-action="showExerciseGuidance"] { grid-column: 6; grid-row: 3 / span 2; }
+        body.authoring-session .workspace-toolbar [data-workspace-action="showExerciseGuidance"] { display: none !important; }
         body.authoring-session .workspace-toolbar [data-workspace-action="resetExercise"] { display: none !important; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
@@ -4076,7 +4048,7 @@
         .workspace-toolbar .workspace-setting-button,
         .workspace-toolbar [data-workspace-action="resetExercise"],
         .workspace-toolbar [data-workspace-action="downloadMoveHistory"],
-        .workspace-toolbar [data-workspace-action="showNumericalRestrictions"] {
+        .workspace-toolbar [data-workspace-action="showExerciseGuidance"] {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -4367,7 +4339,7 @@
             }
             body.settings-active .top-panel-resize-handle,
             body.settings-active .bottom-panel-resize-handle,
-            body.step-guidance-active .bottom-panel-resize-handle,
+            body.exercise-guidance-active .bottom-panel-resize-handle,
             body.builder-review-active .bottom-panel-resize-handle {
                 display: none !important;
             }
@@ -4428,9 +4400,9 @@
                         <span class="workspace-setting-name" aria-hidden="true">Reset</span>
                         <span class="workspace-setting-value" aria-hidden="true">Exercise</span>
                     </button>
-                    <button type="button" class="numerical-restrictions-button" data-workspace-action="showNumericalRestrictions" aria-label="Numerical manipulation restrictions" data-hold-description="Show the numerical manipulation permissions for this problem.">
-                        <span class="workspace-setting-name" aria-hidden="true">Numerical</span>
-                        <span class="workspace-setting-value" aria-hidden="true">Rules</span>
+                    <button type="button" class="exercise-guidance-button" data-workspace-action="showExerciseGuidance" aria-label="Exercise guidance" data-hold-description="Show the problem statement, numerical manipulation restrictions, and author guidance for this exercise.">
+                        <span class="workspace-setting-name" aria-hidden="true">Exercise</span>
+                        <span class="workspace-setting-value" aria-hidden="true">Guidance</span>
                     </button>
                     <button type="button" class="move-history-button" data-workspace-action="downloadMoveHistory" aria-label="Download move history" data-hold-description="Download the complete move history for this exercise." hidden>
                         <span class="workspace-setting-name" aria-hidden="true">Move</span>
@@ -4501,7 +4473,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260922-builder-six-column-layout"></script>
-    <script src="exploded-algebra-tool.js?v=20260923-preselection-two-row-layout"></script>
+    <script src="exploded-algebra-tool.js?v=20260923-exercise-guidance"></script>
 
 </body>
 </html>

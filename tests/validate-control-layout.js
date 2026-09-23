@@ -62,7 +62,7 @@ assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-styl
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-setting="bar-shading"] { grid-column: 3; grid-row: 3 / span 2; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="resetExercise"] { grid-column: 4; grid-row: 3 / span 2; }'));
 assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="downloadMoveHistory"] { grid-column: 5; grid-row: 3 / span 2; }'));
-assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="showNumericalRestrictions"] { grid-column: 6; grid-row: 3 / span 2; }'));
+assert(playerHtml.includes('.workspace-toolbar [data-workspace-action="showExerciseGuidance"] { grid-column: 6; grid-row: 3 / span 2; }'));
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(
@@ -236,7 +236,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-preselection-two-row-layout'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-exercise-guidance'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

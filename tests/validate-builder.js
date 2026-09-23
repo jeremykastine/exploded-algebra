@@ -20,7 +20,7 @@ const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/
 for (const id of requestedIds) {
   assert(htmlIds.has(id), `exercise-builder.js references missing HTML id: ${id}`);
 }
-for (const phase of ["1", "2", "3", "4"]) {
+for (const phase of ["1", "2", "3", "4", "5"]) {
   assert(builderHtml.includes(`data-phase="${phase}"`), `Missing builder phase ${phase}`);
 }
 
@@ -71,8 +71,8 @@ assert(!builderHtml.includes('id="finishRecordingButton"') && !builderCss.includ
 assert(playerHtml.includes('data-workspace-action="authoringFinishRecording"') && playerHtml.indexOf('data-workspace-action="authoringFinishRecording"') < playerHtml.indexOf('class="workspace-tool-group workspace-selection-group"'), "All Done must be the first control in the Phase 3 preselection toolbar");
 assert(playerHtml.includes('body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 6; grid-row: 3 / span 2; }'), "All Done must remain visible in the lower controls row during recording");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
-assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)"), "The builder must advance directly through setup, expression entry, solving, and review");
-assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Instructions</span>') && builderJs.includes('<span>Post-completion</span>'), "Each candidate step must have pre-completion, instructions, and post-completion editing fields");
+assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
+assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");
 assert(!builderJs.includes('data-toggle-step') && !builderJs.includes('candidate.included') && !builderJs.includes('candidate.required'), "Phase 4 must not provide step-inclusion controls");
 assert(builderJs.includes('<fieldset class="step-editor-fields">'), "Every recorded step must remain editable in Phase 4");
 assert(builderJs.includes('let currentCurationMode = "view"') && builderJs.includes('data-curation-mode="view"') && builderJs.includes('data-curation-mode="edit"'), "Phase 4 must default to View and provide a View/Edit toggle");
@@ -83,11 +83,9 @@ assert(!builderJs.includes('step-carousel-position') && !builderCss.includes('.s
 assert(builderJs.includes('key: "initial-expression"') && builderJs.includes('const stepNumber = candidate.isInitial ? 0 : index'), "Phase 4 must begin with a Step 0 slide for the original expression");
 assert(builderJs.includes('Pre-completion is not applicable for step 0') && builderJs.includes('>N/A</div>'), "Step 0 pre-completion must be marked N/A in Phase 4");
 assert(builderCss.includes(".step-carousel-slide") && builderCss.includes(".step-carousel-navigation") && builderCss.includes(".step-mode-toggle") && builderCss.includes(".step-math-view"), "Phase 4 must style the carousel and its View/Edit modes");
-assert(/data-step-field="beforeKatex"[\s\S]*?data-step-field="instruction"[\s\S]*?data-step-field="afterKatex"/.test(builderJs), "Edit mode must order the three text fields as pre-completion, instructions, and post-completion");
-assert(/data-step-view="beforeKatex"[\s\S]*?step-instruction-view[\s\S]*?data-step-view="afterKatex"/.test(builderJs), "View mode must order rendered pre-completion, instructions, and rendered post-completion");
-assert(builderJs.includes("function renderMixedInstruction") && builderJs.includes('text.indexOf("\\\\(", cursor)') && builderJs.includes('text.indexOf("\\\\[", cursor)'), "Instructions must recognize inline and display KaTeX delimiters");
-assert(builderJs.includes('displayMode: match.displayMode') && builderJs.includes('renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction)'), "Instruction math must render in the appropriate KaTeX mode while preserving surrounding text");
-assert(builderCss.includes(".instruction-math-inline") && builderCss.includes(".instruction-math-display"), "Mixed instruction math must style inline and display forms separately");
+assert(/data-step-field="beforeKatex"[\s\S]*?data-step-field="afterKatex"/.test(builderJs) && !builderJs.includes('data-step-field="instruction"'), "Edit mode must order only the pre-completion and post-completion fields");
+assert(/data-step-view="beforeKatex"[\s\S]*?data-step-view="afterKatex"/.test(builderJs) && !builderJs.includes("step-instruction-view"), "View mode must render only pre-completion and post-completion notation");
+assert(!builderJs.includes("renderMixedInstruction") && !builderJs.includes("candidate.instruction") && !builderCss.includes("step-instruction-view"), "The builder must fully remove individual step instructions");
 assert(!builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit recorded-action details");
 assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
 assert(builderJs.includes("const generatedStepKatex = api.generateKatex(expression)") && builderJs.includes("beforeKatex: generatedStepKatex") && builderJs.includes("afterKatex: generatedStepKatex"), "Each recorded step's pre/post fields must default to the same expression");
@@ -102,15 +100,18 @@ assert(/\.workspace-toolbar \[data-workspace-action="authoringFinishRecording"\]
 assert(!builderJs.includes("recordStepOrFinish") && !builderJs.includes("currentStepIsRecorded") && !builderJs.includes("recordCurrentStep"), "Phase 3 must not retain the manual Record Step workflow");
 assert(builderJs.includes("reconcileRecordedSteps(snapshot)") && builderJs.includes("candidate.actionPrefix === getActionPrefix"), "Automatically saved steps discarded by an unrecorded undo must be removed from the saved path");
 assert(builderJs.includes("const recordedCandidates = draft.recording.candidates || []") && !builderJs.includes("includedCandidates"), "Export must contain all steps retained by the visibility curation pass");
-assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 4 must replace separate test/export controls with one All Done button");
-assert(builderHtml.includes('class="primary-button complete-exercise-button" hidden') && builderJs.includes('byId("completeExerciseButton").hidden = !isFinalSlide'), "Phase 4 All Done must appear only on the final carousel slide");
-assert(/\.complete-exercise-button \{ color: #000; \}/.test(builderCss), "The Phase 4 All Done control must use black text");
+assert(builderHtml.includes('id="continueToGuidanceButton"') && builderHtml.includes('>Continue to Exercise Guidance</button>') && builderJs.includes('byId("continueToGuidanceButton").hidden = !isFinalSlide'), "The final Step carousel slide must continue to the Exercise Guidance phase");
+assert(builderHtml.includes('data-phase="5"') && builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="guidanceProblemExpression"') && builderHtml.includes('id="guidanceNumericalRestrictions"'), "Phase 5 must provide one author field plus the automatic problem statement and numerical restrictions");
+assert(builderJs.includes('function renderGuidancePhase()') && builderJs.includes('renderKatex(byId("guidanceProblemExpression"), draft.initial.katex || draft.initial.expression)') && builderJs.includes('draft.settings.numericalRewrite.rules[rule.id]'), "Phase 5 must auto-fill the problem statement and two-level numerical restrictions");
+assert(builderJs.includes('level.exerciseGuidance = draft.metadata.exerciseGuidance.trim()') && !builderJs.includes('step.guidance ='), "Export must store one exercise-level guidance field and no per-step guidance");
+assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 5 must finish with one All Done button");
+assert(/\.complete-exercise-button \{ color: #000; \}/.test(builderCss), "The Phase 5 All Done control must use black text");
 assert(!builderHtml.includes('id="deleteStepButton"') && !builderHtml.includes('>Delete Step</button>'), "Final step editing must not offer deletion after visibility curation is complete");
 assert(!builderJs.includes("deleteCurrentCurationStep") && !builderJs.includes("deleteCurationCandidateAt") && !builderCss.includes("delete-step-button"), "Final step editing must not retain obsolete deletion behavior or styling");
 assert(builderJs.includes("function syncFinishRecordingControl(snapshot)") && builderJs.includes("snapshot.preselectionActive === true") && builderJs.includes("api.setFinishRecordingControlVisible(isAvailable)") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "The Phase 3 All Done control must appear only while the workspace is in preselection");
 assert(builderJs.includes("syncFinishRecordingControl(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
-assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 4 All Done must download the completed JSON");
-assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 4 All Done must automatically open a preview tab");
+assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 5 All Done must download the completed JSON");
+assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 5 All Done must automatically open a preview tab");
 assert(/const previewUrl = `exploded-algebra\.html\?source=builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)") && playerJs.includes('class="textbook-solution builder-conventional-live"'), "Every active Expression Builder must render its live conventional expression in panel one");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode)") && playerJs.includes('class="solution-step builder-conventional-selected"'), "Panel one must show the selected expression above the live construction");
@@ -136,12 +137,15 @@ assert(/builderCommandPanel\.addEventListener\("click"[\s\S]{0,300}button\[data-
 assert(playerJs.includes('builderPeekDismissLayer.addEventListener("click"') && playerJs.includes("hideBuilderOriginalReview()"), "A click anywhere on the full-screen Peek dismissal layer must restore the builder");
 assert(playerHtml.includes("body.builder-review-active .builder-peek-dismiss-layer") && playerHtml.includes('id="builderPeekDismissLayer"'), "Peek must place an invisible full-screen dismissal layer over the expression");
 assert(playerJs.includes('const reviewDisabled = builder.tool === "authorInitial"') && playerJs.includes('${reviewDisabled ? " disabled" : ""}'), "Starting-expression authoring must disable the eye review button");
-assert(playerJs.includes('title: "Problem statement"') && !playerJs.includes('title: "Original expression"'), "Student guidance must call the original expression the Problem statement");
-assert(/if \(stepIndex < 0\)[\s\S]*?title: "Problem statement",[\s\S]*?expression: ""/.test(playerJs), "Problem Statement must show instructions without repeating the expression");
-assert(playerJs.includes('title: "Step guidance"') && playerJs.includes('expression: ""'), "Step Guidance must omit the expression");
-assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Student instructions must recognize mixed plain text and KaTeX");
-assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.includes(".press-hold-popover .instruction-math-display"), "Student instruction KaTeX must render in inline or display mode as authored");
-assert(playerJs.includes('"<p>None given</p>"'), "Empty student Step Guidance must say None given");
+assert(playerHtml.includes('data-workspace-action="showExerciseGuidance"') && playerHtml.includes('aria-label="Exercise guidance"'), "Student pre-selection must provide an Exercise Guidance button");
+assert(playerJs.includes('function showExerciseGuidance()') && playerJs.includes('<span class="press-hold-popover-title">Exercise Guidance</span>'), "The Exercise Guidance button must open the combined guidance view");
+assert(playerJs.includes('function getProblemStatementKatex(level)') && playerJs.includes('<h3>Problem Statement</h3>'), "Exercise Guidance must automatically include the problem statement expression");
+assert(playerJs.includes('function getNumericalRestrictionsTreeHtml(profile)') && playerJs.includes('<h3>Numerical Manipulation Restrictions</h3>'), "Exercise Guidance must automatically include the two-level numerical restrictions");
+assert(playerJs.includes('normalizeTextBlocks(level.exerciseGuidance)') && playerJs.includes('<h3>Additional Guidance</h3>'), "Exercise Guidance must include the author-provided exercise-level guidance");
+assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Author guidance must recognize mixed plain text and KaTeX");
+assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.includes(".press-hold-popover .instruction-math-display"), "Author guidance KaTeX must render in inline or display mode");
+assert(!playerJs.includes("getStepGuidanceForDisplay") && !playerJs.includes("showStepGuidance") && !playerJs.includes("view-step-guidance-button"), "Student steps must no longer expose individual guidance");
+assert(playerJs.includes('"exerciseGuidance"'), "Level validation must accept the exercise-level guidance field");
 assert(playerHtml.includes(".builder-keypad-panel .builder-review-button:disabled"), "The unavailable starting-expression eye button must be visibly grayed out");
 assert(/builderReviewActive[\s\S]*?drawBasicSelectionHighlight/.test(playerJs), "Original-expression review must restore the selection highlight");
 assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 2; grid-row: 1; }'), "x must sit above the Builder view controls in the second column from the left");

@@ -40,7 +40,7 @@
 
   function makeFreshDraft() {
     return {
-      metadata: { title: "", id: "", instruction: "", completionMessage: "" },
+      metadata: { title: "", id: "", exerciseGuidance: "" },
       settings: {
         numericalRewrite: {
           rules: Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
@@ -169,8 +169,7 @@
     draft.metadata = {
       title: byId("exerciseTitle").value.trim(),
       id: byId("exerciseId").value.trim(),
-      instruction: "",
-      completionMessage: ""
+      exerciseGuidance: draft.metadata.exerciseGuidance || ""
     };
     draft.settings.numericalRewrite = { rules: readNumericalPermissionChoices() };
     draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
@@ -206,8 +205,7 @@
       allowedUnavailableTools: [...draft.settings.allowedUnavailableTools],
       includeUndoActions: draft.settings.includeUndoActions
     };
-    if (draft.metadata.instruction) level.instruction = draft.metadata.instruction;
-    if (draft.metadata.completionMessage) level.completionMessage = draft.metadata.completionMessage;
+    if (draft.metadata.exerciseGuidance.trim()) level.exerciseGuidance = draft.metadata.exerciseGuidance.trim();
     return level;
   }
 
@@ -228,7 +226,6 @@
         step.actionStartIndex = candidate.actionStartIndex;
         step.actionEndIndex = candidate.actionEndIndex;
       }
-      if (candidate.instruction && candidate.instruction.trim()) step.guidance = candidate.instruction.trim();
       return step;
     });
     const level = {
@@ -243,11 +240,6 @@
       finalExpression: draft.recording.finalExpression || recordedCandidates.at(-1)?.expression || draft.initial.expression,
       finalKatex: recordedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
     };
-    const initialInstruction = initialCandidate && initialCandidate.instruction
-      ? initialCandidate.instruction.trim()
-      : "";
-    if (initialInstruction) level.instruction = initialInstruction;
-    else delete level.instruction;
     return level;
   }
 
@@ -260,50 +252,6 @@
       return;
     }
     window.katex.render(source, target, { throwOnError: false, displayMode: true });
-  }
-
-  function renderMixedInstruction(target, source) {
-    if (!target) return;
-    target.replaceChildren();
-    const text = String(source || "");
-    let cursor = 0;
-
-    const appendText = value => {
-      if (value) target.appendChild(document.createTextNode(value));
-    };
-
-    while (cursor < text.length) {
-      const inlineStart = text.indexOf("\\(", cursor);
-      const displayStart = text.indexOf("\\[", cursor);
-      const starts = [
-        { index: inlineStart, close: "\\)", displayMode: false },
-        { index: displayStart, close: "\\]", displayMode: true }
-      ].filter(item => item.index >= 0).sort((left, right) => left.index - right.index);
-      if (!starts.length) {
-        appendText(text.slice(cursor));
-        break;
-      }
-
-      const match = starts[0];
-      appendText(text.slice(cursor, match.index));
-      const mathStart = match.index + 2;
-      const mathEnd = text.indexOf(match.close, mathStart);
-      if (mathEnd < 0) {
-        appendText(text.slice(match.index));
-        break;
-      }
-
-      const math = text.slice(mathStart, mathEnd);
-      const mathTarget = document.createElement(match.displayMode ? "div" : "span");
-      mathTarget.className = match.displayMode ? "instruction-math-display" : "instruction-math-inline";
-      if (window.katex) {
-        window.katex.render(math, mathTarget, { throwOnError: false, displayMode: match.displayMode });
-      } else {
-        mathTarget.textContent = `${match.displayMode ? "\\[" : "\\("}${math}${match.close}`;
-      }
-      target.appendChild(mathTarget);
-      cursor = mathEnd + 2;
-    }
   }
 
   function moveWorkspaceTo(slotId) {
@@ -371,7 +319,6 @@
       beforeExpression: draft.initial.expression,
       beforeKatex: prior && prior.beforeKatex || generatedKatex,
       afterKatex: prior && prior.afterKatex || generatedKatex,
-      instruction: prior ? prior.instruction || "" : draft.metadata.instruction || "",
       isInitial: true
     };
   }
@@ -411,7 +358,6 @@
       beforeExpression,
       beforeKatex: generatedStepKatex,
       afterKatex: generatedStepKatex,
-      instruction: "",
       actionStartIndex,
       actionEndIndex: actions.length,
       actionPrefix: getActionPrefix(actions, actions.length),
@@ -512,7 +458,7 @@
         candidate.afterKatex || candidate.beforeKatex || candidate.expression
       );
     });
-    byId("completeExerciseButton").hidden = true;
+    byId("continueToGuidanceButton").hidden = true;
   }
 
   function renderCurationTable() {
@@ -524,7 +470,7 @@
     const candidates = draft.recording.candidates || [];
     if (!candidates.length) {
       container.innerHTML = '<p class="empty-curation">No expression changes were recorded.</p>';
-      byId("completeExerciseButton").hidden = true;
+      byId("continueToGuidanceButton").hidden = true;
       return;
     }
     currentCurationIndex = Math.max(0, Math.min(currentCurationIndex, candidates.length - 1));
@@ -557,9 +503,6 @@
             <label class="step-edit-field"><span>Pre-completion</span>
               ${preCompletionEditor}
             </label>
-            <label class="step-edit-field"><span>Instructions</span>
-              <textarea rows="3" data-step-field="instruction"></textarea>
-            </label>
             <label class="step-edit-field"><span>Post-completion</span>
               <textarea rows="3" spellcheck="false" data-step-field="afterKatex">${escapeHtml(candidate.afterKatex)}</textarea>
             </label>
@@ -570,24 +513,17 @@
               ${preCompletionView}
             </div>
             <div class="step-view-field">
-              <h3>Instructions</h3>
-              <div class="step-instruction-view"></div>
-            </div>
-            <div class="step-view-field">
               <h3>Post-completion</h3>
               <div class="step-math-view" data-step-view="afterKatex" aria-label="Post-completion expression for step ${stepNumber}"></div>
             </div>
           </section>`}
       </article>`;
     const slide = container.querySelector("[data-candidate-index]");
-    const instructionField = slide.querySelector('[data-step-field="instruction"]');
-    if (instructionField) instructionField.value = candidate.instruction || "";
     if (!candidate.isInitial) {
       renderKatex(slide.querySelector('[data-step-view="beforeKatex"]'), candidate.beforeKatex);
     }
     renderKatex(slide.querySelector('[data-step-view="afterKatex"]'), candidate.afterKatex);
-    renderMixedInstruction(slide.querySelector(".step-instruction-view"), candidate.instruction);
-    byId("completeExerciseButton").hidden = !isFinalSlide;
+    byId("continueToGuidanceButton").hidden = !isFinalSlide;
   }
 
   function renderCuration() {
@@ -624,6 +560,17 @@
     return api.validateLevel(buildExportLevel());
   }
 
+  function renderGuidancePhase() {
+    renderKatex(byId("guidanceProblemExpression"), draft.initial.katex || draft.initial.expression);
+    byId("guidanceNumericalRestrictions").innerHTML = NUMERICAL_REWRITE_RULES.map(rule => {
+      const setting = draft.settings.numericalRewrite.rules[rule.id];
+      const forward = NUMERICAL_PERMISSION_LABELS[setting.forward] || setting.forward;
+      const reverse = NUMERICAL_PERMISSION_LABELS[setting.reverse] || setting.reverse;
+      return `<li><span>${escapeHtml(rule.label)}</span><ul><li>Forward — ${escapeHtml(forward)}</li><li>Reverse — ${escapeHtml(reverse)}</li></ul></li>`;
+    }).join("");
+    byId("exerciseGuidance").value = draft.metadata.exerciseGuidance || "";
+  }
+
   function downloadLevel(level) {
     const blob = new Blob([`${JSON.stringify(level, null, 2)}\n`], { type: "application/json" });
     const downloadUrl = URL.createObjectURL(blob);
@@ -638,6 +585,7 @@
 
   async function finishExercise() {
     const status = byId("exportStatus");
+    draft.metadata.exerciseGuidance = byId("exerciseGuidance").value.trim();
     const previewWindow = window.open("about:blank", "_blank");
     try {
       const level = await validateExportLevel();
@@ -676,6 +624,7 @@
     if (target === 2) await preparePhase2();
     else if (target === 3) await preparePhase3();
     else if (target === 4) await renderCuration();
+    else if (target === 5) renderGuidancePhase();
   }
 
   function captureWorkspaceSnapshot() {
@@ -764,6 +713,10 @@
       currentCurationIndex += offset;
       renderCurationTable();
       byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
+    });
+    byId("continueToGuidanceButton").addEventListener("click", () => setPhase(5));
+    byId("exerciseGuidance").addEventListener("input", event => {
+      draft.metadata.exerciseGuidance = event.target.value;
     });
     byId("completeExerciseButton").addEventListener("click", finishExercise);
 

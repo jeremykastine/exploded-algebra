@@ -168,23 +168,45 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .step-view-field, .step-edit-field { display: grid; gap: 7px; min-width: 0; }
 .step-view-field h3, .step-edit-field > span { margin: 0; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .step-editor-fields textarea { min-height: 70px; }
-.step-editor-fields textarea[data-step-field="instruction"] { min-height: 84px; }
 .step-math-view { display: flex; min-width: 0; min-height: 72px; align-items: center; justify-content: center; padding: 10px 12px; overflow: auto; border-radius: 7px; background: var(--soft); font-size: 20px; }
 .step-na-value { display: flex; min-height: 70px; align-items: center; justify-content: center; padding: 10px 12px; border-radius: 7px; background: var(--soft); color: var(--muted); font-size: 18px; font-weight: 800; }
 .step-math-view .katex-display { margin: 0; }
-.step-instruction-view { min-height: 72px; margin: 0; padding: 12px; border-radius: 7px; background: var(--soft); white-space: pre-wrap; }
-.step-instruction-view:empty::before { color: var(--muted); content: "No instruction"; font-style: italic; }
-.instruction-math-inline { white-space: normal; }
-.instruction-math-display { display: block; white-space: normal; }
-.instruction-math-display .katex-display { margin: .35em 0; }
 .step-carousel-navigation { display: inline-flex; align-items: center; gap: 8px; }
 .step-carousel-navigation .secondary-button { min-height: 38px; padding: 7px 10px; font-size: 13px; }
 .step-carousel-navigation .step-number { min-width: 52px; text-align: center; }
 .empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }
 .phase4-controls { display: grid; justify-items: center; gap: 10px; padding-top: 20px; }
+.continue-to-guidance-button,
 .complete-exercise-button { width: min(100%, 320px); }
 .complete-exercise-button { color: #000; }
 .phase4-controls .status-line { min-height: 1.45em; text-align: center; }
+
+.exercise-guidance-card {
+  display: grid;
+  gap: 20px;
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 28px);
+}
+.exercise-guidance-card h2,
+.exercise-guidance-card h3 { margin: 0; }
+.exercise-guidance-card h2 { font-size: 22px; }
+.exercise-guidance-card h3 { font-size: 15px; }
+.automatic-guidance-section { display: grid; gap: 10px; }
+.guidance-problem-expression {
+  min-height: 78px;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 7px;
+  background: var(--soft);
+  font-size: 22px;
+}
+.guidance-problem-expression .katex-display { margin: 0; }
+.guidance-numerical-restrictions { margin: 0; padding: 14px 14px 14px 34px; border-radius: 7px; background: var(--soft); }
+.guidance-numerical-restrictions > li + li { margin-top: 8px; }
+.guidance-numerical-restrictions ul { margin: 3px 0 0; padding-left: 22px; }
+.phase5-controls { display: grid; justify-items: center; gap: 10px; }
+.phase5-controls .status-line { min-height: 1.45em; text-align: center; }
 
 /* While the starting expression is being entered, Phase 2 is the shared
    Expression Builder itself. The surrounding authoring workflow returns as
