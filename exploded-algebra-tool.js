@@ -8177,12 +8177,8 @@ ctx.font = SETTINGS.textFont;
                 const rule = getNumericalRewriteRuleSetting(ruleId, profile);
                 return `<li><span>${escapeHtml(labels[ruleId] || ruleId)}</span>
                     <ul>
-                        <li>Forward
-                            <ul><li>${escapeHtml(modeLabel(rule.forward))}</li></ul>
-                        </li>
-                        <li>Reverse
-                            <ul><li>${escapeHtml(modeLabel(rule.reverse))}</li></ul>
-                        </li>
+                        <li>Forward — ${escapeHtml(modeLabel(rule.forward))}</li>
+                        <li>Reverse — ${escapeHtml(modeLabel(rule.reverse))}</li>
                     </ul>
                 </li>`;
             }).join("");
