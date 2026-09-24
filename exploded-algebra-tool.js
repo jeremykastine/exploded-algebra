@@ -1443,6 +1443,8 @@ Promise.resolve().then(() => {
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
                 const setting = button.dataset.workspaceSetting;
+                const classicBars = SETTINGS.operationStyle === "classic";
+                button.hidden = !classicBars && (setting === "bar-style" || setting === "bar-shading");
                 const valueElement = button.querySelector("[data-setting-value]");
                 let value = "";
                 let nextValue = "";
@@ -1452,6 +1454,19 @@ Promise.resolve().then(() => {
                     value = stepsTextSizePreference[0].toUpperCase() + stepsTextSizePreference.slice(1);
                     const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
                     nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
+                } else if (setting === "operation-style") {
+                    value = classicBars ? "Classic" : "Leading";
+                    nextValue = classicBars ? "Leading" : "Classic";
+                } else if (setting === "bar-style") {
+                    const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
+                    const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
+                    value = current.shortLabel;
+                    nextValue = next.shortLabel;
+                } else if (setting === "bar-shading") {
+                    const current = OPERATION_BAR_SHADING_OPTIONS.find(option => option.value === SETTINGS.operationBarShading) || OPERATION_BAR_SHADING_OPTIONS[0];
+                    const next = getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, current.value);
+                    value = current.shortLabel;
+                    nextValue = next.shortLabel;
                 }
                 if (valueElement) {
                     valueElement.textContent = value;
@@ -4800,6 +4815,9 @@ Promise.resolve().then(() => {
             setBottomPanelHeight(getMaximumBottomPanelHeight());
             setStepsTextSizePreference(loadSavedStepsTextSizePreference());
             updatePanelResizeHandleOrientation();
+            setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
+            setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
+            setOperationStyle(getSavedOperationStyle());
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -5176,11 +5194,171 @@ ctx.font = SETTINGS.textFont;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
+        const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV1";
+        const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
+        const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
+        const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
+        const OPERATION_BAR_GRADIENT_STORAGE_KEY = "explodedAlgebraOperationBarGradientV1";
+        const OPERATION_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperationBarStyleV3";
+        const OPERATION_BAR_SHADING_STORAGE_KEY = "explodedAlgebraOperationBarShadingV1";
+        const OPERATION_BAR_STYLE_OPTIONS = [
+            { value: "thick", shortLabel: "Thick" },
+            { value: "endpoint-operators", shortLabel: "Endpoints" },
+            { value: "ellipse", shortLabel: "Ellipse" },
+            { value: "flared", shortLabel: "Flared" },
+            { value: "midline", shortLabel: "Midline" },
+            { value: "nested-parentheses", shortLabel: "Nested ( )" },
+            { value: "nested-operator-parentheses", shortLabel: "Nested + Ops" },
+            { value: "outward-parentheses", shortLabel: "Outward ( )" }
+        ];
+        const OPERATION_BAR_SHADING_OPTIONS = [
+            { value: "black", shortLabel: "Black" },
+            { value: "gray", shortLabel: "Gray" },
+            { value: "light-gray", shortLabel: "Light Gray" },
+            { value: "gradient", shortLabel: "Gradient" }
+        ];
+        const OPERATOR_BAR_STYLES = new Set(OPERATION_BAR_STYLE_OPTIONS.map(option => option.value));
+        const OPERATION_BAR_SHADINGS = new Set(OPERATION_BAR_SHADING_OPTIONS.map(option => option.value));
+
+        function getNextCyclicOption(options, currentValue) {
+            const currentIndex = options.findIndex(option => option.value === currentValue);
+            return options[(currentIndex + 1 + options.length) % options.length];
+        }
+
         function cycleQuickSetting(setting) {
-            if (setting !== "steps-text-size") return;
-            const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
-            const nextPreference = STEPS_TEXT_SIZE_OPTIONS[(currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length];
-            setStepsTextSizePreference(nextPreference, true);
+            if (setting === "steps-text-size") {
+                const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
+                const nextPreference = STEPS_TEXT_SIZE_OPTIONS[
+                    (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length
+                ];
+                setStepsTextSizePreference(nextPreference, true);
+                return;
+            }
+            if (setting === "operation-style") {
+                setOperationStyle(SETTINGS.operationStyle === "classic" ? "leading" : "classic", true);
+                return;
+            }
+            if (setting === "bar-style") {
+                setOperationBarStyle(getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, SETTINGS.operationBarStyle).value, true);
+                return;
+            }
+            if (setting === "bar-shading") {
+                setOperationBarShading(getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, SETTINGS.operationBarShading).value, true);
+            }
+        }
+
+        function normalizeOperationBarStyle(style) {
+            if (style === "gradient") {
+                return "thick";
+            }
+            return OPERATOR_BAR_STYLES.has(style) ? style : null;
+        }
+
+        function getSavedOperationBarStyle(fallbackStyle) {
+            try {
+                const savedStyle = window.localStorage.getItem(OPERATION_BAR_STYLE_STORAGE_KEY);
+                const normalizedSavedStyle = normalizeOperationBarStyle(savedStyle);
+                if (normalizedSavedStyle) {
+                    return normalizedSavedStyle;
+                }
+                const previousStyle = window.localStorage.getItem(SUM_BAR_STYLE_STORAGE_KEY) ||
+                    window.localStorage.getItem(PRODUCT_BAR_STYLE_STORAGE_KEY);
+                const normalizedPreviousStyle = normalizeOperationBarStyle(previousStyle);
+                if (normalizedPreviousStyle) {
+                    return normalizedPreviousStyle;
+                }
+                const legacyStyle = window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY);
+                return normalizeOperationBarStyle(legacyStyle) ||
+                    normalizeOperationBarStyle(fallbackStyle) ||
+                    "thick";
+            } catch (error) {
+                return normalizeOperationBarStyle(fallbackStyle) || "thick";
+            }
+        }
+
+        function normalizeOperationBarShading(shading) {
+            return OPERATION_BAR_SHADINGS.has(shading) ? shading : null;
+        }
+
+        function getSavedOperationBarShading(fallbackShading) {
+            try {
+                const savedShading = normalizeOperationBarShading(
+                    window.localStorage.getItem(OPERATION_BAR_SHADING_STORAGE_KEY)
+                );
+                if (savedShading) {
+                    return savedShading;
+                }
+                const savedValue = window.localStorage.getItem(OPERATION_BAR_GRADIENT_STORAGE_KEY);
+                if (savedValue === "1" || savedValue === "0") {
+                    return savedValue === "1" ? "gradient" : "black";
+                }
+
+                const previousStyles = [
+                    window.localStorage.getItem(SUM_BAR_STYLE_STORAGE_KEY),
+                    window.localStorage.getItem(PRODUCT_BAR_STYLE_STORAGE_KEY),
+                    window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY)
+                ].filter(Boolean);
+                if (previousStyles.includes("gradient")) {
+                    return "gradient";
+                }
+                if (previousStyles.some(style => OPERATOR_BAR_STYLES.has(style))) {
+                    return "black";
+                }
+            } catch (error) {}
+            return normalizeOperationBarShading(fallbackShading) || "gradient";
+        }
+
+        function setOperationBarStyle(style, persist = false) {
+            const normalizedStyle = normalizeOperationBarStyle(style) || "thick";
+            SETTINGS.operationBarStyle = normalizedStyle;
+            SETTINGS.sumBeamStyle = normalizedStyle;
+            SETTINGS.productBeamStyle = normalizedStyle;
+            if (persist) {
+                try {
+                    window.localStorage.setItem(OPERATION_BAR_STYLE_STORAGE_KEY, normalizedStyle);
+                } catch (error) {}
+            }
+            if (expressionRoot) {
+                layoutExpression(expressionRoot);
+                drawExpression();
+            }
+            refreshQuickSettingButtons();
+        }
+
+        function setOperationBarShading(shading, persist = false) {
+            const normalizedShading = normalizeOperationBarShading(shading) || "gradient";
+            SETTINGS.operationBarShading = normalizedShading;
+            if (persist) {
+                try {
+                    window.localStorage.setItem(OPERATION_BAR_SHADING_STORAGE_KEY, normalizedShading);
+                } catch (error) {}
+            }
+            if (expressionRoot) {
+                drawExpression();
+            }
+            refreshQuickSettingButtons();
+        }
+
+        function getSavedOperationStyle() {
+            try {
+                return window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY) === "classic" ? "classic" : "leading";
+            } catch (error) {
+                return "leading";
+            }
+        }
+
+        function setOperationStyle(style, persist = false) {
+            SETTINGS.operationStyle = style === "classic" ? "classic" : "leading";
+            if (persist) {
+                try {
+                    window.localStorage.setItem(OPERATION_STYLE_STORAGE_KEY, SETTINGS.operationStyle);
+                } catch (error) {}
+            }
+            if (expressionRoot) {
+                layoutExpression(expressionRoot);
+                drawExpression();
+            }
+            refreshQuickSettingButtons();
         }
 
         function applyWorkspaceZoomSizing() {
@@ -6626,18 +6804,32 @@ ctx.font = SETTINGS.textFont;
             (node.args || []).forEach(child => collectVisibleObjectCandidates(child, x, y, candidates));
 
             if (node.type === "prod") {
+                const centerY = (node.top() + node.bottom()) / 2;
+                const hasConnectorFlares = SETTINGS.operationStyle === "leading" || nodeNeedsSeparatorFlares(node) ||
+                    SETTINGS.productBeamStyle === "nested-parentheses" ||
+                    SETTINGS.productBeamStyle === "nested-operator-parentheses" ||
+                    SETTINGS.productBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
-                    const distance = distanceFromPointToSegment(x, y, separatorX, node.top(), separatorX, node.bottom());
+                    const distance = hasConnectorFlares
+                        ? distanceFromPointToSegment(x, y, separatorX, node.top(), separatorX, node.bottom())
+                        : Math.max(0, Math.hypot(x - separatorX, y - centerY) - SETTINGS.flare);
                     candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
                 }
                 return;
             }
 
             if (node.type === "sum") {
+                const centerX = (node.left() + node.right()) / 2;
+                const hasConnectorFlares = SETTINGS.operationStyle === "leading" || nodeNeedsSeparatorFlares(node) ||
+                    SETTINGS.sumBeamStyle === "nested-parentheses" ||
+                    SETTINGS.sumBeamStyle === "nested-operator-parentheses" ||
+                    SETTINGS.sumBeamStyle === "outward-parentheses";
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
-                    const distance = distanceFromPointToSegment(x, y, node.left(), separatorY, node.right(), separatorY);
+                    const distance = hasConnectorFlares
+                        ? distanceFromPointToSegment(x, y, node.left(), separatorY, node.right(), separatorY)
+                        : Math.max(0, Math.hypot(x - centerX, y - separatorY) - SETTINGS.flare);
                     candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
                 }
                 return;

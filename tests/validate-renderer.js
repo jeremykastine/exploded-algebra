@@ -99,4 +99,21 @@ rendererContext.drawLeadingProductSeparator(secondProduct, 20, 10, 110, changedS
 assert.deepEqual(secondSum.operations, sumContext.operations);
 assert.deepEqual(secondProduct.operations, productContext.operations);
 
+const sumNode = {
+    type: "sum", args: [{ type: "prod" }, { type: "value" }],
+    layout: { x: 10, y: 0, width: 100, height: 40, hLines: [0, 20, 40] },
+    left() { return 10; }, right() { return 110; }, top() { return 0; }, bottom() { return 40; }
+};
+const leadingContext = recordingContext();
+rendererContext.drawNodeToContext(sumNode, leadingContext,
+    { ...changedSettings, operationStyle: "leading" });
+assert.ok(leadingContext.operations.some(operation => operation[0] === "rect" && operation[1] === "#d3d3d3"));
+const classicContext = recordingContext();
+rendererContext.drawNodeToContext(sumNode, classicContext,
+    { ...changedSettings, operationStyle: "classic", sumBeamStyle: "midline" });
+assert.ok(!classicContext.operations.some(operation => operation[0] === "rect"),
+    "The classic style must still draw its own bar when chosen independently");
+assert.ok(classicContext.operations.some(operation => operation[0] === "move" && operation[1] === 10),
+    "The classic midline must reach the left edge");
+
 console.log("Exploded Algebra renderer checks passed.");

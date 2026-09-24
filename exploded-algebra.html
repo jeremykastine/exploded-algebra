@@ -4048,6 +4048,7 @@
         .level-menu-panel .workspace-setting-value {
             font-size: 14px;
         }
+        .level-menu-panel .workspace-setting-button[hidden] { display: none !important; }
 
         .quadrant-menu { display: none !important; }
 
@@ -4324,7 +4325,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-09-24T13:51:20-04:00">9/24/26, 1:51 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-24T13:59:53-04:00">9/24/26, 1:59 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4424,6 +4425,18 @@
                     <span class="workspace-setting-name">Steps Text</span>
                     <span class="workspace-setting-value" data-setting-value>Medium</span>
                 </button>
+                <button type="button" class="workspace-setting-button" data-workspace-setting="operation-style">
+                    <span class="workspace-setting-name">Operation Style</span>
+                    <span class="workspace-setting-value" data-setting-value>Leading</span>
+                </button>
+                <button type="button" class="workspace-setting-button" data-workspace-setting="bar-style" hidden>
+                    <span class="workspace-setting-name">Bar Style</span>
+                    <span class="workspace-setting-value" data-setting-value>Thick</span>
+                </button>
+                <button type="button" class="workspace-setting-button" data-workspace-setting="bar-shading" hidden>
+                    <span class="workspace-setting-name">Bar Shade</span>
+                    <span class="workspace-setting-value" data-setting-value>Gradient</span>
+                </button>
                 <button type="button" class="reset-exercise-button" data-workspace-action="resetExercise">
                     <span class="workspace-setting-name">Reset</span>
                     <span class="workspace-setting-value">Exercise</span>
@@ -4447,8 +4460,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260924-leading-operators"></script>
-    <script src="exploded-algebra-tool.js?v=20260924-leading-operators"></script>
+    <script src="exploded-algebra-renderer.js?v=20260924-classic-bars-restored"></script>
+    <script src="exploded-algebra-tool.js?v=20260924-classic-bars-restored"></script>
 
 </body>
 </html>

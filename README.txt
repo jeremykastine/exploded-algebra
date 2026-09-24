@@ -59,10 +59,13 @@ a step. In student portrait mode and in landscape, the steps panel snaps to
 exactly its bottom two rows and follows the current work at the bottom whenever
 its content changes.
 The settings screen replaces the exploded-expression workspace while open. It
-provides a control for the responsive conventional-steps text preference.
+provides a control for the responsive conventional-steps text preference and
+an independent Operation Style switch. Leading is the default. Choosing Classic
+reveals the previous Bar Style and Bar Shade settings with all eight bar styles.
 Every addition separator has a large plus sign at its left edge and a thin light
 gray connector to the right; multiplication separators have a large dot at the
-top and a light gray connector below. Their appearance is fixed across exercises.
+top and a light gray connector below. The Bar Style and Bar Shade settings do
+not change the Leading appearance.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Exercise Guidance pre-selection button shows numerical
