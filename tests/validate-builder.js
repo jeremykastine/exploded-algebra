@@ -61,6 +61,7 @@ assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("po
 assert(!builderJs.includes("NUMERICAL_PERMISSION_HIERARCHIES") && !builderJs.includes("applyMonotonicNumericalPermissions"), "Setup must not retain hierarchy code for removed categories");
 assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
 assert(builderHtml.includes('name="includeUndo" value="no" checked') && !builderHtml.includes('name="includeUndo" value="yes" checked') && builderHtml.indexOf('name="includeUndo" value="no"') < builderHtml.indexOf('name="includeUndo" value="yes"'), "Undo recording must be off by default and listed before Yes in Setup");
+assert(builderHtml.includes("whether Guided mode should replay failed approaches") && !builderHtml.includes("High assistance"), "Undo recording guidance must use the Guided mode name");
 assert(builderHtml.includes('class="radio-row undo-radio-options"') && builderCss.includes(".undo-radio-options { display: grid;"), "Recorded undo choices must be vertically ordered with No on top");
 assert(builderJs.includes("includeUndoActions: false"), "The in-memory undo-recording default must match Setup");
 assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("exerciseTitle").value = timestamp'), "The exercise name must default to a timestamp");
@@ -80,7 +81,7 @@ for (const selector of [
 ]) {
   assert(!playerHtml.includes(`body.authoring-recording-session .workspace-toolbar ${selector}`), `Instructor recording must not override the shared placement of ${selector}`);
 }
-assert(builderHtml.includes('exploded-algebra.html?authoring=builder&amp;v=20260923-instructor-toolbar'), "The Exercise Builder must load the corrected instructor toolbar layout");
+assert(builderHtml.includes('exploded-algebra.html?authoring=builder&amp;v=20260923-guided-unguided'), "The Exercise Builder must load the current Guided/Unguided player");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
 assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
 assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");

@@ -4,6 +4,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const indexHtml = fs.readFileSync(path.resolve(__dirname, "..", "index.html"), "utf8");
+const exercisesHtml = fs.readFileSync(path.resolve(__dirname, "..", "Exercises.html"), "utf8");
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
 const htmlFileNames = fs.readdirSync(path.resolve(__dirname, ".."))
@@ -19,6 +20,20 @@ const lastUpdatedValues = htmlFileNames.map(fileName => {
 });
 assert(new Set(lastUpdatedValues).size === 1, "Every HTML page must carry the same current Last updated timestamp");
 assert(/\.page-last-updated \{[\s\S]*?position: fixed;[\s\S]*?top: max\(3px,[\s\S]*?right: max\(5px,[\s\S]*?font-size: 9px;[\s\S]*?pointer-events: none;/.test(lastUpdatedCss), "The shared Last updated marker must remain tiny, fixed in the top-right, and noninteractive");
+const indexChoices = Array.from(indexHtml.matchAll(/<a class="choice" href="([^"]+)">([^<]+)<\/a>/g), match => ({ href: match[1], label: match[2] }));
+assert.deepEqual(indexChoices, [
+    { href: "Exercises.html", label: "Student" },
+    { href: "exercise-builder.html", label: "Instructor" }
+], "The landing page must contain only the Student and Instructor choices, in that order");
+assert(indexHtml.includes("Welcome to Exploded Algebra") && !indexHtml.includes("Introduction.html"), "The landing page must welcome users without an introduction choice");
+assert(exercisesHtml.includes("select Guided or Unguided") && !exercisesHtml.includes("high, medium, or low assistance"), "The student exercise list must describe only Guided and Unguided modes");
+assert(playerHtml.includes('data-assistance-mode="guided">Guided</button>') && playerHtml.includes('data-assistance-mode="unguided">Unguided</button>'), "The mode prompt must offer Guided and Unguided");
+assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
+assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
+assert(playerJs.includes('url.searchParams.set("mode", mode)') && playerJs.includes('url.searchParams.delete("assistance")'), "Mode choices must write the canonical mode query parameter");
+assert(playerJs.includes("high: ASSISTANCE_MODES.guided") && playerJs.includes("medium: ASSISTANCE_MODES.unguided"), "Existing high and medium assistance links must map to Guided and Unguided");
+assert(/function resetCurrentExercise\(\) \{[\s\S]*?clearModeQueryString\(\);[\s\S]*?window\.location\.reload\(\);/.test(playerJs), "Reset Exercise must clear mode selection before reloading to the prompt");
+assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MODES.low"), "The removed low/final-only behavior must not remain");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 3; }'));
@@ -245,7 +260,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-combined-guidance'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260923-guided-unguided'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

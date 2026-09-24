@@ -1402,17 +1402,15 @@ Promise.resolve().then(() => {
         const modeChoiceBackdrop = document.getElementById("modeChoiceBackdrop");
         const modeChoiceTitle = document.getElementById("modeChoiceTitle");
 
-        const ASSISTANCE_LEVELS = {
-            high: "high",
-            medium: "medium",
-            low: "low"
+        const ASSISTANCE_MODES = {
+            guided: "guided",
+            unguided: "unguided"
         };
 
         const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "builder";
         let authoringPhase = "";
         let authoringInitialExpressionCommitted = false;
-        let assistanceLevel = ASSISTANCE_LEVELS.medium;
-        let assistanceWasSpecifiedByNavigation = false;
+        let assistanceMode = ASSISTANCE_MODES.unguided;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -2229,9 +2227,7 @@ Promise.resolve().then(() => {
                 </section>
             `);
 
-            const stepsToMeasure = assistanceLevel === ASSISTANCE_LEVELS.low && level.steps && level.steps.length
-                ? [level.steps[level.steps.length - 1]]
-                : (level.steps || []);
+            const stepsToMeasure = level.steps || [];
             stepsToMeasure.forEach(step => {
                 const expressions = uniqueToolKeys([
                     step.beforeKatex || "",
@@ -3585,7 +3581,7 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return assistanceLevel === ASSISTANCE_LEVELS.high && hasGuidedMode(getCurrentLevel());
+            return assistanceMode === ASSISTANCE_MODES.guided && hasGuidedMode(getCurrentLevel());
         }
 
         function getCurrentDemoStep() {
@@ -3628,8 +3624,8 @@ Promise.resolve().then(() => {
         }
 
         function updateModeControls() {
-            if (assistanceLevel === ASSISTANCE_LEVELS.high && !hasGuidedMode(getCurrentLevel())) {
-                assistanceLevel = ASSISTANCE_LEVELS.medium;
+            if (assistanceMode === ASSISTANCE_MODES.guided && !hasGuidedMode(getCurrentLevel())) {
+                assistanceMode = ASSISTANCE_MODES.unguided;
             }
             refreshDemoBodyClass();
         }
@@ -3639,30 +3635,17 @@ Promise.resolve().then(() => {
             updateModeControls();
         }
 
-        function setAssistanceLevel(level, options = {}) {
-            const nextLevel = normalizeAssistanceLevelForLevel(level, getCurrentLevel()) || ASSISTANCE_LEVELS.medium;
-            const changed = assistanceLevel !== nextLevel;
-            assistanceLevel = nextLevel;
-            updateModeControls();
-            if (options.reload && changed) {
-                loadLevel(currentLevelIndex);
-            } else {
-                renderToolArea();
-                drawExpression();
-            }
-        }
-
-        function updateAssistanceQueryString(level) {
+        function updateModeQueryString(mode) {
             if (!window.history || !window.history.replaceState) {
                 return;
             }
             const url = new URL(window.location.href);
-            url.searchParams.delete("mode");
-            url.searchParams.set("assistance", level);
+            url.searchParams.delete("assistance");
+            url.searchParams.set("mode", mode);
             window.history.replaceState(null, "", url.toString());
         }
 
-        function clearAssistanceQueryString() {
+        function clearModeQueryString() {
             if (!window.history || !window.history.replaceState) {
                 return;
             }
@@ -3672,28 +3655,27 @@ Promise.resolve().then(() => {
             window.history.replaceState(null, "", url.toString());
         }
 
-        function assistanceLevelFromQueryString() {
+        function assistanceModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
-            const requestedLevel = String(params.get("assistance") || "").trim().toLowerCase();
-            if (Object.values(ASSISTANCE_LEVELS).includes(requestedLevel)) {
-                return requestedLevel;
+            const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
+            if (Object.values(ASSISTANCE_MODES).includes(requestedMode)) {
+                return requestedMode;
             }
 
-            // Preserve previously shared URLs that used the old mode names.
-            const legacyMode = String(params.get("mode") || "").trim().toLowerCase();
+            // Preserve the two supported legacy assistance values.
+            const legacyAssistance = String(params.get("assistance") || "").trim().toLowerCase();
             return {
-                guided: ASSISTANCE_LEVELS.high,
-                unguided: ASSISTANCE_LEVELS.medium,
-                "final-only": ASSISTANCE_LEVELS.low
-            }[legacyMode] || null;
+                high: ASSISTANCE_MODES.guided,
+                medium: ASSISTANCE_MODES.unguided
+            }[legacyAssistance] || null;
         }
 
-        function normalizeAssistanceLevelForLevel(assistance, level) {
-            if (assistance === ASSISTANCE_LEVELS.low || assistance === ASSISTANCE_LEVELS.medium) {
-                return assistance;
+        function normalizeAssistanceModeForLevel(mode, level) {
+            if (mode === ASSISTANCE_MODES.unguided) {
+                return mode;
             }
-            if (assistance === ASSISTANCE_LEVELS.high && hasGuidedMode(level)) {
-                return assistance;
+            if (mode === ASSISTANCE_MODES.guided && hasGuidedMode(level)) {
+                return mode;
             }
             return null;
         }
@@ -3704,8 +3686,8 @@ Promise.resolve().then(() => {
             }
         }
 
-        function startLoadedLevel(level) {
-            assistanceLevel = normalizeAssistanceLevelForLevel(level, getCurrentLevel()) || ASSISTANCE_LEVELS.medium;
+        function startLoadedLevel(mode) {
+            assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
             hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
@@ -3713,34 +3695,31 @@ Promise.resolve().then(() => {
 
         function showModeChoice(level) {
             if (!modeChoiceBackdrop) {
-                startLoadedLevel(ASSISTANCE_LEVELS.medium);
+                startLoadedLevel(ASSISTANCE_MODES.unguided);
                 return;
             }
             if (modeChoiceTitle) {
-                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose an assistance level";
+                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose a mode";
             }
-            const highButton = modeChoiceBackdrop.querySelector('[data-assistance-level="high"]');
+            const guidedButton = modeChoiceBackdrop.querySelector('[data-assistance-mode="guided"]');
             const guidedAvailable = hasGuidedMode(level);
-            if (highButton) {
-                highButton.classList.toggle("hidden", !guidedAvailable);
+            if (guidedButton) {
+                guidedButton.classList.toggle("hidden", !guidedAvailable);
             }
-            showNoLevelSelectedState("Choose an assistance level to begin this exercise.");
+            showNoLevelSelectedState("Choose Guided or Unguided to begin this exercise.");
             modeChoiceBackdrop.classList.remove("hidden");
-            const mediumButton = modeChoiceBackdrop.querySelector('[data-assistance-level="medium"]');
-            modeChoiceBackdrop.querySelectorAll("button[data-assistance-level]").forEach(button => {
-                button.classList.toggle("default-mode-choice", button === mediumButton);
-            });
-            if (mediumButton) {
-                requestAnimationFrame(() => mediumButton.focus());
+            const unguidedButton = modeChoiceBackdrop.querySelector('[data-assistance-mode="unguided"]');
+            const firstAvailableButton = guidedAvailable ? guidedButton : unguidedButton;
+            if (firstAvailableButton) {
+                requestAnimationFrame(() => firstAvailableButton.focus());
             }
         }
 
         function beginLoadedLevel(level) {
-            const requestedLevel = assistanceLevelFromQueryString();
-            const validLevel = normalizeAssistanceLevelForLevel(requestedLevel, level);
-            assistanceWasSpecifiedByNavigation = !!validLevel;
-            if (validLevel) {
-                startLoadedLevel(validLevel);
+            const requestedMode = assistanceModeFromQueryString();
+            const validMode = normalizeAssistanceModeForLevel(requestedMode, level);
+            if (validMode) {
+                startLoadedLevel(validMode);
                 return;
             }
             showModeChoice(level);
@@ -4112,14 +4091,6 @@ Promise.resolve().then(() => {
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
-            if (assistanceLevel === ASSISTANCE_LEVELS.low) {
-                const finalStepIndex = level.steps.length - 1;
-                if (expressionMatchesParenthesizedText(level.steps[finalStepIndex].expression)) {
-                    completedSteps[finalStepIndex] = true;
-                }
-                maybePrepareCompletedLevelExport(level);
-                return;
-            }
             const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
             if (
                 nextStepIndex >= 0
@@ -4253,36 +4224,26 @@ Promise.resolve().then(() => {
                     : level.startExpression
             );
 
-            const finalOnlyMode = assistanceLevel === ASSISTANCE_LEVELS.low;
-            const finalStepIndex = Math.max(0, (level.steps || []).length - 1);
-            const currentStepIndex = finalOnlyMode
-                ? (completion[finalStepIndex] ? -1 : finalStepIndex)
-                : completion.findIndex(isComplete => !isComplete);
-            const isExerciseComplete = finalOnlyMode
-                ? !!completion[finalStepIndex]
-                : currentStepIndex < 0;
+            const currentStepIndex = completion.findIndex(isComplete => !isComplete);
+            const isExerciseComplete = currentStepIndex < 0;
             const firstSolutionStepIndex = firstStepIsInitialExpression ? 1 : 0;
             const lastVisibleStepIndex = currentStepIndex >= 0
                 ? currentStepIndex
                 : Math.max(0, (level.steps || []).length - 1);
-            const visibleStepEntries = finalOnlyMode
-                ? (level.steps && level.steps.length ? [{ step: level.steps[finalStepIndex], index: finalStepIndex }] : [])
-                : (level.steps || [])
-                    .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
-                    .map((step, relativeIndex) => ({ step, index: firstSolutionStepIndex + relativeIndex }));
+            const visibleStepEntries = (level.steps || [])
+                .slice(firstSolutionStepIndex, lastVisibleStepIndex + 1)
+                .map((step, relativeIndex) => ({ step, index: firstSolutionStepIndex + relativeIndex }));
             const stepsHtml = visibleStepEntries
                 .map(({ step, index }) => {
                 const isComplete = !!completion[index];
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
-                const displayKatex = finalOnlyMode
-                    ? (completedKatex || step.beforeKatex || step.expression || "")
-                    : (!isComplete && step.beforeKatex ? step.beforeKatex : completedKatex);
+                const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
                     : "";
                 return `
-                    <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}"${finalOnlyMode ? ' aria-label="Target final expression"' : ""}>
+                    <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}">
                         <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
                             ${completedCheckHtml}
@@ -4434,8 +4395,7 @@ Promise.resolve().then(() => {
             const validated = validateChosenLevel(level, "Exercise Builder draft");
             LEVELS.splice(0, LEVELS.length, validated);
             currentLevelIndex = 0;
-            assistanceLevel = ASSISTANCE_LEVELS.medium;
-            assistanceWasSpecifiedByNavigation = true;
+            assistanceMode = ASSISTANCE_MODES.unguided;
             hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
@@ -4774,9 +4734,7 @@ Promise.resolve().then(() => {
             if (!window.confirm("Are you sure you want to reset the exercise?")) {
                 return;
             }
-            if (!assistanceWasSpecifiedByNavigation) {
-                clearAssistanceQueryString();
-            }
+            clearModeQueryString();
             window.location.reload();
         }
 
@@ -4927,16 +4885,16 @@ Promise.resolve().then(() => {
             }
             if (modeChoiceBackdrop) {
                 modeChoiceBackdrop.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-assistance-level]");
+                    const button = event.target.closest("button[data-assistance-mode]");
                     if (!button) {
                         return;
                     }
-                    const selectedLevel = normalizeAssistanceLevelForLevel(button.dataset.assistanceLevel, getCurrentLevel());
-                    if (!selectedLevel) {
+                    const selectedMode = normalizeAssistanceModeForLevel(button.dataset.assistanceMode, getCurrentLevel());
+                    if (!selectedMode) {
                         return;
                     }
-                    updateAssistanceQueryString(selectedLevel);
-                    startLoadedLevel(selectedLevel);
+                    updateModeQueryString(selectedMode);
+                    startLoadedLevel(selectedMode);
                 });
             }
             if (builderDigitRail) {

@@ -165,7 +165,7 @@ It also links to exercise-builder.html, a five-phase authoring application that
 uses the real Exploded Algebra player in an embedded authoring session. Completed
 levels export with formatVersion 1,
 the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
-and enough information for High, Medium, and Low assistance. During Phase 3,
+and enough information for Guided and Unguided modes. During Phase 3,
 every completed expression-changing manipulation is automatically saved as a
 major step. Phase 4 first chooses which recorded steps to show, then edits only
 their pre- and post-completion notation. Phase 5 provides one field prefilled with
@@ -175,19 +175,17 @@ the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 
 Built-in level URLs include the selected JSON file in the level query parameter.
-Every level accepts assistance=medium or assistance=low, and a level that contains
-guided steps also accepts assistance=high, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=high
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=medium
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=low
-High assistance follows the recorded guided moves. Medium assistance progressively
-reveals the conventional solution steps without controlling the learner's moves.
-Low assistance shows the original problem and final target while hiding all
-intermediate conventional steps. Completion is checked directly against the final
-expression, so the learner may use a different valid sequence of moves.
-If assistance is absent or invalid, the learner is asked to choose, with Medium
-highlighted by default. High is hidden for exercises without recorded guidance.
-Legacy mode=guided, mode=unguided, and mode=final-only URLs remain supported.
+Every level accepts mode=unguided, and a level that contains recorded guided steps
+also accepts mode=guided, for example:
+  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
+  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
+Guided follows the recorded action sequence. Unguided progressively reveals the
+conventional solution steps without controlling the learner's moves. If mode is
+absent or invalid, the learner is asked to choose Guided or Unguided. Guided is
+hidden for exercises without recorded guidance. Older assistance=high and
+assistance=medium URLs map to Guided and Unguided respectively; Low/final-only is
+no longer supported. Reset Exercise clears either query convention and returns to
+the Guided/Unguided choice.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
