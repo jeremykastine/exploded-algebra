@@ -135,6 +135,8 @@ assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.i
 assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
 assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Exercise Builder authoring must retain the conventional-notation panel throughout");
 assert(playerJs.includes('authoringPhase === "recording" && expressionRoot') && playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)") && playerJs.includes("\\\\text{Recording in progress}"), "Solution recording must show the current conventional expression with its recording status");
+assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
+assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("selection.node === target.node"), "Guided playback must prefer the recorded path and require the exact selected occurrence");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
@@ -285,6 +287,28 @@ vm.createContext(rendererContext);
 vm.runInContext(rendererJs, rendererContext);
 const renderer = rendererContext.window.ExplodedAlgebraRenderer;
 const value = text => new renderer.ExprNode("value", [], text);
+const exactPathFunctionMatch = playerJs.match(/function findDemoSelectionTargetByPath\(step, targetNode\) \{([\s\S]*?)\n        \}\n\n        function findDemoSelectionTarget\(/);
+assert(exactPathFunctionMatch, "The exact guided-selection path resolver must remain testable");
+const coefficientTwo = value("2");
+const constantTwo = value("2");
+const ambiguousSelectionRoot = new renderer.ExprNode("sum", [
+  new renderer.ExprNode("prod", [coefficientTwo, value("3"), value("x")]),
+  constantTwo
+]);
+const exactPathContext = {
+  expressionRoot: ambiguousSelectionRoot,
+  nodeAtPath: renderer.nodeAtPath,
+  selectionRangeMatchesDemoTarget(node, firstPart, lastPart, targetNode) {
+    return firstPart === 0 && lastPart === 0 && node.type === targetNode.type && node.value === targetNode.value;
+  }
+};
+vm.createContext(exactPathContext);
+vm.runInContext(`
+function findDemoSelectionTargetByPath(step, targetNode) {${exactPathFunctionMatch[1]}
+}
+result = findDemoSelectionTargetByPath({ path: [1], firstPart: 0, lastPart: 0 }, { type: "value", value: "2" });
+`, exactPathContext);
+assert(exactPathContext.result && exactPathContext.result.node === constantTwo, "A recorded path must distinguish identical values in different terms");
 const cases = [
   [new renderer.ExprNode("sum", [value("x"), value("1")]), "x + 1"],
   [new renderer.ExprNode("prod", [value("3"), value("x")]), "3x"],

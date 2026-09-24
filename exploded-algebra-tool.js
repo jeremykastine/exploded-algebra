@@ -2923,16 +2923,24 @@ Promise.resolve().then(() => {
                 return;
             }
             const expression = expressionToFullyParenthesizedText(selectedExpression);
+            const selectionPath = findPathToNode(expressionRoot, selection.node);
+            const selectionLocation = selectionPath
+                ? {
+                    path: selectionPath.slice(),
+                    firstPart: selection.firstPart,
+                    lastPart: selection.lastPart
+                }
+                : {};
             recordSolutionAction({
                 type: "select",
                 expression,
                 selectedType: selectedExpression.type,
-                firstPart: selection.firstPart,
-                lastPart: selection.lastPart,
+                ...selectionLocation,
                 beforeExpression: getExpressionTextForTrace()
             }, {
                 type: "select",
-                expression
+                expression,
+                ...selectionLocation
             });
             uiState.selectionRecorded = true;
         }
@@ -3782,10 +3790,41 @@ Promise.resolve().then(() => {
             return Math.max(1, width) * Math.max(1, height);
         }
 
+        function findDemoSelectionTargetByPath(step, targetNode) {
+            if (
+                !step ||
+                !Array.isArray(step.path) ||
+                !step.path.every(index => Number.isInteger(index) && index >= 0)
+            ) {
+                return null;
+            }
+            const node = nodeAtPath(expressionRoot, step.path);
+            if (!node) {
+                return null;
+            }
+            const firstPart = Number.isInteger(step.firstPart) ? step.firstPart : 0;
+            const lastPart = Number.isInteger(step.lastPart) ? step.lastPart : firstPart;
+            if (node.type === "sum" || node.type === "prod") {
+                if (firstPart < 0 || lastPart < firstPart || lastPart >= node.args.length) {
+                    return null;
+                }
+            } else if (firstPart !== 0 || lastPart !== 0) {
+                return null;
+            }
+            return selectionRangeMatchesDemoTarget(node, firstPart, lastPart, targetNode)
+                ? { node, firstPart, lastPart }
+                : null;
+        }
+
         function findDemoSelectionTarget(step) {
             const targetNode = getDemoTargetNode(step);
             if (!targetNode || !expressionRoot) {
                 return null;
+            }
+
+            const exactTarget = findDemoSelectionTargetByPath(step, targetNode);
+            if (exactTarget) {
+                return exactTarget;
             }
 
             const candidates = [];
@@ -3814,8 +3853,11 @@ Promise.resolve().then(() => {
             if (!step || step.type !== "select" || !selection.node) {
                 return false;
             }
-            const targetNode = getDemoTargetNode(step);
-            return selectionRangeMatchesDemoTarget(selection.node, selection.firstPart, selection.lastPart, targetNode);
+            const target = findDemoSelectionTarget(step);
+            return !!target &&
+                selection.node === target.node &&
+                selection.firstPart === target.firstPart &&
+                selection.lastPart === target.lastPart;
         }
 
         function refreshDemoPromptAfterAdvance() {
