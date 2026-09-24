@@ -47,12 +47,13 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-09-23T21:41:10-04:00">9/23/26, 9:41 PM EDT</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-09-23T22:48:09-04:00">9/23/26, 10:48 PM EDT</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
     <p>Choose an exercise from the links below, then select Guided or Unguided.</p>
     <div class="exercise-links" aria-label="Exercises">
       <a href="exploded-algebra.html?level=levels%2Fmultiply-binomials-and-combine-like-terms.json&amp;source=builtin" data-exercise-file="levels/multiply-binomials-and-combine-like-terms.json">Multiply Binomials and Combine Like Terms</a>
+      <a href="exploded-algebra.html?level=levels%2Frewrite-and-simplify-negative-6-plus-4.json&amp;source=builtin" data-exercise-file="levels/rewrite-and-simplify-negative-6-plus-4.json">Rewrite and Simplify −6 + 4</a>
     </div>
 
     <div class="upload-row">
@@ -66,6 +67,72 @@
       is opened directly with file://. The standalone file in levels/ remains the
       distributable JSON exercise used by the hosted site and by users.
     -->
+    <script type="application/json" id="builtInLevelDataRewriteNegative6Plus4">
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "rewrite-and-simplify-negative-6-plus-4",
+  "title": "Rewrite and Simplify -6 + 4",
+  "startExpression": "(((-1)*(6))+(4))",
+  "initialKatex": "-6 + 4",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": { "forward": "manual", "reverse": "manual" },
+      "signedArithmetic": { "forward": "not-allowed", "reverse": "not-allowed" },
+      "nonnegativeFractionSimplification": { "forward": "not-allowed", "reverse": "not-allowed" },
+      "signedFractionSimplification": { "forward": "not-allowed", "reverse": "not-allowed" },
+      "inverseOne": { "forward": "manual", "reverse": "manual" },
+      "inverseNegativeOne": { "forward": "manual", "reverse": "manual" },
+      "doubleNegative": { "forward": "manual", "reverse": "manual" }
+    }
+  },
+  "variables": [],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\n\\[\n-6 + 4\n\\]\n\n## Numerical Manipulation Restrictions\n\n- Nonnegative addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Signed number addition and multiplication\n  - Forward — Not allowed\n  - Reverse — Not allowed\n- Non-negative fraction simplification\n  - Forward — Not allowed\n  - Reverse — Not allowed\n- Signed fraction simplification\n  - Forward — Not allowed\n  - Reverse — Not allowed\n- Inverse of one\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of negative one\n  - Forward — Manual\n  - Reverse — Manual\n- Negative one times negative one\n  - Forward — Manual\n  - Reverse — Manual",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    { "expression": "(((-1)*(6))+(4))", "explodedExpression": "(((-1)*(6))+(4))", "katex": "-6 + 4", "beforeKatex": "-6 + 4", "afterKatex": "-6 + 4" },
+    { "expression": "(((-1)*(2))+((-1)*(4))+(4))", "explodedExpression": "(((-1)*(2))+((-1)*(4))+(4))", "katex": "-2 - 4 + 4", "beforeKatex": "-? - 4 + 4", "afterKatex": "-2 - 4 + 4", "actionStartIndex": 0, "actionEndIndex": 8 },
+    { "expression": "((-1)*(2))", "explodedExpression": "((-1)*(2))", "katex": "-2", "beforeKatex": "-2", "afterKatex": "-2", "actionStartIndex": 8, "actionEndIndex": 12 }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      { "type": "select", "expression": "(6)" },
+      { "type": "tool", "tool": "numericalRewrite" },
+      { "type": "builder", "action": "digit", "value": "2", "flowVersion": 5 },
+      { "type": "builder", "action": "pendingOperation", "value": "sum", "flowVersion": 5 },
+      { "type": "builder", "action": "digit", "value": "4", "flowVersion": 5 },
+      { "type": "builder", "action": "submit", "flowVersion": 5 },
+      { "type": "select", "expression": "((-1)*((2)+(4)))" },
+      { "type": "tool", "tool": "distributeLeftToRight" },
+      { "type": "select", "expression": "(((-1)*(4))+(4))" },
+      { "type": "tool", "tool": "cancelOpposites" },
+      { "type": "select", "expression": "(((-1)*(2))+(0))" },
+      { "type": "tool", "tool": "eliminateIdentities" }
+    ]
+  },
+  "recordedActions": [
+    { "type": "select", "expression": "(6)", "selectedType": "value", "firstPart": 0, "lastPart": 0, "beforeExpression": "(((-1)*(6))+(4))", "index": 0 },
+    { "type": "tool", "tool": "numericalRewrite", "beforeExpression": "(((-1)*(6))+(4))", "afterExpression": "(((-1)*(6))+(4))", "index": 1 },
+    { "type": "builder", "action": "digit", "value": "2", "flowVersion": 5, "beforeExpression": "(((-1)*(6))+(4))", "afterExpression": "(((-1)*(6))+(4))", "index": 2 },
+    { "type": "builder", "action": "pendingOperation", "value": "sum", "flowVersion": 5, "beforeExpression": "(((-1)*(6))+(4))", "afterExpression": "(((-1)*(6))+(4))", "index": 3 },
+    { "type": "builder", "action": "digit", "value": "4", "flowVersion": 5, "beforeExpression": "(((-1)*(6))+(4))", "afterExpression": "(((-1)*(6))+(4))", "index": 4 },
+    { "type": "builder", "action": "submit", "flowVersion": 5, "beforeExpression": "(((-1)*(6))+(4))", "afterExpression": "(((-1)*((2)+(4)))+(4))", "index": 5 },
+    { "type": "select", "expression": "((-1)*((2)+(4)))", "selectedType": "prod", "firstPart": 0, "lastPart": 1, "beforeExpression": "(((-1)*((2)+(4)))+(4))", "index": 6 },
+    { "type": "tool", "tool": "distributeLeftToRight", "beforeExpression": "(((-1)*((2)+(4)))+(4))", "afterExpression": "(((-1)*((2)+(4)))+(4))", "index": 7 },
+    { "type": "select", "expression": "(((-1)*(4))+(4))", "selectedType": "sum", "firstPart": 1, "lastPart": 2, "beforeExpression": "(((-1)*(2))+((-1)*(4))+(4))", "index": 8 },
+    { "type": "tool", "tool": "cancelOpposites", "beforeExpression": "(((-1)*(2))+((-1)*(4))+(4))", "afterExpression": "(((-1)*(2))+((-1)*(4))+(4))", "index": 9 },
+    { "type": "select", "expression": "(((-1)*(2))+(0))", "selectedType": "sum", "firstPart": 0, "lastPart": 1, "beforeExpression": "(((-1)*(2))+(0))", "index": 10 },
+    { "type": "tool", "tool": "eliminateIdentities", "beforeExpression": "(((-1)*(2))+(0))", "afterExpression": "(((-1)*(2))+(0))", "index": 11 }
+  ],
+  "finalExpression": "((-1)*(2))",
+  "finalKatex": "-2"
+}
+    </script>
     <script type="application/json" id="builtInLevelDataMultiplyBinomials">
 {
   "format": "exploded-algebra-level",
@@ -637,7 +704,8 @@
       const customLevelFileStatus = document.getElementById('customLevelFileStatus');
 
       const builtInLevelDataIds = {
-        'levels/multiply-binomials-and-combine-like-terms.json': 'builtInLevelDataMultiplyBinomials'
+        'levels/multiply-binomials-and-combine-like-terms.json': 'builtInLevelDataMultiplyBinomials',
+        'levels/rewrite-and-simplify-negative-6-plus-4.json': 'builtInLevelDataRewriteNegative6Plus4'
       };
 
       function clearLevelTransfer() {
