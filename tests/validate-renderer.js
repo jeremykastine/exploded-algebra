@@ -51,69 +51,52 @@ const singlePairPattern = vm.runInContext(
 assert.equal(singlePairPattern.parenthesisCenters.length, 1);
 assert.equal(singlePairPattern.operatorCenters.length, 0);
 
-const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html"), "utf8");
-const playerJs = fs.readFileSync(path.join(projectRoot, "exploded-algebra-tool.js"), "utf8");
-assert(!playerHtml.includes('id="operationBarStyleSelect"'));
-assert(!playerHtml.includes('id="sumBarStyleSelect"'));
-assert(!playerHtml.includes('id="productBarStyleSelect"'));
-assert(!playerHtml.includes('id="operationBarShadingSelect"'));
-assert(playerJs.includes('value: "nested-operator-parentheses"'));
-assert(playerJs.includes('value: "endpoint-operators"'));
-assert(playerJs.includes('value: "ellipse"'));
-["black", "gray", "light-gray", "gradient"].forEach(shading => {
-    assert(playerJs.includes(`value: "${shading}"`), `Missing ${shading} bar shading option`);
-});
-assert(playerJs.includes('"nested-operator-parentheses"'));
-assert(playerJs.includes('"endpoint-operators"'));
-assert(playerJs.includes('"ellipse"'));
-assert(playerJs.includes("SETTINGS.sumBeamStyle = normalizedStyle"));
-assert(playerJs.includes("SETTINGS.productBeamStyle = normalizedStyle"));
-assert(!playerJs.includes("operationBarGradientCheckbox"));
-assert(
-    /const operatorIconColor = useNestedOperatorParenthesesBeam\s*\? "black"/.test(rendererSource),
-    "The central operator must remain black"
-);
-assert(
-    /drawNestedOperatorParenthesesSumBeam\([\s\S]*?beamPaint,\s*beamPaint,/.test(rendererSource),
-    "The optional gradient must apply to both the outer parentheses and outer operators"
-);
-assert.equal(vm.runInContext('getOperationBarSolidColor("black")', rendererContext), "black");
-assert.equal(vm.runInContext('getOperationBarSolidColor("gray")', rendererContext), "#666666");
-assert.equal(vm.runInContext('getOperationBarSolidColor("light-gray")', rendererContext), "#bdbdbd");
-assert.deepEqual(
-    Array.from(vm.runInContext("getEndpointOperatorCenters(0, 100, 6)", rendererContext)),
-    [6, 94],
-    "Endpoint operators should be inset just enough to remain visible inside the bar"
-);
-assert(
-    /drawEndpointProductOperators\(drawingContext, x, y1, y2, flare, "white"\)/.test(rendererSource),
-    "The endpoint multiplication symbols must be white"
-);
-assert(
-    /drawEndpointSumOperators\(drawingContext, x1, x2, y, flare, "white"\)/.test(rendererSource),
-    "The endpoint addition symbols must be white"
-);
-assert(
-    /useEndpointOperatorsBeam[\s\S]*?createProductBeamGradient/.test(rendererSource) &&
-        /useEndpointOperatorsBeam[\s\S]*?createSumBeamGradient/.test(rendererSource),
-    "The endpoint-operator style must support gradient shading"
-);
-assert(
-    /drawFilledEllipse\(drawingContext, x, centerY, flare, Math\.max\(0, y2 - y1\) \/ 2, beamPaint\)/.test(rendererSource),
-    "The product ellipse must be tangent to every side of its separator container"
-);
-assert(
-    /drawFilledEllipse\(drawingContext, centerX, y, Math\.max\(0, x2 - x1\) \/ 2, flare, beamPaint\)/.test(rendererSource),
-    "The sum ellipse must be tangent to every side of its separator container"
-);
-assert(
-    /const centeredOperatorIconColor = useEllipseBeam \? "white" : operatorIconColor/.test(rendererSource),
-    "The ellipse style must keep its centered operation white"
-);
-assert(
-    /useEllipseBeam[\s\S]*?createProductBeamGradient/.test(rendererSource) &&
-        /useEllipseBeam[\s\S]*?createSumBeamGradient/.test(rendererSource),
-    "The ellipse style must support gradient shading"
-);
+// Check the separator geometry and paint in both orientations. Legacy bar
+// preferences cannot change the fixed leading-symbol appearance.
+const settings = {
+    operatorThickness: 12,
+    expressionStrokeFill: "black",
+    sumBeamStyle: "nested-parentheses",
+    productBeamStyle: "ellipse",
+    operationBarShading: "gradient"
+};
+function recordingContext() {
+    const operations = [];
+    return {
+        operations,
+        save() {}, restore() {}, beginPath() {},
+        moveTo(...args) { operations.push(["move", ...args]); },
+        lineTo(...args) { operations.push(["line", ...args]); },
+        arc(...args) { operations.push(["arc", ...args]); },
+        fillRect(...args) { operations.push(["rect", this.fillStyle, ...args]); },
+        stroke() { operations.push(["stroke", this.strokeStyle, this.lineWidth]); },
+        fill() { operations.push(["fill", this.fillStyle]); }
+    };
+}
+const sumContext = recordingContext();
+rendererContext.drawLeadingSumSeparator(sumContext, 10, 110, 20, settings, "black");
+const sumConnector = sumContext.operations.find(operation => operation[0] === "rect");
+assert.equal(sumConnector[1], "#d3d3d3");
+assert.equal(sumConnector[3], 20 - 12 * 0.29 / 2);
+assert.equal(sumConnector[2] + sumConnector[4], 110, "Sum connector reaches the right edge");
+assert.deepEqual(sumContext.operations.filter(operation => operation[0] === "move").map(operation => operation.slice(1)),
+    [[11.92, 20], [16, 15.92]]);
+assert.equal(sumContext.operations.find(operation => operation[0] === "stroke")[1], "black");
+
+const productContext = recordingContext();
+rendererContext.drawLeadingProductSeparator(productContext, 20, 10, 110, settings, "black");
+const productConnector = productContext.operations.find(operation => operation[0] === "rect");
+assert.equal(productConnector[1], "#d3d3d3");
+assert.equal(productConnector[3] + productConnector[5], 110, "Product connector reaches the bottom edge");
+assert.ok(productContext.operations.some(operation => operation[0] === "arc" && operation[3] === 4.32),
+    "The leading multiplication dot is large but fits inside the separator width");
+
+const changedSettings = { ...settings, sumBeamStyle: "midline", productBeamStyle: "flared", operationBarShading: "black" };
+const secondSum = recordingContext();
+const secondProduct = recordingContext();
+rendererContext.drawLeadingSumSeparator(secondSum, 10, 110, 20, changedSettings, "black");
+rendererContext.drawLeadingProductSeparator(secondProduct, 20, 10, 110, changedSettings, "black");
+assert.deepEqual(secondSum.operations, sumContext.operations);
+assert.deepEqual(secondProduct.operations, productContext.operations);
 
 console.log("Exploded Algebra renderer checks passed.");
