@@ -134,6 +134,7 @@ assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilde
 assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.includes('class="builder-conventional-arrow"'), "Initial-expression authoring must omit the nonexistent selected row while rewrites show the selected-to-new transition");
 assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
 assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Exercise Builder authoring must retain the conventional-notation panel throughout");
+assert(playerJs.includes('authoringPhase === "recording" && expressionRoot') && playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)") && playerJs.includes("\\\\text{Recording in progress}"), "Solution recording must show the current conventional expression with its recording status");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
