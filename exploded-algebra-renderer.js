@@ -2072,8 +2072,9 @@ function escapeKatexValue(value) {
 function expressionToKatex(rootOrData) {
     const root = exprFromData(rootOrData);
 
+    const isNegativeOne = node => node && node.type === "value" && node.value === "-1";
     const isNegativeProduct = node => node && node.type === "prod" &&
-        node.args.length > 1 && node.args[0].type === "value" && node.args[0].value === "-1";
+        node.args.length > 1 && isNegativeOne(node.args[0]);
 
     const render = (node, parentType = null) => {
         if (!node) {
@@ -2087,6 +2088,9 @@ function expressionToKatex(rootOrData) {
         }
         if (node.type === "sum") {
             const body = node.args.map((term, index) => {
+                if (isNegativeOne(term)) {
+                    return `${index === 0 ? "-" : " - "}1`;
+                }
                 if (isNegativeProduct(term)) {
                     const negativeBody = render(new ExprNode("prod", term.args.slice(1).map(exprFromData), null), "sum");
                     return `${index === 0 ? "-" : " - "}${negativeBody}`;
@@ -2101,6 +2105,19 @@ function expressionToKatex(rootOrData) {
             if (isNegativeProduct(node)) {
                 const positive = new ExprNode("prod", node.args.slice(1).map(exprFromData), null);
                 return `-${render(positive, parentType)}`;
+            }
+            const inverseIndex = node.args.findIndex(factor => factor.type === "inv");
+            if (inverseIndex > 0) {
+                const numeratorFactors = node.args.slice(0, inverseIndex).map(exprFromData);
+                const numerator = numeratorFactors.length === 1
+                    ? render(numeratorFactors[0])
+                    : render(new ExprNode("prod", numeratorFactors, null));
+                const denominator = render(node.args[inverseIndex].args[0]);
+                const fraction = `\\frac{${numerator}}{${denominator}}`;
+                const trailingFactors = node.args.slice(inverseIndex + 1).map(exprFromData);
+                return trailingFactors.length
+                    ? `${fraction} \\cdot ${render(new ExprNode("prod", trailingFactors, null), "prod")}`
+                    : fraction;
             }
             const compactFactors = [];
             for (const factor of node.args) {
@@ -2140,8 +2157,9 @@ function expressionToKatex(rootOrData) {
 
 function expressionBuilderToKatex(rootOrData) {
     const root = exprFromData(rootOrData);
+    const isNegativeOne = node => node && node.type === "value" && node.value === "-1";
     const isNegativeProduct = node => node && node.type === "prod" &&
-        node.args.length > 1 && node.args[0].type === "value" && node.args[0].value === "-1";
+        node.args.length > 1 && isNegativeOne(node.args[0]);
 
     const buildSequenceTree = sequence => {
         if (!sequence || !sequence.args.length) {
@@ -2194,6 +2212,9 @@ function expressionBuilderToKatex(rootOrData) {
         }
         if (node.type === "sum") {
             const body = node.args.map((term, index) => {
+                if (isNegativeOne(term)) {
+                    return `${index === 0 ? "-" : " - "}1`;
+                }
                 if (isNegativeProduct(term)) {
                     const positive = new ExprNode("prod", term.args.slice(1), null);
                     return `${index === 0 ? "-" : " - "}${renderBuilderNode(positive, "sum")}`;
@@ -2208,6 +2229,19 @@ function expressionBuilderToKatex(rootOrData) {
             if (isNegativeProduct(node)) {
                 const positive = new ExprNode("prod", node.args.slice(1), null);
                 return `-${renderBuilderNode(positive, parentType)}`;
+            }
+            const inverseIndex = node.args.findIndex(factor => factor.type === "inv");
+            if (inverseIndex > 0) {
+                const numeratorFactors = node.args.slice(0, inverseIndex);
+                const numerator = numeratorFactors.length === 1
+                    ? renderBuilderNode(numeratorFactors[0])
+                    : renderBuilderNode(new ExprNode("prod", numeratorFactors, null));
+                const denominator = renderBuilderNode(node.args[inverseIndex].args[0]);
+                const fraction = `\\frac{${numerator}}{${denominator}}`;
+                const trailingFactors = node.args.slice(inverseIndex + 1);
+                return trailingFactors.length
+                    ? `${fraction} \\cdot ${renderBuilderNode(new ExprNode("prod", trailingFactors, null), "prod")}`
+                    : fraction;
             }
             const compactFactors = [];
             for (const factor of node.args) {

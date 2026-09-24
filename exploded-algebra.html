@@ -3826,18 +3826,8 @@
             font-weight: 600;
         }
 
-        /* Exercise Builder authoring hides the step strip only outside active
-           expression entry. During entry, panel one shows the live conventional
-           form of the expression being built. */
-        body.authoring-session:not(.expression-builder-active) .app-container{
-            --top-panel-height: 0px;
-            grid-template-rows: minmax(0, 1fr);
-        }
-        body.authoring-session:not(.expression-builder-active) .main{
-            grid-row: 1;
-        }
-        body.authoring-session:not(.expression-builder-active) .left-panel,
-        body.authoring-session:not(.expression-builder-active) .top-panel-resize-handle,
+        /* Exercise Builder authoring retains panel one so the current
+           expression remains visible in conventional notation. */
         body.authoring-session.authoring-initial-session .quadrant-menu {
             display: none !important;
         }
@@ -3944,21 +3934,6 @@
             bottom: calc((var(--bottom-panel-height) - var(--builder-keypad-height)) / 2);
         }
 
-
-        /* Outside active expression entry, authoring omits the student step
-           strip while retaining the independent controls panel. */
-        body.authoring-session:not(.expression-builder-active) .app-container{
-            grid-template-rows:
-                minmax(0, 1fr)
-                var(--divider-size)
-                min(var(--bottom-panel-height), 33.333dvh);
-        }
-        body.authoring-session:not(.expression-builder-active) .main{ grid-row: 1; }
-        body.authoring-session:not(.expression-builder-active) .bottom-panel-resize-handle { grid-row: 2; }
-        body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
-        body.authoring-session:not(.expression-builder-active) .quadrant-tools,
-        body.authoring-session:not(.expression-builder-active) .quadrant-menu,
-        body.authoring-session:not(.expression-builder-active) .main-action-panel { grid-row: 3; }
         body.authoring-session.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
             display: block !important;
         }
@@ -4349,7 +4324,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-09-23T22:48:09-04:00">9/23/26, 10:48 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-23T23:21:27-04:00">9/23/26, 11:21 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4480,7 +4455,7 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260922-builder-six-column-layout"></script>
+    <script src="exploded-algebra-renderer.js?v=20260923-conventional-fractions"></script>
     <script src="exploded-algebra-tool.js?v=20260923-guided-unguided"></script>
 
 </body>

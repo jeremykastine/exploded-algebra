@@ -133,7 +133,7 @@ assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(activ
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode)") && playerJs.includes('class="solution-step builder-conventional-selected"'), "Panel one must show the selected expression above the live construction");
 assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.includes('class="builder-conventional-arrow"'), "Initial-expression authoring must omit the nonexistent selected row while rewrites show the selected-to-new transition");
 assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
-assert(playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Instructor Expression Builder must retain the conventional-notation panel");
+assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Exercise Builder authoring must retain the conventional-notation panel throughout");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
@@ -290,7 +290,11 @@ const cases = [
   [new renderer.ExprNode("prod", [value("x"), value("x")]), "x^{2}"],
   [new renderer.ExprNode("prod", [value("2"), value("x"), value("x"), value("x")]), "2x^{3}"],
   [new renderer.ExprNode("inv", [new renderer.ExprNode("sum", [value("x"), value("4")])]), "\\frac{1}{x + 4}"],
-  [new renderer.ExprNode("sum", [value("x"), new renderer.ExprNode("prod", [value("-1"), value("3")])]), "x - 3"]
+  [new renderer.ExprNode("sum", [value("x"), new renderer.ExprNode("prod", [value("-1"), value("3")])]), "x - 3"],
+  [new renderer.ExprNode("sum", [value("x"), value("-1")]), "x - 1"],
+  [new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])]), "\\frac{2x}{3}"],
+  [new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])]), "-\\frac{2}{3}"],
+  [new renderer.ExprNode("prod", [value("2"), new renderer.ExprNode("inv", [value("3")]), value("x")]), "\\frac{2}{3} \\cdot x"]
 ];
 for (const [expression, expected] of cases) {
   assert(renderer.expressionToKatex(expression) === expected, `Unexpected KaTeX generation for ${expected}`);
@@ -318,6 +322,9 @@ const danglingBuilder = builderSequence([value("2")], ["sum"]);
 assert(renderer.expressionBuilderToKatex(danglingBuilder) === "2 + ", "A pending Builder operation must remain visible before its next value is entered");
 const inverseBuilder = new renderer.ExprNode("inv", [flatBuilder]);
 assert(renderer.expressionBuilderToKatex(inverseBuilder) === "\\frac{1}{2 + 3 \\cdot 4}", "Unresolved operations inside an inverse must remain flat in its conventional denominator");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("sum", [value("x"), value("-1")])) === "x - 1", "Builder conventional notation must show addition of negative one as subtraction");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])])) === "\\frac{2x}{3}", "Builder conventional notation must collect factors preceding an inverse into the numerator");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])])) === "-\\frac{2}{3}", "Builder conventional notation must place a fraction's negative sign in front");
 
 const pending = new renderer.ExprNode("sum", [value("2"), value("x")]);
 pending.isBuilderSequence = true;

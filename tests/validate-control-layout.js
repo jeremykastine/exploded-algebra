@@ -94,9 +94,9 @@ assert(
     "Student Expression Builder must not hide the KaTeX steps panel"
 );
 assert(
-    playerHtml.includes('body.authoring-session:not(.expression-builder-active) .left-panel,') &&
+    !playerHtml.includes('body.authoring-session:not(.expression-builder-active) .left-panel,') &&
         !playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
-    "Instructor Expression Builder must show the live conventional panel and hide it only outside entry"
+    "Exercise Builder authoring must retain panel one in and outside expression entry"
 );
 assert(
     /body\.expression-builder-active\.builder-review-active \.app-container\s*\{[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
