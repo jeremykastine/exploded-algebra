@@ -2145,6 +2145,8 @@ function expressionToKatex(rootOrData) {
                     (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
                 ) || (
                     previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
+                ) || (
+                    previousNode.type === "sum" && currentNode.type === "sum"
                 );
                 return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
             }).join("");
@@ -2269,6 +2271,8 @@ function expressionBuilderToKatex(rootOrData) {
                     (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
                 ) || (
                     previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
+                ) || (
+                    previousNode.type === "sum" && currentNode.type === "sum"
                 );
                 return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
             }).join("");

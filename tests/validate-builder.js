@@ -295,7 +295,8 @@ const cases = [
   [new renderer.ExprNode("sum", [value("x"), value("-1")]), "x - 1"],
   [new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])]), "\\frac{2x}{3}"],
   [new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])]), "-\\frac{2}{3}"],
-  [new renderer.ExprNode("prod", [value("2"), new renderer.ExprNode("inv", [value("3")]), value("x")]), "\\frac{2}{3} \\cdot x"]
+  [new renderer.ExprNode("prod", [value("2"), new renderer.ExprNode("inv", [value("3")]), value("x")]), "\\frac{2}{3} \\cdot x"],
+  [new renderer.ExprNode("prod", [new renderer.ExprNode("sum", [value("a"), value("b")]), new renderer.ExprNode("sum", [value("c"), value("d")])]), "\\left(a + b\\right)\\left(c + d\\right)"]
 ];
 for (const [expression, expected] of cases) {
   assert(renderer.expressionToKatex(expression) === expected, `Unexpected KaTeX generation for ${expected}`);
@@ -326,6 +327,7 @@ assert(renderer.expressionBuilderToKatex(inverseBuilder) === "\\frac{1}{2 + 3 \\
 assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("sum", [value("x"), value("-1")])) === "x - 1", "Builder conventional notation must show addition of negative one as subtraction");
 assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])])) === "\\frac{2x}{3}", "Builder conventional notation must collect factors preceding an inverse into the numerator");
 assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])])) === "-\\frac{2}{3}", "Builder conventional notation must place a fraction's negative sign in front");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [new renderer.ExprNode("sum", [value("a"), value("b")]), new renderer.ExprNode("sum", [value("c"), value("d")])])) === "\\left(a + b\\right)\\left(c + d\\right)", "Builder conventional notation must juxtapose multiplied sums without a multiplication dot");
 
 const pending = new renderer.ExprNode("sum", [value("2"), value("x")]);
 pending.isBuilderSequence = true;
