@@ -67,6 +67,7 @@ function recordingContext() {
         save() {}, restore() {}, beginPath() {},
         moveTo(...args) { operations.push(["move", ...args]); },
         lineTo(...args) { operations.push(["line", ...args]); },
+        quadraticCurveTo(...args) { operations.push(["curve", ...args]); },
         arc(...args) { operations.push(["arc", ...args]); },
         fillRect(...args) { operations.push(["rect", this.fillStyle, ...args]); },
         stroke() { operations.push(["stroke", this.strokeStyle, this.lineWidth]); },
@@ -119,7 +120,49 @@ assert.ok(!classicContext.operations.some(operation => operation[0] === "fill" &
 assert.ok(classicContext.operations.some(operation => operation[0] === "move" && operation[1] === 10),
     "The classic midline must reach the left edge");
 
+const dottedSum = recordingContext();
+rendererContext.drawNodeToContext(sumNode, dottedSum,
+    { ...changedSettings, operationStyle: "dotted-parentheses" });
+assert.equal(dottedSum.operations.filter(operation => operation[0] === "curve").length, 2,
+    "The sum gets exactly one pair of endpoint parentheses");
+const sumCurves = dottedSum.operations.filter(operation => operation[0] === "curve");
+assert.ok(sumCurves[0][1] < 12 && sumCurves[1][1] > 108,
+    "The parentheses must sit at the left and right endpoints");
+assert.equal(dottedSum.operations.filter(operation => operation[0] === "fill" && operation[1] === "#e5e5e5").length, 2,
+    "A pale dotted segment must appear on each side of the plus");
+assert.ok(dottedSum.operations.some(operation => operation[0] === "move" && Math.abs(operation[1] - 60) < 5),
+    "The plus must sit in the middle of the sum");
+
+const productNode = {
+    type: "prod", args: [{ type: "value" }, { type: "value" }],
+    layout: { x: 0, y: 10, width: 40, height: 100, vLines: [0, 20, 40] },
+    left() { return 0; }, right() { return 40; }, top() { return 10; }, bottom() { return 110; }
+};
+const dottedProduct = recordingContext();
+rendererContext.drawNodeToContext(productNode, dottedProduct,
+    { ...changedSettings, operationStyle: "dotted-parentheses" });
+assert.equal(dottedProduct.operations.filter(operation => operation[0] === "curve").length, 2,
+    "The product gets exactly one rotated pair of endpoint parentheses");
+const productCurves = dottedProduct.operations.filter(operation => operation[0] === "curve");
+assert.ok(productCurves[0][2] < 12 && productCurves[1][2] > 108,
+    "The rotated parentheses must sit at the top and bottom endpoints");
+assert.equal(dottedProduct.operations.filter(operation => operation[0] === "fill" && operation[1] === "#e5e5e5").length, 2);
+assert.ok(dottedProduct.operations.some(operation => operation[0] === "arc" && operation[1] === 20 && operation[2] === 60),
+    "The multiplication dot must sit in the middle of the product");
+const dottedOtherBarSettings = recordingContext();
+rendererContext.drawNodeToContext(sumNode, dottedOtherBarSettings,
+    { ...settings, operationStyle: "dotted-parentheses", sumBeamStyle: "ellipse" });
+assert.deepEqual(dottedOtherBarSettings.operations, dottedSum.operations,
+    "Bar appearance settings must not alter the independent dotted style");
+
 const ExprNode = vm.runInContext("ExprNode", rendererContext);
+const compact = new ExprNode("sum", [new ExprNode("value", [], "1"), new ExprNode("value", [], "1")]);
+rendererContext.measureNodeWithContext(compact, {
+    measureText() { return { width: 7, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 2 }; }
+}, { ...settings, textFont: "20px Arial", bufferSize: 16, operationStyle: "dotted-parentheses" });
+assert.ok(compact.layout.width >= rendererContext.getParenthesisMinimumSpan(settings) + 12,
+    "Small sums must leave room for both endpoint parentheses and the central operator");
+
 assert.equal(vm.runInContext("SETTINGS.childAlignment", rendererContext), "center");
 function positionedParent(type, alignment) {
     const narrow = new ExprNode("value", [], "a");

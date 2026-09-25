@@ -960,8 +960,10 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const heights = node.args.map(child => child.layout.height);
         const separatorWidth = getOperatorThickness(settings);
         node.layout.width = widths.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorWidth + 2 * gap);
-        const minimumParenthesisHeight = settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.productBeamStyle)
-            ? getParenthesisMinimumSpan(settings) : 0;
+        const minimumParenthesisHeight = settings.operationStyle === "dotted-parentheses"
+            ? getParenthesisMinimumSpan(settings) + getOperatorThickness(settings)
+            : settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.productBeamStyle)
+                ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.height = Math.max(getOperatorThickness(settings), ...heights, minimumParenthesisHeight);
 
         const vLines = [0];
@@ -978,8 +980,10 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const widths = node.args.map(child => child.layout.width);
         const heights = node.args.map(child => child.layout.height);
         const separatorHeight = getOperatorThickness(settings);
-        const minimumParenthesisWidth = settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.sumBeamStyle)
-            ? getParenthesisMinimumSpan(settings) : 0;
+        const minimumParenthesisWidth = settings.operationStyle === "dotted-parentheses"
+            ? getParenthesisMinimumSpan(settings) + getOperatorThickness(settings)
+            : settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.sumBeamStyle)
+                ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.width = Math.max(getOperatorThickness(settings), ...widths, minimumParenthesisWidth);
         node.layout.height = heights.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorHeight + 2 * gap);
 
@@ -1290,7 +1294,7 @@ function nodeNeedsSeparatorFlares(node) {
 
 // Operation symbols stay at the leading edge of each separator. The trailing
 // dotted connector is fixed light gray, independent of any saved bar style.
-function drawDottedLeadingConnector(drawingContext, x1, y1, x2, y2, diameter) {
+function drawDottedLeadingConnector(drawingContext, x1, y1, x2, y2, diameter, color = "#d3d3d3") {
     const length = Math.hypot(x2 - x1, y2 - y1);
     if (length <= 0) return;
     const radius = Math.min(diameter / 2, length / 2);
@@ -1298,7 +1302,7 @@ function drawDottedLeadingConnector(drawingContext, x1, y1, x2, y2, diameter) {
     const interval = count > 1 ? (length - 2 * radius) / (count - 1) : 0;
     const unitX = (x2 - x1) / length;
     const unitY = (y2 - y1) / length;
-    drawingContext.fillStyle = "#d3d3d3";
+    drawingContext.fillStyle = color;
     drawingContext.beginPath();
     for (let i = 0; i < count; i++) {
         const offset = count === 1 ? length / 2 : radius + i * interval;
@@ -1339,6 +1343,52 @@ function drawLeadingProductSeparator(drawingContext, x, y1, y2, settings, color)
     drawingContext.beginPath();
     drawingContext.arc(x, centerY, radius, 0, Math.PI * 2);
     drawingContext.fill();
+    drawingContext.restore();
+}
+
+// One pair of parentheses brackets each separator; the centered operator
+// interrupts the pale dotted midline so it remains legible at every scale.
+function drawDottedParenthesesSeparator(drawingContext, type, start, end, cross, settings, color) {
+    const half = getOperatorHalfSize(settings);
+    const { depth } = getParenthesisMetrics(half);
+    const lineWidth = getOperatorIconStrokeWidth(settings);
+    const edgeInset = lineWidth / 2;
+    const innerStart = start + edgeInset + depth * 2;
+    const innerEnd = end - edgeInset - depth * 2;
+    const center = (start + end) / 2;
+    const operatorHalf = half * 0.68;
+    const clear = operatorHalf + lineWidth / 2;
+    const dotDiameter = Math.max(1.1, getOperatorThickness(settings) * 0.13);
+    drawingContext.save();
+    if (type === "sum") {
+        drawDottedLeadingConnector(drawingContext, innerStart, cross, center - clear, cross, dotDiameter, "#e5e5e5");
+        drawDottedLeadingConnector(drawingContext, center + clear, cross, innerEnd, cross, dotDiameter, "#e5e5e5");
+    } else {
+        drawDottedLeadingConnector(drawingContext, cross, innerStart, cross, center - clear, dotDiameter, "#e5e5e5");
+        drawDottedLeadingConnector(drawingContext, cross, center + clear, cross, innerEnd, dotDiameter, "#e5e5e5");
+    }
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = lineWidth;
+    drawingContext.beginPath();
+    if (type === "sum") {
+        drawingContext.moveTo(innerStart, cross - half + edgeInset);
+        drawingContext.quadraticCurveTo(start + edgeInset, cross, innerStart, cross + half - edgeInset);
+        drawingContext.moveTo(innerEnd, cross - half + edgeInset);
+        drawingContext.quadraticCurveTo(end - edgeInset, cross, innerEnd, cross + half - edgeInset);
+        drawPlusMark(drawingContext, center, cross, operatorHalf);
+    } else {
+        drawingContext.moveTo(cross + half - edgeInset, innerStart);
+        drawingContext.quadraticCurveTo(cross, start + edgeInset, cross - half + edgeInset, innerStart);
+        drawingContext.moveTo(cross + half - edgeInset, innerEnd);
+        drawingContext.quadraticCurveTo(cross, end - edgeInset, cross - half + edgeInset, innerEnd);
+    }
+    drawingContext.stroke();
+    if (type === "prod") {
+        drawingContext.fillStyle = color;
+        drawingContext.beginPath();
+        drawingContext.arc(cross, center, getOperatorDotRadius(settings), 0, Math.PI * 2);
+        drawingContext.fill();
+    }
     drawingContext.restore();
 }
 
@@ -1619,10 +1669,12 @@ function drawNodeToContext(
         for (let j = 1; j < node.layout.vLines.length - 1; j++) {
             if (separatorHidden(node, j)) continue;
             const x = relVLine(node, j);
-            drawLeadingProductSeparator(
-                drawingContext, x, node.top(), node.bottom(), settings,
-                separatorForeground(node, j - 1) || nodeColor
-            );
+            const color = separatorForeground(node, j - 1) || nodeColor;
+            if (settings.operationStyle === "dotted-parentheses") {
+                drawDottedParenthesesSeparator(drawingContext, "prod", node.top(), node.bottom(), x, settings, color);
+            } else {
+                drawLeadingProductSeparator(drawingContext, x, node.top(), node.bottom(), settings, color);
+            }
             drawDebugComponentBounds(drawingContext, x - getOperatorHalfSize(settings), node.top(),
                 x + getOperatorHalfSize(settings), node.bottom(), settings);
         }
@@ -1630,10 +1682,12 @@ function drawNodeToContext(
         for (let j = 1; j < node.layout.hLines.length - 1; j++) {
             if (separatorHidden(node, j)) continue;
             const y = relHLine(node, j);
-            drawLeadingSumSeparator(
-                drawingContext, node.left(), node.right(), y, settings,
-                separatorForeground(node, j - 1) || nodeColor
-            );
+            const color = separatorForeground(node, j - 1) || nodeColor;
+            if (settings.operationStyle === "dotted-parentheses") {
+                drawDottedParenthesesSeparator(drawingContext, "sum", node.left(), node.right(), y, settings, color);
+            } else {
+                drawLeadingSumSeparator(drawingContext, node.left(), node.right(), y, settings, color);
+            }
             drawDebugComponentBounds(drawingContext, node.left(), y - getOperatorHalfSize(settings),
                 node.right(), y + getOperatorHalfSize(settings), settings);
         }

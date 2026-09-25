@@ -1459,8 +1459,9 @@ Promise.resolve().then(() => {
                     value = current.shortLabel;
                     nextValue = getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, current.value).shortLabel;
                 } else if (setting === "operation-style") {
-                    value = classicBars ? "Classic" : "Leading";
-                    nextValue = classicBars ? "Leading" : "Classic";
+                    const current = OPERATION_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationStyle) || OPERATION_STYLE_OPTIONS[0];
+                    value = current.shortLabel;
+                    nextValue = getNextCyclicOption(OPERATION_STYLE_OPTIONS, current.value).shortLabel;
                 } else if (setting === "bar-style") {
                     const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
                     const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
@@ -5206,6 +5207,11 @@ ctx.font = SETTINGS.textFont;
             { value: "end", shortLabel: "Bottom / Right" }
         ];
         const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV1";
+        const OPERATION_STYLE_OPTIONS = [
+            { value: "leading", shortLabel: "Leading" },
+            { value: "dotted-parentheses", shortLabel: "Dotted ( )" },
+            { value: "classic", shortLabel: "Classic" }
+        ];
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
         const PRODUCT_BAR_STYLE_STORAGE_KEY = "explodedAlgebraProductBarStyleV1";
@@ -5250,7 +5256,7 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             if (setting === "operation-style") {
-                setOperationStyle(SETTINGS.operationStyle === "classic" ? "leading" : "classic", true);
+                setOperationStyle(getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle).value, true);
                 return;
             }
             if (setting === "bar-style") {
@@ -5356,7 +5362,8 @@ ctx.font = SETTINGS.textFont;
 
         function getSavedOperationStyle() {
             try {
-                return window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY) === "classic" ? "classic" : "leading";
+                const saved = window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY);
+                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "leading";
             } catch (error) {
                 return "leading";
             }
@@ -5386,7 +5393,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function setOperationStyle(style, persist = false) {
-            SETTINGS.operationStyle = style === "classic" ? "classic" : "leading";
+            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "leading";
             if (persist) {
                 try {
                     window.localStorage.setItem(OPERATION_STYLE_STORAGE_KEY, SETTINGS.operationStyle);
@@ -6843,7 +6850,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = SETTINGS.operationStyle === "leading" || nodeNeedsSeparatorFlares(node) ||
+                const hasConnectorFlares = SETTINGS.operationStyle !== "classic" || nodeNeedsSeparatorFlares(node) ||
                     SETTINGS.productBeamStyle === "nested-parentheses" ||
                     SETTINGS.productBeamStyle === "nested-operator-parentheses" ||
                     SETTINGS.productBeamStyle === "outward-parentheses";
@@ -6859,7 +6866,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = SETTINGS.operationStyle === "leading" || nodeNeedsSeparatorFlares(node) ||
+                const hasConnectorFlares = SETTINGS.operationStyle !== "classic" || nodeNeedsSeparatorFlares(node) ||
                     SETTINGS.sumBeamStyle === "nested-parentheses" ||
                     SETTINGS.sumBeamStyle === "nested-operator-parentheses" ||
                     SETTINGS.sumBeamStyle === "outward-parentheses";

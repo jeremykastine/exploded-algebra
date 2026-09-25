@@ -63,8 +63,10 @@ provides a control for the responsive conventional-steps text preference and
 an independent Child Alignment switch. Centered is the default. Center / Right
 keeps factors vertically centered in products and right-aligns terms in sums.
 Bottom / Right bottom-aligns factors and right-aligns terms. The Operation Style
-switch defaults to Leading. Choosing Classic reveals the previous Bar Style and
-Bar Shade settings with all eight bar styles.
+switch defaults to Leading. Dotted ( ) places the operation in the middle of a
+very light dotted midline with one pair of parentheses at the endpoints.
+Choosing Classic reveals the previous Bar Style and Bar Shade settings with all
+eight bar styles. Leading and Dotted ( ) do not depend on those bar settings.
 Every addition separator has a large plus sign at its left edge and a dotted
 light gray connector to the right; multiplication separators have a large dot at
 the top and a dotted light gray connector below. The Bar Style and Bar Shade
