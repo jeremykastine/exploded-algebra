@@ -1454,6 +1454,9 @@ Promise.resolve().then(() => {
                     value = stepsTextSizePreference[0].toUpperCase() + stepsTextSizePreference.slice(1);
                     const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
                     nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
+                } else if (setting === "child-alignment") {
+                    value = SETTINGS.childAlignment === "end" ? "Bottom / Right" : "Centered";
+                    nextValue = SETTINGS.childAlignment === "end" ? "Centered" : "Bottom / Right";
                 } else if (setting === "operation-style") {
                     value = classicBars ? "Classic" : "Leading";
                     nextValue = classicBars ? "Leading" : "Classic";
@@ -4814,6 +4817,7 @@ Promise.resolve().then(() => {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
             setStepsTextSizePreference(loadSavedStepsTextSizePreference());
+            setChildAlignment(getSavedChildAlignment());
             updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
@@ -5194,6 +5198,7 @@ ctx.font = SETTINGS.textFont;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
+        const CHILD_ALIGNMENT_STORAGE_KEY = "explodedAlgebraChildAlignmentV1";
         const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV1";
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
@@ -5232,6 +5237,10 @@ ctx.font = SETTINGS.textFont;
                     (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length
                 ];
                 setStepsTextSizePreference(nextPreference, true);
+                return;
+            }
+            if (setting === "child-alignment") {
+                setChildAlignment(SETTINGS.childAlignment === "end" ? "center" : "end", true);
                 return;
             }
             if (setting === "operation-style") {
@@ -5345,6 +5354,28 @@ ctx.font = SETTINGS.textFont;
             } catch (error) {
                 return "leading";
             }
+        }
+
+        function getSavedChildAlignment() {
+            try {
+                return window.localStorage.getItem(CHILD_ALIGNMENT_STORAGE_KEY) === "end" ? "end" : "center";
+            } catch (error) {
+                return "center";
+            }
+        }
+
+        function setChildAlignment(alignment, persist = false) {
+            SETTINGS.childAlignment = alignment === "end" ? "end" : "center";
+            if (persist) {
+                try {
+                    window.localStorage.setItem(CHILD_ALIGNMENT_STORAGE_KEY, SETTINGS.childAlignment);
+                } catch (error) {}
+            }
+            if (expressionRoot) {
+                layoutExpression(expressionRoot);
+                drawExpression();
+            }
+            refreshQuickSettingButtons();
         }
 
         function setOperationStyle(style, persist = false) {

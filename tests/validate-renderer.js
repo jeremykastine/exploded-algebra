@@ -119,4 +119,27 @@ assert.ok(!classicContext.operations.some(operation => operation[0] === "fill" &
 assert.ok(classicContext.operations.some(operation => operation[0] === "move" && operation[1] === 10),
     "The classic midline must reach the left edge");
 
+const ExprNode = vm.runInContext("ExprNode", rendererContext);
+assert.equal(vm.runInContext("SETTINGS.childAlignment", rendererContext), "center");
+function positionedParent(type, alignment) {
+    const narrow = new ExprNode("value", [], "a");
+    narrow.layout.width = 10;
+    narrow.layout.height = 10;
+    const wide = new ExprNode("value", [], "b");
+    wide.layout.width = 60;
+    wide.layout.height = 40;
+    const parent = new ExprNode(type, [narrow, wide]);
+    parent.layout.width = type === "sum" ? 60 : 110;
+    parent.layout.height = type === "prod" ? 40 : 70;
+    rendererContext.placeNodeWithSettings(parent, 5, 7,
+        { operatorThickness: 12, bufferSize: 16, childAlignment: alignment });
+    return { parent, narrow, wide };
+}
+assert.equal(positionedParent("sum", "center").narrow.left(), 30);
+assert.equal(positionedParent("sum", "end").narrow.right(), 65,
+    "Bottom / Right must align the narrower term with the right edge of its sum");
+assert.equal(positionedParent("prod", "center").narrow.top(), 22);
+assert.equal(positionedParent("prod", "end").narrow.bottom(), 47,
+    "Bottom / Right must align the shorter factor with the bottom edge of its product");
+
 console.log("Exploded Algebra renderer checks passed.");

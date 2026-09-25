@@ -54,6 +54,7 @@ const SETTINGS = {
     negativeUnitTextColor: "white",
     bufferSize: 16,
     operatorThickness: 12,
+    childAlignment: "center",
     operationStyle: "leading",
     sumBeamStyle: "thick",
     sumBeamEdgeColor: "black",
@@ -1094,7 +1095,9 @@ function placeNodeWithSettings(node, x, y, settings) {
         let cursorX = x;
         for (let i = 0; i < node.args.length; i++) {
             const child = node.args[i];
-            const childY = y + (node.layout.height - child.layout.height) / 2;
+            const childY = y + (settings.childAlignment === "end"
+                ? node.layout.height - child.layout.height
+                : (node.layout.height - child.layout.height) / 2);
             placeNodeWithSettings(child, cursorX, childY, settings);
             node.layout.childBoxes.push(childBox(child));
             cursorX += child.layout.width;
@@ -1106,7 +1109,9 @@ function placeNodeWithSettings(node, x, y, settings) {
         let cursorY = y;
         for (let i = 0; i < node.args.length; i++) {
             const child = node.args[i];
-            const childX = x + (node.layout.width - child.layout.width) / 2;
+            const childX = x + (settings.childAlignment === "end"
+                ? node.layout.width - child.layout.width
+                : (node.layout.width - child.layout.width) / 2);
             placeNodeWithSettings(child, childX, cursorY, settings);
             node.layout.childBoxes.push(childBox(child));
             cursorY += child.layout.height;

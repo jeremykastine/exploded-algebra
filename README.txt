@@ -60,8 +60,10 @@ exactly its bottom two rows and follows the current work at the bottom whenever
 its content changes.
 The settings screen replaces the exploded-expression workspace while open. It
 provides a control for the responsive conventional-steps text preference and
-an independent Operation Style switch. Leading is the default. Choosing Classic
-reveals the previous Bar Style and Bar Shade settings with all eight bar styles.
+an independent Child Alignment switch. Centered is the default; Bottom / Right
+bottom-aligns factors in products and right-aligns terms in sums. The Operation
+Style switch defaults to Leading. Choosing Classic reveals the previous Bar
+Style and Bar Shade settings with all eight bar styles.
 Every addition separator has a large plus sign at its left edge and a dotted
 light gray connector to the right; multiplication separators have a large dot at
 the top and a dotted light gray connector below. The Bar Style and Bar Shade
