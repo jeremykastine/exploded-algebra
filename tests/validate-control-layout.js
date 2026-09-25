@@ -70,13 +70,13 @@ assert(
     "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
 );
 assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
-["steps-text-size", "child-alignment", "operation-style", "bar-style", "bar-shading"].forEach(setting => {
+["steps-text-size", "child-alignment", "bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
 });
 assert(playerJs.includes('setChildAlignment(getSavedChildAlignment())'));
 assert(playerJs.includes('setChildAlignment(getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, SETTINGS.childAlignment).value, true)'));
 assert(playerJs.includes('value: "right", shortLabel: "Center / Right"'));
-assert(playerJs.includes('button.hidden = !classicBars'), "Legacy bar controls must appear only for the classic operation style");
+assert(!playerJs.includes('button.hidden = !classicBars'), "All four operation controls must stay independent");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"') && playerHtml.includes('data-workspace-action="downloadMoveHistory"'), "The Settings screen must contain Reset Exercise and Move History");
 assert(playerHtml.includes('body.authoring-session #settingsPanel [data-workspace-action="resetExercise"] { display: none !important; }'), "Instructor Settings must hide Reset Exercise");
@@ -264,15 +264,17 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260925-gray-gradients'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260925-independent-operations'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
 assert(playerJs.includes('value: "gradient-gray", shortLabel: "Gradient Gray"'));
 assert(playerJs.includes('value: "gradient-light-gray", shortLabel: "Gradient Light Gray"'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle)'));
-assert(playerJs.includes('value: "dotted-parentheses", shortLabel: "Dotted ( )"'));
-assert(playerJs.includes('value: "odd-curve", shortLabel: "Odd Curve"'));
+assert(playerJs.includes('value: "bare", shortLabel: "Bare"'));
+assert(playerJs.includes('value: "outlined", shortLabel: "Outlined Circle"'));
+assert(playerJs.includes('value: "filled", shortLabel: "Filled Circle"'));
+assert(playerJs.includes('getNextCyclicOption(OPERATION_SIZE_OPTIONS, SETTINGS.operationSize)'));
 assert(playerJs.includes('const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];'));
 assert(playerJs.includes('function calculateContextualStepsFontSizes'));
 assert(playerJs.includes('function fitStepsFontSizeToPanelWidth'));

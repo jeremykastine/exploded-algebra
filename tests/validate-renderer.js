@@ -51,14 +51,11 @@ const singlePairPattern = vm.runInContext(
 assert.equal(singlePairPattern.parenthesisCenters.length, 1);
 assert.equal(singlePairPattern.operatorCenters.length, 0);
 
-// Check the separator geometry and paint in both orientations. Legacy bar
-// preferences cannot change the fixed leading-symbol appearance.
+// Each axis can be chosen independently in either orientation.
 const settings = {
-    operatorThickness: 12,
-    expressionStrokeFill: "black",
-    sumBeamStyle: "nested-parentheses",
-    productBeamStyle: "ellipse",
-    operationBarShading: "gradient"
+    operatorThickness: 12, expressionStrokeFill: "black", bufferSize: 16,
+    sumBeamStyle: "thick", productBeamStyle: "thick",
+    operationBarShading: "gradient", operationStyle: "bare", operationSize: "100"
 };
 function recordingContext() {
     const operations = [];
@@ -70,6 +67,7 @@ function recordingContext() {
         quadraticCurveTo(...args) { operations.push(["curve", ...args]); },
         bezierCurveTo(...args) { operations.push(["cubic", ...args]); },
         arc(...args) { operations.push(["arc", ...args]); },
+        rect(...args) { operations.push(["pathRect", ...args]); },
         ellipse(...args) { operations.push(["ellipse", ...args]); },
         appendSvgElement(element) { this.svgElements.push(element); },
         fillRect(...args) { operations.push(["rect", this.fillStyle, ...args]); },
@@ -77,70 +75,14 @@ function recordingContext() {
         fill() { operations.push(["fill", this.fillStyle]); }
     };
 }
-const sumContext = recordingContext();
-rendererContext.drawLeadingSumSeparator(sumContext, 10, 110, 20, settings, "black");
-const sumDots = sumContext.operations.filter(operation => operation[0] === "arc");
-assert.ok(sumDots.length > 2, "The sum connector must have separate dots");
-assert.equal(sumContext.operations.find(operation => operation[0] === "fill")[1], "#d3d3d3");
-assert.ok(sumDots.every(operation => operation[2] === 20 && operation[3] === 12 * 0.29 / 2));
-assert.ok(Math.abs(sumDots.at(-1)[1] + sumDots.at(-1)[3] - 110) < 1e-9, "Sum dots reach the right edge");
-assert.deepEqual(sumContext.operations.filter(operation => operation[0] === "move").map(operation => operation.slice(1)),
-    [[11.92, 20], [16, 15.92]]);
-assert.equal(sumContext.operations.find(operation => operation[0] === "stroke")[1], "black");
-
-const productContext = recordingContext();
-rendererContext.drawLeadingProductSeparator(productContext, 20, 10, 110, settings, "black");
-const productDots = productContext.operations.filter(operation => operation[0] === "arc");
-assert.ok(productDots.length > 3, "The product connector must have separate dots");
-assert.equal(productContext.operations.find(operation => operation[0] === "fill")[1], "#d3d3d3");
-assert.ok(productDots.slice(0, -1).every(operation => operation[1] === 20 && operation[3] === 12 * 0.29 / 2));
-assert.ok(Math.abs(productDots.at(-2)[2] + productDots.at(-2)[3] - 110) < 1e-9, "Product dots reach the bottom edge");
-assert.ok(productContext.operations.some(operation => operation[0] === "arc" && operation[3] === 4.32),
-    "The leading multiplication dot is large but fits inside the separator width");
-
-const changedSettings = { ...settings, sumBeamStyle: "midline", productBeamStyle: "flared", operationBarShading: "black" };
-const secondSum = recordingContext();
-const secondProduct = recordingContext();
-rendererContext.drawLeadingSumSeparator(secondSum, 10, 110, 20, changedSettings, "black");
-rendererContext.drawLeadingProductSeparator(secondProduct, 20, 10, 110, changedSettings, "black");
-assert.deepEqual(secondSum.operations, sumContext.operations);
-assert.deepEqual(secondProduct.operations, productContext.operations);
-
-const sumNode = {
-    type: "sum", args: [{ type: "prod" }, { type: "value" }],
-    layout: { x: 10, y: 0, width: 100, height: 40, hLines: [0, 20, 40] },
-    left() { return 10; }, right() { return 110; }, top() { return 0; }, bottom() { return 40; }
-};
-const leadingContext = recordingContext();
-rendererContext.drawNodeToContext(sumNode, leadingContext,
-    { ...changedSettings, operationStyle: "leading" });
-assert.ok(leadingContext.operations.some(operation => operation[0] === "fill" && operation[1] === "#d3d3d3"));
-const classicContext = recordingContext();
-rendererContext.drawNodeToContext(sumNode, classicContext,
-    { ...changedSettings, operationStyle: "classic", sumBeamStyle: "midline" });
-assert.ok(!classicContext.operations.some(operation => operation[0] === "fill" && operation[1] === "#d3d3d3"),
-    "The classic style must not use the leading dotted connector");
-assert.ok(classicContext.operations.some(operation => operation[0] === "move" && operation[1] === 10),
-    "The classic midline must reach the left edge");
-
-const dottedSum = recordingContext();
-rendererContext.drawNodeToContext(sumNode, dottedSum,
-    { ...changedSettings, operationStyle: "dotted-parentheses" });
-assert.equal(dottedSum.operations.filter(operation => operation[0] === "curve").length, 2,
-    "The sum gets exactly one pair of endpoint parentheses");
-const sumCurves = dottedSum.operations.filter(operation => operation[0] === "curve");
-assert.ok(sumCurves[0][1] < 12 && sumCurves[1][1] > 108,
-    "The parentheses must sit at the left and right endpoints");
-assert.equal(dottedSum.operations.filter(operation => operation[0] === "fill" && operation[1] === "#e5e5e5").length, 2,
-    "A pale dotted segment must appear on each side of the plus");
-assert.ok(dottedSum.operations.some(operation => operation[0] === "move" && Math.abs(operation[1] - 60) < 5),
-    "The plus must sit in the middle of the sum");
-
-const productNode = {
-    type: "prod", args: [{ type: "value" }, { type: "value" }],
-    layout: { x: 0, y: 10, width: 40, height: 100, vLines: [0, 20, 40] },
-    left() { return 0; }, right() { return 40; }, top() { return 10; }, bottom() { return 110; }
-};
+function parent(type, complex) {
+    const args = complex ? [{ type: "prod" }, { type: "value" }] : [{ type: "value" }, { type: "value" }];
+    return {
+        type, args,
+        layout: { x: 10, y: 10, width: 100, height: 100, hLines: [0, 50, 100], vLines: [0, 50, 100] },
+        left() { return 10; }, right() { return 110; }, top() { return 10; }, bottom() { return 110; }
+    };
+}
 rendererContext.document = {
     createElementNS(namespace, name) {
         return {
@@ -150,46 +92,64 @@ rendererContext.document = {
         };
     }
 };
-for (const [shading, edgeColor] of [
-    ["gradient", "black"],
-    ["gradient-gray", "#666666"],
-    ["gradient-light-gray", "#bdbdbd"]
-]) {
-    for (const [node, beamStyle] of [[sumNode, "sumBeamStyle"], [productNode, "productBeamStyle"]]) {
-        const drawing = recordingContext();
-        rendererContext.drawNodeToContext(node, drawing, {
-            ...settings, operationStyle: "classic", [beamStyle]: "ellipse", operationBarShading: shading
+const shapes = ["thick", "endpoint-operators", "ellipse", "flared", "midline",
+    "nested-parentheses", "nested-operator-parentheses", "outward-parentheses"];
+const shadings = ["black", "gray", "light-gray", "gradient", "gradient-gray", "gradient-light-gray"];
+for (const type of ["sum", "prod"]) {
+    const complex = parent(type, true);
+    const simple = parent(type, false);
+    for (const shape of shapes) {
+        for (const shading of shadings) {
+            const drawing = recordingContext();
+            rendererContext.drawNodeToContext(complex, drawing, {
+                ...settings, [type === "sum" ? "sumBeamStyle" : "productBeamStyle"]: shape,
+                operationBarShading: shading
+            });
+            assert.ok(drawing.operations.length > 0, `${type}/${shape}/${shading} must draw`);
+            assert.ok(drawing.operations.some(op => op[0] === "rect" && op[1] === "white"),
+                "The bar must leave a white reserved area for the black operation");
+            if (shading.startsWith("gradient")) {
+                const gradient = drawing.svgElements[0]?.children[0];
+                assert.ok(gradient, `${type}/${shape}/${shading} must use the chosen gradient`);
+                const edge = shading === "gradient-gray" ? "#666666" :
+                    shading === "gradient-light-gray" ? "#bdbdbd" : "black";
+                assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
+                    [edge, "white", edge]);
+            }
+        }
+        const simpleDraw = recordingContext();
+        rendererContext.drawNodeToContext(simple, simpleDraw, {
+            ...settings, [type === "sum" ? "sumBeamStyle" : "productBeamStyle"]: shape,
+            operationBarShading: "black"
         });
-        const gradient = drawing.svgElements[0]?.children[0];
-        assert.ok(gradient, `${shading} must create a gradient for ${node.type}`);
-        assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
-            [edgeColor, "white", edgeColor], `${shading} must stay white in the middle`);
+        assert.equal(simpleDraw.svgElements.length, 0);
+        assert.ok(!simpleDraw.operations.some(op => op[0] === "rect"),
+            `A simple ${type} must omit the ${shape} bar`);
+    }
+    for (const operationStyle of ["bare", "outlined", "filled"]) {
+        for (const operationSize of ["100", "75", "50"]) {
+            const drawing = recordingContext();
+            rendererContext.drawNodeToContext(simple, drawing, {
+                ...settings, operationStyle, operationSize, operationBarShading: "light-gray"
+            });
+            const circles = drawing.operations.filter(op => op[0] === "arc");
+            assert.equal(circles.length, operationStyle === "bare" && type === "sum" ? 0 :
+                operationStyle === "bare" ? 1 : type === "prod" ? 2 : 1);
+            if (operationStyle !== "bare") {
+                assert.ok(Math.abs(circles[0][3] - 6 * Number(operationSize) / 100) < 1e-9);
+            }
+            assert.ok(drawing.operations.some(op => (op[0] === "stroke" || op[0] === "fill") &&
+                op[1] === (operationStyle === "filled" ? "white" : "black")),
+                `The ${operationStyle} operation must have the right ink`);
+        }
     }
 }
-const dottedProduct = recordingContext();
-rendererContext.drawNodeToContext(productNode, dottedProduct,
-    { ...changedSettings, operationStyle: "dotted-parentheses" });
-assert.equal(dottedProduct.operations.filter(operation => operation[0] === "curve").length, 2,
-    "The product gets exactly one rotated pair of endpoint parentheses");
-const productCurves = dottedProduct.operations.filter(operation => operation[0] === "curve");
-assert.ok(productCurves[0][2] < 12 && productCurves[1][2] > 108,
-    "The rotated parentheses must sit at the top and bottom endpoints");
-assert.equal(dottedProduct.operations.filter(operation => operation[0] === "fill" && operation[1] === "#e5e5e5").length, 2);
-assert.ok(dottedProduct.operations.some(operation => operation[0] === "arc" && operation[1] === 20 && operation[2] === 60),
-    "The multiplication dot must sit in the middle of the product");
-const dottedOtherBarSettings = recordingContext();
-rendererContext.drawNodeToContext(sumNode, dottedOtherBarSettings,
-    { ...settings, operationStyle: "dotted-parentheses", sumBeamStyle: "ellipse" });
-assert.deepEqual(dottedOtherBarSettings.operations, dottedSum.operations,
-    "Bar appearance settings must not alter the independent dotted style");
-
 const ExprNode = vm.runInContext("ExprNode", rendererContext);
 const compact = new ExprNode("sum", [new ExprNode("value", [], "1"), new ExprNode("value", [], "1")]);
 rendererContext.measureNodeWithContext(compact, {
     measureText() { return { width: 7, actualBoundingBoxAscent: 9, actualBoundingBoxDescent: 2 }; }
-}, { ...settings, textFont: "20px Arial", bufferSize: 16, operationStyle: "dotted-parentheses" });
-assert.ok(compact.layout.width >= rendererContext.getParenthesisMinimumSpan(settings) + 12,
-    "Small sums must leave room for both endpoint parentheses and the central operator");
+}, { ...settings, textFont: "20px Arial" });
+assert.ok(compact.layout.width >= 12, "Simple sums reserve space for the chosen operation");
 
 assert.equal(vm.runInContext("SETTINGS.childAlignment", rendererContext), "center");
 function positionedParent(type, alignment) {
@@ -218,44 +178,5 @@ assert.equal(positionedParent("prod", "right").narrow.top(), 22,
     "Center / Right must keep the shorter factor vertically centered");
 assert.equal(positionedParent("prod", "end").narrow.bottom(), 47,
     "Bottom / Right must align the shorter factor with the bottom edge of its product");
-
-for (const alignment of ["center", "right", "end"]) {
-    for (const type of ["sum", "prod"]) {
-        const { parent, narrow, wide } = positionedParent(type, alignment);
-        const drawn = recordingContext();
-        rendererContext.drawNodeToContext(parent, drawn, { ...settings, operationStyle: "odd-curve" });
-        const cubics = drawn.operations.filter(operation => operation[0] === "cubic");
-        assert.equal(cubics.length, 4, `The ${type} curve must pass through all four intervals`);
-        const center = type === "sum"
-            ? [(parent.left() + parent.right()) / 2, rendererContext.relHLine(parent, 1)]
-            : [rendererContext.relVLine(parent, 1), (parent.top() + parent.bottom()) / 2];
-        const expected = type === "sum" ? [
-            [narrow.left(), (narrow.top() + narrow.bottom()) / 2],
-            [narrow.left(), narrow.bottom()], center,
-            [wide.right(), wide.top()],
-            [wide.right(), (wide.top() + wide.bottom()) / 2]
-        ] : [
-            [(narrow.left() + narrow.right()) / 2, narrow.top()],
-            [narrow.right(), narrow.top()], center,
-            [wide.left(), wide.bottom()],
-            [(wide.left() + wide.right()) / 2, wide.bottom()]
-        ];
-        assert.deepEqual(drawn.operations.find(operation => operation[0] === "move").slice(1), expected[0]);
-        cubics.forEach((segment, index) => {
-            assert.deepEqual(segment.slice(-2), expected[index + 1],
-                `${type} must pass through each child corner and the central operator`);
-        });
-        assert.ok(Math.abs(cubics[1][3] + cubics[2][1] - 2 * center[0]) < 1e-9 &&
-            Math.abs(cubics[1][4] + cubics[2][2] - 2 * center[1]) < 1e-9,
-            "The curve must turn smoothly and symmetrically through its center");
-        if (type === "prod") {
-            assert.ok(drawn.operations.some(operation => operation[0] === "arc" &&
-                operation[1] === center[0] && operation[2] === center[1]));
-        } else {
-            assert.equal(drawn.operations.filter(operation => operation[0] === "stroke").length, 2,
-                "The centered plus must remain distinct from the curve");
-        }
-    }
-}
 
 console.log("Exploded Algebra renderer checks passed.");

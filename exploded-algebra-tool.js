@@ -1443,8 +1443,6 @@ Promise.resolve().then(() => {
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
                 const setting = button.dataset.workspaceSetting;
-                const classicBars = SETTINGS.operationStyle === "classic";
-                button.hidden = !classicBars && (setting === "bar-style" || setting === "bar-shading");
                 const valueElement = button.querySelector("[data-setting-value]");
                 let value = "";
                 let nextValue = "";
@@ -1462,7 +1460,7 @@ Promise.resolve().then(() => {
                     const current = OPERATION_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationStyle) || OPERATION_STYLE_OPTIONS[0];
                     value = current.shortLabel;
                     nextValue = getNextCyclicOption(OPERATION_STYLE_OPTIONS, current.value).shortLabel;
-                } else if (setting === "bar-style") {
+                } else if (setting === "bar-shape") {
                     const current = OPERATION_BAR_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationBarStyle) || OPERATION_BAR_STYLE_OPTIONS[0];
                     const next = getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, current.value);
                     value = current.shortLabel;
@@ -1472,6 +1470,10 @@ Promise.resolve().then(() => {
                     const next = getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, current.value);
                     value = current.shortLabel;
                     nextValue = next.shortLabel;
+                } else if (setting === "operation-size") {
+                    const current = OPERATION_SIZE_OPTIONS.find(option => option.value === SETTINGS.operationSize) || OPERATION_SIZE_OPTIONS[0];
+                    value = current.shortLabel;
+                    nextValue = getNextCyclicOption(OPERATION_SIZE_OPTIONS, current.value).shortLabel;
                 }
                 if (valueElement) {
                     valueElement.textContent = value;
@@ -4824,6 +4826,7 @@ Promise.resolve().then(() => {
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             setOperationStyle(getSavedOperationStyle());
+            setOperationSize(getSavedOperationSize());
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -5206,12 +5209,17 @@ ctx.font = SETTINGS.textFont;
             { value: "right", shortLabel: "Center / Right" },
             { value: "end", shortLabel: "Bottom / Right" }
         ];
-        const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV1";
+        const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV2";
         const OPERATION_STYLE_OPTIONS = [
-            { value: "leading", shortLabel: "Leading" },
-            { value: "dotted-parentheses", shortLabel: "Dotted ( )" },
-            { value: "odd-curve", shortLabel: "Odd Curve" },
-            { value: "classic", shortLabel: "Classic" }
+            { value: "bare", shortLabel: "Bare" },
+            { value: "outlined", shortLabel: "Outlined Circle" },
+            { value: "filled", shortLabel: "Filled Circle" }
+        ];
+        const OPERATION_SIZE_STORAGE_KEY = "explodedAlgebraOperationSizeV1";
+        const OPERATION_SIZE_OPTIONS = [
+            { value: "100", shortLabel: "100%" },
+            { value: "75", shortLabel: "75%" },
+            { value: "50", shortLabel: "50%" }
         ];
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
@@ -5262,12 +5270,16 @@ ctx.font = SETTINGS.textFont;
                 setOperationStyle(getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle).value, true);
                 return;
             }
-            if (setting === "bar-style") {
+            if (setting === "bar-shape") {
                 setOperationBarStyle(getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS, SETTINGS.operationBarStyle).value, true);
                 return;
             }
             if (setting === "bar-shading") {
                 setOperationBarShading(getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS, SETTINGS.operationBarShading).value, true);
+                return;
+            }
+            if (setting === "operation-size") {
+                setOperationSize(getNextCyclicOption(OPERATION_SIZE_OPTIONS, SETTINGS.operationSize).value, true);
             }
         }
 
@@ -5366,10 +5378,30 @@ ctx.font = SETTINGS.textFont;
         function getSavedOperationStyle() {
             try {
                 const saved = window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY);
-                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "leading";
+                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "bare";
             } catch (error) {
-                return "leading";
+                return "bare";
             }
+        }
+
+        function getSavedOperationSize() {
+            try {
+                const saved = window.localStorage.getItem(OPERATION_SIZE_STORAGE_KEY);
+                return OPERATION_SIZE_OPTIONS.some(option => option.value === saved) ? saved : "100";
+            } catch (error) {
+                return "100";
+            }
+        }
+
+        function setOperationSize(size, persist = false) {
+            SETTINGS.operationSize = OPERATION_SIZE_OPTIONS.some(option => option.value === size) ? size : "100";
+            if (persist) {
+                try {
+                    window.localStorage.setItem(OPERATION_SIZE_STORAGE_KEY, SETTINGS.operationSize);
+                } catch (error) {}
+            }
+            if (expressionRoot) drawExpression();
+            refreshQuickSettingButtons();
         }
 
         function getSavedChildAlignment() {
@@ -5396,7 +5428,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function setOperationStyle(style, persist = false) {
-            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "leading";
+            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "bare";
             if (persist) {
                 try {
                     window.localStorage.setItem(OPERATION_STYLE_STORAGE_KEY, SETTINGS.operationStyle);
@@ -6853,10 +6885,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = SETTINGS.operationStyle !== "classic" || nodeNeedsSeparatorFlares(node) ||
-                    SETTINGS.productBeamStyle === "nested-parentheses" ||
-                    SETTINGS.productBeamStyle === "nested-operator-parentheses" ||
-                    SETTINGS.productBeamStyle === "outward-parentheses";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
                     const distance = hasConnectorFlares
@@ -6869,10 +6898,7 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = SETTINGS.operationStyle !== "classic" || nodeNeedsSeparatorFlares(node) ||
-                    SETTINGS.sumBeamStyle === "nested-parentheses" ||
-                    SETTINGS.sumBeamStyle === "nested-operator-parentheses" ||
-                    SETTINGS.sumBeamStyle === "outward-parentheses";
+                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
                     const distance = hasConnectorFlares

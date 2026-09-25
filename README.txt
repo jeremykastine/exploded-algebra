@@ -62,21 +62,16 @@ The settings screen replaces the exploded-expression workspace while open. It
 provides a control for the responsive conventional-steps text preference and
 an independent Child Alignment switch. Centered is the default. Center / Right
 keeps factors vertically centered in products and right-aligns terms in sums.
-Bottom / Right bottom-aligns factors and right-aligns terms. The Operation Style
-switch defaults to Leading. Dotted ( ) places the operation in the middle of a
-very light dotted midline with one pair of parentheses at the endpoints.
-Odd Curve draws a smooth S-shaped line from one term or factor, through its
-corner and the central operator, to the corresponding corner and midpoint of
-the next child. Products use the rotated shape.
-Choosing Classic reveals the previous Bar Style and Bar Shade settings with all
-eight bar styles. Leading, Dotted ( ), and Odd Curve do not depend on those bar
-settings.
-Classic Bar Shade offers solid black, gray, and light gray; black, gray, and
-light gray gradient ends each fade to white in the middle.
-Every addition separator has a large plus sign at its left edge and a dotted
-light gray connector to the right; multiplication separators have a large dot at
-the top and a dotted light gray connector below. The Bar Style and Bar Shade
-settings do not change the Leading appearance.
+Bottom / Right bottom-aligns factors and right-aligns terms. Four independent
+operation controls determine the appearance of sums and products. Bar Shape
+cycles through Thick, Endpoints, Ellipse, Flared, Midline, Nested ( ), Nested +
+Ops, and Outward ( ). Bar Shading offers solid black, gray, and light gray, plus
+three gradients with the corresponding color at each end and white in the middle.
+Operation Style chooses a bare black symbol, a black outlined circle containing
+a black symbol, or a black filled circle containing a white symbol. Operation
+Size scales the chosen symbol and circle to 100%, 75%, or 50% of the reserved
+operation width. Bars appear only when a sum or product contains a structured
+child; otherwise only the operation symbol appears.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Exercise Guidance pre-selection button shows numerical

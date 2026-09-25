@@ -55,7 +55,8 @@ const SETTINGS = {
     bufferSize: 16,
     operatorThickness: 12,
     childAlignment: "center",
-    operationStyle: "leading",
+    operationStyle: "bare",
+    operationSize: "100",
     sumBeamStyle: "thick",
     sumBeamEdgeColor: "black",
     productBeamStyle: "thick",
@@ -317,35 +318,6 @@ function getEndpointOperatorCenters(start, end, halfThickness) {
     ));
 }
 
-function drawEndpointProductOperators(drawingContext, x, y1, y2, halfThickness, color) {
-    drawingContext.save();
-    drawingContext.fillStyle = color;
-    getEndpointOperatorCenters(y1, y2, halfThickness).forEach(y => {
-        drawingContext.beginPath();
-        drawingContext.arc(
-            x,
-            y,
-            getOperatorDotRadius({ operatorThickness: halfThickness * 2 }),
-            0,
-            Math.PI * 2
-        );
-        drawingContext.fill();
-    });
-    drawingContext.restore();
-}
-
-function drawEndpointSumOperators(drawingContext, x1, x2, y, halfThickness, color) {
-    drawingContext.save();
-    drawingContext.strokeStyle = color;
-    drawingContext.lineWidth = getOperatorIconStrokeWidth({ operatorThickness: halfThickness * 2 });
-    drawingContext.beginPath();
-    getEndpointOperatorCenters(x1, x2, halfThickness).forEach(x => {
-        drawPlusMark(drawingContext, x, y, halfThickness / 2);
-    });
-    drawingContext.stroke();
-    drawingContext.restore();
-}
-
 function isParenthesesBeamStyle(style) {
     return style === "nested-parentheses" ||
         style === "nested-operator-parentheses" ||
@@ -462,7 +434,7 @@ function drawNestedOperatorParenthesesSumBeam(
     y,
     halfThickness,
     parenthesisColor,
-    operatorColor,
+    operationSettings,
     singlePair = false
 ) {
     const { center, depth, parenthesisCenters, operatorCenters } =
@@ -481,13 +453,10 @@ function drawNestedOperatorParenthesesSumBeam(
     });
     drawingContext.stroke();
 
-    drawingContext.strokeStyle = operatorColor;
-    drawingContext.beginPath();
     operatorCenters.forEach(leftCenter => {
-        drawPlusMark(drawingContext, leftCenter, y, halfThickness / 2);
-        drawPlusMark(drawingContext, center * 2 - leftCenter, y, halfThickness / 2);
+        drawOperationMark(drawingContext, "sum", leftCenter, y, operationSettings);
+        drawOperationMark(drawingContext, "sum", center * 2 - leftCenter, y, operationSettings);
     });
-    drawingContext.stroke();
     drawingContext.restore();
 }
 
@@ -498,7 +467,7 @@ function drawNestedOperatorParenthesesProductBeam(
     y2,
     halfThickness,
     parenthesisColor,
-    operatorColor,
+    operationSettings,
     singlePair = false
 ) {
     const { center, depth, parenthesisCenters, operatorCenters } =
@@ -517,18 +486,9 @@ function drawNestedOperatorParenthesesProductBeam(
     });
     drawingContext.stroke();
 
-    drawingContext.fillStyle = operatorColor;
     operatorCenters.forEach(topCenter => {
         [topCenter, center * 2 - topCenter].forEach(operatorCenter => {
-            drawingContext.beginPath();
-            drawingContext.arc(
-                x,
-                operatorCenter,
-                getOperatorDotRadius({ operatorThickness: halfThickness * 2 }),
-                0,
-                Math.PI * 2
-            );
-            drawingContext.fill();
+            drawOperationMark(drawingContext, "prod", x, operatorCenter, operationSettings);
         });
     });
     drawingContext.restore();
@@ -973,10 +933,8 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const heights = node.args.map(child => child.layout.height);
         const separatorWidth = getOperatorThickness(settings);
         node.layout.width = widths.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorWidth + 2 * gap);
-        const minimumParenthesisHeight = settings.operationStyle === "dotted-parentheses"
-            ? getParenthesisMinimumSpan(settings) + getOperatorThickness(settings)
-            : settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.productBeamStyle)
-                ? getParenthesisMinimumSpan(settings) : 0;
+        const minimumParenthesisHeight = nodeNeedsSeparatorFlares(node) && isParenthesesBeamStyle(settings.productBeamStyle)
+            ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.height = Math.max(getOperatorThickness(settings), ...heights, minimumParenthesisHeight);
 
         const vLines = [0];
@@ -993,10 +951,8 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const widths = node.args.map(child => child.layout.width);
         const heights = node.args.map(child => child.layout.height);
         const separatorHeight = getOperatorThickness(settings);
-        const minimumParenthesisWidth = settings.operationStyle === "dotted-parentheses"
-            ? getParenthesisMinimumSpan(settings) + getOperatorThickness(settings)
-            : settings.operationStyle === "classic" && isParenthesesBeamStyle(settings.sumBeamStyle)
-                ? getParenthesisMinimumSpan(settings) : 0;
+        const minimumParenthesisWidth = nodeNeedsSeparatorFlares(node) && isParenthesesBeamStyle(settings.sumBeamStyle)
+            ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.width = Math.max(getOperatorThickness(settings), ...widths, minimumParenthesisWidth);
         node.layout.height = heights.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorHeight + 2 * gap);
 
@@ -1305,421 +1261,115 @@ function nodeNeedsSeparatorFlares(node) {
     return node.args.some(child => child && child.type !== "value");
 }
 
-// Operation symbols stay at the leading edge of each separator. The trailing
-// dotted connector is fixed light gray, independent of any saved bar style.
-function drawDottedLeadingConnector(drawingContext, x1, y1, x2, y2, diameter, color = "#d3d3d3") {
-    const length = Math.hypot(x2 - x1, y2 - y1);
-    if (length <= 0) return;
-    const radius = Math.min(diameter / 2, length / 2);
-    const count = Math.max(1, Math.floor((length - 2 * radius) / (diameter * 1.7)) + 1);
-    const interval = count > 1 ? (length - 2 * radius) / (count - 1) : 0;
-    const unitX = (x2 - x1) / length;
-    const unitY = (y2 - y1) / length;
-    drawingContext.fillStyle = color;
-    drawingContext.beginPath();
-    for (let i = 0; i < count; i++) {
-        const offset = count === 1 ? length / 2 : radius + i * interval;
-        drawingContext.arc(x1 + offset * unitX, y1 + offset * unitY, radius, 0, Math.PI * 2);
-    }
-    drawingContext.fill();
-}
-
-function drawLeadingSumSeparator(drawingContext, x1, x2, y, settings, color) {
-    const size = getOperatorThickness(settings);
-    const half = size / 2;
-    const stroke = size * 0.29;
-    const arm = size * 0.34;
-    const centerX = x1 + half;
-    const connectorStart = Math.min(x2, centerX + arm + stroke / 2);
+// Bar geometry and central operation appearance are independent. A bar is
+// omitted when every child of the sum/product is a single value.
+function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) {
+    const proportion = [100, 75, 50].includes(Number(settings.operationSize))
+        ? Number(settings.operationSize) / 100 : 1;
+    const diameter = getOperatorThickness(settings) * proportion;
+    const half = diameter / 2;
+    const style = ["bare", "outlined", "filled"].includes(settings.operationStyle)
+        ? settings.operationStyle : "bare";
     drawingContext.save();
-    drawDottedLeadingConnector(drawingContext, connectorStart, y, x2, y, stroke);
-    drawingContext.strokeStyle = color;
-    drawingContext.lineWidth = stroke;
-    drawingContext.beginPath();
-    drawingContext.moveTo(centerX - arm, y);
-    drawingContext.lineTo(centerX + arm, y);
-    drawingContext.moveTo(centerX, y - arm);
-    drawingContext.lineTo(centerX, y + arm);
-    drawingContext.stroke();
-    drawingContext.restore();
-}
-
-function drawLeadingProductSeparator(drawingContext, x, y1, y2, settings, color) {
-    const size = getOperatorThickness(settings);
-    const radius = size * 0.36;
-    const connectorWidth = size * 0.29;
-    const centerY = y1 + size / 2;
-    const connectorStart = Math.min(y2, centerY + radius);
-    drawingContext.save();
-    drawDottedLeadingConnector(drawingContext, x, connectorStart, x, y2, connectorWidth);
-    drawingContext.fillStyle = color;
-    drawingContext.beginPath();
-    drawingContext.arc(x, centerY, radius, 0, Math.PI * 2);
-    drawingContext.fill();
-    drawingContext.restore();
-}
-
-// One pair of parentheses brackets each separator; the centered operator
-// interrupts the pale dotted midline so it remains legible at every scale.
-function drawDottedParenthesesSeparator(drawingContext, type, start, end, cross, settings, color) {
-    const half = getOperatorHalfSize(settings);
-    const { depth } = getParenthesisMetrics(half);
-    const lineWidth = getOperatorIconStrokeWidth(settings);
-    const edgeInset = lineWidth / 2;
-    const innerStart = start + edgeInset + depth * 2;
-    const innerEnd = end - edgeInset - depth * 2;
-    const center = (start + end) / 2;
-    const operatorHalf = half * 0.68;
-    const clear = operatorHalf + lineWidth / 2;
-    const dotDiameter = Math.max(1.1, getOperatorThickness(settings) * 0.13);
-    drawingContext.save();
-    if (type === "sum") {
-        drawDottedLeadingConnector(drawingContext, innerStart, cross, center - clear, cross, dotDiameter, "#e5e5e5");
-        drawDottedLeadingConnector(drawingContext, center + clear, cross, innerEnd, cross, dotDiameter, "#e5e5e5");
-    } else {
-        drawDottedLeadingConnector(drawingContext, cross, innerStart, cross, center - clear, dotDiameter, "#e5e5e5");
-        drawDottedLeadingConnector(drawingContext, cross, center + clear, cross, innerEnd, dotDiameter, "#e5e5e5");
-    }
-    drawingContext.strokeStyle = color;
-    drawingContext.lineWidth = lineWidth;
-    drawingContext.beginPath();
-    if (type === "sum") {
-        drawingContext.moveTo(innerStart, cross - half + edgeInset);
-        drawingContext.quadraticCurveTo(start + edgeInset, cross, innerStart, cross + half - edgeInset);
-        drawingContext.moveTo(innerEnd, cross - half + edgeInset);
-        drawingContext.quadraticCurveTo(end - edgeInset, cross, innerEnd, cross + half - edgeInset);
-        drawPlusMark(drawingContext, center, cross, operatorHalf);
-    } else {
-        drawingContext.moveTo(cross + half - edgeInset, innerStart);
-        drawingContext.quadraticCurveTo(cross, start + edgeInset, cross - half + edgeInset, innerStart);
-        drawingContext.moveTo(cross + half - edgeInset, innerEnd);
-        drawingContext.quadraticCurveTo(cross, end - edgeInset, cross - half + edgeInset, innerEnd);
-    }
-    drawingContext.stroke();
-    if (type === "prod") {
-        drawingContext.fillStyle = color;
+    if (style === "outlined") {
+        drawOperatorCircle(drawingContext, x, y, diameter, highlightFill || "white", "black",
+            Math.max(1, getOperatorCircleStrokeWidth(settings) * proportion));
+    } else if (style === "filled") {
+        drawingContext.fillStyle = "black";
         drawingContext.beginPath();
-        drawingContext.arc(cross, center, getOperatorDotRadius(settings), 0, Math.PI * 2);
+        drawingContext.arc(x, y, half, 0, Math.PI * 2);
         drawingContext.fill();
     }
-    drawingContext.restore();
-}
-
-function drawOddCurveSeparator(drawingContext, node, separatorIndex, settings, color) {
-    const first = node.args[separatorIndex];
-    const second = node.args[separatorIndex + 1];
-    const isSum = node.type === "sum";
-    const center = isSum
-        ? { x: (node.left() + node.right()) / 2, y: relHLine(node, separatorIndex + 1) }
-        : { x: relVLine(node, separatorIndex + 1), y: (node.top() + node.bottom()) / 2 };
-    const points = isSum ? [
-        { x: first.left(), y: (first.top() + first.bottom()) / 2 },
-        { x: first.left(), y: first.bottom() },
-        center,
-        { x: second.right(), y: second.top() },
-        { x: second.right(), y: (second.top() + second.bottom()) / 2 }
-    ] : [
-        { x: (first.left() + first.right()) / 2, y: first.top() },
-        { x: first.right(), y: first.top() },
-        center,
-        { x: second.left(), y: second.bottom() },
-        { x: (second.left() + second.right()) / 2, y: second.bottom() }
-    ];
-
-    drawingContext.save();
-    drawingContext.strokeStyle = color;
-    drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings) * 1.4);
-    drawingContext.beginPath();
-    drawingContext.moveTo(points[0].x, points[0].y);
-    for (let i = 0; i < points.length - 1; i++) {
-        // A smooth cubic through each specified corner and the central operator.
-        const before = points[Math.max(0, i - 1)];
-        const from = points[i];
-        const to = points[i + 1];
-        const after = points[Math.min(points.length - 1, i + 2)];
-        drawingContext.bezierCurveTo(
-            from.x + (to.x - before.x) / 6,
-            from.y + (to.y - before.y) / 6,
-            to.x - (after.x - from.x) / 6,
-            to.y - (after.y - from.y) / 6,
-            to.x, to.y
-        );
-    }
-    drawingContext.stroke();
-
-    if (isSum) {
-        drawingContext.lineWidth = getOperatorIconStrokeWidth(settings);
+    const ink = style === "filled" ? "white" : "black";
+    const markHalf = half * (style === "bare" ? 0.68 : 0.52);
+    if (type === "sum") {
+        drawingContext.strokeStyle = ink;
+        drawingContext.lineWidth = Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
         drawingContext.beginPath();
-        drawPlusMark(drawingContext, center.x, center.y, getOperatorHalfSize(settings) * 0.68);
+        drawPlusMark(drawingContext, x, y, markHalf);
         drawingContext.stroke();
     } else {
-        drawingContext.fillStyle = color;
+        drawingContext.fillStyle = ink;
         drawingContext.beginPath();
-        drawingContext.arc(center.x, center.y, getOperatorDotRadius(settings), 0, Math.PI * 2);
+        drawingContext.arc(x, y, Math.max(0.8, markHalf * 0.58), 0, Math.PI * 2);
         drawingContext.fill();
     }
     drawingContext.restore();
 }
 
-function drawClassicNodeToContext(
-    node,
-    drawingContext,
-    settings,
-    separatorHidden = () => false,
-    separatorFill = () => null,
-    nodeForeground = () => null,
-    separatorForeground = () => null
-) {
-    const flare = getOperatorHalfSize(settings);
-    const nodeColor = nodeForeground(node) || settings.expressionStrokeFill;
-
-    if (node.type === "value") {
-        drawValueNodeToContext(node, drawingContext, settings, nodeColor);
-        return;
-    }
-
-    drawingContext.strokeStyle = nodeColor;
-    drawingContext.fillStyle = nodeColor;
-    drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-
-    if (node.type === "prod") {
-        for (let j = 1; j < node.layout.vLines.length - 1; j++) {
-            if (separatorHidden(node, j)) {
-                continue;
-            }
-            const x = relVLine(node, j);
-            const y1 = node.top();
-            const y2 = node.bottom();
-            const centerY = (y1 + y2) / 2;
-            const operatorDiameter = flare * 2;
-            const circleTop = centerY - flare;
-            const circleBottom = centerY + flare;
-            const operatorColor = separatorForeground(node, j - 1) || nodeColor;
-            drawingContext.strokeStyle = operatorColor;
-            drawingContext.fillStyle = operatorColor;
-            const needsBeam = nodeNeedsSeparatorFlares(node);
-            const beamStyle = settings.productBeamStyle;
-            const useThickBeam = needsBeam && beamStyle === "thick";
-            const useEndpointOperatorsBeam = beamStyle === "endpoint-operators";
-            const useEllipseBeam = beamStyle === "ellipse";
-            const useFlaredBeam = needsBeam && beamStyle === "flared";
-            const useMidlineBeam = needsBeam && beamStyle === "midline";
-            const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
-            const useNestedOperatorParenthesesBeam = beamStyle === "nested-operator-parentheses";
-            const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
-            const operationBarShading = settings.operationBarShading || "gradient";
-            const gradientBeamColor = getOperationBarGradientEdgeColor(
-                operationBarShading, settings.productBeamEdgeColor || "black"
-            );
-            const useGradientPaint = isOperationBarGradient(operationBarShading) &&
-                (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
-                    useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
-            const beamPaint = useGradientPaint
-                ? createProductBeamGradient(drawingContext, x, y1, y2, gradientBeamColor)
-                : getOperationBarSolidColor(operationBarShading);
-            const operatorIconColor = useNestedOperatorParenthesesBeam
-                ? "black"
-                : (useGradientPaint ? gradientBeamColor : operatorColor);
-            const centeredOperatorIconColor = useEllipseBeam ? "white" : operatorIconColor;
-            drawingContext.strokeStyle = beamPaint;
-            drawingContext.fillStyle = beamPaint;
-
-            if (useThickBeam) {
-                drawThickProductBeam(drawingContext, x, y1, y2, flare, beamPaint);
-            } else if (useEndpointOperatorsBeam) {
-                drawThickProductBeam(drawingContext, x, y1, y2, flare, beamPaint);
-            } else if (useEllipseBeam) {
-                drawFilledEllipse(drawingContext, x, centerY, flare, Math.max(0, y2 - y1) / 2, beamPaint);
-            } else if (useMidlineBeam) {
-                drawingContext.beginPath();
-                drawingContext.moveTo(x, y1);
-                drawingContext.lineTo(x, y2);
-                drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-                drawingContext.stroke();
-            } else if (useNestedParenthesesBeam) {
-                drawNestedParenthesesProductBeam(drawingContext, x, y1, y2, flare, beamPaint, !needsBeam);
-            } else if (useNestedOperatorParenthesesBeam) {
-                drawNestedOperatorParenthesesProductBeam(
-                    drawingContext,
-                    x,
-                    y1,
-                    y2,
-                    flare,
-                    beamPaint,
-                    beamPaint,
-                    !needsBeam
-                );
-            } else if (useOutwardParenthesesBeam) {
-                drawOutwardParenthesesProductBeam(drawingContext, x, y1, y2, flare, beamPaint, !needsBeam);
-            } else if (useFlaredBeam) {
-                drawingContext.beginPath();
-                drawingContext.moveTo(x, circleTop);
-                drawingContext.quadraticCurveTo(x, y1, x + flare, y1);
-                drawingContext.lineTo(x - flare, y1);
-                drawingContext.quadraticCurveTo(x, y1, x, circleTop);
-                drawingContext.fill();
-                drawingContext.stroke();
-
-                drawingContext.beginPath();
-                drawingContext.moveTo(x, circleBottom);
-                drawingContext.quadraticCurveTo(x, y2, x + flare, y2);
-                drawingContext.lineTo(x - flare, y2);
-                drawingContext.quadraticCurveTo(x, y2, x, circleBottom);
-                drawingContext.fill();
-                drawingContext.stroke();
-            }
-
-            if (useFlaredBeam) {
-                drawOperatorCircle(
-                    drawingContext,
-                    x,
-                    centerY,
-                    operatorDiameter,
-                    separatorFill(node, j - 1) || "white",
-                    operatorColor,
-                    getOperatorCircleStrokeWidth(settings)
-                );
-            }
-
-            if (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
-                    useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam) {
-                drawDebugComponentBounds(drawingContext, x - flare, y1, x + flare, y2, settings);
-            }
-
-            if (useEndpointOperatorsBeam) {
-                drawEndpointProductOperators(drawingContext, x, y1, y2, flare, "white");
-            } else {
-                drawingContext.fillStyle = centeredOperatorIconColor;
-                drawingContext.beginPath();
-                drawingContext.arc(x, centerY, getOperatorDotRadius(settings), 0, Math.PI * 2);
-                drawingContext.fill();
-            }
+function drawOperationBar(drawingContext, node, type, center, settings) {
+    const half = getOperatorHalfSize(settings);
+    const style = type === "sum" ? settings.sumBeamStyle : settings.productBeamStyle;
+    const shading = settings.operationBarShading || "gradient";
+    const start = type === "sum" ? node.left() : node.top();
+    const end = type === "sum" ? node.right() : node.bottom();
+    const paint = isOperationBarGradient(shading)
+        ? (type === "sum"
+            ? createSumBeamGradient(drawingContext, start, end, center, getOperationBarGradientEdgeColor(shading, "black"))
+            : createProductBeamGradient(drawingContext, center, start, end, getOperationBarGradientEdgeColor(shading, "black")))
+        : getOperationBarSolidColor(shading);
+    drawingContext.save();
+    drawingContext.strokeStyle = paint;
+    drawingContext.fillStyle = paint;
+    if (style === "thick" || style === "endpoint-operators") {
+        if (type === "sum") drawThickSumBeam(drawingContext, start, end, center, half, paint);
+        else drawThickProductBeam(drawingContext, center, start, end, half, paint);
+        // Endpoint symbols follow the same style and size as the central one.
+        if (style === "endpoint-operators") {
+            drawingContext.fillStyle = "white";
+            getEndpointOperatorCenters(start, end, half).forEach(position => {
+                const markX = type === "sum" ? position : center;
+                const markY = type === "sum" ? center : position;
+                drawingContext.fillRect(markX - half, markY - half, half * 2, half * 2);
+            });
+            getEndpointOperatorCenters(start, end, half).forEach(position => {
+                drawOperationMark(drawingContext, type,
+                    type === "sum" ? position : center,
+                    type === "sum" ? center : position, settings);
+            });
         }
-    } else if (node.type === "sum") {
-        for (let j = 1; j < node.layout.hLines.length - 1; j++) {
-            if (separatorHidden(node, j)) {
-                continue;
-            }
-            const x1 = node.left();
-            const x2 = node.right();
-            const y = relHLine(node, j);
-            const centerX = (x1 + x2) / 2;
-            const operatorDiameter = flare * 2;
-            const circleLeft = centerX - flare;
-            const circleRight = centerX + flare;
-            const operatorColor = separatorForeground(node, j - 1) || nodeColor;
-            drawingContext.strokeStyle = operatorColor;
-            drawingContext.fillStyle = operatorColor;
-            const needsBeam = nodeNeedsSeparatorFlares(node);
-            const beamStyle = settings.sumBeamStyle;
-            const useThickBeam = needsBeam && beamStyle === "thick";
-            const useEndpointOperatorsBeam = beamStyle === "endpoint-operators";
-            const useEllipseBeam = beamStyle === "ellipse";
-            const useFlaredBeam = needsBeam && beamStyle === "flared";
-            const useMidlineBeam = needsBeam && beamStyle === "midline";
-            const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
-            const useNestedOperatorParenthesesBeam = beamStyle === "nested-operator-parentheses";
-            const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
-            const operationBarShading = settings.operationBarShading || "gradient";
-            const gradientBeamColor = getOperationBarGradientEdgeColor(
-                operationBarShading, settings.sumBeamEdgeColor || "black"
-            );
-            const useGradientPaint = isOperationBarGradient(operationBarShading) &&
-                (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
-                    useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
-            const beamPaint = useGradientPaint
-                ? createSumBeamGradient(drawingContext, x1, x2, y, gradientBeamColor)
-                : getOperationBarSolidColor(operationBarShading);
-            const operatorIconColor = useNestedOperatorParenthesesBeam
-                ? "black"
-                : (useGradientPaint ? gradientBeamColor : operatorColor);
-            const centeredOperatorIconColor = useEllipseBeam ? "white" : operatorIconColor;
-            drawingContext.strokeStyle = beamPaint;
-            drawingContext.fillStyle = beamPaint;
-
-            if (useThickBeam) {
-                drawThickSumBeam(drawingContext, x1, x2, y, flare, beamPaint);
-            } else if (useEndpointOperatorsBeam) {
-                drawThickSumBeam(drawingContext, x1, x2, y, flare, beamPaint);
-            } else if (useEllipseBeam) {
-                drawFilledEllipse(drawingContext, centerX, y, Math.max(0, x2 - x1) / 2, flare, beamPaint);
-            } else if (useMidlineBeam) {
-                drawingContext.beginPath();
-                drawingContext.moveTo(x1, y);
-                drawingContext.lineTo(x2, y);
-                drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-                drawingContext.stroke();
-            } else if (useNestedParenthesesBeam) {
-                drawNestedParenthesesSumBeam(drawingContext, x1, x2, y, flare, beamPaint, !needsBeam);
-            } else if (useNestedOperatorParenthesesBeam) {
-                drawNestedOperatorParenthesesSumBeam(
-                    drawingContext,
-                    x1,
-                    x2,
-                    y,
-                    flare,
-                    beamPaint,
-                    beamPaint,
-                    !needsBeam
-                );
-            } else if (useOutwardParenthesesBeam) {
-                drawOutwardParenthesesSumBeam(drawingContext, x1, x2, y, flare, beamPaint, !needsBeam);
-            } else if (useFlaredBeam) {
-                drawingContext.beginPath();
-                drawingContext.moveTo(circleLeft, y);
-                drawingContext.quadraticCurveTo(x1, y, x1, y + flare);
-                drawingContext.lineTo(x1, y - flare);
-                drawingContext.quadraticCurveTo(x1, y, circleLeft, y);
-                drawingContext.fill();
-                drawingContext.stroke();
-
-                drawingContext.beginPath();
-                drawingContext.moveTo(circleRight, y);
-                drawingContext.quadraticCurveTo(x2, y, x2, y + flare);
-                drawingContext.lineTo(x2, y - flare);
-                drawingContext.quadraticCurveTo(x2, y, circleRight, y);
-                drawingContext.fill();
-                drawingContext.stroke();
-            }
-
-            if (useFlaredBeam) {
-                drawOperatorCircle(
-                    drawingContext,
-                    centerX,
-                    y,
-                    operatorDiameter,
-                    separatorFill(node, j - 1) || "white",
-                    operatorColor,
-                    getOperatorCircleStrokeWidth(settings)
-                );
-            }
-
-            if (useEndpointOperatorsBeam) {
-                drawEndpointSumOperators(drawingContext, x1, x2, y, flare, "white");
-            } else {
-                drawingContext.strokeStyle = centeredOperatorIconColor;
-                drawingContext.beginPath();
-                drawingContext.moveTo(centerX - flare / 2, y);
-                drawingContext.lineTo(centerX + flare / 2, y);
-                drawingContext.moveTo(centerX, y - flare / 2);
-                drawingContext.lineTo(centerX, y + flare / 2);
-                drawingContext.lineWidth = getOperatorIconStrokeWidth(settings);
-                drawingContext.stroke();
-                drawingContext.lineWidth = getStructuralStrokeWidth(settings);
-            }
-            if (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
-                    useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam) {
-                drawDebugComponentBounds(drawingContext, x1, y - flare, x2, y + flare, settings);
-            }
+    } else if (style === "ellipse") {
+        if (type === "sum") drawFilledEllipse(drawingContext, (start + end) / 2, center, (end - start) / 2, half, paint);
+        else drawFilledEllipse(drawingContext, center, (start + end) / 2, half, (end - start) / 2, paint);
+    } else if (style === "midline") {
+        drawingContext.beginPath();
+        if (type === "sum") { drawingContext.moveTo(start, center); drawingContext.lineTo(end, center); }
+        else { drawingContext.moveTo(center, start); drawingContext.lineTo(center, end); }
+        drawingContext.lineWidth = getStructuralStrokeWidth(settings);
+        drawingContext.stroke();
+    } else if (style === "nested-parentheses" || style === "nested-operator-parentheses" || style === "outward-parentheses") {
+        if (type === "sum") {
+            if (style === "nested-parentheses") drawNestedParenthesesSumBeam(drawingContext, start, end, center, half, paint);
+            else if (style === "nested-operator-parentheses") drawNestedOperatorParenthesesSumBeam(drawingContext, start, end, center, half, paint, settings);
+            else drawOutwardParenthesesSumBeam(drawingContext, start, end, center, half, paint);
+        } else {
+            if (style === "nested-parentheses") drawNestedParenthesesProductBeam(drawingContext, center, start, end, half, paint);
+            else if (style === "nested-operator-parentheses") drawNestedOperatorParenthesesProductBeam(drawingContext, center, start, end, half, paint, settings);
+            else drawOutwardParenthesesProductBeam(drawingContext, center, start, end, half, paint);
         }
-    } else if (node.type === "inv") {
-        // Recursive rendering sandwiches the denominator between these layers.
-        // Direct node rendering remains complete for callers that need it.
-        drawInverseBackgroundToContext(node, drawingContext, settings);
-        drawInverseForegroundToContext(node, drawingContext, settings);
+    } else if (style === "flared") {
+        const middle = (start + end) / 2;
+        for (const edge of [start, end]) {
+            drawingContext.beginPath();
+            if (type === "sum") {
+                const side = edge === start ? -1 : 1;
+                drawingContext.moveTo(middle + side * half, center);
+                drawingContext.quadraticCurveTo(edge, center, edge, center + half);
+                drawingContext.lineTo(edge, center - half);
+                drawingContext.quadraticCurveTo(edge, center, middle + side * half, center);
+            } else {
+                const side = edge === start ? -1 : 1;
+                drawingContext.moveTo(center, middle + side * half);
+                drawingContext.quadraticCurveTo(center, edge, center + half, edge);
+                drawingContext.lineTo(center - half, edge);
+                drawingContext.quadraticCurveTo(center, edge, center, middle + side * half);
+            }
+            drawingContext.fill();
+            drawingContext.stroke();
+        }
     }
+    drawingContext.restore();
 }
-
 
 function drawNodeToContext(
     node,
@@ -1730,43 +1380,31 @@ function drawNodeToContext(
     nodeForeground = () => null,
     separatorForeground = () => null
 ) {
-    if (settings.operationStyle === "classic") {
-        drawClassicNodeToContext(node, drawingContext, settings, separatorHidden, separatorFill,
-            nodeForeground, separatorForeground);
-        return;
-    }
     const nodeColor = nodeForeground(node) || settings.expressionStrokeFill;
     if (node.type === "value") {
         drawValueNodeToContext(node, drawingContext, settings, nodeColor);
-    } else if (node.type === "prod") {
-        for (let j = 1; j < node.layout.vLines.length - 1; j++) {
+    } else if (node.type === "sum" || node.type === "prod") {
+        const type = node.type;
+        const needsBar = nodeNeedsSeparatorFlares(node);
+        const lines = type === "sum" ? node.layout.hLines : node.layout.vLines;
+        for (let j = 1; j < lines.length - 1; j++) {
             if (separatorHidden(node, j)) continue;
-            const x = relVLine(node, j);
-            const color = separatorForeground(node, j - 1) || nodeColor;
-            if (settings.operationStyle === "dotted-parentheses") {
-                drawDottedParenthesesSeparator(drawingContext, "prod", node.top(), node.bottom(), x, settings, color);
-            } else if (settings.operationStyle === "odd-curve") {
-                drawOddCurveSeparator(drawingContext, node, j - 1, settings, color);
-            } else {
-                drawLeadingProductSeparator(drawingContext, x, node.top(), node.bottom(), settings, color);
+            const position = type === "sum" ? relHLine(node, j) : relVLine(node, j);
+            const x = type === "sum" ? (node.left() + node.right()) / 2 : position;
+            const y = type === "sum" ? position : (node.top() + node.bottom()) / 2;
+            if (needsBar) {
+                drawOperationBar(drawingContext, node, type, position, settings);
+                // Keep black glyphs legible over every solid and gradient shade.
+                const half = getOperatorHalfSize(settings);
+                drawingContext.save();
+                drawingContext.fillStyle = "white";
+                drawingContext.fillRect(x - half, y - half, half * 2, half * 2);
+                drawingContext.restore();
             }
-            drawDebugComponentBounds(drawingContext, x - getOperatorHalfSize(settings), node.top(),
-                x + getOperatorHalfSize(settings), node.bottom(), settings);
-        }
-    } else if (node.type === "sum") {
-        for (let j = 1; j < node.layout.hLines.length - 1; j++) {
-            if (separatorHidden(node, j)) continue;
-            const y = relHLine(node, j);
-            const color = separatorForeground(node, j - 1) || nodeColor;
-            if (settings.operationStyle === "dotted-parentheses") {
-                drawDottedParenthesesSeparator(drawingContext, "sum", node.left(), node.right(), y, settings, color);
-            } else if (settings.operationStyle === "odd-curve") {
-                drawOddCurveSeparator(drawingContext, node, j - 1, settings, color);
-            } else {
-                drawLeadingSumSeparator(drawingContext, node.left(), node.right(), y, settings, color);
-            }
-            drawDebugComponentBounds(drawingContext, node.left(), y - getOperatorHalfSize(settings),
-                node.right(), y + getOperatorHalfSize(settings), settings);
+            drawOperationMark(drawingContext, type, x, y, settings, separatorFill(node, j - 1));
+            const half = getOperatorHalfSize(settings);
+            if (type === "sum") drawDebugComponentBounds(drawingContext, node.left(), y - half, node.right(), y + half, settings);
+            else drawDebugComponentBounds(drawingContext, x - half, node.top(), x + half, node.bottom(), settings);
         }
     } else if (node.type === "inv") {
         drawInverseBackgroundToContext(node, drawingContext, settings);
