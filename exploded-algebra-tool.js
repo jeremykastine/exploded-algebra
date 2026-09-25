@@ -5330,13 +5330,13 @@ ctx.font = SETTINGS.textFont;
 
         function zoomWorkspaceIn() {
             const changed = setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP);
-            setWorkspaceMode("pan");
+            setWorkspaceMode("select");
             return changed;
         }
 
         function zoomWorkspaceOut() {
             const changed = setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
-            setWorkspaceMode("pan");
+            setWorkspaceMode("select");
             return changed;
         }
 
@@ -5344,7 +5344,7 @@ ctx.font = SETTINGS.textFont;
             const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || workspacePanX !== 0 || workspacePanY !== 0;
             workspaceViewManuallyPanned = false;
             if (!viewChanged) {
-                setWorkspaceMode("pan");
+                setWorkspaceMode("select");
                 return false;
             }
             workspaceZoom = 1;
@@ -5356,7 +5356,7 @@ ctx.font = SETTINGS.textFont;
             workspacePanX = 0;
             workspacePanY = 0;
             applyWorkspaceZoomSizing();
-            setWorkspaceMode("pan");
+            setWorkspaceMode("select");
             return true;
         }
 
@@ -5911,6 +5911,10 @@ ctx.font = SETTINGS.textFont;
             }
 
             drawDemoSelectionPrompt();
+
+            // setSvgSize restores the SVG's CSS size when the expression changes.
+            // Keep its rendered size in sync with the current workspace zoom.
+            applyWorkspaceZoomSizing();
 
         }
 
