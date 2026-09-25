@@ -331,7 +331,8 @@
             background: transparent;
         }
 
-        .solution-step.completed-step {
+        .solution-step.completed-step,
+        .solution-step.skipped-step {
             display: flex;
             align-items: center;
             gap: 7px;
@@ -340,6 +341,14 @@
         .completed-step-check {
             flex: 0 0 auto;
             color: #159947;
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .skipped-step-icon {
+            flex: 0 0 auto;
+            color: #a16400;
             font-size: 18px;
             font-weight: bold;
             line-height: 1;
@@ -3535,7 +3544,8 @@
             box-sizing: border-box;
         }
         .solution-step,
-        .solution-step.completed-step {
+        .solution-step.completed-step,
+        .solution-step.skipped-step {
             display: flex;
             flex-wrap: nowrap;
             align-items: center;
@@ -4325,7 +4335,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T09:55:26-04:00">9/25/26, 9:55 AM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T10:24:40-04:00">9/25/26, 10:24 AM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4469,7 +4479,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260925-independent-operations"></script>
-    <script src="exploded-algebra-tool.js?v=20260925-independent-operations"></script>
+    <script src="exploded-algebra-tool.js?v=20260925-step-skipping"></script>
 
 </body>
 </html>

@@ -39,7 +39,10 @@ step may include `beforeKatex` and `afterKatex` conventional-display versions. T
 version is shown while the goal is current; the after version replaces it when the
 step is complete. If either is omitted, the ordinary `katex` version is used. This
 permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
-exact exploded `expression` used to recognize the completed step.
+exact exploded `expression` used to recognize the completed step. If the current
+expression matches a later recorded step, intervening steps are marked skipped
+with an amber skip icon, the matched step receives a green check, and the next step
+is revealed. Undo restores the prior step statuses.
 
 Older files remain compatible: `introduction` falls back to `instruction` in the
 problem-statement portion of Exercise Guidance. Legacy per-step guidance fields

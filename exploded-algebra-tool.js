@@ -4146,11 +4146,16 @@ Promise.resolve().then(() => {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
             const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
-            if (
-                nextStepIndex >= 0
-                && expressionMatchesParenthesizedText(level.steps[nextStepIndex].expression)
-            ) {
-                completedSteps[nextStepIndex] = true;
+            if (nextStepIndex >= 0) {
+                const matchedStepIndex = level.steps.findIndex((step, index) =>
+                    index >= nextStepIndex && expressionMatchesParenthesizedText(step.expression)
+                );
+                if (matchedStepIndex >= 0) {
+                    for (let index = nextStepIndex; index < matchedStepIndex; index++) {
+                        completedSteps[index] = "skipped";
+                    }
+                    completedSteps[matchedStepIndex] = true;
+                }
             }
             maybePrepareCompletedLevelExport(level);
         }
@@ -4314,16 +4319,19 @@ Promise.resolve().then(() => {
                 .map((step, relativeIndex) => ({ step, index: firstSolutionStepIndex + relativeIndex }));
             const stepsHtml = visibleStepEntries
                 .map(({ step, index }) => {
-                const isComplete = !!completion[index];
+                const isSkipped = completion[index] === "skipped";
+                const isComplete = completion[index] === true;
                 const isCurrent = index === currentStepIndex;
                 const completedKatex = step.afterKatex || step.katex || "";
-                const displayKatex = !isComplete && step.beforeKatex ? step.beforeKatex : completedKatex;
+                const displayKatex = !isComplete && !isSkipped && step.beforeKatex ? step.beforeKatex : completedKatex;
                 const completedCheckHtml = isComplete
                     ? `<span class="completed-step-check" aria-label="Completed" title="Completed">✓</span>`
-                    : "";
+                    : isSkipped
+                        ? `<span class="skipped-step-icon" aria-label="Skipped" title="Skipped">⏭︎</span>`
+                        : "";
                 return `
                     <div class="solution-column step-column ${isCurrent ? "current-step-column" : ""}">
-                        <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
+                        <div class="solution-step step-card ${isComplete ? "completed-step" : ""} ${isSkipped ? "skipped-step" : ""} ${isCurrent ? "current-step" : ""} ${uiState.mode === "inspect" && uiState.inspectStepIndex === index ? "inspect-selected-step" : ""}" data-step-index="${index}">
                             <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayKatex)}"></span></div>
                             ${completedCheckHtml}
                         </div>
