@@ -75,19 +75,22 @@ function recordingContext() {
 }
 const sumContext = recordingContext();
 rendererContext.drawLeadingSumSeparator(sumContext, 10, 110, 20, settings, "black");
-const sumConnector = sumContext.operations.find(operation => operation[0] === "rect");
-assert.equal(sumConnector[1], "#d3d3d3");
-assert.equal(sumConnector[3], 20 - 12 * 0.29 / 2);
-assert.equal(sumConnector[2] + sumConnector[4], 110, "Sum connector reaches the right edge");
+const sumDots = sumContext.operations.filter(operation => operation[0] === "arc");
+assert.ok(sumDots.length > 2, "The sum connector must have separate dots");
+assert.equal(sumContext.operations.find(operation => operation[0] === "fill")[1], "#d3d3d3");
+assert.ok(sumDots.every(operation => operation[2] === 20 && operation[3] === 12 * 0.29 / 2));
+assert.ok(Math.abs(sumDots.at(-1)[1] + sumDots.at(-1)[3] - 110) < 1e-9, "Sum dots reach the right edge");
 assert.deepEqual(sumContext.operations.filter(operation => operation[0] === "move").map(operation => operation.slice(1)),
     [[11.92, 20], [16, 15.92]]);
 assert.equal(sumContext.operations.find(operation => operation[0] === "stroke")[1], "black");
 
 const productContext = recordingContext();
 rendererContext.drawLeadingProductSeparator(productContext, 20, 10, 110, settings, "black");
-const productConnector = productContext.operations.find(operation => operation[0] === "rect");
-assert.equal(productConnector[1], "#d3d3d3");
-assert.equal(productConnector[3] + productConnector[5], 110, "Product connector reaches the bottom edge");
+const productDots = productContext.operations.filter(operation => operation[0] === "arc");
+assert.ok(productDots.length > 3, "The product connector must have separate dots");
+assert.equal(productContext.operations.find(operation => operation[0] === "fill")[1], "#d3d3d3");
+assert.ok(productDots.slice(0, -1).every(operation => operation[1] === 20 && operation[3] === 12 * 0.29 / 2));
+assert.ok(Math.abs(productDots.at(-2)[2] + productDots.at(-2)[3] - 110) < 1e-9, "Product dots reach the bottom edge");
 assert.ok(productContext.operations.some(operation => operation[0] === "arc" && operation[3] === 4.32),
     "The leading multiplication dot is large but fits inside the separator width");
 
@@ -107,12 +110,12 @@ const sumNode = {
 const leadingContext = recordingContext();
 rendererContext.drawNodeToContext(sumNode, leadingContext,
     { ...changedSettings, operationStyle: "leading" });
-assert.ok(leadingContext.operations.some(operation => operation[0] === "rect" && operation[1] === "#d3d3d3"));
+assert.ok(leadingContext.operations.some(operation => operation[0] === "fill" && operation[1] === "#d3d3d3"));
 const classicContext = recordingContext();
 rendererContext.drawNodeToContext(sumNode, classicContext,
     { ...changedSettings, operationStyle: "classic", sumBeamStyle: "midline" });
-assert.ok(!classicContext.operations.some(operation => operation[0] === "rect"),
-    "The classic style must still draw its own bar when chosen independently");
+assert.ok(!classicContext.operations.some(operation => operation[0] === "fill" && operation[1] === "#d3d3d3"),
+    "The classic style must not use the leading dotted connector");
 assert.ok(classicContext.operations.some(operation => operation[0] === "move" && operation[1] === 10),
     "The classic midline must reach the left edge");
 

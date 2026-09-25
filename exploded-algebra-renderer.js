@@ -1284,7 +1284,24 @@ function nodeNeedsSeparatorFlares(node) {
 }
 
 // Operation symbols stay at the leading edge of each separator. The trailing
-// connector is deliberately fixed light gray, independent of any saved bar style.
+// dotted connector is fixed light gray, independent of any saved bar style.
+function drawDottedLeadingConnector(drawingContext, x1, y1, x2, y2, diameter) {
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    if (length <= 0) return;
+    const radius = Math.min(diameter / 2, length / 2);
+    const count = Math.max(1, Math.floor((length - 2 * radius) / (diameter * 1.7)) + 1);
+    const interval = count > 1 ? (length - 2 * radius) / (count - 1) : 0;
+    const unitX = (x2 - x1) / length;
+    const unitY = (y2 - y1) / length;
+    drawingContext.fillStyle = "#d3d3d3";
+    drawingContext.beginPath();
+    for (let i = 0; i < count; i++) {
+        const offset = count === 1 ? length / 2 : radius + i * interval;
+        drawingContext.arc(x1 + offset * unitX, y1 + offset * unitY, radius, 0, Math.PI * 2);
+    }
+    drawingContext.fill();
+}
+
 function drawLeadingSumSeparator(drawingContext, x1, x2, y, settings, color) {
     const size = getOperatorThickness(settings);
     const half = size / 2;
@@ -1293,8 +1310,7 @@ function drawLeadingSumSeparator(drawingContext, x1, x2, y, settings, color) {
     const centerX = x1 + half;
     const connectorStart = Math.min(x2, centerX + arm + stroke / 2);
     drawingContext.save();
-    drawingContext.fillStyle = "#d3d3d3";
-    drawingContext.fillRect(connectorStart, y - stroke / 2, Math.max(0, x2 - connectorStart), stroke);
+    drawDottedLeadingConnector(drawingContext, connectorStart, y, x2, y, stroke);
     drawingContext.strokeStyle = color;
     drawingContext.lineWidth = stroke;
     drawingContext.beginPath();
@@ -1313,8 +1329,7 @@ function drawLeadingProductSeparator(drawingContext, x, y1, y2, settings, color)
     const centerY = y1 + size / 2;
     const connectorStart = Math.min(y2, centerY + radius);
     drawingContext.save();
-    drawingContext.fillStyle = "#d3d3d3";
-    drawingContext.fillRect(x - connectorWidth / 2, connectorStart, connectorWidth, Math.max(0, y2 - connectorStart));
+    drawDottedLeadingConnector(drawingContext, x, connectorStart, x, y2, connectorWidth);
     drawingContext.fillStyle = color;
     drawingContext.beginPath();
     drawingContext.arc(x, centerY, radius, 0, Math.PI * 2);
