@@ -5210,6 +5210,7 @@ ctx.font = SETTINGS.textFont;
         const OPERATION_STYLE_OPTIONS = [
             { value: "leading", shortLabel: "Leading" },
             { value: "dotted-parentheses", shortLabel: "Dotted ( )" },
+            { value: "odd-curve", shortLabel: "Odd Curve" },
             { value: "classic", shortLabel: "Classic" }
         ];
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";

@@ -68,6 +68,7 @@ function recordingContext() {
         moveTo(...args) { operations.push(["move", ...args]); },
         lineTo(...args) { operations.push(["line", ...args]); },
         quadraticCurveTo(...args) { operations.push(["curve", ...args]); },
+        bezierCurveTo(...args) { operations.push(["cubic", ...args]); },
         arc(...args) { operations.push(["arc", ...args]); },
         fillRect(...args) { operations.push(["rect", this.fillStyle, ...args]); },
         stroke() { operations.push(["stroke", this.strokeStyle, this.lineWidth]); },
@@ -172,8 +173,10 @@ function positionedParent(type, alignment) {
     wide.layout.width = 60;
     wide.layout.height = 40;
     const parent = new ExprNode(type, [narrow, wide]);
-    parent.layout.width = type === "sum" ? 60 : 110;
-    parent.layout.height = type === "prod" ? 40 : 70;
+    parent.layout.width = type === "sum" ? 60 : 114;
+    parent.layout.height = type === "prod" ? 40 : 94;
+    parent.layout.hLines = type === "sum" ? [0, 32, 94] : [0, 40];
+    parent.layout.vLines = type === "prod" ? [0, 32, 114] : [0, 60];
     rendererContext.placeNodeWithSettings(parent, 5, 7,
         { operatorThickness: 12, bufferSize: 16, childAlignment: alignment });
     return { parent, narrow, wide };
@@ -188,5 +191,44 @@ assert.equal(positionedParent("prod", "right").narrow.top(), 22,
     "Center / Right must keep the shorter factor vertically centered");
 assert.equal(positionedParent("prod", "end").narrow.bottom(), 47,
     "Bottom / Right must align the shorter factor with the bottom edge of its product");
+
+for (const alignment of ["center", "right", "end"]) {
+    for (const type of ["sum", "prod"]) {
+        const { parent, narrow, wide } = positionedParent(type, alignment);
+        const drawn = recordingContext();
+        rendererContext.drawNodeToContext(parent, drawn, { ...settings, operationStyle: "odd-curve" });
+        const cubics = drawn.operations.filter(operation => operation[0] === "cubic");
+        assert.equal(cubics.length, 4, `The ${type} curve must pass through all four intervals`);
+        const center = type === "sum"
+            ? [(parent.left() + parent.right()) / 2, rendererContext.relHLine(parent, 1)]
+            : [rendererContext.relVLine(parent, 1), (parent.top() + parent.bottom()) / 2];
+        const expected = type === "sum" ? [
+            [narrow.left(), (narrow.top() + narrow.bottom()) / 2],
+            [narrow.left(), narrow.bottom()], center,
+            [wide.right(), wide.top()],
+            [wide.right(), (wide.top() + wide.bottom()) / 2]
+        ] : [
+            [(narrow.left() + narrow.right()) / 2, narrow.top()],
+            [narrow.right(), narrow.top()], center,
+            [wide.left(), wide.bottom()],
+            [(wide.left() + wide.right()) / 2, wide.bottom()]
+        ];
+        assert.deepEqual(drawn.operations.find(operation => operation[0] === "move").slice(1), expected[0]);
+        cubics.forEach((segment, index) => {
+            assert.deepEqual(segment.slice(-2), expected[index + 1],
+                `${type} must pass through each child corner and the central operator`);
+        });
+        assert.ok(Math.abs(cubics[1][3] + cubics[2][1] - 2 * center[0]) < 1e-9 &&
+            Math.abs(cubics[1][4] + cubics[2][2] - 2 * center[1]) < 1e-9,
+            "The curve must turn smoothly and symmetrically through its center");
+        if (type === "prod") {
+            assert.ok(drawn.operations.some(operation => operation[0] === "arc" &&
+                operation[1] === center[0] && operation[2] === center[1]));
+        } else {
+            assert.equal(drawn.operations.filter(operation => operation[0] === "stroke").length, 2,
+                "The centered plus must remain distinct from the curve");
+        }
+    }
+}
 
 console.log("Exploded Algebra renderer checks passed.");

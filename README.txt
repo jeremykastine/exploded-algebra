@@ -65,8 +65,12 @@ keeps factors vertically centered in products and right-aligns terms in sums.
 Bottom / Right bottom-aligns factors and right-aligns terms. The Operation Style
 switch defaults to Leading. Dotted ( ) places the operation in the middle of a
 very light dotted midline with one pair of parentheses at the endpoints.
+Odd Curve draws a smooth S-shaped line from one term or factor, through its
+corner and the central operator, to the corresponding corner and midpoint of
+the next child. Products use the rotated shape.
 Choosing Classic reveals the previous Bar Style and Bar Shade settings with all
-eight bar styles. Leading and Dotted ( ) do not depend on those bar settings.
+eight bar styles. Leading, Dotted ( ), and Odd Curve do not depend on those bar
+settings.
 Every addition separator has a large plus sign at its left edge and a dotted
 light gray connector to the right; multiplication separators have a large dot at
 the top and a dotted light gray connector below. The Bar Style and Bar Shade

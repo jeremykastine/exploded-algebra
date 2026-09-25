@@ -685,6 +685,9 @@ class SvgDrawingContext {
     moveTo(x, y) { this.pathCommands.push(`M ${x} ${y}`); }
     lineTo(x, y) { this.pathCommands.push(`L ${x} ${y}`); }
     quadraticCurveTo(cx, cy, x, y) { this.pathCommands.push(`Q ${cx} ${cy} ${x} ${y}`); }
+    bezierCurveTo(c1x, c1y, c2x, c2y, x, y) {
+        this.pathCommands.push(`C ${c1x} ${c1y} ${c2x} ${c2y} ${x} ${y}`);
+    }
     rect(x, y, width, height) {
         this.pathCommands.push(`M ${x} ${y} H ${x + width} V ${y + height} H ${x} Z`);
     }
@@ -1392,6 +1395,62 @@ function drawDottedParenthesesSeparator(drawingContext, type, start, end, cross,
     drawingContext.restore();
 }
 
+function drawOddCurveSeparator(drawingContext, node, separatorIndex, settings, color) {
+    const first = node.args[separatorIndex];
+    const second = node.args[separatorIndex + 1];
+    const isSum = node.type === "sum";
+    const center = isSum
+        ? { x: (node.left() + node.right()) / 2, y: relHLine(node, separatorIndex + 1) }
+        : { x: relVLine(node, separatorIndex + 1), y: (node.top() + node.bottom()) / 2 };
+    const points = isSum ? [
+        { x: first.left(), y: (first.top() + first.bottom()) / 2 },
+        { x: first.left(), y: first.bottom() },
+        center,
+        { x: second.right(), y: second.top() },
+        { x: second.right(), y: (second.top() + second.bottom()) / 2 }
+    ] : [
+        { x: (first.left() + first.right()) / 2, y: first.top() },
+        { x: first.right(), y: first.top() },
+        center,
+        { x: second.left(), y: second.bottom() },
+        { x: (second.left() + second.right()) / 2, y: second.bottom() }
+    ];
+
+    drawingContext.save();
+    drawingContext.strokeStyle = color;
+    drawingContext.lineWidth = Math.max(1, getStructuralStrokeWidth(settings) * 1.4);
+    drawingContext.beginPath();
+    drawingContext.moveTo(points[0].x, points[0].y);
+    for (let i = 0; i < points.length - 1; i++) {
+        // A smooth cubic through each specified corner and the central operator.
+        const before = points[Math.max(0, i - 1)];
+        const from = points[i];
+        const to = points[i + 1];
+        const after = points[Math.min(points.length - 1, i + 2)];
+        drawingContext.bezierCurveTo(
+            from.x + (to.x - before.x) / 6,
+            from.y + (to.y - before.y) / 6,
+            to.x - (after.x - from.x) / 6,
+            to.y - (after.y - from.y) / 6,
+            to.x, to.y
+        );
+    }
+    drawingContext.stroke();
+
+    if (isSum) {
+        drawingContext.lineWidth = getOperatorIconStrokeWidth(settings);
+        drawingContext.beginPath();
+        drawPlusMark(drawingContext, center.x, center.y, getOperatorHalfSize(settings) * 0.68);
+        drawingContext.stroke();
+    } else {
+        drawingContext.fillStyle = color;
+        drawingContext.beginPath();
+        drawingContext.arc(center.x, center.y, getOperatorDotRadius(settings), 0, Math.PI * 2);
+        drawingContext.fill();
+    }
+    drawingContext.restore();
+}
+
 function drawClassicNodeToContext(
     node,
     drawingContext,
@@ -1672,6 +1731,8 @@ function drawNodeToContext(
             const color = separatorForeground(node, j - 1) || nodeColor;
             if (settings.operationStyle === "dotted-parentheses") {
                 drawDottedParenthesesSeparator(drawingContext, "prod", node.top(), node.bottom(), x, settings, color);
+            } else if (settings.operationStyle === "odd-curve") {
+                drawOddCurveSeparator(drawingContext, node, j - 1, settings, color);
             } else {
                 drawLeadingProductSeparator(drawingContext, x, node.top(), node.bottom(), settings, color);
             }
@@ -1685,6 +1746,8 @@ function drawNodeToContext(
             const color = separatorForeground(node, j - 1) || nodeColor;
             if (settings.operationStyle === "dotted-parentheses") {
                 drawDottedParenthesesSeparator(drawingContext, "sum", node.left(), node.right(), y, settings, color);
+            } else if (settings.operationStyle === "odd-curve") {
+                drawOddCurveSeparator(drawingContext, node, j - 1, settings, color);
             } else {
                 drawLeadingSumSeparator(drawingContext, node.left(), node.right(), y, settings, color);
             }
