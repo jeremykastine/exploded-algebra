@@ -223,7 +223,8 @@ function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor) {
 
     [
         ["0%", edgeColor],
-        ["50%", "white"],
+        ["33.333333%", "white"],
+        ["66.666667%", "white"],
         ["100%", edgeColor]
     ].forEach(([offset, color]) => {
         const stop = document.createElementNS(SVG_NS, "stop");
@@ -250,7 +251,8 @@ function createSumBeamGradient(drawingContext, x1, x2, y, edgeColor) {
 
     [
         ["0%", edgeColor],
-        ["50%", "white"],
+        ["33.333333%", "white"],
+        ["66.666667%", "white"],
         ["100%", edgeColor]
     ].forEach(([offset, color]) => {
         const stop = document.createElementNS(SVG_NS, "stop");

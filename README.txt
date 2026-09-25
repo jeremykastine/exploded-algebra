@@ -69,7 +69,7 @@ Bottom / Right bottom-aligns factors and right-aligns terms. Four independent
 operation controls determine the appearance of sums and products. Bar Shape
 cycles through Thick, Endpoints, Ellipse, Flared, Midline, Nested ( ), Nested +
 Ops, and Outward ( ). Bar Shading offers solid black, gray, and light gray, plus
-three gradients with the corresponding color at each end and white in the middle.
+three gradients with the corresponding color at each end and a white middle third.
 Operation Style chooses a bare black symbol, a black outlined circle containing
 a black symbol, or a black filled circle containing a white symbol. Operation
 Size scales the chosen symbol and circle to 100%, 75%, or 50% of the reserved

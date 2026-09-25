@@ -114,7 +114,10 @@ for (const type of ["sum", "prod"]) {
                 const edge = shading === "gradient-gray" ? "#666666" :
                     shading === "gradient-light-gray" ? "#bdbdbd" : "black";
                 assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
-                    [edge, "white", edge]);
+                    [edge, "white", "white", edge]);
+                assert.deepEqual(gradient.children.map(stop => stop.attributes.offset),
+                    ["0%", "33.333333%", "66.666667%", "100%"],
+                    "The middle third of each gradient stays white");
             }
         }
         const simpleDraw = recordingContext();
