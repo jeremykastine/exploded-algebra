@@ -167,7 +167,10 @@ rendererContext.measureNodeWithContext(compact, {
 }, { ...settings, textFont: "20px Arial" });
 assert.ok(compact.layout.width >= 12, "Simple sums reserve space for the chosen operation");
 
-assert.equal(vm.runInContext("SETTINGS.childAlignment", rendererContext), "center");
+assert.equal(vm.runInContext("SETTINGS.sumBeamStyle", rendererContext), "midline");
+assert.equal(vm.runInContext("SETTINGS.productBeamStyle", rendererContext), "midline");
+assert.equal(vm.runInContext("SETTINGS.operationBarShading", rendererContext), "gradient-gray");
+assert.equal(vm.runInContext("SETTINGS.operationStyle", rendererContext), "filled");
 function positionedParent(type, alignment) {
     const narrow = new ExprNode("value", [], "a");
     narrow.layout.width = 10;
@@ -185,14 +188,14 @@ function positionedParent(type, alignment) {
     return { parent, narrow, wide };
 }
 assert.equal(positionedParent("sum", "center").narrow.left(), 30);
-assert.equal(positionedParent("sum", "right").narrow.right(), 65,
-    "Center / Right must align the narrower term with the right edge of its sum");
-assert.equal(positionedParent("sum", "end").narrow.right(), 65,
-    "Bottom / Right must align the narrower term with the right edge of its sum");
+assert.equal(positionedParent("sum", "right").narrow.left(), 30,
+    "Legacy alignment preferences must leave sum terms centered");
+assert.equal(positionedParent("sum", "end").narrow.left(), 30,
+    "Legacy alignment preferences must leave sum terms centered");
 assert.equal(positionedParent("prod", "center").narrow.top(), 22);
 assert.equal(positionedParent("prod", "right").narrow.top(), 22,
-    "Center / Right must keep the shorter factor vertically centered");
-assert.equal(positionedParent("prod", "end").narrow.bottom(), 47,
-    "Bottom / Right must align the shorter factor with the bottom edge of its product");
+    "Legacy alignment preferences must leave product factors centered");
+assert.equal(positionedParent("prod", "end").narrow.top(), 22,
+    "Legacy alignment preferences must leave product factors centered");
 
 console.log("Exploded Algebra renderer checks passed.");

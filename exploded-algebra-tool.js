@@ -1433,10 +1433,6 @@ Promise.resolve().then(() => {
                     value = stepsTextSizePreference[0].toUpperCase() + stepsTextSizePreference.slice(1);
                     const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
                     nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
-                } else if (setting === "child-alignment") {
-                    const current = CHILD_ALIGNMENT_OPTIONS.find(option => option.value === SETTINGS.childAlignment) || CHILD_ALIGNMENT_OPTIONS[0];
-                    value = current.shortLabel;
-                    nextValue = getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, current.value).shortLabel;
                 } else if (setting === "operation-style") {
                     const current = OPERATION_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationStyle) || OPERATION_STYLE_OPTIONS[0];
                     value = current.shortLabel;
@@ -4595,7 +4591,6 @@ Promise.resolve().then(() => {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
             setStepsTextSizePreference(loadSavedStepsTextSizePreference());
-            setChildAlignment(getSavedChildAlignment());
             updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
@@ -4999,12 +4994,6 @@ ctx.font = SETTINGS.textFont;
         let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
-        const CHILD_ALIGNMENT_STORAGE_KEY = "explodedAlgebraChildAlignmentV1";
-        const CHILD_ALIGNMENT_OPTIONS = [
-            { value: "center", shortLabel: "Centered" },
-            { value: "right", shortLabel: "Center / Right" },
-            { value: "end", shortLabel: "Bottom / Right" }
-        ];
         const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV2";
         const OPERATION_STYLE_OPTIONS = [
             { value: "bare", shortLabel: "Bare" },
@@ -5058,10 +5047,6 @@ ctx.font = SETTINGS.textFont;
                 setStepsTextSizePreference(nextPreference, true);
                 return;
             }
-            if (setting === "child-alignment") {
-                setChildAlignment(getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, SETTINGS.childAlignment).value, true);
-                return;
-            }
             if (setting === "operation-style") {
                 setOperationStyle(getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle).value, true);
                 return;
@@ -5102,9 +5087,9 @@ ctx.font = SETTINGS.textFont;
                 const legacyStyle = window.localStorage.getItem(LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY);
                 return normalizeOperationBarStyle(legacyStyle) ||
                     normalizeOperationBarStyle(fallbackStyle) ||
-                    "thick";
+                    "midline";
             } catch (error) {
-                return normalizeOperationBarStyle(fallbackStyle) || "thick";
+                return normalizeOperationBarStyle(fallbackStyle) || "midline";
             }
         }
 
@@ -5137,11 +5122,11 @@ ctx.font = SETTINGS.textFont;
                     return "black";
                 }
             } catch (error) {}
-            return normalizeOperationBarShading(fallbackShading) || "gradient";
+            return normalizeOperationBarShading(fallbackShading) || "gradient-gray";
         }
 
         function setOperationBarStyle(style, persist = false) {
-            const normalizedStyle = normalizeOperationBarStyle(style) || "thick";
+            const normalizedStyle = normalizeOperationBarStyle(style) || "midline";
             SETTINGS.operationBarStyle = normalizedStyle;
             SETTINGS.sumBeamStyle = normalizedStyle;
             SETTINGS.productBeamStyle = normalizedStyle;
@@ -5158,7 +5143,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function setOperationBarShading(shading, persist = false) {
-            const normalizedShading = normalizeOperationBarShading(shading) || "gradient";
+            const normalizedShading = normalizeOperationBarShading(shading) || "gradient-gray";
             SETTINGS.operationBarShading = normalizedShading;
             if (persist) {
                 try {
@@ -5174,9 +5159,9 @@ ctx.font = SETTINGS.textFont;
         function getSavedOperationStyle() {
             try {
                 const saved = window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY);
-                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "bare";
+                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "filled";
             } catch (error) {
-                return "bare";
+                return "filled";
             }
         }
 
@@ -5200,31 +5185,8 @@ ctx.font = SETTINGS.textFont;
             refreshQuickSettingButtons();
         }
 
-        function getSavedChildAlignment() {
-            try {
-                const saved = window.localStorage.getItem(CHILD_ALIGNMENT_STORAGE_KEY);
-                return CHILD_ALIGNMENT_OPTIONS.some(option => option.value === saved) ? saved : "center";
-            } catch (error) {
-                return "center";
-            }
-        }
-
-        function setChildAlignment(alignment, persist = false) {
-            SETTINGS.childAlignment = CHILD_ALIGNMENT_OPTIONS.some(option => option.value === alignment) ? alignment : "center";
-            if (persist) {
-                try {
-                    window.localStorage.setItem(CHILD_ALIGNMENT_STORAGE_KEY, SETTINGS.childAlignment);
-                } catch (error) {}
-            }
-            if (expressionRoot) {
-                layoutExpression(expressionRoot);
-                drawExpression();
-            }
-            refreshQuickSettingButtons();
-        }
-
         function setOperationStyle(style, persist = false) {
-            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "bare";
+            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "filled";
             if (persist) {
                 try {
                     window.localStorage.setItem(OPERATION_STYLE_STORAGE_KEY, SETTINGS.operationStyle);

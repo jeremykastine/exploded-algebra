@@ -54,14 +54,13 @@ const SETTINGS = {
     negativeUnitTextColor: "white",
     bufferSize: 16,
     operatorThickness: 12,
-    childAlignment: "center",
-    operationStyle: "bare",
+    operationStyle: "filled",
     operationSize: "100",
-    sumBeamStyle: "thick",
+    sumBeamStyle: "midline",
     sumBeamEdgeColor: "black",
-    productBeamStyle: "thick",
+    productBeamStyle: "midline",
     productBeamEdgeColor: "black",
-    operationBarShading: "gradient",
+    operationBarShading: "gradient-gray",
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     builderOperationFill: "rgb(235, 235, 235)",
@@ -1078,9 +1077,7 @@ function placeNodeWithSettings(node, x, y, settings) {
         let cursorX = x;
         for (let i = 0; i < node.args.length; i++) {
             const child = node.args[i];
-            const childY = y + (settings.childAlignment === "end"
-                ? node.layout.height - child.layout.height
-                : (node.layout.height - child.layout.height) / 2);
+            const childY = y + (node.layout.height - child.layout.height) / 2;
             placeNodeWithSettings(child, cursorX, childY, settings);
             node.layout.childBoxes.push(childBox(child));
             cursorX += child.layout.width;
@@ -1092,9 +1089,7 @@ function placeNodeWithSettings(node, x, y, settings) {
         let cursorY = y;
         for (let i = 0; i < node.args.length; i++) {
             const child = node.args[i];
-            const childX = x + (settings.childAlignment === "end" || settings.childAlignment === "right"
-                ? node.layout.width - child.layout.width
-                : (node.layout.width - child.layout.width) / 2);
+            const childX = x + (node.layout.width - child.layout.width) / 2;
             placeNodeWithSettings(child, childX, cursorY, settings);
             node.layout.childBoxes.push(childBox(child));
             cursorY += child.layout.height;
@@ -1279,7 +1274,7 @@ function getOperationMarkGeometry(settings, type) {
     const diameter = getOperatorThickness(settings) * proportion;
     const half = diameter / 2;
     const style = ["bare", "outlined", "filled"].includes(settings.operationStyle)
-        ? settings.operationStyle : "bare";
+        ? settings.operationStyle : "filled";
     const outlineWidth = Math.max(1, getOperatorCircleStrokeWidth(settings) * proportion);
     const strokeWidth = Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
     const markHalf = half * (style === "bare" ? 0.68 : 0.52);
@@ -1323,7 +1318,7 @@ function drawOperationBar(drawingContext, node, type, center, settings) {
     const half = getOperatorHalfSize(settings);
     const symbolWidth = getOperationMarkGeometry(settings, type).width;
     const style = type === "sum" ? settings.sumBeamStyle : settings.productBeamStyle;
-    const shading = settings.operationBarShading || "gradient";
+    const shading = settings.operationBarShading || "gradient-gray";
     const start = type === "sum" ? node.left() : node.top();
     const end = type === "sum" ? node.right() : node.bottom();
     const paint = isOperationBarGradient(shading)
