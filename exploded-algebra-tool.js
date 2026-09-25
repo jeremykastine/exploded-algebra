@@ -1348,6 +1348,7 @@ Promise.resolve().then(() => {
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
+        const exerciseCompletionPanel = document.getElementById("exerciseCompletionPanel");
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const guidancePopover = document.getElementById("guidancePopover");
         const leftPanel = document.getElementById("leftPanel");
@@ -2496,7 +2497,7 @@ Promise.resolve().then(() => {
         }
 
         function isInteractiveLevel(level) {
-            return !!level && !isDemoModeActive();
+            return !!level && !isDemoOnlyLevel(level);
         }
 
         function getExpressionTextForTrace() {
@@ -2661,7 +2662,7 @@ Promise.resolve().then(() => {
 
         function recordSolutionAction(action, demoStep) {
             const level = getCurrentLevel();
-            if (!solutionRecorder || !isInteractiveLevel(level) || isDemoModeActive()) {
+            if (!solutionRecorder || !isInteractiveLevel(level)) {
                 return;
             }
             const actionCopy = clonePlainData(action || {});
@@ -3916,6 +3917,15 @@ Promise.resolve().then(() => {
             return completedSteps.slice();
         }
 
+        function isExerciseFinished() {
+            const level = getCurrentLevel();
+            const lastStep = level && Array.isArray(level.steps) && level.steps.at(-1);
+            return !!lastStep && isInteractiveLevel(level) && !authoringSessionActive && uiState.mode === "edit" &&
+                uiState.stage === "idle" && !uiState.expressionBuilder &&
+                completedSteps[level.steps.length - 1] === true &&
+                expressionMatchesParenthesizedText(lastStep.expression);
+        }
+
         function downloadCurrentMoveHistory() {
             if (!solutionRecorder) {
                 return;
@@ -4570,6 +4580,13 @@ Promise.resolve().then(() => {
             window.location.reload();
         }
 
+        function repeatCurrentExercise(mode) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("assistance");
+            url.searchParams.set("mode", mode);
+            window.location.href = url.toString();
+        }
+
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             setBottomPanelHeight(getMaximumBottomPanelHeight());
@@ -4580,6 +4597,21 @@ Promise.resolve().then(() => {
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             setOperationStyle(getSavedOperationStyle());
             setOperationSize(getSavedOperationSize());
+            if (exerciseCompletionPanel) {
+                exerciseCompletionPanel.addEventListener("click", event => {
+                    const button = event.target.closest("button[data-completion-action]");
+                    if (!button || button.disabled) return;
+                    if (button.dataset.completionAction === "repeat-guided") {
+                        repeatCurrentExercise(ASSISTANCE_MODES.guided);
+                    } else if (button.dataset.completionAction === "repeat-unguided") {
+                        repeatCurrentExercise(ASSISTANCE_MODES.unguided);
+                    } else if (button.dataset.completionAction === "download-moves") {
+                        downloadCurrentMoveHistory();
+                    } else if (button.dataset.completionAction === "more-exercises") {
+                        window.location.href = "Exercises.html";
+                    }
+                });
+            }
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -5807,6 +5839,7 @@ ctx.font = SETTINGS.textFont;
             clearInteraction();
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
+            renderToolArea();
             refreshStatus();
             saveStableExpressionState(expressionChanged);
             drawExpression();
@@ -12745,6 +12778,29 @@ function renderToolArea() {
             renderBuilderVariableRail(builderActive);
             requestAnimationFrame(updateSidePanelColumns);
 
+            const exerciseFinished = isExerciseFinished();
+            document.body.classList.toggle("exercise-complete", exerciseFinished);
+            if (exerciseCompletionPanel) {
+                exerciseCompletionPanel.classList.toggle("hidden", !exerciseFinished);
+                const repeatGuided = exerciseCompletionPanel.querySelector('[data-completion-action="repeat-guided"]');
+                if (repeatGuided) {
+                    repeatGuided.disabled = !hasGuidedMode(getCurrentLevel());
+                    repeatGuided.title = repeatGuided.disabled ? "Guided mode is unavailable for this exercise" : "";
+                }
+                const downloadMoves = exerciseCompletionPanel.querySelector('[data-completion-action="download-moves"]');
+                if (downloadMoves) {
+                    downloadMoves.disabled = !solutionRecorder;
+                }
+            }
+            if (exerciseFinished) {
+                document.body.classList.remove("tool-area-active");
+                if (mainActionPanel) {
+                    mainActionPanel.replaceChildren();
+                    mainActionPanel.classList.add("hidden");
+                }
+                return;
+            }
+
             if (uiState.mode !== "edit") {
                 document.body.classList.remove("tool-area-active");
                 if (mainActionPanel) {
@@ -13350,6 +13406,9 @@ function renderToolArea() {
         }
 
         function selectFromWorkspaceTap(x, y, pointerType, allowSelectionCancel = true) {
+            if (isExerciseFinished()) {
+                return false;
+            }
             if (
                 allowSelectionCancel &&
                 selection.node &&

@@ -4125,7 +4125,8 @@
         }
         .bottom-controls-panel > .quadrant-tools,
         .bottom-controls-panel > .main-action-panel,
-        .bottom-controls-panel > .builder-keypad-panel {
+        .bottom-controls-panel > .builder-keypad-panel,
+        .bottom-controls-panel > .exercise-completion-panel {
             position: relative;
             inset: auto;
             grid-column: 1 / -1 !important;
@@ -4165,9 +4166,54 @@
         }
 
         .bottom-controls-panel > .main-action-panel.hidden,
-        .bottom-controls-panel > .builder-keypad-panel.hidden {
+        .bottom-controls-panel > .builder-keypad-panel.hidden,
+        .bottom-controls-panel > .exercise-completion-panel.hidden {
             display: none;
         }
+        body.exercise-complete .quadrant-tools { display: none !important; }
+        .exercise-completion-panel .completion-message {
+            grid-column: 1 / -1;
+            grid-row: 1;
+            align-self: center;
+            justify-self: center;
+            padding: 2px 8px;
+            font-size: clamp(14px, 2.6vw, 22px);
+            font-weight: 800;
+            color: #126f37;
+            text-align: center;
+        }
+        .exercise-completion-panel button {
+            z-index: 1;
+            min-width: 0;
+            min-height: 0;
+            padding: 4px 8px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #202020;
+            font: inherit;
+            font-size: clamp(11px, 2vw, 17px);
+            font-weight: 700;
+            line-height: 1.2;
+            cursor: pointer;
+        }
+        .exercise-completion-panel button:hover,
+        .exercise-completion-panel button:focus-visible {
+            background: #e5f2e9;
+        }
+        .exercise-completion-panel button:focus-visible {
+            outline: 3px solid #205fa8;
+            outline-offset: -4px;
+        }
+        .exercise-completion-panel button:disabled {
+            color: #777;
+            background: #ececec;
+            cursor: not-allowed;
+        }
+        .exercise-completion-panel [data-completion-action="repeat-guided"] { grid-column: 1 / 4; grid-row: 2 / 4; }
+        .exercise-completion-panel [data-completion-action="repeat-unguided"] { grid-column: 4 / 7; grid-row: 2 / 4; }
+        .exercise-completion-panel [data-completion-action="download-moves"] { grid-column: 1 / 4; grid-row: 4; }
+        .exercise-completion-panel [data-completion-action="more-exercises"] { grid-column: 4 / 7; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .bottom-controls-panel,
         body.selection-active:not(.expression-builder-active) .main-action-panel .intent-category-actions {
             gap: 0;
@@ -4331,7 +4377,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T14:41:06-04:00">9/25/26, 2:41 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T14:57:09-04:00">9/25/26, 2:57 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4378,6 +4424,16 @@
             </div>
             </div>
             <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
+            <div id="exerciseCompletionPanel" class="exercise-completion-panel hidden" role="group" aria-label="Exercise complete">
+                <div class="completion-message" role="status">Exercise complete!</div>
+                <button type="button" data-completion-action="repeat-guided">Repeat Exercise<br>Guided</button>
+                <button type="button" data-completion-action="repeat-unguided">Repeat Exercise<br>Unguided</button>
+                <button type="button" data-completion-action="download-moves">Download Moves</button>
+                <button type="button" data-completion-action="more-exercises">Try More Exercises</button>
+                <svg class="controls-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M1 100 H599 M1 300 H599 M300 100 V399"/>
+                </svg>
+            </div>
             <div id="builderKeypadPanel" class="builder-keypad-panel hidden" role="group" aria-label="Expression builder keypad">
                 <div id="builderInputRail" class="builder-input-rail hidden">
                     <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>

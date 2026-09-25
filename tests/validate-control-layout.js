@@ -26,7 +26,8 @@ assert.deepEqual(indexChoices, [
     { href: "exercise-builder.html", label: "Instructor" }
 ], "The landing page must contain only the Student and Instructor choices, in that order");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && !indexHtml.includes("Introduction.html"), "The landing page must welcome users without an introduction choice");
-assert(exercisesHtml.includes("select Guided or Unguided") && !exercisesHtml.includes("high, medium, or low assistance"), "The student exercise list must describe only Guided and Unguided modes");
+assert(exercisesHtml.includes("select <strong>Guided</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
+assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(playerHtml.includes('data-assistance-mode="guided">Guided</button>') && playerHtml.includes('data-assistance-mode="unguided">Unguided</button>'), "The mode prompt must offer Guided and Unguided");
 assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
 assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
@@ -36,6 +37,13 @@ assert(/function resetCurrentExercise\(\) \{[\s\S]*?clearModeQueryString\(\);[\s
 assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MODES.low"), "The removed low/final-only behavior must not remain");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
+assert(playerHtml.includes('id="exerciseCompletionPanel"') && playerHtml.includes('M1 100 H599 M1 300 H599 M300 100 V399'), "Completion controls must share the 4-by-6 panel grid and merged cells");
+for (const action of ["repeat-guided", "repeat-unguided", "download-moves", "more-exercises"]) {
+    assert(playerHtml.includes(`data-completion-action="${action}"`), `Completion panel must provide ${action}`);
+}
+assert(playerJs.includes('function isExerciseFinished()') && playerJs.includes('completedSteps[level.steps.length - 1] === true') && playerJs.includes('document.body.classList.toggle("exercise-complete", exerciseFinished)'), "The completion panel must appear after the final step");
+assert(playerJs.includes('url.searchParams.set("mode", mode)') && playerJs.includes('window.location.href = "Exercises.html"'), "The completion actions must repeat in the chosen mode or return to the exercise list");
+assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
 assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 / span 3; }'));
 assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 3; }'));
 assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 3; }'));
@@ -59,15 +67,16 @@ assert(
 assert(
     playerHtml.indexOf('id="bottomControlsPanel"') < playerHtml.indexOf('class="quadrant-tools"') &&
         playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('id="mainActionPanel"') &&
-        playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
+        playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="exerciseCompletionPanel"') &&
+        playerHtml.indexOf('id="exerciseCompletionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
         playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('id="bottomPanelResizeHandle"') &&
         playerHtml.indexOf('id="bottomPanelResizeHandle"') < playerHtml.indexOf('id="mainArea"'),
-    "All three control modes must be children of the shared bottom controls panel"
+    "All four control modes must be children of the shared bottom controls panel"
 );
 assert(
     /\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
-        /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
-    "Pre-selection, post-selection, and Expression Builder must use the panel's single four-by-six grid"
+        /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel,[\s\S]*?\.bottom-controls-panel > \.exercise-completion-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
+    "All control modes must use the panel's single four-by-six grid"
 );
 assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
 ["steps-text-size", "child-alignment", "bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
