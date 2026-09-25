@@ -136,7 +136,7 @@ assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(
 assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Exercise Builder authoring must retain the conventional-notation panel throughout");
 assert(playerJs.includes('authoringPhase === "recording" && expressionRoot') && playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)") && playerJs.includes("\\\\text{Recording in progress}"), "Solution recording must show the current conventional expression with its recording status");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
-assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("selection.node === target.node"), "Guided playback must prefer the recorded path and require the exact selected occurrence");
+assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
 assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
@@ -309,6 +309,29 @@ function findDemoSelectionTargetByPath(step, targetNode) {${exactPathFunctionMat
 result = findDemoSelectionTargetByPath({ path: [1], firstPart: 0, lastPart: 0 }, { type: "value", value: "2" });
 `, exactPathContext);
 assert(exactPathContext.result && exactPathContext.result.node === constantTwo, "A recorded path must distinguish identical values in different terms");
+const negativeTerm = new renderer.ExprNode("prod", [value("-1"), new renderer.ExprNode("sum", [value("2"), value("4")])]);
+const guidedRoot = new renderer.ExprNode("sum", [negativeTerm, value("4")]);
+const guidedTarget = { node: guidedRoot, firstPart: 0, lastPart: 0 };
+const guidedSelectionContext = {
+  expressionRoot: guidedRoot,
+  selection: { node: negativeTerm, firstPart: 0, lastPart: 1 },
+  getCurrentDemoStep: () => ({ type: "select", expression: "((-1)*((2)+(4)))" }),
+  findDemoSelectionTarget: () => guidedTarget,
+  getDemoTargetNode: () => negativeTerm,
+  selectionRangeMatchesDemoTarget: (node, first, last, target) => node === target && first === 0 && last === 1
+};
+const guidedMatcherNames = ["findPathToNode", "getCoveragePathsForSelectionTarget", "isCoveragePathInsideSelectionTarget", "isSelectionTargetInside", "currentSelectionMatchesDemoStep"];
+const guidedMatcherSource = guidedMatcherNames.map(name => {
+  const match = playerJs.match(new RegExp(`function ${name}\\([^]*?\\n        \\}`));
+  assert(match, `Missing ${name} for guided selection checks`);
+  return match[0];
+}).join("\n");
+vm.createContext(guidedSelectionContext);
+vm.runInContext(`${guidedMatcherSource}\nresult = currentSelectionMatchesDemoStep();`, guidedSelectionContext);
+assert(guidedSelectionContext.result, "Guided selection must accept a nested product when the yellow outline targets the equivalent parent sum slice");
+guidedSelectionContext.selection = { node: guidedRoot.args[1], firstPart: 0, lastPart: 0 };
+vm.runInContext("result = currentSelectionMatchesDemoStep();", guidedSelectionContext);
+assert(!guidedSelectionContext.result, "Guided selection must not accept a different term outside the outlined target");
 const cases = [
   [new renderer.ExprNode("sum", [value("x"), value("1")]), "x + 1"],
   [new renderer.ExprNode("prod", [value("3"), value("x")]), "3x"],

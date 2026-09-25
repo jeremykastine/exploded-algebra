@@ -3612,10 +3612,14 @@ Promise.resolve().then(() => {
                 return false;
             }
             const target = findDemoSelectionTarget(step);
-            return !!target &&
-                selection.node === target.node &&
-                selection.firstPart === target.firstPart &&
-                selection.lastPart === target.lastPart;
+            if (!target || !isSelectionTargetInside(selection, target)) {
+                return false;
+            }
+            // A parent sum's one-term slice and the nested product can cover
+            // the same expression. Accept either selectable representation.
+            return selectionRangeMatchesDemoTarget(
+                selection.node, selection.firstPart, selection.lastPart, getDemoTargetNode(step)
+            );
         }
 
         function refreshDemoPromptAfterAdvance() {
