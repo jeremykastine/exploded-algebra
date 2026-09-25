@@ -210,7 +210,13 @@ function drawOperatorCircle(drawingContext, centerX, centerY, diameter, fillStyl
 let nextSumBeamGradientId = 1;
 let nextProductBeamGradientId = 1;
 
-function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor) {
+function getGradientWhiteOffsets(start, end, symbolWidth) {
+    const halfFraction = Math.min(0.5, symbolWidth / Math.max(1, end - start) / 2);
+    return [`${((0.5 - halfFraction) * 100).toFixed(6)}%`,
+        `${((0.5 + halfFraction) * 100).toFixed(6)}%`];
+}
+
+function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor, symbolWidth) {
     const gradientId = `oops-product-beam-gradient-${nextProductBeamGradientId++}`;
     const defs = document.createElementNS(SVG_NS, "defs");
     const gradient = document.createElementNS(SVG_NS, "linearGradient");
@@ -221,10 +227,11 @@ function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor) {
     gradient.setAttribute("x2", String(x));
     gradient.setAttribute("y2", String(y2));
 
+    const [whiteStart, whiteEnd] = getGradientWhiteOffsets(y1, y2, symbolWidth);
     [
         ["0%", edgeColor],
-        ["33.333333%", "white"],
-        ["66.666667%", "white"],
+        [whiteStart, "white"],
+        [whiteEnd, "white"],
         ["100%", edgeColor]
     ].forEach(([offset, color]) => {
         const stop = document.createElementNS(SVG_NS, "stop");
@@ -238,7 +245,7 @@ function createProductBeamGradient(drawingContext, x, y1, y2, edgeColor) {
     return `url(#${gradientId})`;
 }
 
-function createSumBeamGradient(drawingContext, x1, x2, y, edgeColor) {
+function createSumBeamGradient(drawingContext, x1, x2, y, edgeColor, symbolWidth) {
     const gradientId = `oops-sum-beam-gradient-${nextSumBeamGradientId++}`;
     const defs = document.createElementNS(SVG_NS, "defs");
     const gradient = document.createElementNS(SVG_NS, "linearGradient");
@@ -249,10 +256,11 @@ function createSumBeamGradient(drawingContext, x1, x2, y, edgeColor) {
     gradient.setAttribute("x2", String(x2));
     gradient.setAttribute("y2", String(y));
 
+    const [whiteStart, whiteEnd] = getGradientWhiteOffsets(x1, x2, symbolWidth);
     [
         ["0%", edgeColor],
-        ["33.333333%", "white"],
-        ["66.666667%", "white"],
+        [whiteStart, "white"],
+        [whiteEnd, "white"],
         ["100%", edgeColor]
     ].forEach(([offset, color]) => {
         const stop = document.createElementNS(SVG_NS, "stop");
@@ -1265,17 +1273,30 @@ function nodeNeedsSeparatorFlares(node) {
 
 // Bar geometry and central operation appearance are independent. A bar is
 // omitted when every child of the sum/product is a single value.
-function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) {
+function getOperationMarkGeometry(settings, type) {
     const proportion = [100, 75, 50].includes(Number(settings.operationSize))
         ? Number(settings.operationSize) / 100 : 1;
     const diameter = getOperatorThickness(settings) * proportion;
     const half = diameter / 2;
     const style = ["bare", "outlined", "filled"].includes(settings.operationStyle)
         ? settings.operationStyle : "bare";
+    const outlineWidth = Math.max(1, getOperatorCircleStrokeWidth(settings) * proportion);
+    const strokeWidth = Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
+    const markHalf = half * (style === "bare" ? 0.68 : 0.52);
+    const dotRadius = Math.max(0.8, markHalf * 0.58);
+    const width = style === "bare"
+        ? (type === "sum" ? markHalf * 2 + strokeWidth : dotRadius * 2)
+        : diameter + (style === "outlined" ? outlineWidth : 0);
+    return { diameter, half, style, outlineWidth, strokeWidth, markHalf, dotRadius, width };
+}
+
+function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) {
+    const { diameter, half, style, outlineWidth, strokeWidth, markHalf, dotRadius } =
+        getOperationMarkGeometry(settings, type);
     drawingContext.save();
     if (style === "outlined") {
         drawOperatorCircle(drawingContext, x, y, diameter, highlightFill || "white", "black",
-            Math.max(1, getOperatorCircleStrokeWidth(settings) * proportion));
+            outlineWidth);
     } else if (style === "filled") {
         drawingContext.fillStyle = "black";
         drawingContext.beginPath();
@@ -1283,17 +1304,16 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
         drawingContext.fill();
     }
     const ink = style === "filled" ? "white" : "black";
-    const markHalf = half * (style === "bare" ? 0.68 : 0.52);
     if (type === "sum") {
         drawingContext.strokeStyle = ink;
-        drawingContext.lineWidth = Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
+        drawingContext.lineWidth = strokeWidth;
         drawingContext.beginPath();
         drawPlusMark(drawingContext, x, y, markHalf);
         drawingContext.stroke();
     } else {
         drawingContext.fillStyle = ink;
         drawingContext.beginPath();
-        drawingContext.arc(x, y, Math.max(0.8, markHalf * 0.58), 0, Math.PI * 2);
+        drawingContext.arc(x, y, dotRadius, 0, Math.PI * 2);
         drawingContext.fill();
     }
     drawingContext.restore();
@@ -1301,14 +1321,15 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
 
 function drawOperationBar(drawingContext, node, type, center, settings) {
     const half = getOperatorHalfSize(settings);
+    const symbolWidth = getOperationMarkGeometry(settings, type).width;
     const style = type === "sum" ? settings.sumBeamStyle : settings.productBeamStyle;
     const shading = settings.operationBarShading || "gradient";
     const start = type === "sum" ? node.left() : node.top();
     const end = type === "sum" ? node.right() : node.bottom();
     const paint = isOperationBarGradient(shading)
         ? (type === "sum"
-            ? createSumBeamGradient(drawingContext, start, end, center, getOperationBarGradientEdgeColor(shading, "black"))
-            : createProductBeamGradient(drawingContext, center, start, end, getOperationBarGradientEdgeColor(shading, "black")))
+            ? createSumBeamGradient(drawingContext, start, end, center, getOperationBarGradientEdgeColor(shading, "black"), symbolWidth)
+            : createProductBeamGradient(drawingContext, center, start, end, getOperationBarGradientEdgeColor(shading, "black"), symbolWidth))
         : getOperationBarSolidColor(shading);
     drawingContext.save();
     drawingContext.strokeStyle = paint;
@@ -1322,7 +1343,8 @@ function drawOperationBar(drawingContext, node, type, center, settings) {
             getEndpointOperatorCenters(start, end, half).forEach(position => {
                 const markX = type === "sum" ? position : center;
                 const markY = type === "sum" ? center : position;
-                drawingContext.fillRect(markX - half, markY - half, half * 2, half * 2);
+                if (type === "sum") drawingContext.fillRect(markX - symbolWidth / 2, markY - half, symbolWidth, half * 2);
+                else drawingContext.fillRect(markX - half, markY - symbolWidth / 2, half * 2, symbolWidth);
             });
             getEndpointOperatorCenters(start, end, half).forEach(position => {
                 drawOperationMark(drawingContext, type,
@@ -1398,9 +1420,11 @@ function drawNodeToContext(
                 drawOperationBar(drawingContext, node, type, position, settings);
                 // Keep black glyphs legible over every solid and gradient shade.
                 const half = getOperatorHalfSize(settings);
+                const symbolWidth = getOperationMarkGeometry(settings, type).width;
                 drawingContext.save();
                 drawingContext.fillStyle = "white";
-                drawingContext.fillRect(x - half, y - half, half * 2, half * 2);
+                if (type === "sum") drawingContext.fillRect(x - symbolWidth / 2, y - half, symbolWidth, half * 2);
+                else drawingContext.fillRect(x - half, y - symbolWidth / 2, half * 2, symbolWidth);
                 drawingContext.restore();
             }
             drawOperationMark(drawingContext, type, x, y, settings, separatorFill(node, j - 1));

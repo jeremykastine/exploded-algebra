@@ -115,9 +115,12 @@ for (const type of ["sum", "prod"]) {
                     shading === "gradient-light-gray" ? "#bdbdbd" : "black";
                 assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
                     [edge, "white", "white", edge]);
-                assert.deepEqual(gradient.children.map(stop => stop.attributes.offset),
-                    ["0%", "33.333333%", "66.666667%", "100%"],
-                    "The middle third of each gradient stays white");
+                const offsets = gradient.children.map(stop => parseFloat(stop.attributes.offset));
+                const symbolWidth = rendererContext.getOperationMarkGeometry(settings, type).width;
+                assert.ok(Math.abs((offsets[2] - offsets[1]) * (type === "sum" ? complex.layout.width : complex.layout.height) / 100 - symbolWidth) < 0.00001,
+                    "The fixed white area must span only the operation symbol");
+                assert.ok(Math.abs((offsets[1] + offsets[2]) / 2 - 50) < 0.000001,
+                    "The white area must stay centered on the operation");
             }
         }
         const simpleDraw = recordingContext();
@@ -144,6 +147,16 @@ for (const type of ["sum", "prod"]) {
             assert.ok(drawing.operations.some(op => (op[0] === "stroke" || op[0] === "fill") &&
                 op[1] === (operationStyle === "filled" ? "white" : "black")),
                 `The ${operationStyle} operation must have the right ink`);
+            const adjustedSettings = { ...settings, operationStyle, operationSize, operationBarShading: "gradient" };
+            const complexDraw = recordingContext();
+            rendererContext.drawNodeToContext(complex, complexDraw, adjustedSettings);
+            const width = rendererContext.getOperationMarkGeometry(adjustedSettings, type).width;
+            const stops = complexDraw.svgElements[0].children[0].children.map(stop => parseFloat(stop.attributes.offset));
+            assert.ok(Math.abs((stops[2] - stops[1]) - width) < 0.00001,
+                `${type}/${operationStyle}/${operationSize}: white gradient width must match the symbol`);
+            const backing = complexDraw.operations.find(op => op[0] === "rect" && op[1] === "white");
+            assert.ok(Math.abs(backing[type === "sum" ? 4 : 5] - width) < 0.000001,
+                "The white backing must use the same symbol width");
         }
     }
 }
