@@ -3997,8 +3997,13 @@ Promise.resolve().then(() => {
                 ? uiState.expressionBuilder
                 : null;
             if (activeBuilder) {
-                const liveKatex = ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)
-                    || "\\phantom{0}";
+                const liveBuilderRoot = ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"].includes(activeBuilder.tool)
+                    ? makeBuilderInsertionRoot(activeBuilder)
+                    : activeBuilder.root;
+                const liveKatex = ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"].includes(activeBuilder.tool)
+                    ? ExplodedAlgebraRenderer.expressionToKatex(liveBuilderRoot)
+                    : ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot);
+                const displayedLiveKatex = liveKatex || "\\phantom{0}";
                 const selectedKatex = activeBuilder.tool === "authorInitial" || !activeBuilder.originalSelectedNode
                     ? ""
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
@@ -4015,7 +4020,7 @@ Promise.resolve().then(() => {
                             ${selectedExpressionHtml}
                             <div class="solution-step current-step builder-conventional-step" aria-label="Expression being constructed">
                                 ${selectedKatex ? '<span class="builder-conventional-arrow" aria-hidden="true">→</span>' : ""}
-                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(liveKatex)}"></span></div>
+                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(displayedLiveKatex)}"></span></div>
                             </div>
                         </section>
                     </div>
