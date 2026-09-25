@@ -74,7 +74,8 @@ assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="se
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
 });
 assert(playerJs.includes('setChildAlignment(getSavedChildAlignment())'));
-assert(playerJs.includes('setChildAlignment(SETTINGS.childAlignment === "end" ? "center" : "end", true)'));
+assert(playerJs.includes('setChildAlignment(getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, SETTINGS.childAlignment).value, true)'));
+assert(playerJs.includes('value: "right", shortLabel: "Center / Right"'));
 assert(playerJs.includes('button.hidden = !classicBars'), "Legacy bar controls must appear only for the classic operation style");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerHtml.includes('data-workspace-action="resetExercise"') && playerHtml.includes('data-workspace-action="downloadMoveHistory"'), "The Settings screen must contain Reset Exercise and Move History");
@@ -263,7 +264,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260924-child-alignment'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20260924-center-right'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

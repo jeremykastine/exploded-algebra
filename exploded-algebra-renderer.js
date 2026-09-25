@@ -1109,7 +1109,7 @@ function placeNodeWithSettings(node, x, y, settings) {
         let cursorY = y;
         for (let i = 0; i < node.args.length; i++) {
             const child = node.args[i];
-            const childX = x + (settings.childAlignment === "end"
+            const childX = x + (settings.childAlignment === "end" || settings.childAlignment === "right"
                 ? node.layout.width - child.layout.width
                 : (node.layout.width - child.layout.width) / 2);
             placeNodeWithSettings(child, childX, cursorY, settings);

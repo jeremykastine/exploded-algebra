@@ -1455,8 +1455,9 @@ Promise.resolve().then(() => {
                     const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
                     nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
                 } else if (setting === "child-alignment") {
-                    value = SETTINGS.childAlignment === "end" ? "Bottom / Right" : "Centered";
-                    nextValue = SETTINGS.childAlignment === "end" ? "Centered" : "Bottom / Right";
+                    const current = CHILD_ALIGNMENT_OPTIONS.find(option => option.value === SETTINGS.childAlignment) || CHILD_ALIGNMENT_OPTIONS[0];
+                    value = current.shortLabel;
+                    nextValue = getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, current.value).shortLabel;
                 } else if (setting === "operation-style") {
                     value = classicBars ? "Classic" : "Leading";
                     nextValue = classicBars ? "Leading" : "Classic";
@@ -5199,6 +5200,11 @@ ctx.font = SETTINGS.textFont;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
         const CHILD_ALIGNMENT_STORAGE_KEY = "explodedAlgebraChildAlignmentV1";
+        const CHILD_ALIGNMENT_OPTIONS = [
+            { value: "center", shortLabel: "Centered" },
+            { value: "right", shortLabel: "Center / Right" },
+            { value: "end", shortLabel: "Bottom / Right" }
+        ];
         const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV1";
         const LEGACY_OPERATOR_BAR_STYLE_STORAGE_KEY = "explodedAlgebraOperatorBarStyleV2";
         const SUM_BAR_STYLE_STORAGE_KEY = "explodedAlgebraSumBarStyleV1";
@@ -5240,7 +5246,7 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
             if (setting === "child-alignment") {
-                setChildAlignment(SETTINGS.childAlignment === "end" ? "center" : "end", true);
+                setChildAlignment(getNextCyclicOption(CHILD_ALIGNMENT_OPTIONS, SETTINGS.childAlignment).value, true);
                 return;
             }
             if (setting === "operation-style") {
@@ -5358,14 +5364,15 @@ ctx.font = SETTINGS.textFont;
 
         function getSavedChildAlignment() {
             try {
-                return window.localStorage.getItem(CHILD_ALIGNMENT_STORAGE_KEY) === "end" ? "end" : "center";
+                const saved = window.localStorage.getItem(CHILD_ALIGNMENT_STORAGE_KEY);
+                return CHILD_ALIGNMENT_OPTIONS.some(option => option.value === saved) ? saved : "center";
             } catch (error) {
                 return "center";
             }
         }
 
         function setChildAlignment(alignment, persist = false) {
-            SETTINGS.childAlignment = alignment === "end" ? "end" : "center";
+            SETTINGS.childAlignment = CHILD_ALIGNMENT_OPTIONS.some(option => option.value === alignment) ? alignment : "center";
             if (persist) {
                 try {
                     window.localStorage.setItem(CHILD_ALIGNMENT_STORAGE_KEY, SETTINGS.childAlignment);
