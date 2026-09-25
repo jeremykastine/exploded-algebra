@@ -5233,7 +5233,9 @@ ctx.font = SETTINGS.textFont;
             { value: "black", shortLabel: "Black" },
             { value: "gray", shortLabel: "Gray" },
             { value: "light-gray", shortLabel: "Light Gray" },
-            { value: "gradient", shortLabel: "Gradient" }
+            { value: "gradient", shortLabel: "Gradient" },
+            { value: "gradient-gray", shortLabel: "Gradient Gray" },
+            { value: "gradient-light-gray", shortLabel: "Gradient Light Gray" }
         ];
         const OPERATOR_BAR_STYLES = new Set(OPERATION_BAR_STYLE_OPTIONS.map(option => option.value));
         const OPERATION_BAR_SHADINGS = new Set(OPERATION_BAR_SHADING_OPTIONS.map(option => option.value));

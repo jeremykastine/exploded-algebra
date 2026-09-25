@@ -71,6 +71,8 @@ the next child. Products use the rotated shape.
 Choosing Classic reveals the previous Bar Style and Bar Shade settings with all
 eight bar styles. Leading, Dotted ( ), and Odd Curve do not depend on those bar
 settings.
+Classic Bar Shade offers solid black, gray, and light gray; black, gray, and
+light gray gradient ends each fade to white in the middle.
 Every addition separator has a large plus sign at its left edge and a dotted
 light gray connector to the right; multiplication separators have a large dot at
 the top and a dotted light gray connector below. The Bar Style and Bar Shade

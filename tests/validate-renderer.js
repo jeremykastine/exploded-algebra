@@ -63,13 +63,15 @@ const settings = {
 function recordingContext() {
     const operations = [];
     return {
-        operations,
+        operations, svgElements: [],
         save() {}, restore() {}, beginPath() {},
         moveTo(...args) { operations.push(["move", ...args]); },
         lineTo(...args) { operations.push(["line", ...args]); },
         quadraticCurveTo(...args) { operations.push(["curve", ...args]); },
         bezierCurveTo(...args) { operations.push(["cubic", ...args]); },
         arc(...args) { operations.push(["arc", ...args]); },
+        ellipse(...args) { operations.push(["ellipse", ...args]); },
+        appendSvgElement(element) { this.svgElements.push(element); },
         fillRect(...args) { operations.push(["rect", this.fillStyle, ...args]); },
         stroke() { operations.push(["stroke", this.strokeStyle, this.lineWidth]); },
         fill() { operations.push(["fill", this.fillStyle]); }
@@ -139,6 +141,31 @@ const productNode = {
     layout: { x: 0, y: 10, width: 40, height: 100, vLines: [0, 20, 40] },
     left() { return 0; }, right() { return 40; }, top() { return 10; }, bottom() { return 110; }
 };
+rendererContext.document = {
+    createElementNS(namespace, name) {
+        return {
+            name, attributes: {}, children: [],
+            setAttribute(key, value) { this.attributes[key] = value; },
+            appendChild(child) { this.children.push(child); }
+        };
+    }
+};
+for (const [shading, edgeColor] of [
+    ["gradient", "black"],
+    ["gradient-gray", "#666666"],
+    ["gradient-light-gray", "#bdbdbd"]
+]) {
+    for (const [node, beamStyle] of [[sumNode, "sumBeamStyle"], [productNode, "productBeamStyle"]]) {
+        const drawing = recordingContext();
+        rendererContext.drawNodeToContext(node, drawing, {
+            ...settings, operationStyle: "classic", [beamStyle]: "ellipse", operationBarShading: shading
+        });
+        const gradient = drawing.svgElements[0]?.children[0];
+        assert.ok(gradient, `${shading} must create a gradient for ${node.type}`);
+        assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
+            [edgeColor, "white", edgeColor], `${shading} must stay white in the middle`);
+    }
+}
 const dottedProduct = recordingContext();
 rendererContext.drawNodeToContext(productNode, dottedProduct,
     { ...changedSettings, operationStyle: "dotted-parentheses" });

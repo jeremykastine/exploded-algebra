@@ -300,6 +300,16 @@ function getOperationBarSolidColor(shading) {
     return "black";
 }
 
+function getOperationBarGradientEdgeColor(shading, fallbackColor) {
+    if (shading === "gradient-gray") return getOperationBarSolidColor("gray");
+    if (shading === "gradient-light-gray") return getOperationBarSolidColor("light-gray");
+    return fallbackColor;
+}
+
+function isOperationBarGradient(shading) {
+    return shading === "gradient" || shading === "gradient-gray" || shading === "gradient-light-gray";
+}
+
 function getEndpointOperatorCenters(start, end, halfThickness) {
     const inset = Math.min(halfThickness, Math.max(0, (end - start) / 2));
     return [start + inset, end - inset].filter((position, index, positions) => (
@@ -1497,9 +1507,11 @@ function drawClassicNodeToContext(
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useNestedOperatorParenthesesBeam = beamStyle === "nested-operator-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
-            const gradientBeamColor = settings.productBeamEdgeColor || "black";
             const operationBarShading = settings.operationBarShading || "gradient";
-            const useGradientPaint = operationBarShading === "gradient" &&
+            const gradientBeamColor = getOperationBarGradientEdgeColor(
+                operationBarShading, settings.productBeamEdgeColor || "black"
+            );
+            const useGradientPaint = isOperationBarGradient(operationBarShading) &&
                 (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
             const beamPaint = useGradientPaint
@@ -1608,9 +1620,11 @@ function drawClassicNodeToContext(
             const useNestedParenthesesBeam = beamStyle === "nested-parentheses";
             const useNestedOperatorParenthesesBeam = beamStyle === "nested-operator-parentheses";
             const useOutwardParenthesesBeam = beamStyle === "outward-parentheses";
-            const gradientBeamColor = settings.sumBeamEdgeColor || "black";
             const operationBarShading = settings.operationBarShading || "gradient";
-            const useGradientPaint = operationBarShading === "gradient" &&
+            const gradientBeamColor = getOperationBarGradientEdgeColor(
+                operationBarShading, settings.sumBeamEdgeColor || "black"
+            );
+            const useGradientPaint = isOperationBarGradient(operationBarShading) &&
                 (needsBeam || useEndpointOperatorsBeam || useEllipseBeam || useNestedParenthesesBeam ||
                     useNestedOperatorParenthesesBeam || useOutwardParenthesesBeam);
             const beamPaint = useGradientPaint
