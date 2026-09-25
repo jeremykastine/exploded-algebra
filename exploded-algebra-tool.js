@@ -5845,6 +5845,16 @@ ctx.font = SETTINGS.textFont;
             }
         }
 
+        function getExplodedBuilderDisplayRoot(builder = uiState.expressionBuilder) {
+            if (!isIntegratedExpressionBuilder(builder)) {
+                return expressionRoot;
+            }
+            if (["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"].includes(builder.tool)) {
+                return makeBuilderInsertionRoot(builder);
+            }
+            return builder.root;
+        }
+
         function drawExpression() {
             updateWorkspaceToolbar();
             renderCurrentExpressionDisplay();
@@ -5858,14 +5868,23 @@ ctx.font = SETTINGS.textFont;
                 return;
             }
 
-            resizeSvgToFitContent();
+            const integratedBuilder = isIntegratedExpressionBuilder(uiState.expressionBuilder);
+            const explodedDisplayRoot = integratedBuilder
+                ? getExplodedBuilderDisplayRoot(uiState.expressionBuilder)
+                : expressionRoot;
+            layoutExpression(explodedDisplayRoot);
+            const padding = 40;
+            const neededWidth = Math.max(svgContainer.clientWidth, Math.ceil(explodedDisplayRoot.layout.width + padding * 2));
+            const neededHeight = Math.max(svgContainer.clientHeight, Math.ceil(explodedDisplayRoot.layout.height + padding * 2));
+            if (getSvgWidth(workspaceSvg) !== neededWidth || getSvgHeight(workspaceSvg) !== neededHeight) {
+                setSvgSize(workspaceSvg, neededWidth, neededHeight);
+            }
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
-            const integratedBuilder = isIntegratedExpressionBuilder(uiState.expressionBuilder);
-            if (integratedBuilder && expressionRoot.isBuilderSequence) {
+            if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
                 drawBuilderSequence(uiState.expressionBuilder);
             } else {
-                drawNodeRecursive(expressionRoot);
+                drawNodeRecursive(explodedDisplayRoot);
             }
 
             if (uiState.expressionBuilder && uiState.stage === "builder") {
