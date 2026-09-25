@@ -47,14 +47,17 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-09-25T12:31:35-04:00">9/25/26, 12:31 PM EDT</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-09-25T14:41:06-04:00">9/25/26, 2:41 PM EDT</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
     <p>Choose an exercise from the links below, then select Guided or Unguided.</p>
+    <!-- Keep built-in exercises in pedagogical order, from foundational/easiest to most advanced.
+         When adding a JSON exercise, insert its link at the appropriate point (including the
+         beginning or middle), and add its matching embedded JSON and builtInLevelDataIds entry. -->
     <div class="exercise-links" aria-label="Exercises">
-      <a href="exploded-algebra.html?level=levels%2Fadd-rational-expressions-with-unlike-denominators.json&amp;source=builtin" data-exercise-file="levels/add-rational-expressions-with-unlike-denominators.json">Add Rational Expressions with Unlike Denominators</a>
-      <a href="exploded-algebra.html?level=levels%2Fmultiply-binomials-and-combine-like-terms.json&amp;source=builtin" data-exercise-file="levels/multiply-binomials-and-combine-like-terms.json">Multiply Binomials and Combine Like Terms</a>
       <a href="exploded-algebra.html?level=levels%2Frewrite-and-simplify-negative-6-plus-4.json&amp;source=builtin" data-exercise-file="levels/rewrite-and-simplify-negative-6-plus-4.json">Rewrite and Simplify −6 + 4</a>
+      <a href="exploded-algebra.html?level=levels%2Fmultiply-binomials-and-combine-like-terms.json&amp;source=builtin" data-exercise-file="levels/multiply-binomials-and-combine-like-terms.json">Multiply Binomials and Combine Like Terms</a>
+      <a href="exploded-algebra.html?level=levels%2Fadd-rational-expressions-with-unlike-denominators.json&amp;source=builtin" data-exercise-file="levels/add-rational-expressions-with-unlike-denominators.json">Add Rational Expressions with Unlike Denominators</a>
     </div>
 
     <div class="upload-row">
@@ -1859,9 +1862,9 @@
       const customLevelFileStatus = document.getElementById('customLevelFileStatus');
 
       const builtInLevelDataIds = {
-        'levels/add-rational-expressions-with-unlike-denominators.json': 'builtInLevelDataAddRationalExpressions',
+        'levels/rewrite-and-simplify-negative-6-plus-4.json': 'builtInLevelDataRewriteNegative6Plus4',
         'levels/multiply-binomials-and-combine-like-terms.json': 'builtInLevelDataMultiplyBinomials',
-        'levels/rewrite-and-simplify-negative-6-plus-4.json': 'builtInLevelDataRewriteNegative6Plus4'
+        'levels/add-rational-expressions-with-unlike-denominators.json': 'builtInLevelDataAddRationalExpressions'
       };
 
       function clearLevelTransfer() {

@@ -2089,7 +2089,7 @@
         .intent-category-icon { width: min(44px, 100%); height: 28px; }
         .intent-category-math { font-size: clamp(12px, 2.7vw, 17px); }
 
-        .press-hold-popover {
+        .exercise-guidance-popover {
             position: absolute;
             z-index: 150;
             inset: 0;
@@ -2111,7 +2111,7 @@
             text-align: center;
             pointer-events: none;
         }
-        .press-hold-popover.hidden { display: none; }
+        .exercise-guidance-popover.hidden { display: none; }
 
         .numerical-rewrite-error {
             position: absolute;
@@ -2192,21 +2192,17 @@
         @media (max-width: 460px) {
             .mode-choice-actions { grid-template-columns: 1fr; }
         }
-        .press-hold-popover-title,
-        .press-hold-popover .rule-name {
+        .exercise-guidance-popover-title,
+        .exercise-guidance-popover .rule-name {
             display: block;
             margin-bottom: 3px;
             font-weight: 700;
         }
-        .press-hold-popover .rule-notation { display: block; }
-        .press-hold-popover p { max-width: 720px; margin: 4px 0; }
-        .press-hold-popover ul { max-width: 720px; margin: 7px 0 0; padding-left: 22px; text-align: left; }
-        .press-hold-popover .numerical-permission-summary { font-size: clamp(11px, 1.8vw, 15px); line-height: 1.3; }
-        .press-hold-popover .numerical-permission-summary li + li { margin-top: 2px; }
-        body:not(.expression-builder-active) button {
-            -webkit-touch-callout: none;
-            user-select: none;
-        }
+        .exercise-guidance-popover .rule-notation { display: block; }
+        .exercise-guidance-popover p { max-width: 720px; margin: 4px 0; }
+        .exercise-guidance-popover ul { max-width: 720px; margin: 7px 0 0; padding-left: 22px; text-align: left; }
+        .exercise-guidance-popover .numerical-permission-summary { font-size: clamp(11px, 1.8vw, 15px); line-height: 1.3; }
+        .exercise-guidance-popover .numerical-permission-summary li + li { margin-top: 2px; }
 
         .expression-builder-panel, .builder-controls { width: 100%; height: 100%; min-height: 0; }
         .expression-builder-panel { justify-content: center; }
@@ -3605,7 +3601,7 @@
         body.settings-active .right-top-bar,
         body.settings-active #svgContainer,
         body.settings-active .numerical-rewrite-error,
-        body.settings-active .press-hold-popover {
+        body.settings-active .exercise-guidance-popover {
             display: none !important;
         }
         .level-menu-panel {
@@ -3747,7 +3743,7 @@
         }
 
         /* Exercise guidance shown from the pre-selection controls. */
-        .press-hold-popover-content {
+        .exercise-guidance-popover-content {
             position: relative;
             z-index: 2;
             display: flex;
@@ -3756,36 +3752,36 @@
             gap: 8px;
             width: min(760px, 100%);
         }
-        .press-hold-popover .exercise-guidance-expression {
+        .exercise-guidance-popover .exercise-guidance-expression {
             margin-top: 8px;
             font-size: clamp(20px, 4vw, 34px);
             font-weight: 700;
         }
-        .press-hold-popover .exercise-guidance-instruction {
+        .exercise-guidance-popover .exercise-guidance-instruction {
             width: 100%;
             text-align: center;
             white-space: pre-wrap;
         }
-        .press-hold-popover .exercise-guidance-section {
+        .exercise-guidance-popover .exercise-guidance-section {
             width: min(720px, 100%);
         }
-        .press-hold-popover .exercise-guidance-section h3 {
+        .exercise-guidance-popover .exercise-guidance-section h3 {
             margin: 8px 0 4px;
             font-size: 0.95em;
         }
-        .press-hold-popover .exercise-guidance-complete {
+        .exercise-guidance-popover .exercise-guidance-complete {
             width: min(720px, 100%);
         }
-        .press-hold-popover .exercise-guidance-complete h3 {
+        .exercise-guidance-popover .exercise-guidance-complete h3 {
             margin: 20px 0 8px;
             font-size: 0.95em;
             text-align: center;
         }
-        .press-hold-popover .exercise-guidance-complete h3:first-child { margin-top: 8px; }
-        .press-hold-popover .exercise-guidance-complete .exercise-guidance-expression { text-align: center; }
-        .press-hold-popover .exercise-guidance-complete > ul { margin-top: 8px; }
-        .press-hold-popover .instruction-math-inline { white-space: normal; }
-        .press-hold-popover .instruction-math-display {
+        .exercise-guidance-popover .exercise-guidance-complete h3:first-child { margin-top: 8px; }
+        .exercise-guidance-popover .exercise-guidance-complete .exercise-guidance-expression { text-align: center; }
+        .exercise-guidance-popover .exercise-guidance-complete > ul { margin-top: 8px; }
+        .exercise-guidance-popover .instruction-math-inline { white-space: normal; }
+        .exercise-guidance-popover .instruction-math-display {
             display: block;
             margin: 6px 0;
             white-space: normal;
@@ -3797,12 +3793,12 @@
         body.exercise-guidance-active .builder-keypad-panel {
             display: none !important;
         }
-        body.exercise-guidance-active .press-hold-popover {
+        body.exercise-guidance-active .exercise-guidance-popover {
             background: #fff;
             justify-content: flex-start;
             overflow: auto;
         }
-        body.exercise-guidance-active .press-hold-popover-content {
+        body.exercise-guidance-active .exercise-guidance-popover-content {
             margin: auto 0;
         }
 
@@ -4335,7 +4331,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T12:31:35-04:00">9/25/26, 12:31 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-09-25T14:41:06-04:00">9/25/26, 2:41 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4344,34 +4340,34 @@
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression controls">
             <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
-                <button type="button" data-workspace-action="authoringFinishRecording" aria-label="All done" data-hold-description="Finish recording and continue to step review." hidden>
+                <button type="button" data-workspace-action="authoringFinishRecording" aria-label="All done" hidden>
                     <span class="workspace-finish-recording-label" aria-hidden="true">All<br>Done</span>
                 </button>
-                <button id="settingsButton" type="button" class="settings-button" data-workspace-action="openSettings" aria-label="Settings" data-hold-description="Open display settings and exercise controls.">
+                <button id="settingsButton" type="button" class="settings-button" data-workspace-action="openSettings" aria-label="Settings">
                     <span class="workspace-setting-value" aria-hidden="true">Settings</span>
                 </button>
                 <div class="workspace-tool-group workspace-selection-group" aria-label="Selection tools">
-                    <button type="button" data-workspace-mode="pan" aria-pressed="false" aria-label="Move view" data-hold-description="Drag to move the expression view. Zooming automatically returns to this tool.">
+                    <button type="button" data-workspace-mode="pan" aria-pressed="false" aria-label="Move view">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select" data-hold-description="Select the nearest visible part of the expression. Additional clicks expand the selection; a drag treats its start and end as two clicks.">
+                    <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.6"/></svg>
                     </button>
                 </div>
                 <div class="workspace-tool-group workspace-zoom-group" aria-label="Zoom tools">
-                    <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in" data-hold-description="Make the expression larger while keeping its upper-leftmost visible point fixed.">
+                    <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out" data-hold-description="Make the expression smaller while keeping its upper-leftmost visible point fixed.">
+                    <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                     </button>
-                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset view" data-hold-description="Return the expression to 100% zoom and its original position.">
+                    <button type="button" data-workspace-action="resetZoom" aria-label="Reset view">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg>
                     </button>
-                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" data-hold-description="Undo the previous expression step. Continue undoing to return to the beginning of the exercise." disabled>
+                    <button type="button" data-workspace-action="undoExpression" aria-label="Undo previous expression step" aria-keyshortcuts="Control+Z Meta+Z" disabled>
                         <span class="workspace-undo-label" aria-hidden="true">Undo</span>
                     </button>
-                    <button type="button" class="exercise-guidance-button" data-workspace-action="showExerciseGuidance" aria-label="Exercise guidance" data-hold-description="Show the problem statement, numerical manipulation restrictions, and author guidance for this exercise.">
+                    <button type="button" class="exercise-guidance-button" data-workspace-action="showExerciseGuidance" aria-label="Exercise guidance">
                         <span class="workspace-setting-name" aria-hidden="true">Exercise</span>
                         <span class="workspace-setting-value" aria-hidden="true">Guidance</span>
                     </button>
@@ -4424,7 +4420,7 @@
             </div>
             <button id="builderPeekDismissLayer" class="builder-peek-dismiss-layer" type="button" aria-label="Close expression peek" aria-hidden="true"></button>
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
-            <div id="pressHoldPopover" class="press-hold-popover hidden" role="tooltip" aria-live="polite"></div>
+            <div id="guidancePopover" class="exercise-guidance-popover hidden" role="region" aria-label="Exercise guidance" aria-live="polite"></div>
         </div>
     </div>
     <section id="settingsPanel" class="level-menu-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">

@@ -277,14 +277,6 @@ Promise.resolve().then(() => {
             { id: "numericalRewrite", label: "Numerical Manipulation" }
         ];
 
-        const INTENT_CATEGORY_DESCRIPTIONS = {
-            commute: "Change the order of selected terms or factors without changing the expression's value.",
-            insert: "Introduce identity elements or equivalent structure, such as adding zero, multiplying by one, or introducing inverses.",
-            delete: "Remove identity elements or other selected structure that simplifies away.",
-            separate: "Rewrite a selected part as separate equivalent terms or factors, such as by distributing.",
-            consolidate: "Combine selected terms or factors into one equivalent structure, such as by factoring."
-        };
-
         const INSERT_ELEMENT_CHOICES = {
             insertIdentityAddZeroBottom: {
                 label: "Add zero",
@@ -307,18 +299,6 @@ Promise.resolve().then(() => {
                 description: "Replaces the selected zero with an expression added to its opposite."
             }
         };
-
-        function getIntentCategoryDescription(categoryId) {
-            return INTENT_CATEGORY_DESCRIPTIONS[categoryId] || "";
-        }
-
-        function getIntentCategoryDescriptionHtml(categoryId) {
-            if (categoryId === "numericalRewrite") {
-                const items = getNumericalRewriteProfileSummaryItems(getNumericalRewriteProfile());
-                return `<p>Manipulate a numerical expression into an equivalent form.</p><ul class="numerical-permission-summary">${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-            }
-            return `<p>${escapeHtml(getIntentCategoryDescription(categoryId))}</p>`;
-        }
 
         function getToolCategoryKey(category) {
             return category.family || category.id;
@@ -884,7 +864,7 @@ Promise.resolve().then(() => {
                 tools.forEach(toolName => {
                     const choice = INSERT_ELEMENT_CHOICES[toolName];
                     if (choice) {
-                        html += `<button class="tool-form-button insert-choice-button" data-tool="${toolName}" data-insert-description-tool="${toolName}">${escapeHtml(choice.label)}</button>`;
+                        html += `<button class="tool-form-button insert-choice-button" data-tool="${toolName}">${escapeHtml(choice.label)}</button>`;
                     }
                 });
                 html += `</div>`;
@@ -972,7 +952,7 @@ Promise.resolve().then(() => {
                 <div class="tool-option-menu-title">${escapeHtml(title)}</div>
                 ${tools.map(toolName => {
                     const label = getPlainEnglishToolOptionLabel(toolName, categoryId);
-                    return `<button type="button" role="menuitem" data-tool-option="${escapeHtml(toolName)}" data-option-category="${escapeHtml(categoryId)}" aria-label="${escapeHtml(label)}" data-hold-description="Apply this option to the selected expression.">${escapeHtml(label)}</button>`;
+                    return `<button type="button" role="menuitem" data-tool-option="${escapeHtml(toolName)}" data-option-category="${escapeHtml(categoryId)}" aria-label="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
                 }).join("")}
             `;
             if (activeToolOptionAnchor && activeToolOptionAnchor !== anchor) {
@@ -1369,7 +1349,7 @@ Promise.resolve().then(() => {
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
-        const pressHoldPopover = document.getElementById("pressHoldPopover");
+        const guidancePopover = document.getElementById("guidancePopover");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
@@ -2439,94 +2419,12 @@ Promise.resolve().then(() => {
             });
         }
 
-        const PRESS_HOLD_DELAY_MS = 500;
-        const PRESS_HOLD_ACTION_DESCRIPTIONS = {
-            execute: "Apply the choices currently shown.",
-            done: "Leave the current rule without making another change.",
-            backToIntentCategories: "Return to the main action buttons.",
-            backToToolCategories: "Return to the main tool categories.",
-            insertIdentityOption: "Choose this identity and where it should be introduced.",
-            previewEliminateIdentities: "Preview removal of identity elements in the selection."
-        };
-        let pressHoldState = null;
-        let suppressedPressHoldClick = null;
-        let activeExerciseGuidance = false;
-
-        function isExpressionBuilderButton(target) {
-            return !!target.closest("#builderKeypadPanel");
-        }
-
-        function getPressHoldTarget(eventTarget) {
-            return eventTarget && eventTarget.closest
-                ? eventTarget.closest("button")
-                : null;
-        }
-
-        function isPressHoldTargetEligible(target) {
-            return !!target &&
-                (!(target instanceof HTMLButtonElement) || !target.disabled) &&
-                !document.body.classList.contains("expression-builder-active") &&
-                !isExpressionBuilderButton(target);
-        }
-
-        function getButtonVisibleName(button) {
-            if (button.dataset.ruleCategory) {
-                const category = INTENT_RULE_CATEGORIES.find(item => item.id === button.dataset.ruleCategory);
-                return category ? category.label : button.dataset.ruleCategory;
-            }
-            if (button.dataset.insertDescriptionTool) {
-                const choice = INSERT_ELEMENT_CHOICES[button.dataset.insertDescriptionTool];
-                if (choice) {
-                    return choice.label;
-                }
-            }
-            return button.getAttribute("aria-label") ||
-                button.dataset.holdTitle ||
-                button.textContent.trim() ||
-                "Button";
-        }
-
-        function getPressHoldDescriptionHtml(button) {
-            const name = getButtonVisibleName(button);
-            const titleHtml = `<span class="press-hold-popover-title">${escapeHtml(name)}</span>`;
-
-            if (button.dataset.ruleCategory) {
-                return `${titleHtml}${getIntentCategoryDescriptionHtml(button.dataset.ruleCategory)}`;
-            }
-            if (button.dataset.insertDescriptionTool) {
-                const choice = INSERT_ELEMENT_CHOICES[button.dataset.insertDescriptionTool];
-                return choice
-                    ? `${titleHtml}<p>${escapeHtml(choice.description)}</p>`
-                    : titleHtml;
-            }
-            if (button.dataset.tool && TOOL_INFO[button.dataset.tool]) {
-                return TOOL_INFO[button.dataset.tool];
-            }
-            if (button.dataset.holdDescription) {
-                return `${titleHtml}<p>${escapeHtml(button.dataset.holdDescription)}</p>`;
-            }
-            if (button.dataset.action && PRESS_HOLD_ACTION_DESCRIPTIONS[button.dataset.action]) {
-                return `${titleHtml}<p>${escapeHtml(PRESS_HOLD_ACTION_DESCRIPTIONS[button.dataset.action])}</p>`;
-            }
-            if (button.dataset.toolCategory) {
-                return `${titleHtml}<p>Show the algebra rules in this category.</p>`;
-            }
-            if (button.classList.contains("completion-export-button")) {
-                return `${titleHtml}<p>Download the complete move history for this exercise.</p>`;
-            }
-            if (button.dataset.holdTitle) {
-                return `${titleHtml}<p>${escapeHtml(button.dataset.holdTitle)}</p>`;
-            }
-            return `${titleHtml}<p>Activate this button.</p>`;
-        }
-
-        function hidePressHoldPopover() {
-            if (!pressHoldPopover) {
+        function hideExerciseGuidance() {
+            if (!guidancePopover) {
                 return;
             }
-            pressHoldPopover.classList.add("hidden");
-            pressHoldPopover.replaceChildren();
-            activeExerciseGuidance = false;
+            guidancePopover.classList.add("hidden");
+            guidancePopover.replaceChildren();
             document.body.classList.remove("exercise-guidance-active");
         }
 
@@ -2560,11 +2458,11 @@ Promise.resolve().then(() => {
             return html;
         }
 
-        function renderPressHoldPopoverMath() {
-            if (!pressHoldPopover) {
+        function renderExerciseGuidanceMath() {
+            if (!guidancePopover) {
                 return;
             }
-            pressHoldPopover.querySelectorAll(".katex-placeholder").forEach(node => {
+            guidancePopover.querySelectorAll(".katex-placeholder").forEach(node => {
                 const expression = node.getAttribute("data-expr") || "";
                 if (!window.katex) {
                     node.textContent = expression;
@@ -2574,159 +2472,6 @@ Promise.resolve().then(() => {
                     throwOnError: false,
                     displayMode: node.dataset.displayMode === "true"
                 });
-            });
-        }
-
-        function showPressHoldPopover(button) {
-            if (!pressHoldPopover || !isPressHoldTargetEligible(button)) {
-                return;
-            }
-            activeExerciseGuidance = false;
-            document.body.classList.remove("exercise-guidance-active");
-            pressHoldPopover.innerHTML = `<div class="press-hold-popover-content">${getPressHoldDescriptionHtml(button)}</div>`;
-            pressHoldPopover.classList.remove("hidden");
-        }
-
-        function dismissExerciseGuidance() {
-            hidePressHoldPopover();
-        }
-
-        function preserveNonBuilderButtonTitle(button) {
-            if (!button || isExpressionBuilderButton(button) || !button.hasAttribute("title")) {
-                return;
-            }
-            if (!button.dataset.holdTitle) {
-                button.dataset.holdTitle = button.getAttribute("title") || "";
-            }
-            button.removeAttribute("title");
-        }
-
-        function preserveNonBuilderButtonTitles(root) {
-            if (root instanceof HTMLButtonElement) {
-                preserveNonBuilderButtonTitle(root);
-            }
-            if (root.querySelectorAll) {
-                root.querySelectorAll("button[title]").forEach(preserveNonBuilderButtonTitle);
-            }
-        }
-
-        function clearPendingPressHold(hidePopover = true) {
-            if (!pressHoldState) {
-                return;
-            }
-            clearTimeout(pressHoldState.timerId);
-            pressHoldState = null;
-            if (hidePopover) {
-                hidePressHoldPopover();
-            }
-        }
-
-        function installPressHoldDescriptions() {
-            if (!pressHoldPopover) {
-                return;
-            }
-            preserveNonBuilderButtonTitles(document);
-            const titleObserver = new MutationObserver(mutations => {
-                mutations.forEach(mutation => {
-                    mutation.addedNodes.forEach(node => {
-                        if (node instanceof Element) {
-                            preserveNonBuilderButtonTitles(node);
-                        }
-                    });
-                });
-            });
-            titleObserver.observe(document.body, { childList: true, subtree: true });
-
-            document.addEventListener("click", event => {
-                if (!activeExerciseGuidance) {
-                    return;
-                }
-                const suppressedTarget = getPressHoldTarget(event.target);
-                if (
-                    suppressedPressHoldClick &&
-                    Date.now() <= suppressedPressHoldClick.expiresAt &&
-                    suppressedTarget === suppressedPressHoldClick.button
-                ) {
-                    return;
-                }
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                dismissExerciseGuidance();
-            }, true);
-
-            document.addEventListener("pointerdown", event => {
-                if (activeExerciseGuidance) {
-                    return;
-                }
-                const button = getPressHoldTarget(event.target);
-                if (!isPressHoldTargetEligible(button) || (event.pointerType === "mouse" && event.button !== 0)) {
-                    return;
-                }
-                clearPendingPressHold();
-                const state = {
-                    button,
-                    pointerId: event.pointerId,
-                    startX: event.clientX,
-                    startY: event.clientY,
-                    shown: false,
-                    timerId: null
-                };
-                state.timerId = setTimeout(() => {
-                    if (pressHoldState !== state) {
-                        return;
-                    }
-                    state.shown = true;
-                    showPressHoldPopover(button);
-                }, PRESS_HOLD_DELAY_MS);
-                pressHoldState = state;
-            }, true);
-
-            document.addEventListener("pointermove", event => {
-                if (!pressHoldState || pressHoldState.pointerId !== event.pointerId || pressHoldState.shown) {
-                    return;
-                }
-                if (Math.hypot(event.clientX - pressHoldState.startX, event.clientY - pressHoldState.startY) > 10) {
-                    clearPendingPressHold();
-                }
-            }, true);
-
-            const finishPressHold = event => {
-                if (!pressHoldState || pressHoldState.pointerId !== event.pointerId) {
-                    return;
-                }
-                const heldButton = pressHoldState.button;
-                const wasShown = pressHoldState.shown;
-                clearPendingPressHold();
-                if (wasShown) {
-                    suppressedPressHoldClick = { button: heldButton, expiresAt: Date.now() + 800 };
-                    event.preventDefault();
-                }
-            };
-            document.addEventListener("pointerup", finishPressHold, true);
-            document.addEventListener("pointercancel", finishPressHold, true);
-            document.addEventListener("click", event => {
-                if (!suppressedPressHoldClick || Date.now() > suppressedPressHoldClick.expiresAt) {
-                    suppressedPressHoldClick = null;
-                    return;
-                }
-                const button = getPressHoldTarget(event.target);
-                if (button === suppressedPressHoldClick.button) {
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                    suppressedPressHoldClick = null;
-                }
-            }, true);
-            document.addEventListener("contextmenu", event => {
-                const button = getPressHoldTarget(event.target);
-                if (isPressHoldTargetEligible(button)) {
-                    event.preventDefault();
-                }
-            }, true);
-            window.addEventListener("blur", clearPendingPressHold);
-            document.addEventListener("visibilitychange", () => {
-                if (document.hidden) {
-                    clearPendingPressHold();
-                }
             });
         }
 
@@ -4234,7 +3979,7 @@ Promise.resolve().then(() => {
             if (!level) {
                 levelContent.innerHTML = "";
                 renderMoveHistoryControls(null);
-                hidePressHoldPopover();
+                hideExerciseGuidance();
                 return;
             }
 
@@ -4406,7 +4151,7 @@ Promise.resolve().then(() => {
 
             currentLevelIndex = levelIndex;
             resetDemoStateForCurrentLevel();
-            hidePressHoldPopover();
+            hideExerciseGuidance();
             resetSolutionRecorderForCurrentLevel();
             resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
@@ -4792,7 +4537,7 @@ Promise.resolve().then(() => {
             if (!settingsPanel || !settingsButton) {
                 return;
             }
-            hidePressHoldPopover();
+            hideExerciseGuidance();
             hideToolOptionMenu();
             refreshQuickSettingButtons();
             settingsPanel.classList.remove("hidden");
@@ -4916,7 +4661,14 @@ Promise.resolve().then(() => {
                     }
                 });
             }
-            installPressHoldDescriptions();
+            document.addEventListener("click", event => {
+                if (!document.body.classList.contains("exercise-guidance-active")) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                hideExerciseGuidance();
+            }, true);
             installTopPanelResizing();
             installBottomPanelResizing();
             if (toolOptionMenu) {
@@ -5049,10 +4801,10 @@ Promise.resolve().then(() => {
             scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
-                if (pressHoldPopover && !pressHoldPopover.classList.contains("hidden") &&
+                if (guidancePopover && !guidancePopover.classList.contains("hidden") &&
                     !event.target.closest('[data-workspace-action="showExerciseGuidance"]') &&
-                    !pressHoldPopover.contains(event.target)) {
-                    hidePressHoldPopover();
+                    !guidancePopover.contains(event.target)) {
+                    hideExerciseGuidance();
                 }
                 if (uiState.mode !== "inspect") {
                     return;
@@ -8262,28 +8014,6 @@ ctx.font = SETTINGS.textFont;
                 ruleId === "signedFractionSimplification";
         }
 
-        function getNumericalRewriteProfileSummaryItems(profile) {
-            const labels = {
-                nonnegativeArithmetic: "Nonnegative addition and multiplication",
-                signedArithmetic: "Signed number addition and multiplication",
-                nonnegativeFractionSimplification: "Non-negative fraction simplification",
-                signedFractionSimplification: "Signed fraction simplification",
-                inverseOne: "Inverse of one",
-                inverseNegativeOne: "Inverse of negative one",
-                doubleNegative: "Negative one times negative one"
-            };
-            const modeLabel = mode => ({
-                automatic: "Automatic",
-                manual: "Manual",
-                "not-allowed": "Not allowed"
-            })[mode] || mode;
-            const items = NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
-                const rule = getNumericalRewriteRuleSetting(ruleId, profile);
-                return `${labels[ruleId]}: Forward — ${modeLabel(rule.forward)}; Reverse — ${modeLabel(rule.reverse)}`;
-            });
-            return items;
-        }
-
         function getNumericalRestrictionsTreeHtml(profile) {
             const labels = {
                 nonnegativeArithmetic: "Nonnegative addition and multiplication",
@@ -8374,7 +8104,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function showExerciseGuidance() {
-            if (!pressHoldPopover) return;
+            if (!guidancePopover) return;
             const level = getCurrentLevel();
             if (!level) return;
             const problemText = normalizeTextBlocks(level.instruction).length
@@ -8389,32 +8119,30 @@ ctx.font = SETTINGS.textFont;
                 : "";
             const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
             if (level.exerciseGuidanceIsComplete && authorGuidance.length) {
-                pressHoldPopover.innerHTML = `
-                    <div class="press-hold-popover-content">
-                        <span class="press-hold-popover-title">Exercise Guidance</span>
+                guidancePopover.innerHTML = `
+                    <div class="exercise-guidance-popover-content">
+                        <span class="exercise-guidance-popover-title">Exercise Guidance</span>
                         <div class="exercise-guidance-complete">${getCompleteExerciseGuidanceHtml(level.exerciseGuidance)}</div>
                     </div>`;
-                pressHoldPopover.classList.remove("hidden");
-                activeExerciseGuidance = true;
+                guidancePopover.classList.remove("hidden");
                 document.body.classList.add("exercise-guidance-active");
-                renderPressHoldPopoverMath();
+                renderExerciseGuidanceMath();
                 return;
             }
             const authorGuidanceHtml = authorGuidance.length
                 ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
                 : "";
             const rulesHtml = getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile());
-            pressHoldPopover.innerHTML = `
-                <div class="press-hold-popover-content">
-                    <span class="press-hold-popover-title">Exercise Guidance</span>
+            guidancePopover.innerHTML = `
+                <div class="exercise-guidance-popover-content">
+                    <span class="exercise-guidance-popover-title">Exercise Guidance</span>
                     <section class="exercise-guidance-section"><h3>Problem Statement</h3>${problemTextHtml}${problemExpressionHtml}</section>
                     <section class="exercise-guidance-section"><h3>Numerical Manipulation Restrictions</h3><ul class="numerical-permission-summary numerical-permission-tree">${rulesHtml}</ul></section>
                     ${authorGuidanceHtml}
                 </div>`;
-            pressHoldPopover.classList.remove("hidden");
-            activeExerciseGuidance = true;
+            guidancePopover.classList.remove("hidden");
             document.body.classList.add("exercise-guidance-active");
-            renderPressHoldPopoverMath();
+            renderExerciseGuidanceMath();
         }
 
 

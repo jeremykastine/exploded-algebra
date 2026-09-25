@@ -8,15 +8,13 @@ BUILT-IN EXERCISES
 
 The built-in exercises are ordinary JSON files in the levels folder:
 
-- levels/level-1-distribute-and-combine.json
-- levels/level-1-distribute-and-combine-demo.json
-- levels/exercise-2-add-fractions.json
-- levels/exercise-3-multiply-binomials-demo.json
-- levels/exercise-3-multiply-binomials.json
-- levels/exercise-4-multiply-rational-expressions-demo.json
-- levels/exercise-4-multiply-rational-expressions.json
+- levels/rewrite-and-simplify-negative-6-plus-4.json
+- levels/multiply-binomials-and-combine-like-terms.json
+- levels/add-rational-expressions-with-unlike-denominators.json
 
-Exercises.html links to these files. To make those links work under file://,
+Exercises.html links to these files in learning order, from foundational to
+advanced. Insert each new exercise at its appropriate point in the list.
+To make those links work under file://,
 where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
 carries a mirrored copy of each JSON payload for transfer into the app. The
 standalone JSON files remain in the levels folder for hosting, distribution, and
