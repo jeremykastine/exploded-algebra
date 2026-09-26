@@ -67,6 +67,34 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-controls button:hover,.player-controls .home-link:hover{background:#f3f3f3;}
 .player-controls button:focus-visible,.player-controls .home-link:focus-visible{outline:3px solid #78aeda;outline-offset:2px;}
 .player-position{min-width:8.5em;text-align:center;}
+.narrative{max-width:1040px;margin:0 auto;padding:48px 28px 96px;font-family:Arial,Helvetica,sans-serif;color:#18232d;}
+.narrative h1{font-size:clamp(34px,5vw,58px);line-height:1.08;margin:0 0 20px;letter-spacing:-.025em;}
+.narrative h2{font-size:clamp(26px,3.4vw,38px);line-height:1.18;margin:0 0 18px;}
+.narrative p{font-size:clamp(18px,2vw,22px);line-height:1.55;max-width:75ch;margin:0 0 18px;}
+.narrative-lead{font-size:clamp(21px,2.4vw,27px)!important;}
+.narrative-section{padding:42px 0;border-top:1px solid #d4dce1;scroll-margin-top:24px;}
+.narrative-section:first-of-type{border-top:0;}
+.narrative-section .story-message{padding:0;font-size:inherit;}
+.narrative-section .story-message p{font-size:clamp(18px,2vw,22px);line-height:1.55;}
+.narrative-section .intro-slide,.narrative-section .parallel-slide,.narrative-section .practice-slide,.narrative-section .operation-comparison-slide{margin:20px auto;}
+.narrative-section .example,.narrative-section .exploded-example{font-family:"Courier New",Courier,monospace;}
+.narrative-section .animation-phases{min-height:210px;}
+.narrative-section .animation-phase{opacity:0;}
+.narrative-section .animation-phase:first-child{opacity:1;}
+.narrative-section .animation-stage{overflow:visible;}
+.narrative-section .notation-expression-frame{overflow:auto;}
+.narrative-section .opening-row{grid-template-columns:205px minmax(0,1fr);}
+.narrative-section .opening-row .example{overflow:auto;}
+.narrative-section .practice-link{display:block;width:max-content;max-width:100%;box-sizing:border-box;margin:18px auto 0;}
+.phrase-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:26px 0;}
+.phrase-card{border:1px solid #cad5db;border-radius:14px;padding:22px;background:#fbfdff;min-width:0;}
+.phrase-card blockquote{font-size:20px;line-height:1.42;margin:0 0 16px;font-weight:600;}
+.phrase-card .exploded-figure{display:flex;align-items:center;justify-content:center;min-height:180px;overflow:auto;}
+.phrase-card .result{font-size:17px;color:#40505d;margin:14px 0 0;}
+.narrative-note{border-left:4px solid #6098b8;padding:5px 0 5px 18px;color:#354958;}
+.narrative-nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:45px;font-size:16px;}
+.narrative-nav a{color:#075fa8;}
+body.narrative-ready>.section-title,body.narrative-ready>.example,body.narrative-ready>hr,body.narrative-ready>#exploded-examples,body.narrative-ready>template{display:none;}
 body.player-ready>.section-title,
 body.player-ready>.example,
 body.player-ready>hr,
@@ -82,11 +110,15 @@ body.player-ready>#exploded-examples{display:none;}
     .story-message{padding:20px 8px;font-size:21px;}
     .opening-row{grid-template-columns:1fr;gap:4px;}
     .opening-label{font-size:16px;}
+    .narrative{padding:34px 16px 72px;}
+    .narrative-section{padding:34px 0;}
+    .phrase-pair{grid-template-columns:1fr;}
+    .narrative-section .opening-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:42:26-04:00">9/26/26, 12:42 AM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-26T12:33:02-04:00">9/26/26, 12:33 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -891,7 +923,7 @@ body.player-ready>#exploded-examples{display:none;}
         {
             element: buildStorySlide(
                 [
-                    "What if algebra used a notation that clearly represented the structure of an expression visually, without relying on the order of operations, and did so in a clean, easy-to-parse way?",
+                    "Exploded Algebra makes an expression's structure visible in space, so we can read how its parts fit together without first applying rules for interpreting a single line of symbols.",
                     {
                         before: "In engineering and technical drawing, an ",
                         href: "https://en.wikipedia.org/wiki/Exploded-view_drawing",
@@ -935,44 +967,126 @@ body.player-ready>#exploded-examples{display:none;}
         }
     ];
 
-    const player = document.createElement("main");
-    player.className = "comparison-player";
-
-    const prompt = document.createElement("div");
-    prompt.className = "player-prompt";
-
-    const stage = document.createElement("div");
-    stage.className = "animation-stage";
-    stage.setAttribute("aria-live", "polite");
-
-    const explanation = document.createElement("div");
-    explanation.className = "player-explanation";
-
-    const controls = document.createElement("nav");
-    controls.className = "player-controls";
-    controls.setAttribute("aria-label", "Example navigation");
-
+    const narrative = document.createElement("main");
+    narrative.className = "narrative";
+    const nav = document.createElement("nav");
+    nav.className = "narrative-nav";
+    nav.setAttribute("aria-label", "Introduction navigation");
     const homeLink = document.createElement("a");
-    homeLink.className = "home-link";
     homeLink.href = "index.html";
-    homeLink.textContent = "Return to home";
+    homeLink.textContent = "← Home";
+    const comparisonLink = document.createElement("a");
+    comparisonLink.href = "#conventional-comparison";
+    comparisonLink.textContent = "Skip to the comparison ↓";
+    nav.append(homeLink, comparisonLink);
+    narrative.appendChild(nav);
+    document.body.appendChild(narrative);
 
-    const previousButton = document.createElement("button");
-    previousButton.type = "button";
-    previousButton.textContent = "Previous";
-    previousButton.setAttribute("aria-label", "Show previous animation");
+    function addSection(title, paragraphs = [], content = null, id = "") {
+        const section = document.createElement("section");
+        section.className = "narrative-section";
+        if (id) section.id = id;
+        const heading = document.createElement(id === "opening" ? "h1" : "h2");
+        heading.textContent = title;
+        section.appendChild(heading);
+        paragraphs.forEach((copy, index) => {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = copy;
+            if (id === "opening" && index === 0) paragraph.className = "narrative-lead";
+            section.appendChild(paragraph);
+        });
+        if (content) section.appendChild(content);
+        narrative.appendChild(section);
+        return section;
+    }
 
-    const position = document.createElement("span");
-    position.className = "player-position";
+    function phraseCard(phrase, expression, result) {
+        const card = document.createElement("article");
+        card.className = "phrase-card";
+        const quote = document.createElement("blockquote");
+        quote.textContent = `“${phrase}”`;
+        const figure = document.createElement("div");
+        figure.className = "exploded-figure";
+        Renderer.renderExpressionInto(figure, expression, {
+            ...renderOptions,
+            ariaLabel: `Exploded notation: ${phrase}`
+        });
+        const caption = document.createElement("p");
+        caption.className = "result";
+        caption.textContent = result;
+        card.append(quote, figure, caption);
+        return card;
+    }
 
-    const nextButton = document.createElement("button");
-    nextButton.type = "button";
-    nextButton.textContent = "Next";
-    nextButton.setAttribute("aria-label", "Show next animation");
+    function phrasePair(...cards) {
+        const pair = document.createElement("div");
+        pair.className = "phrase-pair";
+        pair.append(...cards);
+        return pair;
+    }
 
-    controls.append(homeLink, previousButton, position, nextButton);
-    player.append(controls, prompt, stage, explanation);
-    document.body.insertBefore(player, document.body.firstChild);
+    addSection("A calculation is more than a list of operations", [
+        "Many everyday calculations take several steps. We might first combine some quantities, then use that result in another calculation. To write the whole process as a single expression, we need to show which parts belong together.",
+        "For example, a shop might add the prices of two items and then buy four sets of them. Changing which operation comes first changes the total."
+    ], phrasePair(
+        phraseCard("Add 2 and 3, then multiply the result by 4.", product(sum(value(2), value(3)), value(4)), "The sum is one complete factor. The result is 20."),
+        phraseCard("Multiply 3 by 4, then add 2.", sum(value(2), product(value(3), value(4))), "The product is one complete term. The result is 14.")
+    ), "opening");
+
+    addSection("Why grouping must be clear", [
+        "A short phrase such as “2 plus 3 times 4” leaves room for different interpretations when spoken without any indication of grouping. The two instructions above remove that uncertainty by saying what happens first. A mathematical expression must make the same distinction.",
+        "Conventional notation has established ways to do this. For now, let’s take a fresh look at how the structure itself could be shown."
+    ]);
+
+    addSection("A fresh way to draw an expression", [
+        "Exploded Algebra places the terms of an addition vertically along an addition bar. It places the factors of a multiplication horizontally along a multiplication bar. Each part can itself be an entire expression.",
+        "In the first picture, the whole sum of 2 and 3 is a factor beside 4. In the second, the whole product of 3 and 4 is a term below 2. Their positions tell us which operation contains the other."
+    ], phrasePair(
+        phraseCard("Multiply the sum of 2 and 3 by 4.", product(sum(value(2), value(3)), value(4)), "An addition sits inside a multiplication."),
+        phraseCard("Add 2 to the product of 3 and 4.", sum(value(2), product(value(3), value(4))), "A multiplication sits inside an addition.")
+    ));
+
+    addSection("Read it from the inside out", [
+        "The same arrangement works with unknown values. Read each complete inner group first, then read the larger operation that contains it. Notice that these two English descriptions place the sum and the product in different positions."
+    ], phrasePair(
+        phraseCard("Add 3 to the product of 2 and x.", sum(product(value(2), value("x")), value(3)), "The product is one term of the outer sum."),
+        phraseCard("Multiply 2 by the sum of x and 3.", product(value(2), sum(value("x"), value(3))), "The sum is one factor of the outer product.")
+    ));
+
+    addSection("The same idea can be nested again", [
+        "A longer sentence still becomes one expression. Begin with the innermost instruction, then place its result inside the next operation. The arrangement records the sequence without flattening the parts into one row."
+    ], phrasePair(
+        phraseCard("Multiply x by 4, add 3, then multiply the entire result by 2.", product(value(2), sum(product(value("x"), value(4)), value(3))), "The inner product is a term of a sum; that sum is a factor of the outer product."),
+        phraseCard("Add x and 3, multiply that sum by 2, then add 4.", sum(product(value(2), sum(value("x"), value(3))), value(4)), "The inner sum is a factor of a product; that product is a term of the outer sum.")
+    ));
+
+    addSection("Why call it Exploded Algebra?", [], slides[8].element);
+
+    addSection("Now compare with conventional notation", [
+        "Both notations can describe these calculations precisely. Conventional notation uses its order of operations and, when needed, parentheses. Exploded Algebra places the complete terms and factors where their relationships can be seen.",
+        "For instance, “add 3 to the product of 2 and x” can be written 2·x+3. But “multiply 2 by the sum of x and 3” needs 2·(x+3): the parentheses make the sum one factor. The exploded arrangements above show the same distinction through nesting."
+    ], null, "conventional-comparison");
+
+    const introTitles = ["A sum", "A product", "A product inside a sum", "A sum inside a product"];
+    slides.slice(9, 13).forEach((slide, index) =>
+        addSection(introTitles[index], [slide.prompt], slide.element));
+
+    addSection("Four first attempts at swapping", [slides[0].prompt], slides[0].element);
+    slides.slice(1, 5).forEach((slide, index) =>
+        addSection(`Try the ${index < 3 ? "valid" : "invalid"} swap`, [slide.prompt], slide.element));
+    addSection("Swapping larger pieces", [slides[5].prompt], slides[5].element);
+    addSection("Distribution and an outside operation", [slides[6].prompt], slides[6].element);
+    addSection("Distribution into different terms", [slides[7].prompt], slides[7].element);
+
+    slides.slice(13, 24).forEach((slide, index) => {
+        const section = addSection(`Transformation ${index + 1}`, [slide.prompt], slide.element);
+        if (slide.explanation.text) {
+            const explanation = document.createElement("p");
+            explanation.textContent = slide.explanation.text;
+            section.appendChild(explanation);
+        }
+    });
+    addSection("Putting it all together", [], slides[24].element);
 
     function prepareAnimationGroups(element) {
         const expressions = [];
@@ -988,20 +1102,14 @@ body.player-ready>#exploded-examples{display:none;}
     }
 
     slides.forEach(({ element, ariaLabel }) => {
-        element.classList.add("animation-slide");
         element.setAttribute("aria-label", ariaLabel);
         prepareAnimationGroups(element);
-        stage.appendChild(element);
     });
-
-    document.body.classList.add("player-ready");
+    document.body.classList.add("narrative-ready");
 
     const holdPlain = 1200;
     const holdShaded = 650;
     const fadeTime = 1100;
-    let currentIndex = 0;
-    let runId = 0;
-
     const wait = milliseconds => new Promise(resolve => window.setTimeout(resolve, milliseconds));
 
     function setOnlyVisible(frames, visibleIndex) {
@@ -1045,79 +1153,62 @@ body.player-ready>#exploded-examples{display:none;}
             .filter(frames => frames.length === 4);
     }
 
-    async function runAnimation(slide, thisRun) {
+    async function runAnimation(slide, run) {
         const frameGroups = getFrameGroups(slide);
         if (!frameGroups.length) return;
 
-        while (thisRun === runId) {
+        while (run.active) {
             frameGroups.forEach(frames => setOnlyVisible(frames, 0));
             await wait(holdPlain);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 0, 1)));
-            if (thisRun !== runId) return;
+            if (!run.active) return;
             await wait(holdShaded);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             frameGroups.forEach(frames => setOnlyVisible(frames, 2));
             await wait(holdShaded);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 2, 3)));
-            if (thisRun !== runId) return;
+            if (!run.active) return;
             await wait(holdPlain);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 3, 2)));
-            if (thisRun !== runId) return;
+            if (!run.active) return;
             await wait(holdShaded);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             frameGroups.forEach(frames => setOnlyVisible(frames, 1));
             await wait(holdShaded);
-            if (thisRun !== runId) return;
+            if (!run.active) return;
 
             await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 1, 0)));
         }
     }
-
-    function showExplanation(details) {
-        explanation.replaceChildren();
-        explanation.hidden = !details.text;
-        if (!details.text) return;
-        explanation.appendChild(document.createTextNode(details.text));
-    }
-
-    function showSlide(index) {
-        runId += 1;
-        currentIndex = (index + slides.length) % slides.length;
-
-        slides.forEach(({ element }, slideIndex) => {
-            element.classList.toggle("is-current", slideIndex === currentIndex);
+    document.querySelectorAll(".practice-exploded-image").forEach(addDomainOutline);
+    if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const runs = new WeakMap();
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                const previous = runs.get(entry.target);
+                if (entry.isIntersecting && !previous?.active) {
+                    const run = { active: true };
+                    runs.set(entry.target, run);
+                    runAnimation(entry.target, run);
+                } else if (!entry.isIntersecting && previous) {
+                    previous.active = false;
+                    entry.target.querySelectorAll(".animation-phases").forEach(group =>
+                        setOnlyVisible([...group.children], 0));
+                }
+            });
+        }, { threshold: 0.1 });
+        narrative.querySelectorAll(".narrative-section").forEach(section => {
+            if (getFrameGroups(section).length) observer.observe(section);
         });
-
-        const current = slides[currentIndex];
-        const practiceImage = current.element.querySelector(".practice-exploded-image");
-        if (practiceImage && !practiceImage.dataset.outlineAdded) {
-            addDomainOutline(practiceImage);
-            practiceImage.dataset.outlineAdded = "true";
-        }
-        position.textContent = `${currentIndex + 1} of ${slides.length}`;
-        stage.setAttribute("aria-label", current.ariaLabel);
-        prompt.textContent = current.prompt;
-        prompt.hidden = !current.prompt;
-        showExplanation(current.explanation);
-        runAnimation(current.element, runId);
     }
-
-    previousButton.addEventListener("click", () => showSlide(currentIndex - 1));
-    nextButton.addEventListener("click", () => showSlide(currentIndex + 1));
-    document.addEventListener("keydown", event => {
-        if (event.key === "ArrowLeft") showSlide(currentIndex - 1);
-        if (event.key === "ArrowRight") showSlide(currentIndex + 1);
-    });
-
-    showSlide(0);
 })();
 </script>
 
