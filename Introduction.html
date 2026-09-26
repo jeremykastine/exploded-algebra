@@ -85,7 +85,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:00:05-04:00">9/26/26, 12:00 AM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:06:46-04:00">9/26/26, 12:06 AM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -746,6 +746,7 @@ body.player-ready>#exploded-examples{display:none;}
         explodedImage.className = "practice-exploded-image";
         Renderer.renderExpressionInto(explodedImage, exploded.before, {
             ...renderOptions,
+            settings: { ...renderOptions.settings, textFont: "30px Verdana, Arial, Helvetica, sans-serif" },
             shading: exploded.beforeShading,
             ariaLabel: `Exploded notation for ${title}; shaded parts show the attempted swap`
         });
