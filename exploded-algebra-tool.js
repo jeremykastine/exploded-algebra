@@ -1603,7 +1603,10 @@ Promise.resolve().then(() => {
                     setTopPanelHeight(twoRowHeight);
                 }
                 requestAnimationFrame(() => {
-                    leftPanel.scrollTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);
+                    updateStepPanelScrollSpace();
+                    if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
+                        leftPanel.scrollTop = getStepPanelScrollTarget();
+                    }
                     applyResponsiveMainButtonSize();
                 });
             } else {
@@ -3942,10 +3945,35 @@ Promise.resolve().then(() => {
             moveHistoryButton.hidden = !isInteractiveLevel(level);
         }
 
-        const STEP_PANEL_SCROLL_DURATION_MS = 520;
+        const STEP_PANEL_SCROLL_DURATION_MS = 2000;
         let stepPanelScrollAnimationFrame = null;
+        let stepPanelScrollPending = false;
+        let stepPanelScrollRequestId = 0;
+        let lastRenderedStepProgress = null;
 
-        function animateStepPanelScroll(targetTop) {
+        function updateStepPanelScrollSpace() {
+            const rows = levelContent.querySelectorAll(".problem-statement, .running-solution > .step-column");
+            // Allow the third-to-last row to pass completely above the viewport,
+            // even when the final two rows are shorter than the panel.
+            levelContent.style.paddingBottom = rows.length >= 3 ? `${leftPanel.clientHeight}px` : "";
+        }
+
+        function getStepPanelScrollTarget() {
+            const rows = levelContent.querySelectorAll(".problem-statement, .running-solution > .step-column");
+            if (rows.length < 3) {
+                return 0;
+            }
+            const thirdFromLast = rows[rows.length - 3];
+            const thirdRowBottom = leftPanel.scrollTop
+                + thirdFromLast.getBoundingClientRect().bottom
+                - leftPanel.getBoundingClientRect().top;
+            return Math.max(0, Math.min(
+                Math.ceil(thirdRowBottom + 1),
+                leftPanel.scrollHeight - leftPanel.clientHeight
+            ));
+        }
+
+        function animateStepPanelScroll() {
             if (!leftPanel) {
                 return;
             }
@@ -3954,9 +3982,8 @@ Promise.resolve().then(() => {
                 stepPanelScrollAnimationFrame = null;
             }
 
-            const maximumTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);
             const startTop = leftPanel.scrollTop;
-            const endTop = Math.max(0, Math.min(targetTop, maximumTop));
+            let endTop = getStepPanelScrollTarget();
             const reduceMotion = typeof window.matchMedia === "function"
                 && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             if (Math.abs(endTop - startTop) < 1 || reduceMotion) {
@@ -3973,6 +4000,7 @@ Promise.resolve().then(() => {
                 const easedProgress = progress < 0.5
                     ? 4 * progress * progress * progress
                     : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                endTop = getStepPanelScrollTarget();
                 leftPanel.scrollTop = startTop + (endTop - startTop) * easedProgress;
                 if (progress < 1) {
                     stepPanelScrollAnimationFrame = requestAnimationFrame(tick);
@@ -4057,6 +4085,18 @@ Promise.resolve().then(() => {
             }
 
             const completion = getStepCompletionStates(level);
+            const completedCount = completion.filter(Boolean).length;
+            const shouldAnimateNewStep = !authoringSessionActive
+                && lastRenderedStepProgress?.levelIndex === levelIndex
+                && completedCount > lastRenderedStepProgress.completedCount;
+            lastRenderedStepProgress = { levelIndex, completedCount };
+            if (shouldAnimateNewStep) {
+                stepPanelScrollPending = true;
+                if (stepPanelScrollAnimationFrame !== null) {
+                    cancelAnimationFrame(stepPanelScrollAnimationFrame);
+                    stepPanelScrollAnimationFrame = null;
+                }
+            }
             const firstStep = level.steps && level.steps[0] ? level.steps[0] : null;
             const firstStepIsInitialExpression = !!firstStep && expressionTextsMatch(
                 level.startExpression,
@@ -4069,7 +4109,6 @@ Promise.resolve().then(() => {
             );
 
             const currentStepIndex = completion.findIndex(isComplete => !isComplete);
-            const isExerciseComplete = currentStepIndex < 0;
             const firstSolutionStepIndex = firstStepIsInitialExpression ? 1 : 0;
             const lastVisibleStepIndex = currentStepIndex >= 0
                 ? currentStepIndex
@@ -4118,6 +4157,7 @@ Promise.resolve().then(() => {
 
             renderLeftPanelMath();
             scheduleTopPanelHeightUpdate(level);
+            updateStepPanelScrollSpace();
             levelContent.querySelectorAll(".step-card").forEach(card => {
                 card.addEventListener("click", event => {
                     if (STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW) {
@@ -4143,17 +4183,21 @@ Promise.resolve().then(() => {
                 });
             });
 
-            const currentColumn = levelContent.querySelector(".current-step-column");
-            if (currentColumn || isExerciseComplete) {
+            const scrollRequestId = shouldAnimateNewStep
+                ? ++stepPanelScrollRequestId : stepPanelScrollRequestId;
+            if (shouldAnimateNewStep) {
+                // The layout recalculation adjusts row sizes on the next frame.
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if (scrollRequestId !== stepPanelScrollRequestId) return;
+                    updateStepPanelScrollSpace();
+                    leftPanel.scrollTop = 0;
+                    stepPanelScrollPending = false;
+                    animateStepPanelScroll();
+                }));
+            } else if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
                 requestAnimationFrame(() => {
-                    if (isExerciseComplete) {
-                        animateStepPanelScroll(leftPanel.scrollHeight - leftPanel.clientHeight);
-                        return;
-                    }
-                    const panelBounds = leftPanel.getBoundingClientRect();
-                    const columnBounds = currentColumn.getBoundingClientRect();
-                    const desiredTop = leftPanel.scrollTop + columnBounds.bottom - panelBounds.bottom + 8;
-                    animateStepPanelScroll(desiredTop);
+                    if (scrollRequestId !== stepPanelScrollRequestId) return;
+                    leftPanel.scrollTop = getStepPanelScrollTarget();
                 });
             }
 
@@ -4170,6 +4214,13 @@ Promise.resolve().then(() => {
             resetSolutionRecorderForCurrentLevel();
             resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
+            lastRenderedStepProgress = null;
+            stepPanelScrollRequestId++;
+            stepPanelScrollPending = false;
+            if (stepPanelScrollAnimationFrame !== null) {
+                cancelAnimationFrame(stepPanelScrollAnimationFrame);
+                stepPanelScrollAnimationFrame = null;
+            }
             currentExpressionRoot = textToExpression(level.startExpression);
             currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
             expressionRoot = currentExpressionRoot;
