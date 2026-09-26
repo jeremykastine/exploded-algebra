@@ -81,7 +81,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:27:56-04:00">9/25/26, 11:27 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:36:29-04:00">9/25/26, 11:36 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -743,10 +743,13 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
-    function buildOperationComparisonSlide(conventional) {
+    function buildOperationComparisonSlide(conventional, labels = [
+        "Addition then addition", "Multiplication then multiplication",
+        "Addition then multiplication", "Multiplication then addition"
+    ]) {
         const slide = document.createElement("section");
         slide.className = "operation-comparison-slide";
-        ["Addition then addition", "Multiplication then multiplication", "Addition then multiplication", "Multiplication then addition"].forEach((label, index) => {
+        labels.forEach((label, index) => {
             const row = document.createElement("div");
             row.className = "opening-row";
             const heading = document.createElement("div");
@@ -778,15 +781,18 @@ body.player-ready>#exploded-examples{display:none;}
             prompt: "Now compare swaps of larger pieces in the same four operation combinations. The first is a valid exchange of two groups of terms in a sum; the second exchanges two groups of factors in a product. The third, x+y·5+x, is invalid: the multiplication dot joins only y and 5, so x+y and 5+x are not complete factors to swap. The fourth, x·y+5·x, is valid because the two complete products are terms of the same sum.",
             explanation: { valid: null, text: "" }
         },
-        ...conventionalSlides.slice(7).map((element, offset) => {
-            const index = offset + 7;
-            return {
-                element,
-                ariaLabel: `Conventional notation, example ${index + 1} of ${examples.length}`,
-                prompt: conventionalPrompts[index],
-                explanation: conventionalExplanations[index]
-            };
-        }),
+        {
+            element: buildOperationComparisonSlide(conventionalSlides.slice(7, 9), ["Valid distribution", "Invalid distribution"]),
+            ariaLabel: "Conventional notation: distributing with an outside addition or multiplication",
+            prompt: "Both rows distribute 2 across x+3. In the first, +4 is outside the product and stays unchanged, so the result 2·x+2·3+4 is valid. In the second, ·4 multiplies the entire original product. The attempted result 2·x+2·3·4 attaches 4 only to the second term, so it is invalid; 4 must still multiply the whole sum after distribution.",
+            explanation: { valid: null, text: "" }
+        },
+        {
+            element: buildOperationComparisonSlide(conventionalSlides.slice(9, 11), ["Valid distribution", "Invalid distribution"]),
+            ariaLabel: "Conventional notation: distributing into two or three terms",
+            prompt: "Both rows distribute 2 into a sum. In the first, 3 and 4·x are two complete terms, and multiplying each by 2 gives the valid result 2·3+2·4·x. In the second, 3, 4, and x are three separate terms, but the attempted result 2·3+2·4+x leaves x without a factor of 2. The correct distribution would be 2·3+2·4+2·x.",
+            explanation: { valid: null, text: "" }
+        },
         {
             element: buildStorySlide(
                 [
