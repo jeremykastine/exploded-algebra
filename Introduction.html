@@ -39,7 +39,7 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-prompt{padding-bottom:4px;}
 .player-explanation{padding-top:4px;}
 .parallel-slide,.intro-slide{width:min(100%,1120px);}
-.opening-slide{width:min(100%,820px);gap:14px;}
+.operation-comparison-slide{width:min(100%,820px);gap:14px;}
 .opening-row{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:16px;padding:8px 0;}
 .opening-row+.opening-row{border-top:1px solid #ddd;}
 .opening-label{font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:bold;color:#444;}
@@ -81,7 +81,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:15:12-04:00">9/25/26, 11:15 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:27:56-04:00">9/25/26, 11:27 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -743,9 +743,9 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
-    function buildOpeningSlide(conventional) {
+    function buildOperationComparisonSlide(conventional) {
         const slide = document.createElement("section");
-        slide.className = "opening-slide";
+        slide.className = "operation-comparison-slide";
         ["Addition then addition", "Multiplication then multiplication", "Addition then multiplication", "Multiplication then addition"].forEach((label, index) => {
             const row = document.createElement("div");
             row.className = "opening-row";
@@ -762,7 +762,7 @@ body.player-ready>#exploded-examples{display:none;}
     const explodedSlides = [...target.querySelectorAll(".exploded-example")];
     const slides = [
         {
-            element: buildOpeningSlide([
+            element: buildOperationComparisonSlide([
                 ...conventionalSlides.slice(0, 3),
                 document.getElementById("opening-multiply-then-add").content.firstElementChild
             ]),
@@ -770,8 +770,16 @@ body.player-ready>#exploded-examples{display:none;}
             prompt: "Compare these four attempted swaps of 2 and x. The first two are valid: 2 and x are terms of the same sum or factors of the same product. The third, 2+x·3, is invalid because x belongs to the product x·3, so 2 and x are not complete terms of the same sum. The fourth, 2·x+3, is valid because 2 and x are complete factors of the same product; the +3 stays outside it.",
             explanation: { valid: null, text: "" }
         },
-        ...conventionalSlides.slice(3).map((element, offset) => {
-            const index = offset + 3;
+        {
+            element: buildOperationComparisonSlide([
+                conventionalSlides[3], conventionalSlides[4], conventionalSlides[6], conventionalSlides[5]
+            ]),
+            ariaLabel: "Conventional notation: four operation combinations with larger expressions",
+            prompt: "Now compare swaps of larger pieces in the same four operation combinations. The first is a valid exchange of two groups of terms in a sum; the second exchanges two groups of factors in a product. The third, x+y·5+x, is invalid: the multiplication dot joins only y and 5, so x+y and 5+x are not complete factors to swap. The fourth, x·y+5·x, is valid because the two complete products are terms of the same sum.",
+            explanation: { valid: null, text: "" }
+        },
+        ...conventionalSlides.slice(7).map((element, offset) => {
+            const index = offset + 7;
             return {
                 element,
                 ariaLabel: `Conventional notation, example ${index + 1} of ${examples.length}`,
