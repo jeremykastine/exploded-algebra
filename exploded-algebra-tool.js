@@ -3964,11 +3964,14 @@ Promise.resolve().then(() => {
             const thirdRowBottom = leftPanel.scrollTop
                 + rows[rows.length - 3].getBoundingClientRect().bottom
                 - leftPanel.getBoundingClientRect().top;
-            // The flex item can be shorter than its children. Measure the
-            // actual scroll limit and fill only the remaining shortfall.
-            padding += Math.max(0, Math.ceil(
+            // The flex item can be shorter than its children. Its padding
+            // first has to cover that overflow before it can extend the
+            // panel's scroll range.
+            const shortfall = Math.max(0,
                 thirdRowBottom - (leftPanel.scrollHeight - leftPanel.clientHeight)
-            ));
+            );
+            const childOverflow = Math.max(0, levelContent.scrollHeight - levelContent.clientHeight);
+            padding += Math.ceil(shortfall + childOverflow);
             levelContent.style.paddingBottom = `${padding}px`;
         }
 
