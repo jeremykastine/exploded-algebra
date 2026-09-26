@@ -86,7 +86,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:09:02-04:00">9/26/26, 12:09 AM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:11:44-04:00">9/26/26, 12:11 AM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -745,12 +745,16 @@ body.player-ready>#exploded-examples{display:none;}
         explodedFrame.className = "notation-expression-frame";
         const explodedImage = document.createElement("div");
         explodedImage.className = "practice-exploded-image";
-        Renderer.renderExpressionInto(explodedImage, exploded.before, {
+        const svg = Renderer.renderExpressionInto(explodedImage, exploded.before, {
             ...renderOptions,
             settings: { ...renderOptions.settings, textFont: "30px Verdana, Arial, Helvetica, sans-serif" },
             shading: exploded.beforeShading,
             ariaLabel: `Exploded notation for ${title}; shaded parts show the attempted swap`
         });
+        if (svg) {
+            svg.style.removeProperty("width");
+            svg.style.removeProperty("height");
+        }
         explodedFrame.appendChild(explodedImage);
         explodedPanel.append(explodedLabel, explodedFrame);
         comparison.append(conventionalPanel, explodedPanel);
