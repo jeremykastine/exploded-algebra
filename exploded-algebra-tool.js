@@ -3961,9 +3961,9 @@ Promise.resolve().then(() => {
             }
             let padding = Math.ceil(leftPanel.clientHeight);
             levelContent.style.paddingBottom = `${padding}px`;
-            const thirdRowBottom = leftPanel.scrollTop
+            const thirdRowBottom = Math.ceil(leftPanel.scrollTop
                 + rows[rows.length - 3].getBoundingClientRect().bottom
-                - leftPanel.getBoundingClientRect().top;
+                - leftPanel.getBoundingClientRect().top);
             // The flex item can be shorter than its children. Its padding
             // first has to cover that overflow before it can extend the
             // panel's scroll range.
@@ -3981,9 +3981,9 @@ Promise.resolve().then(() => {
                 return 0;
             }
             const thirdFromLast = rows[rows.length - 3];
-            const thirdRowBottom = leftPanel.scrollTop
+            const thirdRowBottom = Math.ceil(leftPanel.scrollTop
                 + thirdFromLast.getBoundingClientRect().bottom
-                - leftPanel.getBoundingClientRect().top;
+                - leftPanel.getBoundingClientRect().top);
             return Math.max(0, Math.min(
                 thirdRowBottom,
                 leftPanel.scrollHeight - leftPanel.clientHeight
