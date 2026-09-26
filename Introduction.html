@@ -81,7 +81,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-25T22:27:07-04:00">9/25/26, 10:27 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:15:12-04:00">9/25/26, 11:15 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -109,6 +109,15 @@ body.player-ready>#exploded-examples{display:none;}
 <div class="expr"><span class="transform-domain"><span class="orange">x</span><span class="swap">+</span><span class="yellow">2</span></span>·3</div>
 <div class="expr">x+2·3</div>
 </div></div>
+
+<template id="opening-multiply-then-add">
+<div class="example"><div class="number"></div><div>
+<div class="expr">2·x+3</div>
+<div class="expr move-from"><span class="transform-domain"><span class="yellow">2</span><span class="swap">·</span><span class="orange">x</span></span>+3</div>
+<div class="expr"><span class="transform-domain"><span class="orange">x</span><span class="swap">·</span><span class="yellow">2</span></span>+3</div>
+<div class="expr">x·2+3</div>
+</div></div>
+</template>
 
 <hr>
 
@@ -737,7 +746,7 @@ body.player-ready>#exploded-examples{display:none;}
     function buildOpeningSlide(conventional) {
         const slide = document.createElement("section");
         slide.className = "opening-slide";
-        ["Addition", "Multiplication", "Mixed operations"].forEach((label, index) => {
+        ["Addition then addition", "Multiplication then multiplication", "Addition then multiplication", "Multiplication then addition"].forEach((label, index) => {
             const row = document.createElement("div");
             row.className = "opening-row";
             const heading = document.createElement("div");
@@ -753,9 +762,12 @@ body.player-ready>#exploded-examples{display:none;}
     const explodedSlides = [...target.querySelectorAll(".exploded-example")];
     const slides = [
         {
-            element: buildOpeningSlide(conventionalSlides.slice(0, 3)),
-            ariaLabel: "Conventional notation: addition, multiplication, and mixed operations",
-            prompt: "Compare these three attempted swaps of 2 and x. The first is valid by the commutative property of addition, A + B = B + A. The second is valid by the commutative property of multiplication, A · B = B · A. The third looks similar, but x is part of the product x·3, so 2 and x are not complete terms of the same sum. The outlined box cuts x away from that product; conventional notation makes the mistake easy to miss.",
+            element: buildOpeningSlide([
+                ...conventionalSlides.slice(0, 3),
+                document.getElementById("opening-multiply-then-add").content.firstElementChild
+            ]),
+            ariaLabel: "Conventional notation: four combinations of addition and multiplication",
+            prompt: "Compare these four attempted swaps of 2 and x. The first two are valid: 2 and x are terms of the same sum or factors of the same product. The third, 2+x·3, is invalid because x belongs to the product x·3, so 2 and x are not complete terms of the same sum. The fourth, 2·x+3, is valid because 2 and x are complete factors of the same product; the +3 stays outside it.",
             explanation: { valid: null, text: "" }
         },
         ...conventionalSlides.slice(3).map((element, offset) => {
