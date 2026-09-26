@@ -1,0 +1,104 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "commute-2-and-x-in-product",
+  "title": "Commute 2 and x in a Product",
+  "startExpression": "((2)*(x)*(3))",
+  "initialKatex": "2\\cdot x\\cdot 3",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "signedFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x\\cdot 3\n\\]\n\n## What to do\n\nIn exploded notation, factors in a product sit side by side. Select the neighboring factors 2 and x, then press the highlighted Commute button. The 3 stays in place.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)*(x)*(3))",
+      "explodedExpression": "((2)*(x)*(3))",
+      "katex": "2\\cdot x\\cdot 3",
+      "beforeKatex": "2\\cdot x\\cdot 3",
+      "afterKatex": "2\\cdot x\\cdot 3"
+    },
+    {
+      "expression": "((x)*(2)*(3))",
+      "explodedExpression": "((x)*(2)*(3))",
+      "katex": "x\\cdot 2\\cdot 3",
+      "beforeKatex": "x\\cdot 2\\cdot 3",
+      "afterKatex": "x\\cdot 2\\cdot 3",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*(x))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "commuteFactors"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)*(x))",
+      "selectedType": "prod",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((2)*(x)*(3))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "commuteFactors",
+      "beforeExpression": "((2)*(x)*(3))",
+      "afterExpression": "((2)*(x)*(3))",
+      "index": 1
+    }
+  ],
+  "finalExpression": "((x)*(2)*(3))",
+  "finalKatex": "x\\cdot 2\\cdot 3"
+}

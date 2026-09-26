@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:36:29-04:00">9/25/26, 11:36 PM EDT</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:00:05-04:00">9/26/26, 12:00 AM EDT</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
     <p>The best way to see what Exploded Algebra is all about is to jump in and try it. Choose a problem below and select <strong>Guided</strong> when prompted. Guided mode tells you exactly what to do.</p>
@@ -56,6 +56,9 @@
          When adding a JSON exercise, insert its link at the appropriate point (including the
          beginning or middle), and add its matching embedded JSON and builtInLevelDataIds entry. -->
     <div class="exercise-links" aria-label="Exercises">
+      <a href="exploded-algebra.html?level=levels%2Fcommute-2-and-x-in-sum.json&amp;source=builtin" data-exercise-file="levels/commute-2-and-x-in-sum.json">Commute 2 and x in a Sum</a>
+      <a href="exploded-algebra.html?level=levels%2Fcommute-2-and-x-in-product.json&amp;source=builtin" data-exercise-file="levels/commute-2-and-x-in-product.json">Commute 2 and x in a Product</a>
+      <a href="exploded-algebra.html?level=levels%2Fcommute-2-and-x-in-product-above-sum.json&amp;source=builtin" data-exercise-file="levels/commute-2-and-x-in-product-above-sum.json">Commute 2 and x Above a Sum</a>
       <a href="exploded-algebra.html?level=levels%2Frewrite-and-simplify-negative-6-plus-4.json&amp;source=builtin" data-exercise-file="levels/rewrite-and-simplify-negative-6-plus-4.json">Rewrite and Simplify −6 + 4</a>
       <a href="exploded-algebra.html?level=levels%2Fmultiply-binomials-and-combine-like-terms.json&amp;source=builtin" data-exercise-file="levels/multiply-binomials-and-combine-like-terms.json">Multiply Binomials and Combine Like Terms</a>
       <a href="exploded-algebra.html?level=levels%2Fadd-rational-expressions-with-unlike-denominators.json&amp;source=builtin" data-exercise-file="levels/add-rational-expressions-with-unlike-denominators.json">Add Rational Expressions with Unlike Denominators</a>
@@ -72,6 +75,328 @@
       is opened directly with file://. The standalone file in levels/ remains the
       distributable JSON exercise used by the hosted site and by users.
     -->
+    <script type="application/json" id="builtInLevelDataCommuteSum">
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "commute-2-and-x-in-sum",
+  "title": "Commute 2 and x in a Sum",
+  "startExpression": "((2)+(x)+(3))",
+  "initialKatex": "2+x+3",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "signedFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2+x+3\n\\]\n\n## What to do\n\nIn exploded notation, the terms of a sum are stacked vertically. Select the neighboring terms 2 and x, then press the highlighted Commute button. The 3 stays in its row.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)+(x)+(3))",
+      "explodedExpression": "((2)+(x)+(3))",
+      "katex": "2+x+3",
+      "beforeKatex": "2+x+3",
+      "afterKatex": "2+x+3"
+    },
+    {
+      "expression": "((x)+(2)+(3))",
+      "explodedExpression": "((x)+(2)+(3))",
+      "katex": "x+2+3",
+      "beforeKatex": "x+2+3",
+      "afterKatex": "x+2+3",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)+(x))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "commuteTerms"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)+(x))",
+      "selectedType": "sum",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((2)+(x)+(3))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "commuteTerms",
+      "beforeExpression": "((2)+(x)+(3))",
+      "afterExpression": "((2)+(x)+(3))",
+      "index": 1
+    }
+  ],
+  "finalExpression": "((x)+(2)+(3))",
+  "finalKatex": "x+2+3"
+}
+    </script>
+    <script type="application/json" id="builtInLevelDataCommuteProduct">
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "commute-2-and-x-in-product",
+  "title": "Commute 2 and x in a Product",
+  "startExpression": "((2)*(x)*(3))",
+  "initialKatex": "2\\cdot x\\cdot 3",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "signedFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x\\cdot 3\n\\]\n\n## What to do\n\nIn exploded notation, factors in a product sit side by side. Select the neighboring factors 2 and x, then press the highlighted Commute button. The 3 stays in place.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)*(x)*(3))",
+      "explodedExpression": "((2)*(x)*(3))",
+      "katex": "2\\cdot x\\cdot 3",
+      "beforeKatex": "2\\cdot x\\cdot 3",
+      "afterKatex": "2\\cdot x\\cdot 3"
+    },
+    {
+      "expression": "((x)*(2)*(3))",
+      "explodedExpression": "((x)*(2)*(3))",
+      "katex": "x\\cdot 2\\cdot 3",
+      "beforeKatex": "x\\cdot 2\\cdot 3",
+      "afterKatex": "x\\cdot 2\\cdot 3",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*(x))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "commuteFactors"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)*(x))",
+      "selectedType": "prod",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((2)*(x)*(3))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "commuteFactors",
+      "beforeExpression": "((2)*(x)*(3))",
+      "afterExpression": "((2)*(x)*(3))",
+      "index": 1
+    }
+  ],
+  "finalExpression": "((x)*(2)*(3))",
+  "finalKatex": "x\\cdot 2\\cdot 3"
+}
+    </script>
+    <script type="application/json" id="builtInLevelDataCommuteAboveSum">
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "commute-2-and-x-in-product-above-sum",
+  "title": "Commute 2 and x Above a Sum",
+  "startExpression": "(((2)*(x))+(3))",
+  "initialKatex": "2\\cdot x+3",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "signedFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x+3\n\\]\n\n## What to do\n\nThe 2 and x are factors in the same upper product. Select those two factors together, then press the highlighted Commute button. The 3 is a separate term below the addition bar and stays in place.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "(((2)*(x))+(3))",
+      "explodedExpression": "(((2)*(x))+(3))",
+      "katex": "2\\cdot x+3",
+      "beforeKatex": "2\\cdot x+3",
+      "afterKatex": "2\\cdot x+3"
+    },
+    {
+      "expression": "(((x)*(2))+(3))",
+      "explodedExpression": "(((x)*(2))+(3))",
+      "katex": "x\\cdot 2+3",
+      "beforeKatex": "x\\cdot 2+3",
+      "afterKatex": "x\\cdot 2+3",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*(x))",
+        "path": [
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "commuteFactors"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)*(x))",
+      "selectedType": "prod",
+      "path": [
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+(3))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "commuteFactors",
+      "beforeExpression": "(((2)*(x))+(3))",
+      "afterExpression": "(((2)*(x))+(3))",
+      "index": 1
+    }
+  ],
+  "finalExpression": "(((x)*(2))+(3))",
+  "finalKatex": "x\\cdot 2+3"
+}
+    </script>
     <script type="application/json" id="builtInLevelDataAddRationalExpressions">
 {
   "format": "exploded-algebra-level",
@@ -1863,6 +2188,9 @@
       const customLevelFileStatus = document.getElementById('customLevelFileStatus');
 
       const builtInLevelDataIds = {
+        'levels/commute-2-and-x-in-sum.json': 'builtInLevelDataCommuteSum',
+        'levels/commute-2-and-x-in-product.json': 'builtInLevelDataCommuteProduct',
+        'levels/commute-2-and-x-in-product-above-sum.json': 'builtInLevelDataCommuteAboveSum',
         'levels/rewrite-and-simplify-negative-6-plus-4.json': 'builtInLevelDataRewriteNegative6Plus4',
         'levels/multiply-binomials-and-combine-like-terms.json': 'builtInLevelDataMultiplyBinomials',
         'levels/add-rational-expressions-with-unlike-denominators.json': 'builtInLevelDataAddRationalExpressions'

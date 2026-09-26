@@ -38,7 +38,7 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-prompt,.player-explanation{box-sizing:border-box;width:min(100%,980px);margin:0 auto;padding:10px 18px;font-family:Arial,Helvetica,sans-serif;font-size:20px;line-height:1.4;color:#111;}
 .player-prompt{padding-bottom:4px;}
 .player-explanation{padding-top:4px;}
-.parallel-slide,.intro-slide{width:min(100%,1120px);}
+.parallel-slide,.intro-slide,.practice-slide{width:min(100%,1120px);}
 .operation-comparison-slide{width:min(100%,820px);gap:14px;}
 .opening-row{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:16px;padding:8px 0;}
 .opening-row+.opening-row{border-top:1px solid #ddd;}
@@ -57,6 +57,10 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .notation-expression-frame>.example,.notation-expression-frame>.exploded-example{display:block;}
 .notation-expression-frame .number{display:none;}
 .intro-conventional,.intro-exploded{display:flex;align-items:center;justify-content:center;font-size:32px;}
+.practice-slide{gap:16px;}
+.practice-link{justify-self:center;padding:10px 18px;border:2px solid #075fa8;border-radius:8px;font:600 18px Arial,Helvetica,sans-serif;color:#075fa8;text-align:center;text-decoration:none;}
+.practice-link:hover{background:#eef6ff;}
+.practice-link:focus-visible{outline:3px solid #78aeda;outline-offset:3px;}
 .player-controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;}
 .player-controls button,.player-controls .home-link{font:inherit;padding:8px 16px;border:1px solid #777;border-radius:6px;background:#fff;color:#111;cursor:pointer;text-decoration:none;}
 .player-controls button:hover,.player-controls .home-link:hover{background:#f3f3f3;}
@@ -81,7 +85,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-25T23:36:29-04:00">9/25/26, 11:36 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-09-26T00:00:05-04:00">9/26/26, 12:00 AM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -715,6 +719,53 @@ body.player-ready>#exploded-examples{display:none;}
         return slide;
     }
 
+    function buildPracticeSlide(conventional, exploded, title, exerciseFile) {
+        const slide = document.createElement("section");
+        slide.className = "practice-slide";
+        const comparison = document.createElement("div");
+        comparison.className = "parallel-comparison";
+
+        const conventionalPanel = document.createElement("div");
+        conventionalPanel.className = "notation-panel";
+        const conventionalLabel = document.createElement("div");
+        conventionalLabel.className = "notation-label";
+        conventionalLabel.textContent = "Conventional notation";
+        const conventionalFrame = document.createElement("div");
+        conventionalFrame.className = "notation-expression-frame";
+        conventionalFrame.appendChild(conventional.cloneNode(true));
+        conventionalPanel.append(conventionalLabel, conventionalFrame);
+
+        const explodedPanel = document.createElement("div");
+        explodedPanel.className = "notation-panel";
+        const explodedLabel = document.createElement("div");
+        explodedLabel.className = "notation-label";
+        explodedLabel.textContent = "Exploded notation";
+        const explodedFrame = document.createElement("div");
+        explodedFrame.className = "notation-expression-frame";
+        const explodedImage = document.createElement("div");
+        explodedImage.className = "practice-exploded-image";
+        Renderer.renderExpressionInto(explodedImage, exploded.before, {
+            ...renderOptions,
+            shading: exploded.beforeShading,
+            ariaLabel: `Exploded notation for ${title}; shaded parts show the attempted swap`
+        });
+        explodedFrame.appendChild(explodedImage);
+        explodedPanel.append(explodedLabel, explodedFrame);
+        comparison.append(conventionalPanel, explodedPanel);
+        slide.appendChild(comparison);
+
+        if (exerciseFile) {
+            const link = document.createElement("a");
+            link.className = "practice-link";
+            link.href = `exploded-algebra.html?level=${encodeURIComponent(exerciseFile)}&mode=guided`;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.textContent = "Try this guided swap (opens in a new tab)";
+            slide.appendChild(link);
+        }
+        return slide;
+    }
+
     function buildStorySlide(paragraphs) {
         const slide = document.createElement("section");
         slide.className = "story-slide";
@@ -745,7 +796,7 @@ body.player-ready>#exploded-examples{display:none;}
 
     function buildOperationComparisonSlide(conventional, labels = [
         "Addition then addition", "Multiplication then multiplication",
-        "Addition then multiplication", "Multiplication then addition"
+        "Multiplication then addition", "Addition then multiplication"
     ]) {
         const slide = document.createElement("section");
         slide.className = "operation-comparison-slide";
@@ -763,22 +814,60 @@ body.player-ready>#exploded-examples{display:none;}
 
     const conventionalSlides = [...document.querySelectorAll("body > .example")];
     const explodedSlides = [...target.querySelectorAll(".exploded-example")];
-    const slides = [
+    const openingExamples = [
+        conventionalSlides[0], conventionalSlides[1],
+        document.getElementById("opening-multiply-then-add").content.firstElementChild,
+        conventionalSlides[2]
+    ];
+    const productAboveSum = {
+        before: sum(product(value(2), value("x")), value(3)),
+        beforeShading: [
+            shadeNode([0, 0], colors.yellow),
+            shadeSeparator([0], 0, colors.gray),
+            shadeNode([0, 1], colors.orange)
+        ]
+    };
+    const practiceExamples = [
         {
-            element: buildOperationComparisonSlide([
-                ...conventionalSlides.slice(0, 3),
-                document.getElementById("opening-multiply-then-add").content.firstElementChild
-            ]),
-            ariaLabel: "Conventional notation: four combinations of addition and multiplication",
-            prompt: "Compare these four attempted swaps of 2 and x. The first two are valid: 2 and x are terms of the same sum or factors of the same product. The third, 2+x·3, is invalid because x belongs to the product x·3, so 2 and x are not complete terms of the same sum. The fourth, 2·x+3, is valid because 2 and x are complete factors of the same product; the +3 stays outside it.",
-            explanation: { valid: null, text: "" }
+            conventional: openingExamples[0], exploded: examples[0], title: "2+x+3",
+            exerciseFile: "levels/commute-2-and-x-in-sum.json",
+            prompt: "In Exploded Algebra, addition stacks complete terms vertically along a shared bar. The 2 and x occupy neighboring rows of the same sum, so they can trade places while 3 stays below. Open the guided exercise and follow the yellow selection outline and highlighted Commute button to try the swap."
         },
         {
+            conventional: openingExamples[1], exploded: examples[1], title: "2·x·3",
+            exerciseFile: "levels/commute-2-and-x-in-product.json",
+            prompt: "Multiplication places complete factors side by side horizontally. The 2 and x are neighbors in one product, so they can trade places while 3 stays to their right. Try it in the guided exercise using the highlighted selection and Commute button."
+        },
+        {
+            conventional: openingExamples[2], exploded: productAboveSum, title: "2·x+3",
+            exerciseFile: "levels/commute-2-and-x-in-product-above-sum.json",
+            prompt: "Here a vertical addition bar spans two terms: the product 2·x above and the 3 below. Within the upper term, 2 and x sit on opposite sides of the multiplication mark. They can switch places like a reflection across that mark, while the lower term stays put. Follow the guided exercise to make that swap."
+        },
+        {
+            conventional: openingExamples[3], exploded: examples[2], title: "2+x·3",
+            exerciseFile: null,
+            prompt: "This attempted swap does not work. The 2 is a complete term of the sum above the addition bar, but x is only one factor of the product x·3 below it. The shaded 2 and x do not belong to the same operation; the outlined area cuts across the addition bar instead of enclosing a pair that can be commuted."
+        }
+    ];
+    const slides = [
+        {
+            element: buildOperationComparisonSlide(openingExamples),
+            ariaLabel: "Conventional notation: four combinations of addition and multiplication",
+            prompt: "Compare four attempted swaps of 2 and x. The first two are valid because 2 and x are terms of the same sum or factors of the same product. The third, 2·x+3, is also valid: 2 and x are factors together, while +3 stays outside their product. The fourth, 2+x·3, is invalid: x belongs to the product x·3, so 2 and x are not complete terms of the same sum.",
+            explanation: { valid: null, text: "" }
+        },
+        ...practiceExamples.map(practice => ({
+            element: buildPracticeSlide(practice.conventional, practice.exploded, practice.title, practice.exerciseFile),
+            ariaLabel: `Practice comparison for ${practice.title}`,
+            prompt: practice.prompt,
+            explanation: { valid: null, text: "" }
+        })),
+        {
             element: buildOperationComparisonSlide([
-                conventionalSlides[3], conventionalSlides[4], conventionalSlides[6], conventionalSlides[5]
+                conventionalSlides[3], conventionalSlides[4], conventionalSlides[5], conventionalSlides[6]
             ]),
             ariaLabel: "Conventional notation: four operation combinations with larger expressions",
-            prompt: "Now compare swaps of larger pieces in the same four operation combinations. The first is a valid exchange of two groups of terms in a sum; the second exchanges two groups of factors in a product. The third, x+y·5+x, is invalid: the multiplication dot joins only y and 5, so x+y and 5+x are not complete factors to swap. The fourth, x·y+5·x, is valid because the two complete products are terms of the same sum.",
+            prompt: "Now compare swaps of larger pieces in the same four operation combinations. The first exchanges two groups of terms in a sum; the second exchanges two groups of factors in a product. The third, x·y+5·x, validly swaps two complete products that are terms of the same sum. The fourth, x+y·5+x, is invalid: the multiplication dot joins only y and 5, so x+y and 5+x are not complete factors to swap.",
             explanation: { valid: null, text: "" }
         },
         {
@@ -1002,6 +1091,11 @@ body.player-ready>#exploded-examples{display:none;}
         });
 
         const current = slides[currentIndex];
+        const practiceImage = current.element.querySelector(".practice-exploded-image");
+        if (practiceImage && !practiceImage.dataset.outlineAdded) {
+            addDomainOutline(practiceImage);
+            practiceImage.dataset.outlineAdded = "true";
+        }
         position.textContent = `${currentIndex + 1} of ${slides.length}`;
         stage.setAttribute("aria-label", current.ariaLabel);
         prompt.textContent = current.prompt;
