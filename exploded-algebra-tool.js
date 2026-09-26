@@ -3955,7 +3955,21 @@ Promise.resolve().then(() => {
             const rows = levelContent.querySelectorAll(".problem-statement, .running-solution > .step-column");
             // Allow the third-to-last row to pass completely above the viewport,
             // even when the final two rows are shorter than the panel.
-            levelContent.style.paddingBottom = rows.length >= 3 ? `${leftPanel.clientHeight}px` : "";
+            if (rows.length < 3) {
+                levelContent.style.paddingBottom = "";
+                return;
+            }
+            let padding = Math.ceil(leftPanel.clientHeight);
+            levelContent.style.paddingBottom = `${padding}px`;
+            const thirdRowBottom = leftPanel.scrollTop
+                + rows[rows.length - 3].getBoundingClientRect().bottom
+                - leftPanel.getBoundingClientRect().top;
+            // The flex item can be shorter than its children. Measure the
+            // actual scroll limit and fill only the remaining shortfall.
+            padding += Math.max(0, Math.ceil(
+                thirdRowBottom - (leftPanel.scrollHeight - leftPanel.clientHeight)
+            ));
+            levelContent.style.paddingBottom = `${padding}px`;
         }
 
         function getStepPanelScrollTarget() {
@@ -3968,7 +3982,7 @@ Promise.resolve().then(() => {
                 + thirdFromLast.getBoundingClientRect().bottom
                 - leftPanel.getBoundingClientRect().top;
             return Math.max(0, Math.min(
-                Math.ceil(thirdRowBottom + 1),
+                thirdRowBottom,
                 leftPanel.scrollHeight - leftPanel.clientHeight
             ));
         }
