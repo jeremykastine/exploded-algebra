@@ -68,10 +68,10 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .player-controls button:focus-visible,.player-controls .home-link:focus-visible{outline:3px solid #78aeda;outline-offset:2px;}
 .player-position{min-width:8.5em;text-align:center;}
 .narrative{max-width:1040px;margin:0 auto;padding:48px 28px 96px;font-family:Arial,Helvetica,sans-serif;color:#18232d;}
-.narrative h1{font-size:clamp(34px,5vw,58px);line-height:1.08;margin:0 0 20px;letter-spacing:-.025em;}
 .narrative h2{font-size:clamp(26px,3.4vw,38px);line-height:1.18;margin:0 0 18px;}
 .narrative p{font-size:clamp(18px,2vw,22px);line-height:1.55;max-width:75ch;margin:0 0 18px;}
-.narrative-lead{font-size:clamp(21px,2.4vw,27px)!important;}
+.narrative .grouping-expression{font-family:"Courier New",Courier,monospace;overflow-wrap:anywhere;}
+body.narrative-ready>.page-last-updated{position:static;width:max-content;max-width:100%;margin:0 16px 12px;white-space:normal;}
 .narrative-section{padding:42px 0;border-top:1px solid #d4dce1;scroll-margin-top:24px;}
 .narrative-section:first-of-type{border-top:0;}
 .narrative-section .story-message{padding:0;font-size:inherit;}
@@ -92,8 +92,6 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .phrase-card .exploded-figure{display:flex;align-items:center;justify-content:center;min-height:180px;overflow:auto;}
 .phrase-card .result{font-size:17px;color:#40505d;margin:14px 0 0;}
 .narrative-note{border-left:4px solid #6098b8;padding:5px 0 5px 18px;color:#354958;}
-.narrative-nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:45px;font-size:16px;}
-.narrative-nav a{color:#075fa8;}
 body.narrative-ready>.section-title,body.narrative-ready>.example,body.narrative-ready>hr,body.narrative-ready>#exploded-examples,body.narrative-ready>template{display:none;}
 body.player-ready>.section-title,
 body.player-ready>.example,
@@ -118,7 +116,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-09-26T19:52:00-04:00">9/26/26, 7:52 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-03T16:48:53-04:00">10/3/26, 4:48 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -969,30 +967,21 @@ body.player-ready>#exploded-examples{display:none;}
 
     const narrative = document.createElement("main");
     narrative.className = "narrative";
-    const nav = document.createElement("nav");
-    nav.className = "narrative-nav";
-    nav.setAttribute("aria-label", "Introduction navigation");
-    const homeLink = document.createElement("a");
-    homeLink.href = "index.html";
-    homeLink.textContent = "← Home";
-    const comparisonLink = document.createElement("a");
-    comparisonLink.href = "#conventional-comparison";
-    comparisonLink.textContent = "Skip to the comparison ↓";
-    nav.append(homeLink, comparisonLink);
-    narrative.appendChild(nav);
     document.body.appendChild(narrative);
+    const lastUpdated = document.querySelector("body > .page-last-updated");
+    if (lastUpdated) document.body.appendChild(lastUpdated);
 
+    let sectionNumber = 0;
     function addSection(title, paragraphs = [], content = null, id = "") {
         const section = document.createElement("section");
         section.className = "narrative-section";
         if (id) section.id = id;
-        const heading = document.createElement(id === "opening" ? "h1" : "h2");
-        heading.textContent = title;
+        const heading = document.createElement("h2");
+        heading.textContent = `${++sectionNumber}. ${title}`;
         section.appendChild(heading);
-        paragraphs.forEach((copy, index) => {
+        paragraphs.forEach(copy => {
             const paragraph = document.createElement("p");
             paragraph.textContent = copy;
-            if (id === "opening" && index === 0) paragraph.className = "narrative-lead";
             section.appendChild(paragraph);
         });
         if (content) section.appendChild(content);
@@ -1025,18 +1014,33 @@ body.player-ready>#exploded-examples{display:none;}
         return pair;
     }
 
-    addSection("A calculation is more than a list of operations", [
-        "Many everyday calculations take several steps. We might first combine some quantities, then use that result in another calculation. To write the whole process as a single expression, we need to show which parts belong together.",
-        "For example, a shop might add the prices of two items and then buy four sets of them. Changing which operation comes first changes the total."
+    const groupingSection = addSection("Why grouping must be clear", [
+        "Listen to the phrase “two plus three times four.” The numbers and operations alone do not tell a listener which parts the speaker intends to group together. Even a small change in the way it is said can suggest a different calculation.",
+        "Say “two … plus three times four,” pausing after “two.” That pause can suggest that “three times four” belongs together: multiply 3 by 4 to get 12, then add 2. The result is 14.",
+        "Now say “two plus three … times four,” pausing after “three.” This time the pause can suggest that “two plus three” belongs together: add 2 and 3 to get 5, then multiply that entire result by 4. The result is 20. The same words can point toward two different groupings—and two different answers.",
+        "English also gives us clearer ways to say exactly what we mean, without relying on a listener to interpret a pause. We can name a complete group as a sum or a product, or state the steps in sequence:"
     ], phrasePair(
-        phraseCard("Add 2 and 3, then multiply the result by 4.", product(sum(value(2), value(3)), value(4)), "The sum is one complete factor. The result is 20."),
-        phraseCard("Multiply 3 by 4, then add 2.", sum(value(2), product(value(3), value(4))), "The product is one complete term. The result is 14.")
-    ), "opening");
+        phraseCard("Add 2 to the product of 3 and 4.", sum(value(2), product(value(3), value(4))), "Equivalently: “Multiply 3 by 4, then add 2.” Either wording gives 14."),
+        phraseCard("Multiply the sum of 2 and 3 by 4.", product(sum(value(2), value(3)), value(4)), "Equivalently: “Add 2 and 3, then multiply the result by 4.” Either wording gives 20.")
+    ), "grouping");
 
-    addSection("Why grouping must be clear", [
-        "A short phrase such as “2 plus 3 times 4” leaves room for different interpretations when spoken without any indication of grouping. The two instructions above remove that uncertainty by saying what happens first. A mathematical expression must make the same distinction.",
-        "Conventional notation has established ways to do this. For now, let’s take a fresh look at how the structure itself could be shown."
-    ]);
+    function addGroupingParagraph(copy, expression = false) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = copy;
+        if (expression) paragraph.className = "grouping-expression";
+        groupingSection.appendChild(paragraph);
+    }
+
+    addGroupingParagraph("When we write a calculation in conventional mathematical notation, parentheses are purpose-built to show grouping. With a plus sign for addition and a dot for multiplication, the two meanings can be written with their inner groups made explicit:");
+    addGroupingParagraph("2 + (3 · 4) = 14", true);
+    addGroupingParagraph("(2 + 3) · 4 = 20", true);
+    addGroupingParagraph("But if we put parentheses around every operation group, including each whole expression, a longer calculation quickly becomes cumbersome to read. Consider this fully parenthesized expression:");
+    addGroupingParagraph("((((2 + 3) · 4) + (5 · 6)) · (7 + 8))", true);
+    addGroupingParagraph("Every pair records a group, but keeping track of all the opening and closing parentheses becomes a task of its own. Conventional notation reduces that load by using an implicit order of operations in place of some parentheses. Multiplication takes precedence over addition, so the same calculation can be written more compactly:");
+    addGroupingParagraph("((2 + 3) · 4 + 5 · 6) · (7 + 8)", true);
+    addGroupingParagraph("With that convention, 2 + 3 · 4 means 2 + (3 · 4), giving 14, even though the product has no parentheses around it. To override the implicit grouping and make the addition happen first, we need (2 + 3) · 4, giving 20.");
+    addGroupingParagraph("This saves space, but it also creates an inconsistency in how grouping is communicated: some groups are shown explicitly with parentheses, while others are left implicit in the order of operations. Many students find it difficult to navigate that mixture. They must notice the groups that are marked and also supply the groups that are not.");
+    addGroupingParagraph("Exploded Algebra takes a fresh approach to showing these relationships. The pictures above preview that approach; next, we’ll look at how their spatial arrangement makes the grouping visible.");
 
     addSection("A fresh way to draw an expression", [
         "Exploded Algebra places the terms of an addition vertically along an addition bar. It places the factors of a multiplication horizontally along a multiplication bar. Each part can itself be an entire expression.",
