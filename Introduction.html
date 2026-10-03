@@ -116,7 +116,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-03T16:48:53-04:00">10/3/26, 4:48 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-03T16:59:41-04:00">10/3/26, 4:59 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1019,10 +1019,7 @@ body.player-ready>#exploded-examples{display:none;}
         "Say “two … plus three times four,” pausing after “two.” That pause can suggest that “three times four” belongs together: multiply 3 by 4 to get 12, then add 2. The result is 14.",
         "Now say “two plus three … times four,” pausing after “three.” This time the pause can suggest that “two plus three” belongs together: add 2 and 3 to get 5, then multiply that entire result by 4. The result is 20. The same words can point toward two different groupings—and two different answers.",
         "English also gives us clearer ways to say exactly what we mean, without relying on a listener to interpret a pause. We can name a complete group as a sum or a product, or state the steps in sequence:"
-    ], phrasePair(
-        phraseCard("Add 2 to the product of 3 and 4.", sum(value(2), product(value(3), value(4))), "Equivalently: “Multiply 3 by 4, then add 2.” Either wording gives 14."),
-        phraseCard("Multiply the sum of 2 and 3 by 4.", product(sum(value(2), value(3)), value(4)), "Equivalently: “Add 2 and 3, then multiply the result by 4.” Either wording gives 20.")
-    ), "grouping");
+    ], null, "grouping");
 
     function addGroupingParagraph(copy, expression = false) {
         const paragraph = document.createElement("p");
@@ -1030,6 +1027,9 @@ body.player-ready>#exploded-examples{display:none;}
         if (expression) paragraph.className = "grouping-expression";
         groupingSection.appendChild(paragraph);
     }
+
+    addGroupingParagraph("“Add 2 to the product of 3 and 4.” Or say: “Multiply 3 by 4, then add 2.” Either wording gives 14.");
+    addGroupingParagraph("“Multiply the sum of 2 and 3 by 4.” Or say: “Add 2 and 3, then multiply the result by 4.” Either wording gives 20.");
 
     addGroupingParagraph("When we write a calculation in conventional mathematical notation, parentheses are purpose-built to show grouping. With a plus sign for addition and a dot for multiplication, the two meanings can be written with their inner groups made explicit:");
     addGroupingParagraph("2 + (3 · 4) = 14", true);
@@ -1040,7 +1040,7 @@ body.player-ready>#exploded-examples{display:none;}
     addGroupingParagraph("((2 + 3) · 4 + 5 · 6) · (7 + 8)", true);
     addGroupingParagraph("With that convention, 2 + 3 · 4 means 2 + (3 · 4), giving 14, even though the product has no parentheses around it. To override the implicit grouping and make the addition happen first, we need (2 + 3) · 4, giving 20.");
     addGroupingParagraph("This saves space, but it also creates an inconsistency in how grouping is communicated: some groups are shown explicitly with parentheses, while others are left implicit in the order of operations. Many students find it difficult to navigate that mixture. They must notice the groups that are marked and also supply the groups that are not.");
-    addGroupingParagraph("Exploded Algebra takes a fresh approach to showing these relationships. The pictures above preview that approach; next, we’ll look at how their spatial arrangement makes the grouping visible.");
+    addGroupingParagraph("Exploded Algebra takes a fresh approach to showing these relationships. In the next section, we’ll explore how a spatial arrangement can make the grouping visible.");
 
     addSection("A fresh way to draw an expression", [
         "Exploded Algebra places the terms of an addition vertically along an addition bar. It places the factors of a multiplication horizontally along a multiplication bar. Each part can itself be an entire expression.",
