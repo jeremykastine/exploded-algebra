@@ -91,6 +91,16 @@ body.narrative-ready>.page-last-updated{position:static;width:max-content;max-wi
 .phrase-card .exploded-figure{display:flex;align-items:center;justify-content:center;min-height:180px;overflow:auto;}
 .phrase-card .result{font-size:17px;color:#40505d;margin:14px 0 0;}
 .narrative-note{border-left:4px solid #6098b8;padding:5px 0 5px 18px;color:#354958;}
+.exploded-view-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:28px 0;}
+.exploded-view-gallery figure{min-width:0;margin:0;padding:16px;border:1px solid #cad5db;border-radius:14px;background:#fbfdff;}
+.exploded-view-gallery .diagram-link{display:flex;align-items:center;justify-content:center;height:320px;background:#fff;border-radius:8px;}
+.exploded-view-gallery img{display:block;width:100%;height:100%;object-fit:contain;}
+.exploded-view-gallery figcaption{font-size:17px;line-height:1.5;margin-top:14px;}
+.exploded-view-gallery strong{display:block;font-size:20px;margin-bottom:6px;}
+.exploded-view-gallery .image-credit{display:block;font-size:14px;color:#40505d;margin-top:10px;overflow-wrap:anywhere;}
+.exploded-view-gallery a{color:#075fa8;}
+.exploded-view-gallery a:focus-visible{outline:3px solid #78aeda;outline-offset:3px;}
+@media (max-width:850px){.exploded-view-gallery{grid-template-columns:1fr;}.exploded-view-gallery .diagram-link{height:360px;}}
 body.narrative-ready>.section-title,body.narrative-ready>.example,body.narrative-ready>hr,body.narrative-ready>#exploded-examples,body.narrative-ready>template{display:none;}
 body.player-ready>.section-title,
 body.player-ready>.example,
@@ -115,7 +125,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-04T00:38:56-04:00">10/4/26, 12:38 AM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-04T17:01:53-04:00">10/4/26, 5:01 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -229,6 +239,35 @@ body.player-ready>#exploded-examples{display:none;}
 
 <div class="section-title">Exploded notation</div>
 <div id="exploded-examples"></div>
+
+<template id="exploded-view-diagrams">
+<div class="exploded-view-gallery">
+    <figure>
+        <a class="diagram-link" href="assets/exploded-views/toy-boat.jpg" aria-label="Open the full-size exploded-view diagram of a toy boat">
+            <img src="assets/exploded-views/toy-boat.jpg" width="1280" height="1162" loading="lazy" decoding="async" alt="A toy boat with its hull, cabin, roof, and other parts separated above two views of the assembled boat.">
+        </a>
+        <figcaption><strong>A toy boat</strong>The separated parts above can be compared with the assembled boat below.
+            <span class="image-credit">3DBenchy illustration by CreativeTools. <a href="https://commons.wikimedia.org/wiki/File:3DBenchy_multi-part_exploded_view_illustration.jpg">Source</a> · <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>.</span>
+        </figcaption>
+    </figure>
+    <figure>
+        <a class="diagram-link" href="assets/exploded-views/game-controller.png" aria-label="Open the full-size exploded-view diagram of a game controller">
+            <img src="assets/exploded-views/game-controller-preview.png" width="960" height="1143" loading="lazy" decoding="async" alt="A Google Stadia game controller with the top shell, circuit board, and lower housing separated vertically.">
+        </a>
+        <figcaption><strong>A game controller</strong>The layers are pulled apart so we can see components that the casing normally hides.
+            <span class="image-credit">Google Stadia controller diagram by zerforschung.org. <a href="https://commons.wikimedia.org/wiki/File:Exploded-view-drawing_Google_Stadia_Controller_(transparent_bg).png">Source</a> · <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>.</span>
+        </figcaption>
+    </figure>
+    <figure>
+        <a class="diagram-link" href="assets/exploded-views/ball-bearing.png" aria-label="Open the full-size exploded-view diagram of a ball bearing">
+            <img src="assets/exploded-views/ball-bearing.png" width="1660" height="1286" loading="lazy" decoding="async" alt="A ball bearing with its rings, balls, retaining cages, and small fasteners separated along the assembly direction.">
+        </a>
+        <figcaption><strong>A ball bearing</strong>The rings, balls, and other components are separated while preserving their relationships.
+            <span class="image-credit">“SolidWorks Exploded View of Bearing” by ExcitedGamer18. <a href="https://commons.wikimedia.org/wiki/File:SolidWorks_Exploded_View_of_Bearing.png">Source</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Image unchanged.</span>
+        </figcaption>
+    </figure>
+</div>
+</template>
 
 <script src="exploded-algebra-renderer.js?v=20260925-centered-midline-default"></script>
 <script>
@@ -918,20 +957,8 @@ body.player-ready>#exploded-examples{display:none;}
             explanation: { valid: null, text: "" }
         },
         {
-            element: buildStorySlide(
-                [
-                    "Exploded Algebra makes an expression's structure visible in space, so we can read how its parts fit together without first applying rules for interpreting a single line of symbols.",
-                    {
-                        before: "In engineering and technical drawing, an ",
-                        href: "https://en.wikipedia.org/wiki/Exploded-view_drawing",
-                        linkText: "exploded-view diagram",
-                        after: " separates the parts of a machine in space so that their relationships—and the way they fit together—are easier to see.",
-                        external: true
-                    },
-                    "Exploded Algebra uses the same basic idea. It separates the parts of an expression spatially so that the expression's structure is easier to see."
-                ]
-            ),
-            ariaLabel: "Introducing Exploded Algebra",
+            element: document.getElementById("exploded-view-diagrams").content.firstElementChild.cloneNode(true),
+            ariaLabel: "Exploded-view diagrams of a toy boat, a game controller, and a ball bearing",
             prompt: "",
             explanation: { valid: null, text: "" }
         },
@@ -1021,6 +1048,19 @@ body.player-ready>#exploded-examples{display:none;}
         "Conventional mathematical notation and the English language have each developed their own ways of communicating grouping more clearly. For now, let’s set those familiar conventions aside and allow ourselves to experience a new way of visualizing structure and grouping within an expression."
     ], null, "grouping");
 
+    const explodedViewsSection = addSection("Exploded-view diagrams", [
+        "An exploded-view diagram shows the parts of an assembled object separated in space. Pulling the parts apart in the picture makes it easier to see the individual components and how they fit together.",
+        "The parts are not scattered at random. Their relative positions help us see their relationships: which pieces fit inside others, which pieces sit beside one another, and which pieces combine to form a larger whole. Here are three examples. Select any image to see it at full size."
+    ], slides[8].element, "exploded-view-diagrams-section");
+    [
+        "Exploded Algebra borrows this idea for mathematical expressions. We use spatial separation to help visualize grouping: which pieces belong together in one operation, and how that whole group fits into a larger calculation. A group can be seen as one part of an expression while its own smaller parts remain visible.",
+        "The calculation itself does not change. We are changing how we arrange its symbols so that its structure is easier to see. Let’s return to “two plus three times four” and see what this approach looks like."
+    ].forEach(copy => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = copy;
+        explodedViewsSection.appendChild(paragraph);
+    });
+
     addSection("A fresh way to draw an expression", [
         "Exploded Algebra places the terms of an addition vertically along an addition bar. It places the factors of a multiplication horizontally along a multiplication bar. Each part can itself be an entire expression.",
         "In the first picture, the whole sum of 2 and 3 is a factor beside 4. In the second, the whole product of 3 and 4 is a term below 2. Their positions tell us which operation contains the other."
@@ -1042,8 +1082,6 @@ body.player-ready>#exploded-examples{display:none;}
         phraseCard("Multiply x by 4, add 3, then multiply the entire result by 2.", product(value(2), sum(product(value("x"), value(4)), value(3))), "The inner product is a term of a sum; that sum is a factor of the outer product."),
         phraseCard("Add x and 3, multiply that sum by 2, then add 4.", sum(product(value(2), sum(value("x"), value(3))), value(4)), "The inner sum is a factor of a product; that product is a term of the outer sum.")
     ));
-
-    addSection("Why call it Exploded Algebra?", [], slides[8].element);
 
     addSection("Now compare with conventional notation", [
         "Both notations can describe these calculations precisely. Conventional notation uses its order of operations and, when needed, parentheses. Exploded Algebra places the complete terms and factors where their relationships can be seen.",
