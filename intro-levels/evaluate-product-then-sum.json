@@ -56,7 +56,7 @@
       "expression": "((2)+(12))",
       "explodedExpression": "((2)+(12))",
       "katex": "2+12",
-      "beforeKatex": "\\text{Evaluate }3\\times4",
+      "beforeKatex": "2+12",
       "afterKatex": "2+12",
       "actionStartIndex": 0,
       "actionEndIndex": 2
@@ -65,7 +65,7 @@
       "expression": "(14)",
       "explodedExpression": "(14)",
       "katex": "14",
-      "beforeKatex": "\\text{Evaluate }2+12",
+      "beforeKatex": "14",
       "afterKatex": "14",
       "actionStartIndex": 2,
       "actionEndIndex": 4

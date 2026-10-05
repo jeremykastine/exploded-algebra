@@ -56,7 +56,7 @@
       "expression": "((5)*(4))",
       "explodedExpression": "((5)*(4))",
       "katex": "5\\times4",
-      "beforeKatex": "\\text{Evaluate }2+3",
+      "beforeKatex": "5\\times4",
       "afterKatex": "5\\times4",
       "actionStartIndex": 0,
       "actionEndIndex": 2
@@ -65,7 +65,7 @@
       "expression": "(20)",
       "explodedExpression": "(20)",
       "katex": "20",
-      "beforeKatex": "\\text{Evaluate }5\\times4",
+      "beforeKatex": "20",
       "afterKatex": "20",
       "actionStartIndex": 2,
       "actionEndIndex": 4
