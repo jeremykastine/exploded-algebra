@@ -24,7 +24,7 @@ The conventional-notation panel uses three textbook-style sections separated by
 horizontal rules. `initialKatex` is the conventional form of the starting
 expression. The running solution shows completed steps plus the one current step.
 The pre-selection Exercise Guidance view includes the problem statement and the
-exercise's numerical-manipulation restrictions. New Exercise Builder exports
+exercise's numerical-manipulation restrictions. New Problem Builder exports
 store the complete, author-editable view in the top-level `exerciseGuidance`
 field and set `exerciseGuidanceIsComplete` so the player does not duplicate its
 prefilled sections. Older files still receive the automatic sections and may use
@@ -135,7 +135,7 @@ automatic. Manual rewrites must be exactly equivalent and match the enabled
 category and direction.
 
 `(-1)(-1) ↔ 1`, `inverse(1) ↔ 1`, and `inverse(-1) ↔ -1` also appear as full
-permission entries in Exercise Builder Phase 1. Exercise Guidance in the player
+permission entries in Problem Builder Phase 1. Exercise Guidance in the player
 displays all current direction settings.
 
 Older custom files that contain separate addition and multiplication rules,
@@ -169,12 +169,12 @@ For an interactive level, Download Move History saves the current run as a JSON
 file that can later be chosen from the home page. Undo is retained as an explicit
 move: the attempted forward steps remain in the history, and guided playback
 requires the learner to undo at the same point before continuing along the
-recorded path. Exercise Builder authors can instead exclude undos, which removes
+recorded path. Problem Builder authors can instead exclude undos, which removes
 the abandoned branch from the saved path. Zoom in, zoom out, and zoom reset are
 view-only controls and are never retained as solution moves.
 
 The home page links to Introduction.html and Exercises.html.
-It also links to exercise-builder.html, a five-phase authoring application that
+It also links to problem-builder.html, an authoring application with four or five phases that
 uses the real Exploded Algebra player in an embedded authoring session. Completed
 levels export with formatVersion 1,
 the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
@@ -183,7 +183,12 @@ every completed expression-changing manipulation is automatically saved as a
 major step. Phase 4 first chooses which recorded steps to show, then edits only
 their pre- and post-completion notation. Phase 5 provides one field prefilled with
 the problem statement and numerical restrictions, with View and Edit modes for
-reviewing or changing the complete student-facing guidance. All Done passes
+reviewing or changing the complete student-facing guidance. Phase 1 defaults to
+showing conventional steps. Choosing Hide conventional steps exports
+showConventionalSteps: false, skips Phase 4, and removes the entire conventional
+steps panel from the student layout in both orientations. Recorded actions remain
+available for Guided mode. Existing levels without this setting still show steps.
+All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 

@@ -8,9 +8,9 @@ const assert = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
-const builderHtml = read("exercise-builder.html");
-const builderCss = read("exercise-builder.css");
-const builderJs = read("exercise-builder.js");
+const builderHtml = read("problem-builder.html");
+const builderCss = read("problem-builder.css");
+const builderJs = read("problem-builder.js");
 const playerHtml = read("exploded-algebra.html");
 const playerJs = read("exploded-algebra-tool.js");
 const rendererJs = read("exploded-algebra-renderer.js");
@@ -18,13 +18,13 @@ const rendererJs = read("exploded-algebra-renderer.js");
 const htmlIds = new Set(Array.from(builderHtml.matchAll(/\bid="([^"]+)"/g), match => match[1]));
 const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/g), match => match[1]));
 for (const id of requestedIds) {
-  assert(htmlIds.has(id), `exercise-builder.js references missing HTML id: ${id}`);
+  assert(htmlIds.has(id), `problem-builder.js references missing HTML id: ${id}`);
 }
 for (const phase of ["1", "2", "3", "4", "5"]) {
   assert(builderHtml.includes(`data-phase="${phase}"`), `Missing builder phase ${phase}`);
 }
 
-assert(builderHtml.includes("exploded-algebra.html?authoring=builder&amp;v="), "Builder must embed the versioned real player in authoring mode");
+assert(builderHtml.includes("exploded-algebra.html?authoring=problem-builder&amp;v="), "Builder must embed the versioned real player in authoring mode");
 assert(!builderHtml.includes("builder-header") && !builderHtml.includes("phase-nav") && !builderHtml.includes("phase-heading"), "The linear builder must not include title, phase-navigation, or explanatory header chrome");
 assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to Solving") && !builderHtml.includes("Edit Starting Expression") && !builderHtml.includes("Edit Setup"), "The builder must not provide backward phase navigation");
 assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
@@ -64,8 +64,8 @@ assert(builderHtml.includes('name="includeUndo" value="no" checked') && !builder
 assert(builderHtml.includes("whether Guided mode should replay failed approaches") && !builderHtml.includes("High assistance"), "Undo recording guidance must use the Guided mode name");
 assert(builderHtml.includes('class="radio-row undo-radio-options"') && builderCss.includes(".undo-radio-options { display: grid;"), "Recorded undo choices must be vertically ordered with No on top");
 assert(builderJs.includes("includeUndoActions: false"), "The in-memory undo-recording default must match Setup");
-assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("exerciseTitle").value = timestamp'), "The exercise name must default to a timestamp");
-assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes('id="evaluationLevel"') && !builderJs.includes("evaluationLevel"), "The Exercise Builder must not expose or export the legacy evaluation level");
+assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("problemTitle").value = timestamp'), "The exercise name must default to a timestamp");
+assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes('id="evaluationLevel"') && !builderJs.includes("evaluationLevel"), "The Problem Builder must not expose or export the legacy evaluation level");
 assert(!builderHtml.includes('id="exerciseInstruction"') && !builderHtml.includes('id="completionMessage"'), "Phase 1 must omit opening-instruction and completion-message fields");
 assert(!builderHtml.includes("Advanced tool permissions") && !builderHtml.includes('id="toolPermissionList"'), "Phase 1 must omit advanced tool permissions");
 assert(!builderHtml.includes('id="finishRecordingButton"') && !builderCss.includes(".record-step-button"), "Phase 3 must not use a detached checkpoint overlay");
@@ -81,7 +81,7 @@ for (const selector of [
 ]) {
   assert(!playerHtml.includes(`body.authoring-recording-session .workspace-toolbar ${selector}`), `Instructor recording must not override the shared placement of ${selector}`);
 }
-assert(builderHtml.includes('exploded-algebra.html?authoring=builder&amp;v=20260923-guided-unguided'), "The Exercise Builder must load the current Guided/Unguided player");
+assert(builderHtml.includes('exploded-algebra.html?authoring=problem-builder&amp;v=20260923-guided-unguided'), "The Problem Builder must load the current Guided/Unguided player");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
 assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
 assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");
@@ -120,26 +120,26 @@ assert(!builderHtml.includes('id="guidanceProblemExpression"') && !builderHtml.i
 assert(builderJs.includes('function buildPrefilledExerciseGuidance()') && builderJs.includes('"## Problem Statement"') && builderJs.includes('"## Numerical Manipulation Restrictions"') && builderJs.includes('draft.settings.numericalRewrite.rules[rule.id]'), "The single Phase 5 field must be prefilled with the problem statement and numerical restrictions");
 assert(builderJs.includes('function renderGuidanceMode()') && builderJs.includes('function renderGuidancePreview()') && builderJs.includes('data-guidance-math'), "Phase 5 View mode must format and render the combined field with KaTeX");
 assert(builderJs.includes('level.exerciseGuidance = draft.metadata.exerciseGuidance.trim()') && builderJs.includes('level.exerciseGuidanceIsComplete = true') && !builderJs.includes('step.guidance ='), "Export must store the complete exercise-level guidance field and no per-step guidance");
-assert(builderHtml.includes('id="completeExerciseButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 5 must finish with one All Done button");
-assert(/\.complete-exercise-button \{ color: #000; \}/.test(builderCss), "The Phase 5 All Done control must use black text");
+assert(builderHtml.includes('id="completeProblemButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 5 must finish with one All Done button");
+assert(/\.complete-problem-button \{ color: #000; \}/.test(builderCss), "The Phase 5 All Done control must use black text");
 assert(!builderHtml.includes('id="deleteStepButton"') && !builderHtml.includes('>Delete Step</button>'), "Final step editing must not offer deletion after visibility curation is complete");
 assert(!builderJs.includes("deleteCurrentCurationStep") && !builderJs.includes("deleteCurationCandidateAt") && !builderCss.includes("delete-step-button"), "Final step editing must not retain obsolete deletion behavior or styling");
 assert(builderJs.includes("function syncFinishRecordingControl(snapshot)") && builderJs.includes("snapshot.preselectionActive === true") && builderJs.includes("api.setFinishRecordingControlVisible(isAvailable)") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "The Phase 3 All Done control must appear only while the workspace is in preselection");
 assert(builderJs.includes("syncFinishRecordingControl(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
-assert(builderJs.includes('byId("completeExerciseButton").addEventListener("click", finishExercise)') && builderJs.includes("downloadLevel(level)"), "Phase 5 All Done must download the completed JSON");
+assert(builderJs.includes('byId("completeProblemButton").addEventListener("click", finishProblem)') && builderJs.includes("downloadLevel(level)"), "Phase 5 All Done must download the completed JSON");
 assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 5 All Done must automatically open a preview tab");
-assert(/const previewUrl = `exploded-algebra\.html\?source=builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
-assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root)") && playerJs.includes('class="textbook-solution builder-conventional-live"'), "Every active Expression Builder must render its live conventional expression in panel one");
+assert(/const previewUrl = `exploded-algebra\.html\?source=problem-builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
+assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('class="textbook-solution builder-conventional-live"'), "Expression entry must render its live conventional expression when panel one is visible");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode)") && playerJs.includes('class="solution-step builder-conventional-selected"'), "Panel one must show the selected expression above the live construction");
 assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.includes('class="builder-conventional-arrow"'), "Initial-expression authoring must omit the nonexistent selected row while rewrites show the selected-to-new transition");
 assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
-assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Exercise Builder authoring must retain the conventional-notation panel throughout");
+assert(!playerHtml.includes("body.authoring-session:not(.expression-builder-active) .left-panel,") && !playerHtml.includes("body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none"), "Problem Builder authoring must retain the conventional-notation panel throughout");
 assert(playerJs.includes('authoringPhase === "recording" && expressionRoot') && playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)") && playerJs.includes("\\\\text{Recording in progress}"), "Solution recording must show the current conventional expression with its recording status");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
 assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
 assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
-assert(playerJs.includes('navigationSource === "builder"'), "Player must accept temporary builder test levels");
+assert(playerJs.includes('navigationSource === "problem-builder"'), "Player must accept temporary builder test levels");
 assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
 assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
 assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
@@ -272,7 +272,7 @@ assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The sha
 assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activeTool);') && playerJs.includes('${disabled ? " disabled" : ""}'), "The x button must remain visible and become disabled only when variables are unavailable");
 assert(!/if \(disabled\) \{\s*builderVariableRail\.replaceChildren\(\);\s*return;\s*\}/.test(playerJs), "A disallowed x must be disabled rather than removed from the keypad");
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
-assert(builderJs.includes('const VARIABLES = ["x"]'), "The Exercise Builder must expose only x");
+assert(builderJs.includes('const VARIABLES = ["x"]'), "The Problem Builder must expose only x");
 assert(playerJs.includes('flowVersion: 5') && playerJs.includes('root: makePlaceholderNode()'), "New Expression Builder sessions must begin directly in exploded notation rather than a diagonal sequence");
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
@@ -442,4 +442,4 @@ for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name
   assert(Array.isArray(level.steps) && level.steps.length > 0, `${file} has no steps`);
 }
 
-console.log("Exercise Builder static integration checks passed.");
+console.log("Problem Builder static integration checks passed.");

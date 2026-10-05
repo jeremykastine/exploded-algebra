@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const TEST_STORAGE_PREFIX = "explodedAlgebra.builderTest.";
+  const TEST_STORAGE_PREFIX = "explodedAlgebra.problemBuilderTest.";
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
   const FORMAT_VERSION = 1;
   const VARIABLES = ["x"];
@@ -50,6 +50,7 @@
           ]))
         },
         includeUndoActions: false,
+        showConventionalSteps: true,
         excludedDefaultTools: [],
         allowedUnavailableTools: []
       },
@@ -117,8 +118,8 @@
 
   function initializeSetupDefaults() {
     const timestamp = String(Date.now());
-    byId("exerciseTitle").value = timestamp;
-    byId("exerciseId").value = slugify(timestamp);
+    byId("problemTitle").value = timestamp;
+    byId("problemId").value = slugify(timestamp);
   }
 
   function renderNumericalPermissionTable() {
@@ -168,19 +169,20 @@
 
   function collectSetup() {
     draft.metadata = {
-      title: byId("exerciseTitle").value.trim(),
-      id: byId("exerciseId").value.trim(),
+      title: byId("problemTitle").value.trim(),
+      id: byId("problemId").value.trim(),
       exerciseGuidance: draft.metadata.exerciseGuidance || ""
     };
     draft.settings.numericalRewrite = { rules: readNumericalPermissionChoices() };
     draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
+    draft.settings.showConventionalSteps = document.querySelector('input[name="showConventionalSteps"]:checked').value !== "no";
     draft.settings.excludedDefaultTools = [];
   }
 
   function validateSetup(showError = true) {
     collectSetup();
     let message = "";
-    if (!draft.metadata.title) message = "Enter an exercise or level name.";
+    if (!draft.metadata.title) message = "Enter a problem name.";
     else if (!draft.metadata.id) message = "Enter an ID / slug.";
     else if (!/^[A-Za-z0-9_-]+$/.test(draft.metadata.id)) message = "The ID may contain only letters, numbers, hyphens, and underscores.";
     if (showError) byId("setupError").textContent = message;
@@ -204,6 +206,7 @@
       variables: inferVariables(draft.initial.expression),
       excludedDefaultTools: [...draft.settings.excludedDefaultTools],
       allowedUnavailableTools: [...draft.settings.allowedUnavailableTools],
+      showConventionalSteps: draft.settings.showConventionalSteps,
       includeUndoActions: draft.settings.includeUndoActions
     };
     if (draft.metadata.exerciseGuidance.trim()) {
@@ -545,6 +548,13 @@
       return;
     }
     draft.recording.candidates = [makeInitialCurationCandidate(api), ...draft.recording.candidates];
+    draft.recording.finalExpression = snapshot.currentExpression;
+    draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
+    draft.recording.finished = true;
+    if (!draft.settings.showConventionalSteps) {
+      await setPhase(5);
+      return;
+    }
     currentCurationIndex = 0;
     currentCurationMode = "view";
     curationStage = "select";
@@ -553,10 +563,7 @@
     curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
       index === 0 || index === curationSelectionSource.length - 1
     );
-    draft.recording.finalExpression = snapshot.currentExpression;
-    draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
-    draft.recording.finished = true;
-    setPhase(4);
+    await setPhase(4);
   }
 
   async function validateExportLevel() {
@@ -707,7 +714,7 @@
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
   }
 
-  async function finishExercise() {
+  async function finishProblem() {
     const status = byId("exportStatus");
     draft.metadata.exerciseGuidance = byId("exerciseGuidance").value.trim();
     const previewWindow = window.open("about:blank", "_blank");
@@ -726,13 +733,13 @@
         status.textContent = `Downloaded ${level.id}.json, but the browser blocked the preview tab.`;
         return;
       }
-      const previewUrl = `exploded-algebra.html?source=builder&draftKey=${encodeURIComponent(storageKey)}&level=${encodeURIComponent(`${level.id}.json`)}`;
+      const previewUrl = `exploded-algebra.html?source=problem-builder&draftKey=${encodeURIComponent(storageKey)}&level=${encodeURIComponent(`${level.id}.json`)}`;
       previewWindow.name = LEVEL_WINDOW_NAME_PREFIX + payloadText;
       previewWindow.location.href = previewUrl;
       status.textContent = `Downloaded ${level.id}.json and opened its preview.`;
     } catch (error) {
       if (previewWindow) previewWindow.close();
-      status.textContent = error.message || "The exercise could not be completed.";
+      status.textContent = error.message || "The problem could not be completed.";
     }
   }
 
@@ -792,10 +799,10 @@
   }
 
   function installEventHandlers() {
-    byId("exerciseTitle").addEventListener("input", event => {
-      if (!idWasEdited) byId("exerciseId").value = slugify(event.target.value);
+    byId("problemTitle").addEventListener("input", event => {
+      if (!idWasEdited) byId("problemId").value = slugify(event.target.value);
     });
-    byId("exerciseId").addEventListener("input", () => { idWasEdited = true; });
+    byId("problemId").addEventListener("input", () => { idWasEdited = true; });
     byId("setupForm").addEventListener("submit", event => {
       event.preventDefault();
       if (validateSetup(true)) setPhase(2);
@@ -853,7 +860,7 @@
     byId("exerciseGuidance").addEventListener("input", event => {
       draft.metadata.exerciseGuidance = event.target.value;
     });
-    byId("completeExerciseButton").addEventListener("click", finishExercise);
+    byId("completeProblemButton").addEventListener("click", finishProblem);
 
     window.addEventListener("message", event => {
       if (event.source !== workspace.contentWindow || !event.data || event.data.source !== "exploded-algebra-authoring") return;

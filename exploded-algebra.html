@@ -3832,7 +3832,7 @@
             font-weight: 600;
         }
 
-        /* Exercise Builder authoring retains panel one so the current
+        /* Problem Builder authoring retains panel one so the current
            expression remains visible in conventional notation. */
         body.authoring-session.authoring-initial-session .quadrant-menu {
             display: none !important;
@@ -4375,13 +4375,34 @@
                 display: none !important;
             }
         }
+        /* Problems without conventional steps give their space to the workspace
+           in portrait and to the controls in landscape. Authoring keeps its preview. */
+        body.conventional-steps-hidden .left-panel {
+            display: none !important;
+        }
+        @media (orientation: portrait) {
+            body.conventional-steps-hidden:not(.settings-active) .app-container {
+                grid-template-rows: 0 0 minmax(0, 1fr) var(--divider-size) min(var(--bottom-panel-height), 33.333dvh);
+            }
+            body.conventional-steps-hidden .top-panel-resize-handle {
+                display: none !important;
+            }
+        }
+        @media (orientation: landscape) {
+            body.conventional-steps-hidden:not(.settings-active) .app-container {
+                grid-template-rows: 0 0 minmax(0, 1fr);
+            }
+            body.conventional-steps-hidden .bottom-panel-resize-handle {
+                display: none !important;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-10-04T23:05:35-04:00">10/4/26, 11:05 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-10-04T23:38:53-04:00">10/4/26, 11:38 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4531,7 +4552,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20260925-centered-midline-default"></script>
-    <script src="exploded-algebra-tool.js?v=20260926-step-scroll-3"></script>
+    <script src="exploded-algebra-tool.js?v=20261005-conventional-steps"></script>
 
 </body>
 </html>

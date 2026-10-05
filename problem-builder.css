@@ -177,8 +177,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }
 .phase4-controls { display: grid; justify-items: center; gap: 10px; padding-top: 20px; }
 .continue-to-guidance-button,
-.complete-exercise-button { width: min(100%, 320px); }
-.complete-exercise-button { color: #000; }
+.complete-problem-button { width: min(100%, 320px); }
+.complete-problem-button { color: #000; }
 .phase4-controls .status-line { min-height: 1.45em; text-align: center; }
 
 .exercise-guidance-card {

@@ -1388,7 +1388,7 @@ Promise.resolve().then(() => {
             unguided: "unguided"
         };
 
-        const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "builder";
+        const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "problem-builder";
         let authoringPhase = "";
         let authoringInitialExpressionCommitted = false;
         let assistanceMode = ASSISTANCE_MODES.unguided;
@@ -1579,7 +1579,7 @@ Promise.resolve().then(() => {
         }
 
         function recalculateResponsiveStepsLayout() {
-            if (!appContainer || !leftPanel || document.body.classList.contains("settings-active")) {
+            if (!appContainer || !leftPanel || leftPanel.hidden || document.body.classList.contains("settings-active")) {
                 return;
             }
             const sizes = calculateContextualStepsFontSizes();
@@ -2246,7 +2246,7 @@ Promise.resolve().then(() => {
         }
 
         function updateTopPanelHeight(level = getCurrentLevel(), minimumTwoRowHeight = null) {
-            if (!appContainer || !leftPanel || !level) {
+            if (!appContainer || !leftPanel || leftPanel.hidden || !level) {
                 return;
             }
             if (isLandscapePanelLayout()) {
@@ -3062,6 +3062,9 @@ Promise.resolve().then(() => {
             ) {
                 throw new Error(`${sourceName} has an invalid exerciseGuidanceIsComplete setting.`);
             }
+            if (level.showConventionalSteps !== undefined && typeof level.showConventionalSteps !== "boolean") {
+                throw new Error(`${sourceName} has an invalid showConventionalSteps setting.`);
+            }
             if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
                 throw new Error(`${sourceName} has an invalid initialKatex.`);
             }
@@ -3126,6 +3129,7 @@ Promise.resolve().then(() => {
 
         function showNoLevelSelectedState(message = "Choose a JSON level file to begin.") {
             document.body.classList.add("no-level-loaded");
+            syncConventionalStepsVisibility(null);
             levelContent.innerHTML = `
                 <div class="level-intro">
                     <div class="level-title">No level selected</div>
@@ -3247,17 +3251,17 @@ Promise.resolve().then(() => {
             const requestedLevelFile = String(params.get("level") || "").trim();
             const navigationSource = String(params.get("source") || "").toLowerCase();
 
-            if (navigationSource === "builder") {
+            if (navigationSource === "problem-builder") {
                 try {
                     const draftKey = String(params.get("draftKey") || "").trim();
                     const payload = readCustomLevelTransferPayload(draftKey || CUSTOM_LEVEL_STORAGE_KEY, !!draftKey);
                     const parsed = JSON.parse(payload.text);
-                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Exercise Builder draft");
+                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Builder draft");
                 } catch (error) {
-                    console.error("The Exercise Builder test level could not be loaded.", error);
+                    console.error("The Problem Builder test level could not be loaded.", error);
                     showNoLevelSelectedState(error && error.message
                         ? error.message
-                        : "The Exercise Builder test level could not be loaded. Return to the builder and try again.");
+                        : "The Problem Builder test level could not be loaded. Return to the builder and try again.");
                     return false;
                 }
             }
@@ -4029,8 +4033,20 @@ Promise.resolve().then(() => {
             stepPanelScrollAnimationFrame = requestAnimationFrame(tick);
         }
 
+        function syncConventionalStepsVisibility(level) {
+            const hidden = !authoringSessionActive && !!level && level.showConventionalSteps === false;
+            document.body.classList.toggle("conventional-steps-hidden", hidden);
+            if (leftPanel) leftPanel.hidden = hidden;
+            return hidden;
+        }
+
         function renderLevelInfo(levelIndex) {
             const level = LEVELS[levelIndex];
+            if (syncConventionalStepsVisibility(level)) {
+                levelContent.replaceChildren();
+                renderMoveHistoryControls(level);
+                return;
+            }
             if (!level) {
                 levelContent.innerHTML = "";
                 renderMoveHistoryControls(null);
@@ -4287,8 +4303,8 @@ Promise.resolve().then(() => {
                 format: "exploded-algebra-level",
                 formatVersion: 1,
                 kind: "interactive",
-                id: config.id || "exercise-builder-draft",
-                title: config.title || "Exercise Builder Draft",
+                id: config.id || "problem-builder-draft",
+                title: config.title || "Problem Builder Draft",
                 startExpression: expression,
                 initialKatex,
                 evaluationLevel: Number.isInteger(config.evaluationLevel) ? config.evaluationLevel : 0,
@@ -4302,12 +4318,13 @@ Promise.resolve().then(() => {
                 excludedDefaultTools: clonePlainData(config.excludedDefaultTools || []),
                 allowedUnavailableTools: clonePlainData(config.allowedUnavailableTools || []),
                 includeUndoActions: config.includeUndoActions !== false,
+                showConventionalSteps: config.showConventionalSteps !== false,
                 steps: [{ expression, katex: initialKatex }]
             };
         }
 
         function installAuthoringLevel(level) {
-            const validated = validateChosenLevel(level, "Exercise Builder draft");
+            const validated = validateChosenLevel(level, "Problem Builder draft");
             LEVELS.splice(0, LEVELS.length, validated);
             currentLevelIndex = 0;
             assistanceMode = ASSISTANCE_MODES.unguided;
@@ -4897,7 +4914,7 @@ Promise.resolve().then(() => {
             window.addEventListener("blur", hideBuilderOriginalReview);
             updateWorkspaceToolbar();
             if (authoringSessionActive) {
-                showNoLevelSelectedState("Preparing the Exercise Builder workspace…");
+                showNoLevelSelectedState("Preparing the Problem Builder workspace…");
                 installAuthoringApi();
             } else {
                 loadInitialLevelFromNavigation();

@@ -22,10 +22,11 @@ assert(new Set(lastUpdatedValues).size === 1, "Every HTML page must carry the sa
 assert(/\.page-last-updated \{[\s\S]*?position: fixed;[\s\S]*?top: max\(3px,[\s\S]*?right: max\(5px,[\s\S]*?font-size: 9px;[\s\S]*?pointer-events: none;/.test(lastUpdatedCss), "The shared Last updated marker must remain tiny, fixed in the top-right, and noninteractive");
 const indexChoices = Array.from(indexHtml.matchAll(/<a class="choice" href="([^"]+)">([^<]+)<\/a>/g), match => ({ href: match[1], label: match[2] }));
 assert.deepEqual(indexChoices, [
+    { href: "Introduction.html", label: "Introduction to Exploded Algebra" },
     { href: "Exercises.html", label: "Student" },
-    { href: "exercise-builder.html", label: "Instructor" }
-], "The landing page must contain only the Student and Instructor choices, in that order");
-assert(indexHtml.includes("Welcome to Exploded Algebra") && !indexHtml.includes("Introduction.html"), "The landing page must welcome users without an introduction choice");
+    { href: "problem-builder.html", label: "Instructor" }
+], "The landing page must link to Introduction, Student, and Instructor, in that order");
+assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
 assert(exercisesHtml.includes("select <strong>Guided</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(playerHtml.includes('data-assistance-mode="guided">Guided</button>') && playerHtml.includes('data-assistance-mode="unguided">Unguided</button>'), "The mode prompt must offer Guided and Unguided");
@@ -108,7 +109,7 @@ assert(
 assert(
     !playerHtml.includes('body.authoring-session:not(.expression-builder-active) .left-panel,') &&
         !playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
-    "Exercise Builder authoring must retain panel one in and outside expression entry"
+    "Problem Builder authoring must retain panel one in and outside expression entry"
 );
 assert(
     /body\.expression-builder-active\.builder-review-active \.app-container\s*\{[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
@@ -272,7 +273,7 @@ assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minm
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20260925-centered-midline-default'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261005-conventional-steps'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -314,7 +315,7 @@ assert(playerJs.includes("const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;"));
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;"));
 assert(playerJs.includes('appContainer.style.setProperty("--steps-two-row-height"'));
-assert(playerJs.includes('leftPanel.scrollTop = Math.max(0, leftPanel.scrollHeight - leftPanel.clientHeight);'));
+assert(playerJs.includes('leftPanel.scrollTop = getStepPanelScrollTarget();'));
 assert(playerJs.includes("function setLandscapeSidebarWidth(width, rememberUserChoice = false)"));
 assert(playerJs.includes('topPanelResizeHandle.setAttribute("aria-orientation", "vertical")'));
 assert(playerJs.includes('window.addEventListener("orientationchange", handlePanelOrientationChange)'));
