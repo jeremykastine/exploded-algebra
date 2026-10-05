@@ -71,6 +71,24 @@ function checkPlayer() {
   assert.equal(vm.runInContext("makeAuthoringLevel({}, '(0)').showConventionalSteps", scope), true);
   assert.equal(vm.runInContext("makeAuthoringLevel({showConventionalSteps: false}, '(0)').showConventionalSteps", scope), false);
 
+  scope.authoringSessionActive = false;
+  scope.level = { showConventionalSteps: false, steps: [{ expression: "((2)+(3))" }, { expression: "(5)" }] };
+  scope.LEVELS = [scope.level];
+  scope.completedSteps = [true, false];
+  scope.expressionMatchesParenthesizedText = expression => expression === "(5)";
+  scope.maybePrepareCompletedLevelExport = () => {};
+  scope.levelContent = { replaceChildren() {} };
+  scope.renderMoveHistoryControls = () => {};
+  scope.getCurrentLevel = () => scope.level;
+  scope.isInteractiveLevel = () => true;
+  scope.uiState = { mode: "edit", stage: "idle", expressionBuilder: null };
+  for (const name of ["updateStepCompletion", "renderLevelInfo", "isExerciseFinished"]) {
+    vm.runInContext(extract(player, name, "        "), scope);
+  }
+  vm.runInContext("renderLevelInfo(0)", scope);
+  assert.equal(scope.completedSteps[1], true, "Hidden panels must still track the final solution step");
+  assert.equal(vm.runInContext("isExerciseFinished()", scope), true, "Hidden-step problems must expose completion controls");
+
   scope.isValidTextBlocks = () => true;
   vm.runInContext(extract(player, "validateChosenLevel", "        "), scope);
   scope.level = { id: "add", title: "Add", startExpression: "(2)", steps: [{ expression: "(2)" }], showConventionalSteps: "no" };

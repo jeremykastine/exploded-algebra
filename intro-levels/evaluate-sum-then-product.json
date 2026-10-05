@@ -2,38 +2,38 @@
   "format": "exploded-algebra-level",
   "formatVersion": 1,
   "kind": "guidedCapable",
-  "id": "evaluate-sum-then-product",
-  "title": "Evaluate “two plus three … times four”",
+  "id": "1791171995468",
+  "title": "1791171995468",
   "startExpression": "(((2)+(3))*(4))",
-  "initialKatex": "(2+3)\\times4",
+  "initialKatex": "\\left(2 + 3\\right) \\cdot 4",
   "numericalRewrite": {
     "rules": {
       "nonnegativeArithmetic": {
-        "forward": "automatic",
+        "forward": "manual",
         "reverse": "manual"
       },
       "signedArithmetic": {
-        "forward": "not-allowed",
-        "reverse": "not-allowed"
+        "forward": "manual",
+        "reverse": "manual"
       },
       "nonnegativeFractionSimplification": {
-        "forward": "not-allowed",
-        "reverse": "not-allowed"
+        "forward": "manual",
+        "reverse": "manual"
       },
       "signedFractionSimplification": {
-        "forward": "not-allowed",
-        "reverse": "not-allowed"
+        "forward": "manual",
+        "reverse": "manual"
       },
       "inverseOne": {
-        "forward": "automatic",
+        "forward": "manual",
         "reverse": "manual"
       },
       "inverseNegativeOne": {
-        "forward": "automatic",
+        "forward": "manual",
         "reverse": "manual"
       },
       "doubleNegative": {
-        "forward": "automatic",
+        "forward": "manual",
         "reverse": "manual"
       }
     }
@@ -41,25 +41,26 @@
   "variables": [],
   "excludedDefaultTools": [],
   "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
   "includeUndoActions": false,
-  "exerciseGuidance": "## Try the interface\n\nSelect the operation inside the yellow outline, then press the yellow-highlighted 123 button. It evaluates the selected operation automatically. Repeat with the remaining operation.\n\nFirst evaluate \\(2+3\\), then evaluate \\(5\\times4\\). The result is 20.",
+  "exerciseGuidance": "## Problem Statement\n\n\\[\n\\left(2 + 3\\right) \\cdot 4\n\\]\n\n## Numerical Manipulation Restrictions\n\n- Nonnegative addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Signed number addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Non-negative fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Signed fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of one\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of negative one\n  - Forward — Manual\n  - Reverse — Manual\n- Negative one times negative one\n  - Forward — Manual\n  - Reverse — Manual",
   "exerciseGuidanceIsComplete": true,
   "steps": [
     {
       "expression": "(((2)+(3))*(4))",
       "explodedExpression": "(((2)+(3))*(4))",
-      "katex": "(2+3)\\times4",
-      "beforeKatex": "(2+3)\\times4",
-      "afterKatex": "(2+3)\\times4"
+      "katex": "\\left(2 + 3\\right) \\cdot 4",
+      "beforeKatex": "\\left(2 + 3\\right) \\cdot 4",
+      "afterKatex": "\\left(2 + 3\\right) \\cdot 4"
     },
     {
       "expression": "((5)*(4))",
       "explodedExpression": "((5)*(4))",
-      "katex": "5\\times4",
-      "beforeKatex": "5\\times4",
-      "afterKatex": "5\\times4",
+      "katex": "5 \\cdot 4",
+      "beforeKatex": "5 \\cdot 4",
+      "afterKatex": "5 \\cdot 4",
       "actionStartIndex": 0,
-      "actionEndIndex": 2
+      "actionEndIndex": 4
     },
     {
       "expression": "(20)",
@@ -67,8 +68,8 @@
       "katex": "20",
       "beforeKatex": "20",
       "afterKatex": "20",
-      "actionStartIndex": 2,
-      "actionEndIndex": 4
+      "actionStartIndex": 4,
+      "actionEndIndex": 9
     }
   ],
   "demo": {
@@ -85,7 +86,18 @@
       },
       {
         "type": "tool",
-        "tool": "automaticNumericalRewrite"
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "5",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
       },
       {
         "type": "select",
@@ -96,7 +108,24 @@
       },
       {
         "type": "tool",
-        "tool": "automaticNumericalRewrite"
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
       }
     ]
   },
@@ -104,41 +133,83 @@
     {
       "type": "select",
       "expression": "((2)+(3))",
+      "selectedType": "sum",
       "path": [
         0
       ],
       "firstPart": 0,
       "lastPart": 1,
-      "index": 0,
       "beforeExpression": "(((2)+(3))*(4))",
-      "selectedType": "sum"
+      "index": 0
     },
     {
       "type": "tool",
-      "tool": "automaticNumericalRewrite",
-      "index": 1,
+      "tool": "numericalRewrite",
       "beforeExpression": "(((2)+(3))*(4))",
-      "afterExpression": "((5)*(4))"
+      "afterExpression": "(((2)+(3))*(4))",
+      "index": 1
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "5",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)+(3))*(4))",
+      "afterExpression": "(((2)+(3))*(4))",
+      "index": 2
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)+(3))*(4))",
+      "afterExpression": "((5)*(4))",
+      "index": 3
     },
     {
       "type": "select",
       "expression": "((5)*(4))",
+      "selectedType": "prod",
       "path": [],
       "firstPart": 0,
       "lastPart": 1,
-      "index": 2,
       "beforeExpression": "((5)*(4))",
-      "selectedType": "prod"
+      "index": 4
     },
     {
       "type": "tool",
-      "tool": "automaticNumericalRewrite",
-      "index": 3,
+      "tool": "numericalRewrite",
       "beforeExpression": "((5)*(4))",
-      "afterExpression": "(20)"
+      "afterExpression": "((5)*(4))",
+      "index": 5
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((5)*(4))",
+      "afterExpression": "((5)*(4))",
+      "index": 6
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((5)*(4))",
+      "afterExpression": "((5)*(4))",
+      "index": 7
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "((5)*(4))",
+      "afterExpression": "(20)",
+      "index": 8
     }
   ],
   "finalExpression": "(20)",
-  "finalKatex": "20",
-  "completionMessage": "You evaluated one operation, then the other. Return to the introduction to try the other grouping or continue reading."
+  "finalKatex": "20"
 }

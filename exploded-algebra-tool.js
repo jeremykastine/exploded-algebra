@@ -4043,6 +4043,7 @@ Promise.resolve().then(() => {
         function renderLevelInfo(levelIndex) {
             const level = LEVELS[levelIndex];
             if (syncConventionalStepsVisibility(level)) {
+                updateStepCompletion(level);
                 levelContent.replaceChildren();
                 renderMoveHistoryControls(level);
                 return;
