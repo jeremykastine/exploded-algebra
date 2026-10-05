@@ -125,7 +125,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-04T21:28:53-04:00">10/4/26, 9:28 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-04T21:39:22-04:00">10/4/26, 9:39 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1070,12 +1070,26 @@ body.player-ready>#exploded-examples{display:none;}
         phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "Multiply 3 and 4 first, then add 2. The result is 14.")
     ));
 
-    addSection("Read it from the inside out", [
-        "The same arrangement works with unknown values. Read each complete inner group first, then read the larger operation that contains it. Notice that these two English descriptions place the sum and the product in different positions."
-    ], phrasePair(
-        phraseCard("Add 3 to the product of 2 and x.", sum(product(value(2), value("x")), value(3)), "The product is one term of the outer sum."),
-        phraseCard("Multiply 2 by the sum of x and 3.", product(value(2), sum(value("x"), value(3))), "The sum is one factor of the outer product.")
-    ));
+    const interfaceSection = addSection("Try the Exploded Algebra interface", [
+        "Open either guided exercise below to try the calculation from Section 3. Follow the prompts: select the part inside the yellow outline, then press the yellow-highlighted 123 button to evaluate that operation. Repeat for the remaining operation.",
+        "Each exercise has just two calculations. The yellow outlines show what to select, and the yellow buttons show what to press, so you can see how the interface works one step at a time."
+    ], null, "try-the-interface");
+    const interfaceLinks = document.createElement("ul");
+    [
+        { phrase: "two plus three … times four", file: "intro-levels/evaluate-sum-then-product.json" },
+        { phrase: "two … plus three times four", file: "intro-levels/evaluate-product-then-sum.json" }
+    ].forEach(({ phrase, file }) => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.className = "practice-link";
+        link.href = `exploded-algebra.html?level=${encodeURIComponent(file)}&mode=guided`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = `Try “${phrase}” — guided exercise (opens in a new tab)`;
+        item.appendChild(link);
+        interfaceLinks.appendChild(item);
+    });
+    interfaceSection.appendChild(interfaceLinks);
 
     addSection("The same idea can be nested again", [
         "A longer sentence still becomes one expression. Begin with the innermost instruction, then place its result inside the next operation. The arrangement records the sequence without flattening the parts into one row."

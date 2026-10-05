@@ -1,0 +1,144 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "evaluate-product-then-sum",
+  "title": "Evaluate “two … plus three times four”",
+  "startExpression": "((2)+((3)*(4)))",
+  "initialKatex": "2+3\\times4",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "automatic",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "signedFractionSimplification": {
+        "forward": "not-allowed",
+        "reverse": "not-allowed"
+      },
+      "inverseOne": {
+        "forward": "automatic",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "automatic",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "automatic",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Try the interface\n\nSelect the operation inside the yellow outline, then press the yellow-highlighted 123 button. It evaluates the selected operation automatically. Repeat with the remaining operation.\n\nFirst evaluate \\(3\\times4\\), then evaluate \\(2+12\\). The result is 14.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)+((3)*(4)))",
+      "explodedExpression": "((2)+((3)*(4)))",
+      "katex": "2+3\\times4",
+      "beforeKatex": "2+3\\times4",
+      "afterKatex": "2+3\\times4"
+    },
+    {
+      "expression": "((2)+(12))",
+      "explodedExpression": "((2)+(12))",
+      "katex": "2+12",
+      "beforeKatex": "\\text{Evaluate }3\\times4",
+      "afterKatex": "2+12",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    },
+    {
+      "expression": "(14)",
+      "explodedExpression": "(14)",
+      "katex": "14",
+      "beforeKatex": "\\text{Evaluate }2+12",
+      "afterKatex": "14",
+      "actionStartIndex": 2,
+      "actionEndIndex": 4
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((3)*(4))",
+        "path": [
+          1
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "automaticNumericalRewrite"
+      },
+      {
+        "type": "select",
+        "expression": "((2)+(12))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "automaticNumericalRewrite"
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((3)*(4))",
+      "path": [
+        1
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "index": 0,
+      "beforeExpression": "((2)+((3)*(4)))",
+      "selectedType": "prod"
+    },
+    {
+      "type": "tool",
+      "tool": "automaticNumericalRewrite",
+      "index": 1,
+      "beforeExpression": "((2)+((3)*(4)))",
+      "afterExpression": "((2)+(12))"
+    },
+    {
+      "type": "select",
+      "expression": "((2)+(12))",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "index": 2,
+      "beforeExpression": "((2)+(12))",
+      "selectedType": "sum"
+    },
+    {
+      "type": "tool",
+      "tool": "automaticNumericalRewrite",
+      "index": 3,
+      "beforeExpression": "((2)+(12))",
+      "afterExpression": "(14)"
+    }
+  ],
+  "finalExpression": "(14)",
+  "finalKatex": "14",
+  "completionMessage": "You evaluated one operation, then the other. Return to the introduction to try the other grouping or continue reading."
+}
