@@ -125,7 +125,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-04T17:01:53-04:00">10/4/26, 5:01 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-04T21:26:43-04:00">10/4/26, 9:26 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1062,11 +1062,12 @@ body.player-ready>#exploded-examples{display:none;}
     });
 
     addSection("A fresh way to draw an expression", [
-        "Exploded Algebra places the terms of an addition vertically along an addition bar. It places the factors of a multiplication horizontally along a multiplication bar. Each part can itself be an entire expression.",
-        "In the first picture, the whole sum of 2 and 3 is a factor beside 4. In the second, the whole product of 3 and 4 is a term below 2. Their positions tell us which operation contains the other."
+        "Exploded Algebra uses horizontal grouping line segments for sums and vertical grouping line segments for products. The terms of a sum sit above and below the addition sign; the factors of a product sit to the left and right of the multiplication sign.",
+        "When a factor of a product contains multiple terms, line segments extend vertically from the multiplication sign to show which terms belong together in that factor. Likewise, when a term of a sum contains multiple factors, line segments extend horizontally from the addition sign to show which factors belong together in that term. These segments make clear what is grouped with what.",
+        "The ellipses below mark the same pauses we used in Section 1. In the first picture, the whole sum of 2 and 3 is a factor beside 4, giving 20. In the second, the whole product of 3 and 4 is a term below 2, giving 14. The grouping segments show which operation contains the other."
     ], phrasePair(
-        phraseCard("Multiply the sum of 2 and 3 by 4.", product(sum(value(2), value(3)), value(4)), "An addition sits inside a multiplication."),
-        phraseCard("Add 2 to the product of 3 and 4.", sum(value(2), product(value(3), value(4))), "A multiplication sits inside an addition.")
+        phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "Add 2 and 3 first, then multiply by 4. The result is 20."),
+        phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "Multiply 3 and 4 first, then add 2. The result is 14.")
     ));
 
     addSection("Read it from the inside out", [
