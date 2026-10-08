@@ -858,6 +858,19 @@ function measureNodeWithContext(node, drawingContext, settings) {
     const gap = getComponentGap(settings);
     const operatorHalf = getOperatorHalfSize(settings);
 
+    if (node.isNumericalRewritePreview) {
+        const [original, replacement] = node.args;
+        measureNodeWithContext(original, drawingContext, settings);
+        measureNodeWithContext(replacement, drawingContext, settings);
+        const diagonalGap = Math.max(20, gap);
+        node.layout.rewriteGap = diagonalGap;
+        node.layout.width = original.layout.width + diagonalGap + replacement.layout.width;
+        node.layout.height = original.layout.height + diagonalGap + replacement.layout.height;
+        node.layout.vLines = [0, node.layout.width];
+        node.layout.hLines = [0, node.layout.height];
+        return;
+    }
+
     if (node.isBuilderSequence) {
         for (const child of node.args) {
             measureNodeWithContext(child, drawingContext, settings);
@@ -1039,6 +1052,16 @@ function placeNodeWithSettings(node, x, y, settings) {
     node.layout.y = y;
     node.layout.childBoxes = [];
 
+    if (node.isNumericalRewritePreview) {
+        const [original, replacement] = node.args;
+        const diagonalGap = node.layout.rewriteGap;
+        placeNodeWithSettings(original, x, y, settings);
+        placeNodeWithSettings(replacement,
+            original.right() + diagonalGap, original.bottom() + diagonalGap, settings);
+        node.layout.childBoxes = node.args.map(childBox);
+        return;
+    }
+
     if (node.isBuilderSequence) {
         const offsets = node.layout.builderItemOffsets || [];
         node.args.forEach((child, index) => {
@@ -1134,6 +1157,33 @@ function drawNodeRecursiveToContext(
     nodeForeground = () => null,
     separatorForeground = () => null
 ) {
+    if (node.isNumericalRewritePreview) {
+        // The surrounding expression is faded by the caller, including beams,
+        // inverse containers and negative-unit backgrounds. Restore full ink
+        // for just the original selected range and its proposed replacement.
+        drawingContext.save();
+        drawingContext.globalAlpha = 1;
+        const fullInkSettings = { ...settings, expressionStrokeFill: "black", operationBarShading: "black" };
+        for (const child of node.args) {
+            drawNodeRecursiveToContext(child, drawingContext, fullInkSettings);
+        }
+        const original = node.args[0];
+        const gap = node.layout.rewriteGap;
+        drawingContext.strokeStyle = "black";
+        drawingContext.lineWidth = 1.5;
+        drawingContext.setLineDash([]);
+        const endX = original.right() + gap * 0.75;
+        const endY = original.bottom() + gap * 0.75;
+        drawingContext.beginPath();
+        drawingContext.moveTo(original.right() + gap * 0.25, original.bottom() + gap * 0.25);
+        drawingContext.lineTo(endX, endY);
+        drawingContext.moveTo(endX - 5, endY);
+        drawingContext.lineTo(endX, endY);
+        drawingContext.lineTo(endX, endY - 5);
+        drawingContext.stroke();
+        drawingContext.restore();
+        return;
+    }
     if (node.isBuilderSequence) {
         drawingContext.save();
         drawingContext.fillStyle = settings.builderOperationFill || "rgb(235, 235, 235)";
@@ -1236,6 +1286,10 @@ function drawInverseBackgroundToContext(node, drawingContext, settings) {
         cornerRadius
     );
     drawingContext.fillStyle = settings.inverseDenominatorFill || "white";
+    // A faded inverse still has a white interior. With SVG's per-element
+    // opacity, a translucent white rectangle would leave the gray outer fill
+    // showing through behind the selected numbers and replacement.
+    if (settings.opaqueInverseDenominator) drawingContext.globalAlpha = 1;
     drawingContext.fillRect(denominatorLeft, denominatorTop, denominatorWidth, denominatorHeight);
     drawingContext.restore();
 }

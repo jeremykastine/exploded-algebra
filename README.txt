@@ -83,8 +83,17 @@ settings, Reset, and Download Move History appear on the settings screen rather
 than in the action or expression-builder panels.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
-downloaded move histories. In Expression Builder, the original and proposed
-expressions use the same blue shading as an initial selection.
+downloaded move histories. General Expression Builder insertions use the
+existing entry canvas and original-expression Peek control.
+Manual Numerical Manipulation keeps the complete expression visible in light
+gray, including its operation symbols, grouping beams, and inverse containers.
+The selected original numbers and the replacement remain at full intensity.
+The replacement opens diagonally below and to the right of the selected range;
+the display reserves space as it grows so the surrounding expression does not
+overlap it. This temporary display tree never enters the expression or move
+history. Submit validates and substitutes the replacement as before; cancel
+restores the original. General expression entry and inverse-pair / opposite-pair
+insertion retain their existing display behavior.
 Addition and multiplication are always entered explicitly. Their first press
 places the pending operation at its lowest available level; repeated presses of
 that same button, before the next value is entered, cycle it through the higher

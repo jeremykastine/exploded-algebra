@@ -3857,6 +3857,14 @@
             display: none !important;
         }
 
+        /* Only manual numerical rewrites retain the full expression context. */
+        body.expression-builder-active.numerical-rewrite-context #expressionWorkspaceSvg {
+            opacity: 1;
+        }
+        body.expression-builder-active.numerical-rewrite-context .builder-rewrite-preview {
+            display: none !important;
+        }
+
         /* A dedicated, resizable control panel keeps every button outside the
            expression workspace. Button dimensions are fitted to this row by
            applyResponsiveMainButtonSize(). */
@@ -4402,7 +4410,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-10-04T23:54:12-04:00">10/4/26, 11:54 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-10-08T19:45:18-04:00">10/8/26, 7:45 PM EDT</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
@@ -4551,8 +4559,8 @@
         </section>
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20260925-centered-midline-default"></script>
-    <script src="exploded-algebra-tool.js?v=20261005-hidden-step-completion"></script>
+    <script src="exploded-algebra-renderer.js?v=20261008-numerical-context"></script>
+    <script src="exploded-algebra-tool.js?v=20261008-numerical-context"></script>
 
 </body>
 </html>

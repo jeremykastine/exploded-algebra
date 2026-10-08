@@ -5932,6 +5932,12 @@ ctx.font = SETTINGS.textFont;
         }
 
         function getExplodedBuilderDisplayRoot(builder = uiState.expressionBuilder) {
+            if (builderReviewActive && builder && builder.mainRoot && isNumericalBuilderTool(builder.tool)) {
+                return builder.mainRoot;
+            }
+            if (isInContextNumericalBuilder(builder)) {
+                return makeNumericalRewriteDisplayRoot(builder);
+            }
             if (!isIntegratedExpressionBuilder(builder)) {
                 return expressionRoot;
             }
@@ -5939,6 +5945,37 @@ ctx.font = SETTINGS.textFont;
                 return makeBuilderInsertionRoot(builder);
             }
             return builder.root;
+        }
+
+        function isInContextNumericalBuilder(builder = uiState.expressionBuilder) {
+            return !!builder && !!builder.mainRoot && !!builder.originalSelection &&
+                isNumericalBuilderTool(builder.tool) && !builderReviewActive;
+        }
+
+        function makeNumericalRewriteDisplayRoot(builder) {
+            // This wrapper exists only in the display tree. Reserve room inside
+            // the selected range so enclosing operations and siblings reflow
+            // around both the old numbers and the growing replacement.
+            const preview = new ExprNode("rewritePreview", [
+                cloneNode(builder.originalSelectedNode), builder.root
+            ], null);
+            preview.isNumericalRewritePreview = true;
+            const originalSelection = builder.originalSelection;
+            const copyContext = node => {
+                if (node === originalSelection.node) {
+                    if (!["sum", "prod"].includes(node.type) ||
+                        originalSelection.firstPart === 0 && originalSelection.lastPart === node.args.length - 1) {
+                        return preview;
+                    }
+                    return new ExprNode(node.type, [
+                        ...node.args.slice(0, originalSelection.firstPart).map(cloneNode),
+                        preview,
+                        ...node.args.slice(originalSelection.lastPart + 1).map(cloneNode)
+                    ], node.value);
+                }
+                return new ExprNode(node.type, node.args.map(copyContext), node.value);
+            };
+            return copyContext(builder.mainRoot);
         }
 
         function drawExpression() {
@@ -5955,7 +5992,8 @@ ctx.font = SETTINGS.textFont;
             }
 
             const integratedBuilder = isIntegratedExpressionBuilder(uiState.expressionBuilder);
-            const explodedDisplayRoot = integratedBuilder
+            const numericalBuilder = isInContextNumericalBuilder();
+            const explodedDisplayRoot = integratedBuilder || numericalBuilder
                 ? getExplodedBuilderDisplayRoot(uiState.expressionBuilder)
                 : expressionRoot;
             layoutExpression(explodedDisplayRoot);
@@ -5967,7 +6005,16 @@ ctx.font = SETTINGS.textFont;
             }
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
-            if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
+            if (numericalBuilder) {
+                ctx.save();
+                ctx.globalAlpha = 0.28;
+                drawNodeRecursiveToContext(explodedDisplayRoot, ctx,
+                    { ...SETTINGS, opaqueInverseDenominator: true }, isCommuteSeparatorHidden);
+                ctx.restore();
+                const builder = uiState.expressionBuilder;
+                const activeNode = getNodeAtPath(builder.root, builder.currentPath);
+                drawRoundedNodeHighlight(activeNode, "#111", 1.8, 4);
+            } else if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
                 drawBuilderSequence(uiState.expressionBuilder);
             } else {
                 drawNodeRecursive(explodedDisplayRoot);
@@ -5979,7 +6026,7 @@ ctx.font = SETTINGS.textFont;
                     if (selection.node) {
                         drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
                     }
-                } else if (integratedBuilder) {
+                } else if (integratedBuilder || numericalBuilder) {
                     hideBuilderRewritePreview();
                 } else {
                     drawExpressionBuilderContext();
@@ -12832,6 +12879,7 @@ function renderToolArea() {
             }
             document.body.classList.toggle("expression-builder-active", builderActive);
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
+            document.body.classList.toggle("numerical-rewrite-context", builderActive && isInContextNumericalBuilder());
             document.body.classList.remove("builder-grouping-mode", "builder-grouping-selection");
             document.body.classList.toggle("selection-active", selectionActive);
             if (builderActive) {
