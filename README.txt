@@ -87,11 +87,13 @@ downloaded move histories. General Expression Builder insertions use the
 existing entry canvas and original-expression Peek control.
 Manual Numerical Manipulation keeps the complete expression visible in light
 gray, including its operation symbols, grouping beams, and inverse containers.
-The selected original numbers and the replacement remain at full intensity.
-The replacement opens diagonally below and to the right of the selected range;
-the display reserves space as it grows so the surrounding expression does not
-overlap it. This temporary display tree never enters the expression or move
-history. Submit validates and substitutes the replacement as before; cancel
+The selected range becomes a gray-filled box with white numbers and symbols
+until entry begins. The replacement appears in black directly over that region,
+covering the original; undoing all entry reveals the original again. There is no
+diagonal area, arrow, or entry outline. The child region uses the larger width
+and height of the original and replacement, including padding, so neither can
+overlap surrounding content. This temporary display tree never enters the
+expression or move history. Submit validates and substitutes the replacement as before; cancel
 restores the original. General expression entry and inverse-pair / opposite-pair
 insertion retain their existing display behavior.
 Addition and multiplication are always entered explicitly. Their first press

@@ -5953,9 +5953,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function makeNumericalRewriteDisplayRoot(builder) {
-            // This wrapper exists only in the display tree. Reserve room inside
-            // the selected range so enclosing operations and siblings reflow
-            // around both the old numbers and the growing replacement.
+            // This wrapper exists only in the display tree. Enclosing operations
+            // and siblings account for the larger of the old and new expressions,
+            // which share one overlaid region in the selected position.
             const preview = new ExprNode("rewritePreview", [
                 cloneNode(builder.originalSelectedNode), builder.root
             ], null);
@@ -6011,9 +6011,6 @@ ctx.font = SETTINGS.textFont;
                 drawNodeRecursiveToContext(explodedDisplayRoot, ctx,
                     { ...SETTINGS, opaqueInverseDenominator: true }, isCommuteSeparatorHidden);
                 ctx.restore();
-                const builder = uiState.expressionBuilder;
-                const activeNode = getNodeAtPath(builder.root, builder.currentPath);
-                drawRoundedNodeHighlight(activeNode, "#111", 1.8, 4);
             } else if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
                 drawBuilderSequence(uiState.expressionBuilder);
             } else {

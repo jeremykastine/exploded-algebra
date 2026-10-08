@@ -66,8 +66,15 @@ function render(builder) {
     const preview = findPreview(display);
     assert(preview, "The original selected range and replacement must share one reserved display region");
     assert.equal(preview.args[1], builder.root, "Position the live replacement tree so its grouping hit targets share the canvas coordinates");
-    assert(builder.root.left() > preview.args[0].right(), "The replacement must be to the right of the old selected values");
-    assert(builder.root.top() > preview.args[0].bottom(), "The replacement must be below the old selected values");
+    for (const child of preview.args) {
+        assert.equal((child.left() + child.right()) / 2, (preview.left() + preview.right()) / 2, "Old and new expressions must share the same horizontal center");
+        assert.equal((child.top() + child.bottom()) / 2, (preview.top() + preview.bottom()) / 2, "Old and new expressions must share the same vertical center");
+        assert(child.left() >= preview.left() && child.right() <= preview.right(), "The edit region must contain both widths");
+        assert(child.top() >= preview.top() && child.bottom() <= preview.bottom(), "The edit region must contain both heights");
+    }
+    assert.equal(preview.layout.width, Math.max(...preview.args.map(child => child.layout.width)) + 16);
+    assert.equal(preview.layout.height, Math.max(...preview.args.map(child => child.layout.height)) + 16);
+    assert(svg.children.some(child => child.name === "rect" && child.attributes.fill === "rgb(184,184,184)" && child.attributes.stroke === "none"), "The selected region must have a gray fill without an entry outline");
     return { display, preview, svg };
 }
 function makeBuilder(mainRoot, node, firstPart = 0, lastPart = 0, originalSelectedNode = node) {
@@ -82,11 +89,12 @@ const labels = single.svg.children.filter(child => child.name === "text");
 for (const text of ["x", "7"]) {
     assert.equal(labels.find(label => label.textContent === text).attributes.opacity, "0.28", "Unselected values must stay visible in light gray");
 }
-for (const text of ["6", "2", "3"]) {
+assert(!labels.some(label => label.textContent === "6"), "Typing must completely cover the old selected value");
+for (const text of ["2", "3"]) {
     const label = labels.find(label => label.textContent === text);
     assert(label, `Missing original or replacement number ${text}`);
     assert.equal(label.attributes.fill, "black");
-    assert.equal(label.attributes.opacity, undefined, "The original selection and replacement must retain full ink");
+    assert.equal(label.attributes.opacity, undefined, "The replacement must retain full ink");
 }
 assert(single.display.args[1].top() > single.preview.bottom(), "A following sum term must move below the reserved edit region");
 
@@ -104,7 +112,7 @@ for (const type of ["sum", "prod"]) {
     }
     multiple.root = operation("sum", [operation("prod", [value("123"), value("456")]), value("789")]);
     const grown = render(multiple);
-    assert(grown.preview.layout.height > result.preview.layout.height, "Space must grow with a larger replacement");
+    assert(grown.preview.layout.height > result.preview.layout.height || grown.preview.layout.width > result.preview.layout.width, "Space must grow with a larger replacement");
 }
 
 const denominator = value("6");
@@ -117,12 +125,46 @@ assert(insideInverse.preview.right() < insideInverse.display.args[1].right(), "A
 
 const whole = operation("sum", [value("2"), value("4")]);
 const wholeBuilder = makeBuilder(whole, whole, 0, 1, whole);
-assert(render(wholeBuilder).display.isNumericalRewritePreview, "A whole-expression selection must still show both the old expression and new entry");
+assert(render(wholeBuilder).display.isNumericalRewritePreview, "A whole-expression selection must use the same overlaid edit region");
 
 const placeholder = value("?");
 placeholder.isBuilderPlaceholder = true;
 builder.root = placeholder;
-assert.equal(render(builder).preview.args[1].layout.width, 24, "The empty rewrite starts with a small entry area");
+const empty = render(builder);
+assert.equal(empty.preview.args[1].layout.width, 24, "Empty entry still participates in sizing");
+const oldLabel = empty.svg.children.find(child => child.name === "text" && child.textContent === "6");
+assert(oldLabel && oldLabel.attributes.fill === "white" && !oldLabel.attributes.opacity, "Before typing, the old selection must appear in white on gray");
+assert(!empty.svg.children.some(child => child.name === "text" && child.textContent === "?"), "The empty entry must not obscure the old expression with a placeholder");
+
+// Small replacements cannot shrink the region below the original footprint.
+const wideOld = operation("sum", [operation("prod", [value("123"), value("456")]), value("789")]);
+const wideBuilder = makeBuilder(wideOld, wideOld, 0, 1, wideOld);
+wideBuilder.root = value("9");
+const wide = render(wideBuilder);
+assert(wide.preview.layout.width >= wide.preview.args[0].layout.width + 16);
+assert(wide.preview.layout.height >= wide.preview.args[0].layout.height + 16);
+
+// Every original operator style must invert its ink, including grouped beams,
+// negative values and inverse numerators/denominators.
+const oldComplex = operation("sum", [operation("prod", [value("-1"), value("x")]), operation("inv", [value("6")])]);
+const invertedBuilder = makeBuilder(oldComplex, oldComplex, 0, 1, oldComplex);
+invertedBuilder.root = placeholder;
+for (const operationStyle of ["bare", "outlined", "filled"]) {
+    context.settings.operationStyle = operationStyle;
+    const inverted = render(invertedBuilder);
+    const ink = inverted.svg.children.filter(child => child.name === "text");
+    assert(ink.length >= 4);
+    assert(ink.every(child => child.attributes.fill === "white" && !child.attributes.opacity), "All original values, variables and inverse numerators must have opaque white ink");
+    assert(!inverted.svg.children.some(child => child.attributes.stroke === "black" || child.attributes.fill === "black"), "The inverted selection must have no black operator marks, grouping beams or inverse backgrounds");
+}
+context.settings.operationStyle = "bare";
+
+// Entering an inverse already counts as replacement content; returning to the
+// empty entry (Undo) reveals the original again.
+builder.root = operation("inv", [placeholder]);
+assert(!render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6"));
+builder.root = placeholder;
+assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.fill === "white"));
 assert(context.inContext(builder));
 for (const tool of ["authorInitial", "replaceOneWithInverseProduct", "cancelOpposites", "insertZeroProduct"]) {
     assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");
@@ -134,6 +176,7 @@ context.builderReviewActive = false;
 
 if (process.env.REWRITE_PREVIEW_PATH) {
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH, single.svg.outerHTML);
+    fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-empty.svg"), empty.svg.outerHTML);
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-inverse.svg"), insideInverse.svg.outerHTML);
 }
 console.log("Numerical rewrite context, layout, ink and isolation checks passed.");
