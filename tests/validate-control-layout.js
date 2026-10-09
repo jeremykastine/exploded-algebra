@@ -123,10 +123,10 @@ assert(
     /if \(builderActive\) \{\s*renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
     "Every Expression Builder refresh must update panel one's live conventional expression"
 );
-assert(playerHtml.includes('cancel-selection-button'), "The post-selection grid must include a Cancel Selection button");
-assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute] { grid-column: 3 / span 2; grid-row: 3; }'));
-assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 5 / span 2; grid-row: 3; }'));
-assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-cancel-selection] { grid-column: 1; grid-row: 3 / span 2; }'));
+assert(!playerHtml.includes("cancel-selection-button") && !playerJs.includes("data-cancel-selection"), "The action grid must not include a Cancel Selection button");
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute="commuteFactors"] { grid-column: 2 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-numerical-rewrite] { grid-column: 4 / span 2; grid-row: 3; }'));
+assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute="commuteTerms"] { grid-column: 6; grid-row: 3 / span 2; }'));
 const expectedContextualButtonPositions = [
     ["multiplicative-inverse", "1", "1 / span 2"],
     ["double-inverse", "2", "1 / span 2"],
@@ -134,9 +134,9 @@ const expectedContextualButtonPositions = [
     ["multiplicative-identity", "4", "1 / span 2"],
     ["additive-inverse", "5", "1 / span 2"],
     ["additive-identity", "6", "1 / span 2"],
-    ["inverse", "2", "3 / span 2"],
-    ["distribute-left", "3 / span 2", "4"],
-    ["distribute-right", "5 / span 2", "4"]
+    ["inverse", "1", "3 / span 2"],
+    ["distribute-left", "2 / span 2", "4"],
+    ["distribute-right", "4 / span 2", "4"]
 ];
 expectedContextualButtonPositions.forEach(([pair, column, row]) => {
     assert(
@@ -180,12 +180,12 @@ assert(playerJs.includes('{ tool: "eliminateDoubleInverse", label: "Cancel doubl
 assert(playerJs.includes('{ tool: "insertZeroProductRight", label: "Introduce zero product", icon: "A·0", category: "insert", slot: "zero-product-insert" }'));
 assert(playerJs.includes('{ tool: "zeroProduct", label: "Cancel zero product", icon: "0", category: "delete", slot: "zero-product-cancel" }'));
 assert(!playerJs.includes('data-direct-inverse-number-slot'));
-assert(playerJs.includes('function buildContextualCommuteButtonHtml()'));
-assert(playerJs.includes('buildDirectCommuteIconHtml("·")') && playerJs.includes('buildDirectCommuteIconHtml("+")'));
+assert(playerJs.includes('function buildContextualCommuteButtonHtml(toolName)'));
+assert(playerJs.includes('buildDirectCommuteIconHtml(addition ? "+" : "·")'));
 assert(playerJs.includes('class="intent-category-button contextual-numerical-rewrite-button" data-contextual-numerical-rewrite'));
 assert(playerJs.includes('aria-label="Numerical Manipulation" title="Numerical Manipulation"'));
 assert(playerJs.includes('<span class="contextual-numerical-rewrite-label">123</span>'));
-assert(playerJs.includes('class="intent-category-button cancel-selection-button" data-cancel-selection'));
+assert(playerJs.includes('buildContextualCommuteButtonHtml("commuteTerms")') && playerJs.includes('buildContextualCommuteButtonHtml("commuteFactors")'));
 assert(playerJs.includes('function buildContextualRuleButtonHtml(pairName, orientation, label, firstVisualHtml, secondVisualHtml)'));
 assert(playerJs.includes('function buildDirectOptionRulePairHtml(pairName, firstRule, firstCategory, secondRule, secondCategory, label)'));
 assert(!playerJs.includes('const categoryIds = ["numericalRewrite", "commute"];'));
@@ -228,7 +228,7 @@ assert(playerJs.includes('if (canZeroProduct())') && playerJs.includes('return c
 assert(playerJs.includes('if (getCancelOppositesData())') && playerJs.includes('canReplaceZeroWithOppositeSum()'));
 assert(playerJs.includes('if (canCancelProductWithInverse())') && playerJs.includes('canReplaceOneWithInverseProduct()'));
 assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includes('recordToolForSolution(resolved.toolName, beforeExpression)'));
-assert(playerJs.includes('function resolveContextualCommuteTool()'));
+assert(playerJs.includes('function resolveContextualCommuteTool(toolName = "")'));
 assert(playerJs.includes('selection.node.type === "sum"') && playerJs.includes('toolName: "commuteTerms"'));
 assert(playerJs.includes('selection.node.type === "prod"') && playerJs.includes('toolName: "commuteFactors"'));
 assert(playerJs.includes('function resolveAutomaticNumericalRewriteTool()'));
@@ -258,12 +258,11 @@ assert(playerJs.includes('getNumericalRewriteRuleSetting(proposedRuleId).reverse
 assert(playerJs.includes('getNumericalRewriteRuleSetting(originalRuleId).forward === "manual"'), "Manual forward rewrites must respect each configured rule");
 assert(playerJs.includes('function resolveContextualNumericalRewriteAction()'));
 assert(playerJs.includes('mode: "automatic"') && playerJs.includes('mode: "manual"'));
-assert(playerJs.includes('button[data-cancel-selection]') && playerJs.includes('cancelSelectionButton.addEventListener("click"'));
-assert(/cancelSelectionButton\.addEventListener\("click", \(\) => \{[\s\S]*?cancelCurrentWorkspaceSelection\(\);/.test(playerJs));
+assert(playerJs.includes('resolveContextualCommuteTool(button.dataset.contextualCommute)'));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
 assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('M1 1 H599 V399 H1 Z'));
-assert(playerJs.includes('M300 1 V200') && playerJs.includes('M500 1 V200') && playerJs.includes('M200 300 H599'));
+assert(playerJs.includes('M200 1 V200') && playerJs.includes('M400 1 V200') && playerJs.includes('M100 300 H500'));
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
 assert(!playerHtml.includes('button.intent-category-button::before'));
@@ -271,9 +270,9 @@ assert(playerHtml.includes('class="controls-grid-overlay pre-selection-grid-over
 assert(playerHtml.includes('class="controls-grid-overlay builder-grid-overlay"'), "Expression Builder must draw the same continuous grid treatment as post-selection");
 assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?gap: 0;/.test(playerHtml), "All bottom-panel modes must use gapless shared grid tracks");
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
-assert(/button\.contextual-rule-button,[\s\S]*?button\.cancel-selection-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
+assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261008-render-timing'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261009-split-commute'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -336,6 +335,40 @@ assert(
     "The landscape horizontal divider must remain snapped to the two-row panel height"
 );
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
+
+// Each fixed commute control must reject selections from the other operation.
+const commuteStart = playerJs.indexOf('        function resolveContextualCommuteTool(');
+const commuteEnd = playerJs.indexOf('\n        function ', commuteStart + 1);
+const commuteContext = vm.createContext({ selection: { node: null }, canCommuteRotate: () => true });
+vm.runInContext(playerJs.slice(commuteStart, commuteEnd), commuteContext);
+for (const [type, matchingTool, otherTool] of [
+    ["sum", "commuteTerms", "commuteFactors"],
+    ["prod", "commuteFactors", "commuteTerms"]
+]) {
+    commuteContext.selection.node = { type };
+    assert.equal(commuteContext.resolveContextualCommuteTool(matchingTool).toolName, matchingTool);
+    assert.equal(commuteContext.resolveContextualCommuteTool(otherTool), null);
+    assert.equal(commuteContext.resolveContextualCommuteTool().toolName, matchingTool);
+}
+commuteContext.selection.node = null;
+assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
+commuteContext.selection.node = { type: "sum" };
+commuteContext.canCommuteRotate = () => false;
+assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
+
+// Recorded problem actions keep their operation-specific tool IDs.
+for (const folder of ["intro-levels", "levels"]) {
+    for (const file of fs.readdirSync(path.resolve(__dirname, "..", folder)).filter(file => file.endsWith(".json"))) {
+        const level = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", folder, file), "utf8"));
+        let selectedType = null;
+        for (const action of level.recordedActions || []) {
+            if (action.type === "select") selectedType = action.selectedType;
+            if (action.type === "tool" && action.tool.startsWith("commute")) {
+                assert.equal(action.tool, selectedType === "sum" ? "commuteTerms" : "commuteFactors", `${file} must record the commute button matching its selection`);
+            }
+        }
+    }
+}
 
 const normalizeRulesMatch = playerJs.match(/function normalizeNumericalRewriteRules\(rules\) \{([\s\S]*?)\n        \}\n\n        function getNumericalRewriteProfile/);
 assert(normalizeRulesMatch, "Numerical permission normalization must remain testable");

@@ -44,7 +44,7 @@
   "excludedDefaultTools": [],
   "allowedUnavailableTools": [],
   "includeUndoActions": false,
-  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x\\cdot 3\n\\]\n\n## What to do\n\nIn exploded notation, factors in a product sit side by side. Select the neighboring factors 2 and x, then press the highlighted Commute button. The 3 stays in place.",
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x\\cdot 3\n\\]\n\n## What to do\n\nIn exploded notation, factors in a product sit side by side. Select the neighboring factors 2 and x, then press the highlighted Commute multiplication button. The 3 stays in place.",
   "exerciseGuidanceIsComplete": true,
   "steps": [
     {

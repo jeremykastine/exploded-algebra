@@ -50,9 +50,9 @@ The exploded expression is anchored at the upper-left of its workspace. The
 idle workspace controls, contextual action choices, and Expression Builder each
 use the same compact, bottom-corner keypad footprint; only the controls for the
 current state are visible. Each button is opaque, but the control clusters have
-no panel background. Clear Selection appears only with the post-selection
-actions and is blocked in guided demonstrations, where off-target selections
-and empty-workspace clicks are ignored. The conventional steps remain visible
+no panel background. Tap inside the selection or outside the expression to
+clear it; guided demonstrations ignore off-target selections and empty-workspace
+clicks. The conventional steps remain visible
 above the controls and scroll vertically. Their Large, Medium, or Small text
 preference is responsive rather than a fixed pixel size: it refits after
 content, panel, viewport, device-input, and orientation changes without wrapping
@@ -239,3 +239,12 @@ the Guided/Unguided choice.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
+
+Post-selection action layout
+The lower two rows place combine/separate inverses in column 1, multiplication
+commute in row 3 columns 2–3, Numerical Manipulation in row 3 columns 4–5,
+left and right distribute/factor pairs in row 4 columns 2–3 and 4–5, and
+addition commute in column 6 across rows 3–4. The commute buttons use the
+existing operation icons and record commuteTerms or commuteFactors. Guided
+problems highlight only the matching operation. Clear a selection by tapping
+inside it or outside the expression.

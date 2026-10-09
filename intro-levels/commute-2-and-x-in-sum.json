@@ -44,7 +44,7 @@
   "excludedDefaultTools": [],
   "allowedUnavailableTools": [],
   "includeUndoActions": false,
-  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2+x+3\n\\]\n\n## What to do\n\nIn exploded notation, the terms of a sum are stacked vertically. Select the neighboring terms 2 and x, then press the highlighted Commute button. The 3 stays in its row.",
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2+x+3\n\\]\n\n## What to do\n\nIn exploded notation, the terms of a sum are stacked vertically. Select the neighboring terms 2 and x, then press the highlighted Commute addition button. The 3 stays in its row.",
   "exerciseGuidanceIsComplete": true,
   "steps": [
     {

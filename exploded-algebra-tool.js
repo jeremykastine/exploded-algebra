@@ -691,10 +691,11 @@ Promise.resolve().then(() => {
                 </svg>`;
         }
 
-        function buildContextualCommuteButtonHtml() {
-            return `<button class="intent-category-button contextual-commute-button contextual-rule-button contextual-rule-button-horizontal" data-contextual-commute aria-label="Commute" title="Commute addition or multiplication">
-                <span class="contextual-rule-side">${buildDirectCommuteIconHtml("·")}</span>
-                <span class="contextual-rule-side">${buildDirectCommuteIconHtml("+")}</span>
+        function buildContextualCommuteButtonHtml(toolName) {
+            const addition = toolName === "commuteTerms";
+            const label = addition ? "Commute addition" : "Commute multiplication";
+            return `<button class="intent-category-button contextual-commute-button" data-contextual-commute="${toolName}" aria-label="${label}" title="${label}">
+                ${buildDirectCommuteIconHtml(addition ? "+" : "·")}
             </button>`;
         }
 
@@ -704,18 +705,9 @@ Promise.resolve().then(() => {
             </button>`;
         }
 
-        function buildCancelSelectionButtonHtml() {
-            return `<button class="intent-category-button cancel-selection-button" data-cancel-selection aria-label="Cancel selection" title="Cancel selection">
-                <svg class="cancel-selection-icon" viewBox="0 0 100 200" aria-hidden="true" focusable="false">
-                    <rect x="19" y="58" width="62" height="84" rx="8"/>
-                    <path d="M34 78 L66 122 M66 78 L34 122"/>
-                </svg>
-            </button>`;
-        }
-
         function buildPostSelectionGridOverlayHtml() {
             return `<svg class="post-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V200 M400 1 V399 M500 1 V200 M1 200 H599 M200 300 H599"/>
+                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V200 M300 1 V399 M400 1 V200 M500 1 V399 M1 200 H599 M100 300 H500"/>
             </svg>`;
         }
 
@@ -793,8 +785,8 @@ Promise.resolve().then(() => {
                 <div class="intent-category-list">
                     <div class="intent-category-actions">
                         ${buildDirectBranchRulePairHtml("inverse", "vertical", "factorProductOfInverses", "distributeInverseOverProduct", { branch: true, symbol: "÷", firstSymbolCount: 1, secondSymbolCount: 2, label: "Combine or separate inverses" })}
-                        ${buildCancelSelectionButtonHtml()}
-                        ${buildContextualCommuteButtonHtml()}
+                        ${buildContextualCommuteButtonHtml("commuteTerms")}
+                        ${buildContextualCommuteButtonHtml("commuteFactors")}
                         ${buildContextualNumericalRewriteButtonHtml()}
                         ${buildDirectBranchRulePairHtml("distribute-left", "horizontal", "factorLeft", "distributeLeftToRight", { branch: true, symbol: "·", firstSymbolCount: 1, secondSymbolCount: 2, label: "Factor or distribute on the left" })}
                         ${buildDirectBranchRulePairHtml("distribute-right", "horizontal", "distributeRightToLeft", "factorRight", { branch: true, symbol: "·", firstSymbolCount: 2, secondSymbolCount: 1, label: "Distribute or factor on the right" })}
@@ -3731,7 +3723,9 @@ Promise.resolve().then(() => {
             if (step.type === "tool") {
                 for (const targetTool of getDemoTargetToolCandidates(step.tool)) {
                     if (["commute", "commuteTerms", "commuteFactors"].includes(targetTool)) {
-                        targetButton = container.querySelector("button[data-contextual-commute]");
+                        const resolved = resolveContextualCommuteTool();
+                        const commuteTool = targetTool === "commute" && resolved ? resolved.toolName : targetTool;
+                        targetButton = container.querySelector(`button[data-contextual-commute="${escapeCssSelectorValue(commuteTool)}"]`);
                     }
                     if (["automaticNumericalRewrite", "numericalRewrite", "doubleNegative", "rewriteInvOneToOne", "rewriteInvNegOneToNegOne"].includes(targetTool)) {
                         targetButton = container.querySelector("button[data-contextual-numerical-rewrite]");
@@ -3787,7 +3781,7 @@ Promise.resolve().then(() => {
                     : builderButtons.find(button => String(button.dataset.value || "") === String(step.value));
             }
 
-            container.querySelectorAll("button[data-tool], button[data-contextual-rule-pair], button[data-contextual-commute], button[data-contextual-numerical-rewrite], button[data-cancel-selection], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
+            container.querySelectorAll("button[data-tool], button[data-contextual-rule-pair], button[data-contextual-commute], button[data-contextual-numerical-rewrite], button[data-action], button[data-builder-action], button[data-tool-category], button[data-rule-category]").forEach(button => {
                 if (button === targetButton) {
                     button.classList.add("demo-target-button");
                 } else {
@@ -12465,14 +12459,14 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function resolveContextualCommuteTool() {
+        function resolveContextualCommuteTool(toolName = "") {
             if (!selection.node || !canCommuteRotate()) {
                 return null;
             }
-            if (selection.node.type === "sum") {
+            if (selection.node.type === "sum" && (!toolName || toolName === "commuteTerms")) {
                 return { toolName: "commuteTerms", label: "Commute addition" };
             }
-            if (selection.node.type === "prod") {
+            if (selection.node.type === "prod" && (!toolName || toolName === "commuteFactors")) {
                 return { toolName: "commuteFactors", label: "Commute multiplication" };
             }
             return null;
@@ -12512,17 +12506,18 @@ ctx.font = SETTINGS.textFont;
                 }
             });
 
-            const commuteButton = container.querySelector("button[data-contextual-commute]");
-            if (commuteButton) {
-                const resolved = resolveContextualCommuteTool();
-                commuteButton.setAttribute("aria-label", resolved ? resolved.label : "Commute");
-                commuteButton.setAttribute("title", resolved ? resolved.label : "Commute — not applicable to this selection");
+            container.querySelectorAll("button[data-contextual-commute]").forEach(button => {
+                const toolName = button.dataset.contextualCommute;
+                const resolved = resolveContextualCommuteTool(toolName);
+                const label = toolName === "commuteTerms" ? "Commute addition" : "Commute multiplication";
+                button.setAttribute("aria-label", label);
+                button.setAttribute("title", resolved ? label : `${label} — not applicable to this selection`);
                 if (resolved) {
-                    commuteButton.dataset.resolvedTool = resolved.toolName;
+                    button.dataset.resolvedTool = resolved.toolName;
                 } else {
-                    delete commuteButton.dataset.resolvedTool;
+                    delete button.dataset.resolvedTool;
                 }
-            }
+            });
 
             const numericalButton = container.querySelector("button[data-contextual-numerical-rewrite]");
             if (numericalButton) {
@@ -12676,13 +12671,12 @@ ctx.font = SETTINGS.textFont;
         function attachToolListeners(container) {
             refreshContextualRuleButtons(container);
 
-            const contextualCommuteButton = container.querySelector("button[data-contextual-commute]");
-            if (contextualCommuteButton) {
-                contextualCommuteButton.addEventListener("click", () => {
-                    const resolved = resolveContextualCommuteTool();
+            container.querySelectorAll("button[data-contextual-commute]").forEach(button => {
+                button.addEventListener("click", () => {
+                    const resolved = resolveContextualCommuteTool(button.dataset.contextualCommute);
                     if (!resolved || !isDemoToolAllowed(resolved.toolName)) {
                         if (!isDemoModeActive()) {
-                            markToolButtonNotApplicable(contextualCommuteButton);
+                            markToolButtonNotApplicable(button);
                         }
                         return;
                     }
@@ -12692,7 +12686,7 @@ ctx.font = SETTINGS.textFont;
                     advanceDemoStep();
                     beginTool(resolved.toolName);
                 });
-            }
+            });
 
             const contextualNumericalButton = container.querySelector("button[data-contextual-numerical-rewrite]");
             if (contextualNumericalButton) {
@@ -12709,13 +12703,6 @@ ctx.font = SETTINGS.textFont;
                     recordToolForSolution(resolved.toolName, beforeExpression);
                     advanceDemoStep();
                     beginTool(resolved.toolName);
-                });
-            }
-
-            const cancelSelectionButton = container.querySelector("button[data-cancel-selection]");
-            if (cancelSelectionButton) {
-                cancelSelectionButton.addEventListener("click", () => {
-                    cancelCurrentWorkspaceSelection();
                 });
             }
 

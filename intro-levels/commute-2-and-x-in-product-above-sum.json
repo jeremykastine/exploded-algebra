@@ -44,7 +44,7 @@
   "excludedDefaultTools": [],
   "allowedUnavailableTools": [],
   "includeUndoActions": false,
-  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x+3\n\\]\n\n## What to do\n\nThe 2 and x are factors in the same upper product. Select those two factors together, then press the highlighted Commute button. The 3 is a separate term below the addition bar and stays in place.",
+  "exerciseGuidance": "## Problem Statement\n\nCommute 2 and x.\n\n\\[\n2\\cdot x+3\n\\]\n\n## What to do\n\nThe 2 and x are factors in the same upper product. Select those two factors together, then press the highlighted Commute multiplication button. The 3 is a separate term below the addition bar and stays in place.",
   "exerciseGuidanceIsComplete": true,
   "steps": [
     {
