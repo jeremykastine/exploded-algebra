@@ -87,9 +87,10 @@ downloaded move histories. General Expression Builder insertions use the
 existing entry canvas and original-expression Peek control.
 Manual Numerical Manipulation keeps the complete expression visible in light
 gray, including its operation symbols, grouping beams, and inverse containers.
-The selected range becomes a gray-filled box with white numbers and symbols
-until entry begins. The replacement appears in black directly over that region,
-covering the original; undoing all entry reveals the original again. There is no
+The usual blue selection shading remains around the selected range. The old
+selection stays faded like the rest of the expression, including while typing.
+The replacement appears in black directly over the old content, which remains
+visible behind it wherever the new ink does not obscure it. There is no
 diagonal area, arrow, or entry outline. The child region uses the larger width
 and height of the original and replacement, including padding, so neither can
 overlap surrounding content. This temporary display tree never enters the

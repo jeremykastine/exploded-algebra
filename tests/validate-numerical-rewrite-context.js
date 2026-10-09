@@ -74,7 +74,11 @@ function render(builder) {
     }
     assert.equal(preview.layout.width, Math.max(...preview.args.map(child => child.layout.width)) + 16);
     assert.equal(preview.layout.height, Math.max(...preview.args.map(child => child.layout.height)) + 16);
-    assert(svg.children.some(child => child.name === "rect" && child.attributes.fill === "rgb(184,184,184)" && child.attributes.stroke === "none"), "The selected region must have a gray fill without an entry outline");
+    const shading = svg.children.find(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue);
+    assert(shading && shading.attributes.opacity === "0.25" && shading.attributes.stroke === "none", "The usual blue selection shading must remain without an entry outline");
+    assert.equal(Number(shading.attributes.width), preview.layout.width);
+    assert.equal(Number(shading.attributes.height), preview.layout.height);
+    assert(!svg.children.some(child => child.attributes.fill === "rgb(184,184,184)"), "The old gray selection fill must be gone");
     return { display, preview, svg };
 }
 function makeBuilder(mainRoot, node, firstPart = 0, lastPart = 0, originalSelectedNode = node) {
@@ -89,7 +93,11 @@ const labels = single.svg.children.filter(child => child.name === "text");
 for (const text of ["x", "7"]) {
     assert.equal(labels.find(label => label.textContent === text).attributes.opacity, "0.28", "Unselected values must stay visible in light gray");
 }
-assert(!labels.some(label => label.textContent === "6"), "Typing must completely cover the old selected value");
+const originalLabel = labels.find(label => label.textContent === "6");
+assert(originalLabel && originalLabel.attributes.opacity === "0.28", "The old selected value must remain grayed in the background while typing");
+assert.equal(originalLabel.attributes.fill, labels.find(label => label.textContent === "x").attributes.fill, "The selection and surrounding values must use the same gray ink");
+assert(single.svg.children.indexOf(originalLabel) < single.svg.children.findIndex(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue), "Retained blue shading must cover the entire old selection, including inverse backgrounds");
+assert(single.svg.children.indexOf(originalLabel) < single.svg.children.indexOf(labels.find(label => label.textContent === "2")), "The new expression must be drawn on top of the old expression");
 for (const text of ["2", "3"]) {
     const label = labels.find(label => label.textContent === text);
     assert(label, `Missing original or replacement number ${text}`);
@@ -133,7 +141,7 @@ builder.root = placeholder;
 const empty = render(builder);
 assert.equal(empty.preview.args[1].layout.width, 24, "Empty entry still participates in sizing");
 const oldLabel = empty.svg.children.find(child => child.name === "text" && child.textContent === "6");
-assert(oldLabel && oldLabel.attributes.fill === "white" && !oldLabel.attributes.opacity, "Before typing, the old selection must appear in white on gray");
+assert(oldLabel && oldLabel.attributes.fill !== "white" && oldLabel.attributes.opacity === "0.28", "Before typing, the old selection must be faded just like its surroundings");
 assert(!empty.svg.children.some(child => child.name === "text" && child.textContent === "?"), "The empty entry must not obscure the old expression with a placeholder");
 
 // Small replacements cannot shrink the region below the original footprint.
@@ -144,27 +152,26 @@ const wide = render(wideBuilder);
 assert(wide.preview.layout.width >= wide.preview.args[0].layout.width + 16);
 assert(wide.preview.layout.height >= wide.preview.args[0].layout.height + 16);
 
-// Every original operator style must invert its ink, including grouped beams,
-// negative values and inverse numerators/denominators.
+// Original symbols, grouping beams, negative values and inverse containers
+// keep their usual appearance with the same fade as the surrounding tree.
 const oldComplex = operation("sum", [operation("prod", [value("-1"), value("x")]), operation("inv", [value("6")])]);
-const invertedBuilder = makeBuilder(oldComplex, oldComplex, 0, 1, oldComplex);
-invertedBuilder.root = placeholder;
+const layeredBuilder = makeBuilder(oldComplex, oldComplex, 0, 1, oldComplex);
+layeredBuilder.root = placeholder;
 for (const operationStyle of ["bare", "outlined", "filled"]) {
     context.settings.operationStyle = operationStyle;
-    const inverted = render(invertedBuilder);
-    const ink = inverted.svg.children.filter(child => child.name === "text");
+    const layered = render(layeredBuilder);
+    const ink = layered.svg.children.filter(child => child.name === "text");
     assert(ink.length >= 4);
-    assert(ink.every(child => child.attributes.fill === "white" && !child.attributes.opacity), "All original values, variables and inverse numerators must have opaque white ink");
-    assert(!inverted.svg.children.some(child => child.attributes.stroke === "black" || child.attributes.fill === "black"), "The inverted selection must have no black operator marks, grouping beams or inverse backgrounds");
+    assert(ink.every(child => child.attributes.opacity === "0.28"), "All original values, variables and inverse numerators must be faded equally");
+    assert(layered.svg.children.some(child => child.attributes.stroke === "black" && child.attributes.opacity === "0.28"), "The old grouping and operation marks must be gray rather than inverted white");
 }
 context.settings.operationStyle = "bare";
 
-// Entering an inverse already counts as replacement content; returning to the
-// empty entry (Undo) reveals the original again.
+// Entering an inverse and undoing back to empty must both retain the old value.
 builder.root = operation("inv", [placeholder]);
-assert(!render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6"));
+assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.opacity === "0.28"));
 builder.root = placeholder;
-assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.fill === "white"));
+assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.opacity === "0.28"));
 assert(context.inContext(builder));
 for (const tool of ["authorInitial", "replaceOneWithInverseProduct", "cancelOpposites", "insertZeroProduct"]) {
     assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");

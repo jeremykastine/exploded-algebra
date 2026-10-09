@@ -1158,37 +1158,19 @@ function drawNodeRecursiveToContext(
     separatorForeground = () => null
 ) {
     if (node.isNumericalRewritePreview) {
-        // The old and new expressions occupy the same display-only child.
-        // Keep both footprints in layout, but cover the old content as soon as
-        // entry begins. Undoing back to an empty entry reveals it again.
+        // Draw the original with the same fade as its surrounding expression,
+        // retain the usual blue selection shading, then layer full-ink entry on
+        // top. Both footprints remain in layout even while their ink overlaps.
         drawingContext.save();
-        drawingContext.globalAlpha = 1;
-        const gray = "rgb(184,184,184)";
-        drawingContext.fillStyle = gray;
-        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
         const [original, replacement] = node.args;
-        const emptyReplacement = replacement.isBuilderPlaceholder ||
-            replacement.isBuilderSequence && replacement.args.length === 0;
-        const fullInkSettings = { ...settings, expressionStrokeFill: "black", operationBarShading: "black" };
-        if (emptyReplacement) {
-            drawNodeRecursiveToContext(original, drawingContext, {
-                ...settings,
-                expressionStrokeFill: "white",
-                operationInkColor: "white",
-                operationSymbolColor: "white",
-                operationFillColor: gray,
-                operationBackgroundColor: gray,
-                operationBarInkColor: "white",
-                inverseFillColor: gray,
-                inverseDenominatorFill: gray,
-                inverseOperatorColor: "white",
-                inverseDenominatorColor: "white",
-                negativeUnitFillColor: gray,
-                negativeUnitTextColor: "white"
-            });
-        } else {
-            drawNodeRecursiveToContext(replacement, drawingContext, fullInkSettings);
-        }
+        drawNodeRecursiveToContext(original, drawingContext, settings);
+        drawingContext.globalAlpha = settings.overlayAlpha;
+        drawingContext.fillStyle = settings.selectionBlue;
+        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
+        drawingContext.globalAlpha = 1;
+        drawNodeRecursiveToContext(replacement, drawingContext, {
+            ...settings, expressionStrokeFill: "black", operationBarShading: "black"
+        });
         drawingContext.restore();
         return;
     }
@@ -1352,16 +1334,15 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
         getOperationMarkGeometry(settings, type);
     drawingContext.save();
     if (style === "outlined") {
-        drawOperatorCircle(drawingContext, x, y, diameter,
-            highlightFill || settings.operationBackgroundColor || "white", settings.operationInkColor || "black",
+        drawOperatorCircle(drawingContext, x, y, diameter, highlightFill || "white", "black",
             outlineWidth);
     } else if (style === "filled") {
-        drawingContext.fillStyle = settings.operationFillColor || "black";
+        drawingContext.fillStyle = "black";
         drawingContext.beginPath();
         drawingContext.arc(x, y, half, 0, Math.PI * 2);
         drawingContext.fill();
     }
-    const ink = settings.operationSymbolColor || (style === "filled" ? "white" : "black");
+    const ink = style === "filled" ? "white" : "black";
     if (type === "sum") {
         drawingContext.strokeStyle = ink;
         drawingContext.lineWidth = strokeWidth;
@@ -1384,11 +1365,11 @@ function drawOperationBar(drawingContext, node, type, center, settings) {
     const shading = settings.operationBarShading || "gradient-gray";
     const start = type === "sum" ? node.left() : node.top();
     const end = type === "sum" ? node.right() : node.bottom();
-    const paint = settings.operationBarInkColor || (isOperationBarGradient(shading)
+    const paint = isOperationBarGradient(shading)
         ? (type === "sum"
             ? createSumBeamGradient(drawingContext, start, end, center, getOperationBarGradientEdgeColor(shading, "black"), symbolWidth)
             : createProductBeamGradient(drawingContext, center, start, end, getOperationBarGradientEdgeColor(shading, "black"), symbolWidth))
-        : getOperationBarSolidColor(shading));
+        : getOperationBarSolidColor(shading);
     drawingContext.save();
     drawingContext.strokeStyle = paint;
     drawingContext.fillStyle = paint;
@@ -1397,7 +1378,7 @@ function drawOperationBar(drawingContext, node, type, center, settings) {
         else drawThickProductBeam(drawingContext, center, start, end, half, paint);
         // Endpoint symbols follow the same style and size as the central one.
         if (style === "endpoint-operators") {
-            drawingContext.fillStyle = settings.operationBackgroundColor || "white";
+            drawingContext.fillStyle = "white";
             getEndpointOperatorCenters(start, end, half).forEach(position => {
                 const markX = type === "sum" ? position : center;
                 const markY = type === "sum" ? center : position;
@@ -1480,7 +1461,7 @@ function drawNodeToContext(
                 const half = getOperatorHalfSize(settings);
                 const symbolWidth = getOperationMarkGeometry(settings, type).width;
                 drawingContext.save();
-                drawingContext.fillStyle = settings.operationBackgroundColor || "white";
+                drawingContext.fillStyle = "white";
                 if (type === "sum") drawingContext.fillRect(x - symbolWidth / 2, y - half, symbolWidth, half * 2);
                 else drawingContext.fillRect(x - half, y - symbolWidth / 2, half * 2, symbolWidth);
                 drawingContext.restore();
