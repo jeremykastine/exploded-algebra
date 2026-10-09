@@ -201,6 +201,11 @@ the abandoned branch from the saved path. Zoom in, zoom out, and zoom reset are
 view-only controls and are never retained as solution moves.
 
 The home page links to Introduction.html and Exercises.html.
+The introduction keeps its source examples invisible until the narrative is
+ready, while retaining their geometry for rendering. Canceled or inactive
+animation runs cannot restore an older frame. Conventional-panel font fitting,
+height, and scroll correction settle together before painting; the deliberate
+new-step scroll-to-top and two-second scrolling animation remain unchanged.
 It also links to problem-builder.html, an authoring application with four or five phases that
 uses the real Exploded Algebra player in an embedded authoring session. Completed
 levels export with formatVersion 1,

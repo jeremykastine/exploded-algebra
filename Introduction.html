@@ -7,6 +7,9 @@
 <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
 <style>
 html,body{margin:0;padding:0;background:#fff;}
+/* Keep the source examples measurable without exposing them during startup. */
+body{visibility:hidden;}
+body.narrative-ready{visibility:visible;}
 body{font-family:"Courier New",Courier,"Liberation Mono",monospace;font-size:32px;line-height:1.25;font-variant-ligatures:none;}
 .expr,.number{font-family:"Courier New",Courier,"Liberation Mono",monospace;}
 .expr{white-space:pre;}
@@ -124,9 +127,10 @@ body.player-ready>#exploded-examples{display:none;}
     .narrative-section .opening-row{grid-template-columns:1fr;}
 }
 </style>
+<noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-08T20:46:44-04:00">10/8/26, 8:46 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-08T21:12:59-04:00">10/8/26, 9:12 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -270,7 +274,7 @@ body.player-ready>#exploded-examples{display:none;}
 </div>
 </template>
 
-<script src="exploded-algebra-renderer.js?v=20261008-blue-foreground"></script>
+<script src="exploded-algebra-renderer.js?v=20261008-render-timing"></script>
 <script>
 (() => {
     const Renderer = window.ExplodedAlgebraRenderer;
@@ -1156,7 +1160,7 @@ body.player-ready>#exploded-examples{display:none;}
         });
     }
 
-    async function fadeShadingIn(frames, plainIndex, shadedIndex) {
+    async function fadeShadingIn(frames, plainIndex, shadedIndex, run) {
         setOnlyVisible(frames, plainIndex);
         const shaded = frames[shadedIndex];
         shaded.style.opacity = "0";
@@ -1165,12 +1169,17 @@ body.player-ready>#exploded-examples{display:none;}
             easing: "linear",
             fill: "forwards"
         });
-        await animation.finished.catch(() => {});
+        try {
+            await animation.finished;
+        } catch {
+            return;
+        }
+        if (!run.active) return;
         shaded.style.opacity = "1";
         frames[plainIndex].style.opacity = "0";
     }
 
-    async function fadeShadingOut(frames, shadedIndex, plainIndex) {
+    async function fadeShadingOut(frames, shadedIndex, plainIndex, run) {
         setOnlyVisible(frames, plainIndex);
         const shaded = frames[shadedIndex];
         shaded.style.opacity = "1";
@@ -1179,7 +1188,12 @@ body.player-ready>#exploded-examples{display:none;}
             easing: "linear",
             fill: "forwards"
         });
-        await animation.finished.catch(() => {});
+        try {
+            await animation.finished;
+        } catch {
+            return;
+        }
+        if (!run.active) return;
         shaded.style.opacity = "0";
         frames[plainIndex].style.opacity = "1";
     }
@@ -1199,7 +1213,7 @@ body.player-ready>#exploded-examples{display:none;}
             await wait(holdPlain);
             if (!run.active) return;
 
-            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 0, 1)));
+            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 0, 1, run)));
             if (!run.active) return;
             await wait(holdShaded);
             if (!run.active) return;
@@ -1208,12 +1222,12 @@ body.player-ready>#exploded-examples{display:none;}
             await wait(holdShaded);
             if (!run.active) return;
 
-            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 2, 3)));
+            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 2, 3, run)));
             if (!run.active) return;
             await wait(holdPlain);
             if (!run.active) return;
 
-            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 3, 2)));
+            await Promise.all(frameGroups.map(frames => fadeShadingIn(frames, 3, 2, run)));
             if (!run.active) return;
             await wait(holdShaded);
             if (!run.active) return;
@@ -1222,7 +1236,7 @@ body.player-ready>#exploded-examples{display:none;}
             await wait(holdShaded);
             if (!run.active) return;
 
-            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 1, 0)));
+            await Promise.all(frameGroups.map(frames => fadeShadingOut(frames, 1, 0, run)));
         }
     }
     document.querySelectorAll(".practice-exploded-image").forEach(addDomainOutline);

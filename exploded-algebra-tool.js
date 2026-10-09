@@ -1602,13 +1602,13 @@ Promise.resolve().then(() => {
                 if (isStudentPortraitPanelLayout()) {
                     setTopPanelHeight(twoRowHeight);
                 }
-                requestAnimationFrame(() => {
-                    updateStepPanelScrollSpace();
-                    if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
-                        leftPanel.scrollTop = getStepPanelScrollTarget();
-                    }
-                    applyResponsiveMainButtonSize();
-                });
+                // Finish geometry and scroll correction in the same pre-paint
+                // pass. A second frame exposes the rows at their old offset.
+                updateStepPanelScrollSpace();
+                if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
+                    leftPanel.scrollTop = getStepPanelScrollTarget();
+                }
+                applyResponsiveMainButtonSize();
             } else {
                 updateTopPanelHeight(getCurrentLevel(), twoRowHeight);
             }
@@ -2064,7 +2064,6 @@ Promise.resolve().then(() => {
         const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;
         const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;
         const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;
-        let topPanelHeightFrame = null;
         let userTopPanelHeight = null;
         let userLandscapeSidebarRatio = null;
         let topPanelResizeState = null;
@@ -2280,15 +2279,11 @@ Promise.resolve().then(() => {
             setTopPanelHeight(Math.max(minimumHeight, fittedHeight));
         }
 
-        function scheduleTopPanelHeightUpdate(level = getCurrentLevel()) {
+        function scheduleTopPanelHeightUpdate() {
+            // Font fitting already computes the final panel height. Running
+            // another height writer afterward briefly overrides that result
+            // and triggers another resize/font-fitting cycle.
             scheduleStepsFontSizeRecalculation();
-            if (topPanelHeightFrame !== null) {
-                cancelAnimationFrame(topPanelHeightFrame);
-            }
-            topPanelHeightFrame = requestAnimationFrame(() => {
-                topPanelHeightFrame = null;
-                updateTopPanelHeight(level);
-            });
         }
 
         function installTopPanelResizing() {
