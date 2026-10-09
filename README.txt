@@ -85,10 +85,13 @@ than in the action or expression-builder panels.
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. General Expression Builder insertions use the
 existing entry canvas and original-expression Peek control.
-Manual Numerical Manipulation keeps the complete expression visible in light
-gray, including its operation symbols, grouping beams, and inverse containers.
+Manual Numerical Manipulation keeps the complete expression visible, with the
+surrounding content at its usual intensity and only the selected original gray.
 The usual blue selection shading remains around the selected range. The old
-selection stays faded like the rest of the expression, including while typing.
+selection starts at 28% opacity; each symbol entered halves its remaining
+opacity (14%, 7%, 3.5%, and so on). Each digit, variable, or operation counts;
+negative one and inverse each count as one entry. Regrouping, view controls and
+redraws do not count. Undo restores the fading of the surviving entry.
 The replacement appears in black directly over the old content, which remains
 visible behind it wherever the new ink does not obscure it. There is no
 diagonal area, arrow, or entry outline. The child region uses the larger width

@@ -30,7 +30,7 @@ function loadFunction(name) {
     const end = playerSource.indexOf("\n        function ", start + 1);
     vm.runInContext(playerSource.slice(start, end), context);
 }
-for (const name of ["cloneNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextNumericalBuilder", "makeNumericalRewriteDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
+for (const name of ["cloneNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextNumericalBuilder", "countNumericalRewriteSymbols", "makeNumericalRewriteDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
     loadFunction(name);
 }
 vm.runInContext(`
@@ -39,9 +39,9 @@ vm.runInContext(`
     this.makeDisplay = makeNumericalRewriteDisplayRoot;
     this.inContext = isInContextNumericalBuilder;
     this.displayRoot = getExplodedBuilderDisplayRoot;
-    this.settings = { ...SETTINGS, opaqueInverseDenominator: true, operationStyle: "bare", sumBeamStyle: "midline", productBeamStyle: "midline", operationBarShading: "black" };
+    this.settings = { ...SETTINGS, expressionStrokeFill: "black", opaqueInverseDenominator: true, operationStyle: "bare", sumBeamStyle: "midline", productBeamStyle: "midline", operationBarShading: "black" };
     this.layout = (node, ctx) => layoutExpressionWithSettings(node, ctx, settings, 20, 20);
-    this.paint = (node, ctx) => { ctx.globalAlpha = 0.28; drawNodeRecursiveToContext(node, ctx, settings); };
+    this.paint = (node, ctx) => { drawNodeRecursiveToContext(node, ctx, settings); };
     this.svgContext = svg => {
         const ctx = new SvgDrawingContext(svg);
         ctx.measureText = text => ({ width: String(text).length * 12, actualBoundingBoxLeft: 0, actualBoundingBoxRight: String(text).length * 12, actualBoundingBoxAscent: 16, actualBoundingBoxDescent: 4 });
@@ -91,11 +91,13 @@ const builder = makeBuilder(mainRoot, selected);
 const single = render(builder);
 const labels = single.svg.children.filter(child => child.name === "text");
 for (const text of ["x", "7"]) {
-    assert.equal(labels.find(label => label.textContent === text).attributes.opacity, "0.28", "Unselected values must stay visible in light gray");
+    const label = labels.find(label => label.textContent === text);
+    assert.equal(label.attributes.opacity, undefined, "Unselected values must remain at full intensity");
+    assert.equal(label.attributes.fill, "black", "The surrounding numbers and variables must stay black");
 }
 const originalLabel = labels.find(label => label.textContent === "6");
-assert(originalLabel && originalLabel.attributes.opacity === "0.28", "The old selected value must remain grayed in the background while typing");
-assert.equal(originalLabel.attributes.fill, labels.find(label => label.textContent === "x").attributes.fill, "The selection and surrounding values must use the same gray ink");
+assert(originalLabel && originalLabel.attributes.opacity === "0.035", "Three inserted symbols must halve the old selection opacity three times");
+assert.equal(originalLabel.attributes.fill, labels.find(label => label.textContent === "x").attributes.fill, "The selection fades through opacity while surrounding values retain full ink");
 assert(single.svg.children.indexOf(originalLabel) < single.svg.children.findIndex(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue), "Retained blue shading must cover the entire old selection, including inverse backgrounds");
 assert(single.svg.children.indexOf(originalLabel) < single.svg.children.indexOf(labels.find(label => label.textContent === "2")), "The new expression must be drawn on top of the old expression");
 for (const text of ["2", "3"]) {
@@ -127,7 +129,7 @@ const denominator = value("6");
 const inverse = operation("inv", [denominator]);
 const inverseBuilder = makeBuilder(operation("prod", [value("-1"), inverse, value("z")]), denominator);
 const insideInverse = render(inverseBuilder);
-assert(insideInverse.svg.children.some(child => child.name === "rect" && child.attributes.fill === "black" && child.attributes.opacity === "0.28"), "Unselected inverse and negative-unit backgrounds must fade too");
+assert(insideInverse.svg.children.some(child => child.name === "rect" && child.attributes.fill === "black" && child.attributes.opacity === undefined), "Unselected inverse and negative-unit backgrounds must remain at full intensity");
 assert(insideInverse.svg.children.some(child => child.name === "rect" && child.attributes.fill === "white" && child.attributes.opacity === undefined), "The inverse denominator interior must remain white rather than accumulating translucent gray backgrounds");
 assert(insideInverse.preview.right() < insideInverse.display.args[1].right(), "A denominator's rewrite region must fit inside its reflowed inverse container");
 
@@ -141,7 +143,7 @@ builder.root = placeholder;
 const empty = render(builder);
 assert.equal(empty.preview.args[1].layout.width, 24, "Empty entry still participates in sizing");
 const oldLabel = empty.svg.children.find(child => child.name === "text" && child.textContent === "6");
-assert(oldLabel && oldLabel.attributes.fill !== "white" && oldLabel.attributes.opacity === "0.28", "Before typing, the old selection must be faded just like its surroundings");
+assert(oldLabel && oldLabel.attributes.fill !== "white" && oldLabel.attributes.opacity === "0.28", "Before typing, only the old selection must be faded");
 assert(!empty.svg.children.some(child => child.name === "text" && child.textContent === "?"), "The empty entry must not obscure the old expression with a placeholder");
 
 // Small replacements cannot shrink the region below the original footprint.
@@ -153,7 +155,7 @@ assert(wide.preview.layout.width >= wide.preview.args[0].layout.width + 16);
 assert(wide.preview.layout.height >= wide.preview.args[0].layout.height + 16);
 
 // Original symbols, grouping beams, negative values and inverse containers
-// keep their usual appearance with the same fade as the surrounding tree.
+// keep their usual appearance while the selected original alone is faded.
 const oldComplex = operation("sum", [operation("prod", [value("-1"), value("x")]), operation("inv", [value("6")])]);
 const layeredBuilder = makeBuilder(oldComplex, oldComplex, 0, 1, oldComplex);
 layeredBuilder.root = placeholder;
@@ -169,9 +171,35 @@ context.settings.operationStyle = "bare";
 
 // Entering an inverse and undoing back to empty must both retain the old value.
 builder.root = operation("inv", [placeholder]);
-assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.opacity === "0.28"));
+assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.opacity === "0.14"));
 builder.root = placeholder;
 assert(render(builder).svg.children.some(child => child.name === "text" && child.textContent === "6" && child.attributes.opacity === "0.28"));
+// Fade by inserted symbols rather than input events. Pending operations and
+// every digit count, while grouping changes and repeated redraws do not.
+function originalOpacity(entry) {
+    builder.root = entry;
+    const image = render(builder);
+    return Number(image.svg.children.find(child => child.name === "text" && child.textContent === "6").attributes.opacity);
+}
+assert.equal(originalOpacity(placeholder), 0.28);
+assert.equal(originalOpacity(value("2")), 0.14);
+assert.equal(originalOpacity(value("23")), 0.07, "A second digit must halve opacity again");
+assert.equal(originalOpacity(operation("prod", [value("23"), placeholder])), 0.035, "A pending operation already counts as a new symbol");
+const entered = operation("prod", [value("23"), value("x")]);
+assert.equal(originalOpacity(entered), 0.0175, "A variable counts as one entry symbol");
+assert.equal(originalOpacity(entered), 0.0175, "Redrawing the same entry must not fade the original further");
+assert.equal(originalOpacity(operation("sum", [value("23"), value("x")])), 0.0175, "Changing grouping or operation type without adding a symbol must keep fading steady");
+assert.equal(originalOpacity(value("23")), 0.07, "Undoing symbols must restore their previous opacity");
+assert.equal(originalOpacity(operation("inv", [placeholder])), 0.14, "An inverse counts as one symbol");
+assert.equal(originalOpacity(value("-1")), 0.14, "The dedicated negative-one entry counts once");
+const sequence = operation("sum", [value("23")]);
+sequence.isBuilderSequence = true;
+sequence.builderOperators = ["prod"];
+assert.equal(originalOpacity(sequence), 0.035, "Archived builder sequences must count trailing pending operations");
+const regrouped = operation("prod", [value("2"), operation("prod", [value("3"), value("4")])]);
+const flattened = operation("prod", [value("2"), value("3"), value("4")]);
+assert.equal(originalOpacity(regrouped), originalOpacity(flattened), "Cycling an operation's level must not count as another insertion");
+builder.root = placeholder;
 assert(context.inContext(builder));
 for (const tool of ["authorInitial", "replaceOneWithInverseProduct", "cancelOpposites", "insertZeroProduct"]) {
     assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");

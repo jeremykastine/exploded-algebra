@@ -5952,6 +5952,21 @@ ctx.font = SETTINGS.textFont;
                 isNumericalBuilderTool(builder.tool) && !builderReviewActive;
         }
 
+        function countNumericalRewriteSymbols(node) {
+            if (!node || node.isBuilderPlaceholder) return 0;
+            if (node.type === "value") {
+                // Negative one is entered as one dedicated value token. Other
+                // values count each digit or variable that was entered.
+                return String(node.value) === "-1" ? 1 : Array.from(String(node.value ?? "")).length;
+            }
+            const children = node.args.reduce((count, child) => count + countNumericalRewriteSymbols(child), 0);
+            const operations = node.isBuilderSequence
+                ? (node.builderOperators || []).length
+                : node.type === "inv" ? 1
+                : ["sum", "prod"].includes(node.type) ? Math.max(0, node.args.length - 1) : 0;
+            return children + operations;
+        }
+
         function makeNumericalRewriteDisplayRoot(builder) {
             // This wrapper exists only in the display tree. Enclosing operations
             // and siblings account for the larger of the old and new expressions,
@@ -5960,6 +5975,9 @@ ctx.font = SETTINGS.textFont;
                 cloneNode(builder.originalSelectedNode), builder.root
             ], null);
             preview.isNumericalRewritePreview = true;
+            // Derive fading from surviving symbols, rather than clicks or undo
+            // history: regrouping and redraws keep it steady; Undo restores it.
+            preview.rewriteOriginalOpacity = 0.28 * Math.pow(0.5, countNumericalRewriteSymbols(builder.root));
             const originalSelection = builder.originalSelection;
             const copyContext = node => {
                 if (node === originalSelection.node) {
@@ -6006,11 +6024,8 @@ ctx.font = SETTINGS.textFont;
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
             if (numericalBuilder) {
-                ctx.save();
-                ctx.globalAlpha = 0.28;
                 drawNodeRecursiveToContext(explodedDisplayRoot, ctx,
-                    { ...SETTINGS, opaqueInverseDenominator: true }, isCommuteSeparatorHidden);
-                ctx.restore();
+                    { ...SETTINGS, expressionStrokeFill: "black", opaqueInverseDenominator: true }, isCommuteSeparatorHidden);
             } else if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
                 drawBuilderSequence(uiState.expressionBuilder);
             } else {

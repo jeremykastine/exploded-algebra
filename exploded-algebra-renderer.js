@@ -1158,11 +1158,13 @@ function drawNodeRecursiveToContext(
     separatorForeground = () => null
 ) {
     if (node.isNumericalRewritePreview) {
-        // Draw the original with the same fade as its surrounding expression,
-        // retain the usual blue selection shading, then layer full-ink entry on
-        // top. Both footprints remain in layout even while their ink overlaps.
+        // Only the selected original fades; each surviving entry symbol halves
+        // its remaining opacity. Surrounding content and new entry retain full
+        // ink, and both footprints remain in layout while their ink overlaps.
         drawingContext.save();
         const [original, replacement] = node.args;
+        drawingContext.globalAlpha = Number.isFinite(node.rewriteOriginalOpacity)
+            ? node.rewriteOriginalOpacity : 0.28;
         drawNodeRecursiveToContext(original, drawingContext, settings);
         drawingContext.globalAlpha = settings.overlayAlpha;
         drawingContext.fillStyle = settings.selectionBlue;
