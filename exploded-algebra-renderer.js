@@ -888,11 +888,12 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const [original, replacement] = node.args;
         measureNodeWithContext(original, drawingContext, settings);
         measureNodeWithContext(replacement, drawingContext, settings);
-        const overlayPadding = Math.max(4, (settings.bufferSize || 16) / 2);
+        // Selection shading is drawn outside this footprint. Reserving padding
+        // here would move the expression before the replacement needs any space.
         node.layout.width = node.preserveOriginalLayoutWhenEmpty ? original.layout.width
-            : Math.max(original.layout.width, replacement.layout.width) + overlayPadding * 2;
+            : Math.max(original.layout.width, replacement.layout.width);
         node.layout.height = node.preserveOriginalLayoutWhenEmpty ? original.layout.height
-            : Math.max(original.layout.height, replacement.layout.height) + overlayPadding * 2;
+            : Math.max(original.layout.height, replacement.layout.height);
         node.layout.vLines = [0, node.layout.width];
         node.layout.hLines = [0, node.layout.height];
         return;
@@ -1196,7 +1197,7 @@ function drawNodeRecursiveToContext(
         drawNodeRecursiveToContext(original, drawingContext, settings);
         drawingContext.globalAlpha = settings.overlayAlpha;
         drawingContext.fillStyle = settings.selectionBlue;
-        const outsidePadding = node.preserveOriginalLayoutWhenEmpty ? (settings.bufferSize || 16) / 2 : 0;
+        const outsidePadding = (settings.bufferSize || 16) / 2;
         drawingContext.fillRect(node.left() - outsidePadding, node.top() - outsidePadding,
             node.layout.width + outsidePadding * 2, node.layout.height + outsidePadding * 2);
         drawingContext.globalAlpha = 1;
@@ -1339,8 +1340,19 @@ function nodeNeedsSeparatorFlares(node) {
     if (!node || (node.type !== "sum" && node.type !== "prod") || !Array.isArray(node.args)) {
         return false;
     }
-    return node.args.some(child => child &&
-        (child.preserveOriginalLayoutWhenEmpty ? child.args[0].type : child.type) !== "value");
+    return node.args.some(child => {
+        if (!child) return false;
+        if (!child.isReplacementBuilderPreview) return child.type !== "value";
+        const visible = child.preserveOriginalLayoutWhenEmpty ? [child.args[0]] : child.args;
+        return visible.some(part => {
+            // Wrapping a range of existing terms/factors must not introduce
+            // grouping beams that were absent before the rewrite editor opened.
+            if (child.rewriteRangeType === node.type && part.type === node.type) {
+                return part.args.some(component => component.type !== "value");
+            }
+            return part.type !== "value";
+        });
+    });
 }
 
 // Bar geometry and central operation appearance are independent. A bar is

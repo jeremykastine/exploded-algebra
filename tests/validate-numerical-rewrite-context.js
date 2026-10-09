@@ -73,23 +73,23 @@ function render(builder) {
     const containsReference = node => node === builder.root || node.args.some(containsReference);
     assert(containsReference(preview.args[1]), "Position the live entry tree so its grouping hit targets share the canvas coordinates");
     for (const child of preview.args) {
-        assert.equal((child.left() + child.right()) / 2, (preview.left() + preview.right()) / 2, "Old and new expressions must share the same horizontal center");
-        assert.equal((child.top() + child.bottom()) / 2, (preview.top() + preview.bottom()) / 2, "Old and new expressions must share the same vertical center");
+        assert(Math.abs((child.left() + child.right()) / 2 - (preview.left() + preview.right()) / 2) < 1e-8, "Old and new expressions must share the same horizontal center");
+        assert(Math.abs((child.top() + child.bottom()) / 2 - (preview.top() + preview.bottom()) / 2) < 1e-8, "Old and new expressions must share the same vertical center");
         if (!preview.preserveOriginalLayoutWhenEmpty || child === preview.args[0]) {
             assert(child.left() >= preview.left() && child.right() <= preview.right(), "The edit region must contain both widths");
             assert(child.top() >= preview.top() && child.bottom() <= preview.bottom(), "The edit region must contain both heights");
         }
     }
-    assert.equal(preview.layout.width, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.width : Math.max(...preview.args.map(child => child.layout.width)) + 16);
-    assert.equal(preview.layout.height, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.height : Math.max(...preview.args.map(child => child.layout.height)) + 16);
+    assert.equal(preview.layout.width, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.width : Math.max(...preview.args.map(child => child.layout.width)));
+    assert.equal(preview.layout.height, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.height : Math.max(...preview.args.map(child => child.layout.height)));
     const overlay = svg.children.at(-1);
     assert.equal(overlay.attributes["data-selection-overlay"], "true", "Blue shading must be above all old and new expression content");
     assert.equal(overlay.attributes.opacity, "0.25", "The entire blue layer must use one low global alpha");
     assert.equal(overlay.attributes["pointer-events"], "none", "Foreground shading must allow selection and grouping through it");
     const shading = overlay.children.find(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue);
     assert(shading && shading.attributes.opacity === undefined && shading.attributes.stroke === "none", "The blue region must inherit the layer alpha without an entry outline");
-    assert.equal(Number(shading.attributes.width), preview.layout.width + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
-    assert.equal(Number(shading.attributes.height), preview.layout.height + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
+    assert.equal(Number(shading.attributes.width), preview.layout.width + 16);
+    assert.equal(Number(shading.attributes.height), preview.layout.height + 16);
     assert(!svg.children.some(child => child.attributes.fill === "rgb(184,184,184)"), "The old gray selection fill must be gone");
     return { display, preview, svg };
 }
@@ -153,7 +153,8 @@ const placeholder = value("?");
 placeholder.isBuilderPlaceholder = true;
 builder.root = placeholder;
 const empty = render(builder);
-assert.equal(empty.preview.args[1].layout.width, 24, "Empty entry still participates in sizing");
+assert.equal(empty.preview.layout.width, empty.preview.args[0].layout.width, "Empty entry must not enlarge the original width");
+assert.equal(empty.preview.layout.height, empty.preview.args[0].layout.height, "Empty entry must not enlarge the original height");
 const oldLabel = empty.svg.children.find(child => child.name === "text" && child.textContent === "6");
 assert(oldLabel && oldLabel.attributes.fill !== "white" && oldLabel.attributes.opacity === "0.28", "Before typing, only the old selection must be faded");
 assert(!empty.svg.children.some(child => child.name === "text" && child.textContent === "?"), "The empty entry must not obscure the old expression with a placeholder");
@@ -163,8 +164,56 @@ const wideOld = operation("sum", [operation("prod", [value("123"), value("456")]
 const wideBuilder = makeBuilder(wideOld, wideOld, 0, 1, wideOld);
 wideBuilder.root = value("9");
 const wide = render(wideBuilder);
-assert(wide.preview.layout.width >= wide.preview.args[0].layout.width + 16);
-assert(wide.preview.layout.height >= wide.preview.args[0].layout.height + 16);
+assert.equal(wide.preview.layout.width, wide.preview.args[0].layout.width);
+assert.equal(wide.preview.layout.height, wide.preview.args[0].layout.height);
+
+// Opening numerical entry must preserve the actual enclosing expression,
+// including partial ranges that must not become newly nested operations.
+for (const beamStyle of ["midline", "nested-parentheses", "nested-operator-parentheses", "outward-parentheses"]) {
+    context.settings.sumBeamStyle = beamStyle;
+    context.settings.productBeamStyle = beamStyle;
+    for (const type of ["sum", "prod"]) {
+        const numbers = [value("2"), value("3"), value("4")];
+        const expression = operation(type, numbers);
+        const baseline = context.cloneNode(expression);
+        context.layout(baseline, context.svgContext(new SvgElement("svg")));
+        const rangeBuilder = makeBuilder(expression, expression, 0, 1, operation(type, numbers.slice(0, 2)));
+        rangeBuilder.root = placeholder;
+        const opening = render(rangeBuilder);
+        assert.equal(opening.display.layout.width, baseline.layout.width, "Empty numerical entry must preserve the enclosing width");
+        assert.equal(opening.display.layout.height, baseline.layout.height, "Empty numerical entry must preserve the enclosing height");
+        const oldParts = opening.preview.args[0].args;
+        for (let i = 0; i < oldParts.length; i++) {
+            assert.equal(oldParts[i].left(), baseline.args[i].left(), "Selected values must not move when entry opens");
+            assert.equal(oldParts[i].top(), baseline.args[i].top());
+        }
+        assert.equal(opening.display.args[1].left(), baseline.args[2].left(), "Unselected siblings must not move when entry opens");
+        assert.equal(opening.display.args[1].top(), baseline.args[2].top());
+        rangeBuilder.root = value("5");
+        const smaller = render(rangeBuilder);
+        assert.equal(smaller.display.layout.width, baseline.layout.width, "A fitting replacement must preserve the width");
+        assert.equal(smaller.display.layout.height, baseline.layout.height, "A fitting replacement must preserve the height");
+        rangeBuilder.root = placeholder;
+        const undone = render(rangeBuilder);
+        assert.equal(undone.display.layout.width, opening.display.layout.width);
+        assert.equal(undone.display.layout.height, opening.display.layout.height);
+    }
+}
+context.settings.sumBeamStyle = "midline";
+context.settings.productBeamStyle = "midline";
+const axisOriginal = operation("prod", [value("123"), value("456")]);
+const axisBuilder = makeBuilder(axisOriginal, axisOriginal, 0, 1, axisOriginal);
+axisBuilder.root = operation("sum", [value("1"), value("2")]);
+const taller = render(axisBuilder);
+assert.equal(taller.preview.layout.width, taller.preview.args[0].layout.width, "A taller replacement must not add width");
+assert.equal(taller.preview.layout.height, taller.preview.args[1].layout.height);
+assert(taller.preview.layout.height > taller.preview.args[0].layout.height);
+const digitOriginal = value("1");
+const digitBuilder = makeBuilder(digitOriginal, digitOriginal);
+digitBuilder.root = value("123456");
+const wider = render(digitBuilder);
+assert.equal(wider.preview.layout.width, wider.preview.args[1].layout.width);
+assert.equal(wider.preview.layout.height, wider.preview.args[0].layout.height, "A wider replacement must not add height");
 
 // Original symbols, grouping beams, negative values and inverse containers
 // keep their usual appearance while the selected original alone is faded.

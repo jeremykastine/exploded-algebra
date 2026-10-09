@@ -99,6 +99,11 @@ downloaded move histories. Initial expression entry and zero-product insertion
 use the existing entry canvas and original-expression Peek control.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.
+Opening a replacement editor preserves the expression's footprint. An empty or
+smaller replacement adds no layout padding; width and height grow independently
+only when the replacement exceeds the original in that dimension. Selection tint
+keeps its visual buffer outside the layout footprint. Partial selections remain
+parts of their enclosing sum or product rather than new nested operations.
 Blue selection shading is a foreground overlay throughout the program,
 including rewrite previews and introductory diagrams. One shared 25% alpha
 tints symbols, operations and inverse backgrounds evenly; overlapping blue

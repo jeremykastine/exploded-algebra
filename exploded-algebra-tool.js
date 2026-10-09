@@ -5985,7 +5985,7 @@ ctx.font = SETTINGS.textFont;
                 cloneNode(builder.originalSelectedNode), replacement
             ], null);
             preview.isReplacementBuilderPreview = true;
-            preview.preserveOriginalLayoutWhenEmpty = pairInsertion && entrySymbols === 0;
+            preview.preserveOriginalLayoutWhenEmpty = entrySymbols === 0;
             // Derive fading from surviving symbols, rather than clicks or undo
             // history: regrouping and redraws keep it steady; Undo restores it.
             preview.rewriteOriginalOpacity = 0.28 * Math.pow(0.5, entrySymbols);
@@ -5996,6 +5996,9 @@ ctx.font = SETTINGS.textFont;
                         originalSelection.firstPart === 0 && originalSelection.lastPart === node.args.length - 1) {
                         return preview;
                     }
+                    // A selected range is still part of this enclosing operation,
+                    // rather than a newly nested sum or product.
+                    preview.rewriteRangeType = node.type;
                     return new ExprNode(node.type, [
                         ...node.args.slice(0, originalSelection.firstPart).map(cloneNode),
                         preview,
