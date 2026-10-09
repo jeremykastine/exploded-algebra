@@ -83,8 +83,8 @@ settings, Reset, and Download Move History appear on the settings screen rather
 than in the action or expression-builder panels.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
-downloaded move histories. General Expression Builder insertions use the
-existing entry canvas and original-expression Peek control.
+downloaded move histories. Initial expression entry and zero-product insertion
+use the existing entry canvas and original-expression Peek control.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.
 The usual blue selection shading remains around the selected range. The old
@@ -98,8 +98,16 @@ diagonal area, arrow, or entry outline. The child region uses the larger width
 and height of the original and replacement, including padding, so neither can
 overlap surrounding content. This temporary display tree never enters the
 expression or move history. Submit validates and substitutes the replacement as before; cancel
-restores the original. General expression entry and inverse-pair / opposite-pair
-insertion retain their existing display behavior.
+restores the original.
+Introducing A times inverse(A) in place of 1 and A plus (-A) in place of 0 uses
+the same overlay, blue shading, and fading. Before entry, the selected 1 or 0
+remains gray in its original position, with no pair or change to the surrounding
+layout. As soon as A has an entered symbol, both copies appear together at the
+selected location, updating together as A grows. Sizing accommodates the entire
+pair and original value; fading counts only symbols entered in A, rather than
+the automatically generated copy, inverse, or negative factor. Undoing all entry
+returns to the original layout. Submission and nonzero-inverse validation remain
+unchanged.
 Addition and multiplication are always entered explicitly. Their first press
 places the pending operation at its lowest available level; repeated presses of
 that same button, before the next value is entered, cycle it through the higher

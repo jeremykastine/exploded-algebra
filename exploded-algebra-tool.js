@@ -5916,6 +5916,10 @@ ctx.font = SETTINGS.textFont;
 
         function drawBuilderSequence(builder) {
             drawNodeRecursive(builder.root);
+            drawBuilderGroupingPrompt(builder);
+        }
+
+        function drawBuilderGroupingPrompt(builder) {
             const demoStep = getCurrentDemoStep();
             if (isDemoModeActive() && demoStep && demoStep.type === "builder" && demoStep.action === "groupOperator") {
                 const targetSpec = parseIntegratedBuilderOperatorTarget(demoStep.value, builder);
@@ -5932,11 +5936,11 @@ ctx.font = SETTINGS.textFont;
         }
 
         function getExplodedBuilderDisplayRoot(builder = uiState.expressionBuilder) {
-            if (builderReviewActive && builder && builder.mainRoot && isNumericalBuilderTool(builder.tool)) {
+            if (builderReviewActive && builder && builder.mainRoot && isInContextReplacementTool(builder.tool)) {
                 return builder.mainRoot;
             }
-            if (isInContextNumericalBuilder(builder)) {
-                return makeNumericalRewriteDisplayRoot(builder);
+            if (isInContextReplacementBuilder(builder)) {
+                return makeReplacementBuilderDisplayRoot(builder);
             }
             if (!isIntegratedExpressionBuilder(builder)) {
                 return expressionRoot;
@@ -5947,19 +5951,24 @@ ctx.font = SETTINGS.textFont;
             return builder.root;
         }
 
-        function isInContextNumericalBuilder(builder = uiState.expressionBuilder) {
+        function isInContextReplacementBuilder(builder = uiState.expressionBuilder) {
             return !!builder && !!builder.mainRoot && !!builder.originalSelection &&
-                isNumericalBuilderTool(builder.tool) && !builderReviewActive;
+                isInContextReplacementTool(builder.tool) && !builderReviewActive;
         }
 
-        function countNumericalRewriteSymbols(node) {
+        function isInContextReplacementTool(toolName) {
+            return isNumericalBuilderTool(toolName) ||
+                ["replaceOneWithInverseProduct", "cancelOpposites"].includes(toolName);
+        }
+
+        function countReplacementEntrySymbols(node) {
             if (!node || node.isBuilderPlaceholder) return 0;
             if (node.type === "value") {
                 // Negative one is entered as one dedicated value token. Other
                 // values count each digit or variable that was entered.
                 return String(node.value) === "-1" ? 1 : Array.from(String(node.value ?? "")).length;
             }
-            const children = node.args.reduce((count, child) => count + countNumericalRewriteSymbols(child), 0);
+            const children = node.args.reduce((count, child) => count + countReplacementEntrySymbols(child), 0);
             const operations = node.isBuilderSequence
                 ? (node.builderOperators || []).length
                 : node.type === "inv" ? 1
@@ -5967,17 +5976,30 @@ ctx.font = SETTINGS.textFont;
             return children + operations;
         }
 
-        function makeNumericalRewriteDisplayRoot(builder) {
+        function makeReplacementBuilderDisplayRoot(builder) {
             // This wrapper exists only in the display tree. Enclosing operations
             // and siblings account for the larger of the old and new expressions,
             // which share one overlaid region in the selected position.
+            const entrySymbols = countReplacementEntrySymbols(builder.root);
+            const pairInsertion = ["replaceOneWithInverseProduct", "cancelOpposites"].includes(builder.tool);
+            let replacement = builder.root;
+            // Nothing is generated until A has content. Keep the live A tree as
+            // the first copy so grouping hit targets use its displayed position.
+            if (pairInsertion && entrySymbols > 0) {
+                const copy = cloneBuilderNodeForHistory(builder.root);
+                replacement = builder.tool === "replaceOneWithInverseProduct"
+                    ? new ExprNode("prod", [builder.root, new ExprNode("inv", [copy], null)], null)
+                    : new ExprNode("sum", [builder.root,
+                        new ExprNode("prod", [valueNode("-1"), copy], null)], null);
+            }
             const preview = new ExprNode("rewritePreview", [
-                cloneNode(builder.originalSelectedNode), builder.root
+                cloneNode(builder.originalSelectedNode), replacement
             ], null);
-            preview.isNumericalRewritePreview = true;
+            preview.isReplacementBuilderPreview = true;
+            preview.preserveOriginalLayoutWhenEmpty = pairInsertion && entrySymbols === 0;
             // Derive fading from surviving symbols, rather than clicks or undo
             // history: regrouping and redraws keep it steady; Undo restores it.
-            preview.rewriteOriginalOpacity = 0.28 * Math.pow(0.5, countNumericalRewriteSymbols(builder.root));
+            preview.rewriteOriginalOpacity = 0.28 * Math.pow(0.5, entrySymbols);
             const originalSelection = builder.originalSelection;
             const copyContext = node => {
                 if (node === originalSelection.node) {
@@ -6010,8 +6032,8 @@ ctx.font = SETTINGS.textFont;
             }
 
             const integratedBuilder = isIntegratedExpressionBuilder(uiState.expressionBuilder);
-            const numericalBuilder = isInContextNumericalBuilder();
-            const explodedDisplayRoot = integratedBuilder || numericalBuilder
+            const contextualBuilder = isInContextReplacementBuilder();
+            const explodedDisplayRoot = integratedBuilder || contextualBuilder
                 ? getExplodedBuilderDisplayRoot(uiState.expressionBuilder)
                 : expressionRoot;
             layoutExpression(explodedDisplayRoot);
@@ -6023,9 +6045,10 @@ ctx.font = SETTINGS.textFont;
             }
             ctx.clearRect(0, 0, getSvgWidth(workspaceSvg), getSvgHeight(workspaceSvg));
 
-            if (numericalBuilder) {
+            if (contextualBuilder) {
                 drawNodeRecursiveToContext(explodedDisplayRoot, ctx,
                     { ...SETTINGS, expressionStrokeFill: "black", opaqueInverseDenominator: true }, isCommuteSeparatorHidden);
+                if (integratedBuilder) drawBuilderGroupingPrompt(uiState.expressionBuilder);
             } else if (integratedBuilder && explodedDisplayRoot === uiState.expressionBuilder.root && expressionRoot.isBuilderSequence) {
                 drawBuilderSequence(uiState.expressionBuilder);
             } else {
@@ -6038,7 +6061,7 @@ ctx.font = SETTINGS.textFont;
                     if (selection.node) {
                         drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
                     }
-                } else if (integratedBuilder || numericalBuilder) {
+                } else if (integratedBuilder || contextualBuilder) {
                     hideBuilderRewritePreview();
                 } else {
                     drawExpressionBuilderContext();
@@ -12891,7 +12914,7 @@ function renderToolArea() {
             }
             document.body.classList.toggle("expression-builder-active", builderActive);
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
-            document.body.classList.toggle("numerical-rewrite-context", builderActive && isInContextNumericalBuilder());
+            document.body.classList.toggle("replacement-builder-context", builderActive && isInContextReplacementBuilder());
             document.body.classList.remove("builder-grouping-mode", "builder-grouping-selection");
             document.body.classList.toggle("selection-active", selectionActive);
             if (builderActive) {

@@ -858,13 +858,15 @@ function measureNodeWithContext(node, drawingContext, settings) {
     const gap = getComponentGap(settings);
     const operatorHalf = getOperatorHalfSize(settings);
 
-    if (node.isNumericalRewritePreview) {
+    if (node.isReplacementBuilderPreview) {
         const [original, replacement] = node.args;
         measureNodeWithContext(original, drawingContext, settings);
         measureNodeWithContext(replacement, drawingContext, settings);
         const overlayPadding = Math.max(4, (settings.bufferSize || 16) / 2);
-        node.layout.width = Math.max(original.layout.width, replacement.layout.width) + overlayPadding * 2;
-        node.layout.height = Math.max(original.layout.height, replacement.layout.height) + overlayPadding * 2;
+        node.layout.width = node.preserveOriginalLayoutWhenEmpty ? original.layout.width
+            : Math.max(original.layout.width, replacement.layout.width) + overlayPadding * 2;
+        node.layout.height = node.preserveOriginalLayoutWhenEmpty ? original.layout.height
+            : Math.max(original.layout.height, replacement.layout.height) + overlayPadding * 2;
         node.layout.vLines = [0, node.layout.width];
         node.layout.hLines = [0, node.layout.height];
         return;
@@ -1051,7 +1053,7 @@ function placeNodeWithSettings(node, x, y, settings) {
     node.layout.y = y;
     node.layout.childBoxes = [];
 
-    if (node.isNumericalRewritePreview) {
+    if (node.isReplacementBuilderPreview) {
         const [original, replacement] = node.args;
         for (const child of [original, replacement]) {
             placeNodeWithSettings(child,
@@ -1157,7 +1159,7 @@ function drawNodeRecursiveToContext(
     nodeForeground = () => null,
     separatorForeground = () => null
 ) {
-    if (node.isNumericalRewritePreview) {
+    if (node.isReplacementBuilderPreview) {
         // Only the selected original fades; each surviving entry symbol halves
         // its remaining opacity. Surrounding content and new entry retain full
         // ink, and both footprints remain in layout while their ink overlaps.
@@ -1168,7 +1170,9 @@ function drawNodeRecursiveToContext(
         drawNodeRecursiveToContext(original, drawingContext, settings);
         drawingContext.globalAlpha = settings.overlayAlpha;
         drawingContext.fillStyle = settings.selectionBlue;
-        drawingContext.fillRect(node.left(), node.top(), node.layout.width, node.layout.height);
+        const outsidePadding = node.preserveOriginalLayoutWhenEmpty ? (settings.bufferSize || 16) / 2 : 0;
+        drawingContext.fillRect(node.left() - outsidePadding, node.top() - outsidePadding,
+            node.layout.width + outsidePadding * 2, node.layout.height + outsidePadding * 2);
         drawingContext.globalAlpha = 1;
         drawNodeRecursiveToContext(replacement, drawingContext, {
             ...settings, expressionStrokeFill: "black", operationBarShading: "black"
@@ -1309,7 +1313,8 @@ function nodeNeedsSeparatorFlares(node) {
     if (!node || (node.type !== "sum" && node.type !== "prod") || !Array.isArray(node.args)) {
         return false;
     }
-    return node.args.some(child => child && child.type !== "value");
+    return node.args.some(child => child &&
+        (child.preserveOriginalLayoutWhenEmpty ? child.args[0].type : child.type) !== "value");
 }
 
 // Bar geometry and central operation appearance are independent. A bar is

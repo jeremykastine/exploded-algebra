@@ -30,14 +30,14 @@ function loadFunction(name) {
     const end = playerSource.indexOf("\n        function ", start + 1);
     vm.runInContext(playerSource.slice(start, end), context);
 }
-for (const name of ["cloneNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextNumericalBuilder", "countNumericalRewriteSymbols", "makeNumericalRewriteDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
+for (const name of ["cloneNode", "cloneBuilderNodeForHistory", "valueNode", "makeInverseNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextReplacementTool", "isInContextReplacementBuilder", "countReplacementEntrySymbols", "makeReplacementBuilderDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
     loadFunction(name);
 }
 vm.runInContext(`
     this.value = text => new ExprNode("value", [], text);
     this.operation = (type, args) => new ExprNode(type, args, null);
-    this.makeDisplay = makeNumericalRewriteDisplayRoot;
-    this.inContext = isInContextNumericalBuilder;
+    this.makeDisplay = makeReplacementBuilderDisplayRoot;
+    this.inContext = isInContextReplacementBuilder;
     this.displayRoot = getExplodedBuilderDisplayRoot;
     this.settings = { ...SETTINGS, expressionStrokeFill: "black", opaqueInverseDenominator: true, operationStyle: "bare", sumBeamStyle: "midline", productBeamStyle: "midline", operationBarShading: "black" };
     this.layout = (node, ctx) => layoutExpressionWithSettings(node, ctx, settings, 20, 20);
@@ -50,7 +50,7 @@ vm.runInContext(`
 `, context);
 const { value, operation } = context;
 function findPreview(node) {
-    return node.isNumericalRewritePreview ? node : node.args.map(findPreview).find(Boolean);
+    return node.isReplacementBuilderPreview ? node : node.args.map(findPreview).find(Boolean);
 }
 function render(builder) {
     const originalText = JSON.stringify(builder.mainRoot);
@@ -65,19 +65,22 @@ function render(builder) {
     assert.equal(JSON.stringify(builder.mainRoot), originalText, "Opening or editing a rewrite must leave the original expression and layout untouched");
     const preview = findPreview(display);
     assert(preview, "The original selected range and replacement must share one reserved display region");
-    assert.equal(preview.args[1], builder.root, "Position the live replacement tree so its grouping hit targets share the canvas coordinates");
+    const containsReference = node => node === builder.root || node.args.some(containsReference);
+    assert(containsReference(preview.args[1]), "Position the live entry tree so its grouping hit targets share the canvas coordinates");
     for (const child of preview.args) {
         assert.equal((child.left() + child.right()) / 2, (preview.left() + preview.right()) / 2, "Old and new expressions must share the same horizontal center");
         assert.equal((child.top() + child.bottom()) / 2, (preview.top() + preview.bottom()) / 2, "Old and new expressions must share the same vertical center");
-        assert(child.left() >= preview.left() && child.right() <= preview.right(), "The edit region must contain both widths");
-        assert(child.top() >= preview.top() && child.bottom() <= preview.bottom(), "The edit region must contain both heights");
+        if (!preview.preserveOriginalLayoutWhenEmpty || child === preview.args[0]) {
+            assert(child.left() >= preview.left() && child.right() <= preview.right(), "The edit region must contain both widths");
+            assert(child.top() >= preview.top() && child.bottom() <= preview.bottom(), "The edit region must contain both heights");
+        }
     }
-    assert.equal(preview.layout.width, Math.max(...preview.args.map(child => child.layout.width)) + 16);
-    assert.equal(preview.layout.height, Math.max(...preview.args.map(child => child.layout.height)) + 16);
+    assert.equal(preview.layout.width, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.width : Math.max(...preview.args.map(child => child.layout.width)) + 16);
+    assert.equal(preview.layout.height, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.height : Math.max(...preview.args.map(child => child.layout.height)) + 16);
     const shading = svg.children.find(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue);
     assert(shading && shading.attributes.opacity === "0.25" && shading.attributes.stroke === "none", "The usual blue selection shading must remain without an entry outline");
-    assert.equal(Number(shading.attributes.width), preview.layout.width);
-    assert.equal(Number(shading.attributes.height), preview.layout.height);
+    assert.equal(Number(shading.attributes.width), preview.layout.width + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
+    assert.equal(Number(shading.attributes.height), preview.layout.height + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
     assert(!svg.children.some(child => child.attributes.fill === "rgb(184,184,184)"), "The old gray selection fill must be gone");
     return { display, preview, svg };
 }
@@ -135,7 +138,7 @@ assert(insideInverse.preview.right() < insideInverse.display.args[1].right(), "A
 
 const whole = operation("sum", [value("2"), value("4")]);
 const wholeBuilder = makeBuilder(whole, whole, 0, 1, whole);
-assert(render(wholeBuilder).display.isNumericalRewritePreview, "A whole-expression selection must use the same overlaid edit region");
+assert(render(wholeBuilder).display.isReplacementBuilderPreview, "A whole-expression selection must use the same overlaid edit region");
 
 const placeholder = value("?");
 placeholder.isBuilderPlaceholder = true;
@@ -201,7 +204,7 @@ const flattened = operation("prod", [value("2"), value("3"), value("4")]);
 assert.equal(originalOpacity(regrouped), originalOpacity(flattened), "Cycling an operation's level must not count as another insertion");
 builder.root = placeholder;
 assert(context.inContext(builder));
-for (const tool of ["authorInitial", "replaceOneWithInverseProduct", "cancelOpposites", "insertZeroProduct"]) {
+for (const tool of ["authorInitial", "insertZeroProduct"]) {
     assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");
 }
 context.builderReviewActive = true;
@@ -209,9 +212,69 @@ assert.equal(context.inContext(builder), false);
 assert.equal(context.displayRoot(builder), mainRoot, "Peek must show the original expression without the temporary rewrite area");
 context.builderReviewActive = false;
 
+// Both generated pairs use the same selected-site overlay. Nothing new is
+// visible and no sibling moves before entry; after entry both copies update.
+const pairPreviews = {};
+function data(node) {
+    return { type: node.type, value: node.value, args: Array.from(node.args, data), builderOperators: Array.from(node.builderOperators || []) };
+}
+for (const [tool, originalValue] of [["replaceOneWithInverseProduct", "1"], ["cancelOpposites", "0"]]) {
+    const token = value(originalValue);
+    const expression = operation("sum", [operation("prod", [value("x"), token]), value("7")]);
+    const pairBuilder = { ...makeBuilder(expression, token), tool, root: placeholder };
+    assert(context.inContext(pairBuilder));
+    const initial = render(pairBuilder);
+    const baseline = context.cloneNode(expression);
+    context.layout(baseline, context.svgContext(new SvgElement("svg")));
+    assert.equal(initial.display.layout.width, baseline.layout.width, "Opening a pair rule must not change the original width");
+    assert.equal(initial.display.layout.height, baseline.layout.height, "Opening a pair rule must not change the original height");
+    assert.equal(initial.preview.args[0].left(), baseline.args[0].args[1].left(), "Opening a pair rule must leave the selected value in the same position");
+    assert.equal(initial.preview.args[0].top(), baseline.args[0].args[1].top());
+    const initialLabels = initial.svg.children.filter(child => child.name === "text");
+    assert.equal(initialLabels.length, 3, "No inverse, negative factor or duplicate may appear before entering A");
+    assert(initialLabels.some(child => child.textContent === originalValue && child.attributes.opacity === "0.28"));
+    pairPreviews[tool + "-empty"] = initial;
+
+    pairBuilder.root = value("2");
+    const first = render(pairBuilder);
+    assert.equal(first.preview.rewriteOriginalOpacity, 0.14, "Generated symbols and the second copy must not accelerate the fade");
+    const pair = first.preview.args[1];
+    assert.equal(pair.type, tool === "replaceOneWithInverseProduct" ? "prod" : "sum");
+    assert.equal(pair.args[0], pairBuilder.root, "The first A remains live for entry and grouping hit targets");
+    const copy = tool === "replaceOneWithInverseProduct" ? pair.args[1].args[0] : pair.args[1].args[1];
+    assert.deepEqual(data(copy), data(pairBuilder.root), "The inverse or negative copy must match A immediately");
+    assert.notEqual(copy, pairBuilder.root, "Copies must have independent layout positions");
+    assert.equal(first.svg.children.filter(child => child.name === "text" && child.textContent === "2" && child.attributes.fill === "black" && !child.attributes.opacity).length, 2, "The first digit must appear in both halves simultaneously");
+    pairPreviews[tool] = first;
+
+    pairBuilder.root = operation("sum", [value("23"), value("y")]);
+    const expanded = render(pairBuilder);
+    const expandedPair = expanded.preview.args[1];
+    const expandedCopy = tool === "replaceOneWithInverseProduct" ? expandedPair.args[1].args[0] : expandedPair.args[1].args[1];
+    assert.deepEqual(data(expandedCopy), data(pairBuilder.root), "Both copies must update together for compound A");
+    assert.equal(expanded.preview.rewriteOriginalOpacity, 0.0175);
+    assert(expanded.display.args[1].top() > expanded.preview.bottom(), "The complete generated pair must fit before the next sibling");
+    pairBuilder.root.isBuilderSequence = true;
+    pairBuilder.root.builderOperators = ["sum"];
+    const sequencePair = render(pairBuilder).preview.args[1];
+    const sequenceCopy = tool === "replaceOneWithInverseProduct" ? sequencePair.args[1].args[0] : sequencePair.args[1].args[1];
+    assert(sequenceCopy.isBuilderSequence && sequenceCopy.builderOperators[0] === "sum", "Archived entry sequences must retain their pending operations in both copies");
+
+    pairBuilder.root = placeholder;
+    const undone = render(pairBuilder);
+    assert.equal(undone.display.layout.width, initial.display.layout.width, "Undoing all entry must restore the original layout");
+    assert.equal(undone.preview.rewriteOriginalOpacity, 0.28);
+    context.builderReviewActive = true;
+    assert.equal(context.displayRoot(pairBuilder), expression, "Peek must show the original whole expression for pair rules too");
+    context.builderReviewActive = false;
+}
+
 if (process.env.REWRITE_PREVIEW_PATH) {
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH, single.svg.outerHTML);
+    for (const [name, result] of Object.entries(pairPreviews)) {
+        fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, `-${name}.svg`), result.svg.outerHTML);
+    }
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-empty.svg"), empty.svg.outerHTML);
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-inverse.svg"), insideInverse.svg.outerHTML);
 }
-console.log("Numerical rewrite context, layout, ink and isolation checks passed.");
+console.log("Numerical and pair rewrite context, layout, ink and isolation checks passed.");
