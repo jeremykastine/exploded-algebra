@@ -130,7 +130,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-08T21:12:59-04:00">10/8/26, 9:12 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-08T21:56:21-04:00">10/8/26, 9:56 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1077,7 +1077,7 @@ body.player-ready>#exploded-examples{display:none;}
 
     const interfaceSection = addSection("Try the Exploded Algebra interface", [
         "Open either guided exercise below to try the calculation from Section 3. Follow the prompts: select the part inside the dotted yellow outline, then follow the yellow-highlighted buttons to enter and submit its value. Repeat for the remaining operation.",
-        "Each exercise has just two calculations. The yellow outlines show what to select, and the yellow buttons show what to press, so you can see how the interface works one step at a time."
+        "These first two exercises each have just two calculations. The yellow outlines show what to select, and the yellow buttons show what to press, so you can see how the interface works one step at a time."
     ], null, "try-the-interface");
     const interfaceLinks = document.createElement("ul");
     [
@@ -1096,12 +1096,15 @@ body.player-ready>#exploded-examples{display:none;}
     });
     interfaceSection.appendChild(interfaceLinks);
 
-    addSection("The same idea can be nested again", [
-        "A longer sentence still becomes one expression. Begin with the innermost instruction, then place its result inside the next operation. The arrangement records the sequence without flattening the parts into one row."
-    ], phrasePair(
-        phraseCard("Multiply x by 4, add 3, then multiply the entire result by 2.", product(value(2), sum(product(value("x"), value(4)), value(3))), "The inner product is a term of a sum; that sum is a factor of the outer product."),
-        phraseCard("Add x and 3, multiply that sum by 2, then add 4.", sum(product(value(2), sum(value("x"), value(3))), value(4)), "The inner sum is a factor of a product; that product is a term of the outer sum.")
-    ));
+    const nextExercisePrompt = document.createElement("p");
+    nextExercisePrompt.textContent = "Now that you’ve tried a couple of simple calculations, here’s a more complicated expression.";
+    const nextExerciseLink = document.createElement("a");
+    nextExerciseLink.className = "practice-link";
+    nextExerciseLink.href = `exploded-algebra.html?level=${encodeURIComponent("intro-levels/evaluate-nested-expression.json")}&mode=guided`;
+    nextExerciseLink.target = "_blank";
+    nextExerciseLink.rel = "noopener noreferrer";
+    nextExerciseLink.textContent = "Try the more complicated expression — guided exercise (opens in a new tab)";
+    interfaceSection.append(nextExercisePrompt, nextExerciseLink);
 
     addSection("Now compare with conventional notation", [
         "Both notations can describe these calculations precisely. Conventional notation uses its order of operations and, when needed, parentheses. Exploded Algebra places the complete terms and factors where their relationships can be seen.",
