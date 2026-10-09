@@ -87,6 +87,10 @@ downloaded move histories. Initial expression entry and zero-product insertion
 use the existing entry canvas and original-expression Peek control.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.
+Blue selection shading is a foreground overlay throughout the program,
+including rewrite previews and introductory diagrams. One shared 25% alpha
+tints symbols, operations and inverse backgrounds evenly; overlapping blue
+regions do not apply the tint twice, and pointer interactions pass through.
 The usual blue selection shading remains around the selected range. The old
 selection starts at 28% opacity; each symbol entered halves its remaining
 opacity (14%, 7%, 3.5%, and so on). Each digit, variable, or operation counts;

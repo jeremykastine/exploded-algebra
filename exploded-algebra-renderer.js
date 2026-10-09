@@ -603,9 +603,16 @@ function getSvgHeight(svgElement) {
     return svgElement.__svgHeight || Number(svgElement.getAttribute("height")) || 1;
 }
 
+function isSelectionBlueColor(color) {
+    const normalized = String(color || "").toLowerCase().replace(/\s+/g, "");
+    return normalized === SETTINGS.selectionBlue.toLowerCase().replace(/\s+/g, "")
+        || normalized === "#508cff" || normalized === "#ddefff" || normalized === "blue";
+}
+
 class SvgDrawingContext {
     constructor(svgElement) {
         this.svg = svgElement;
+        this.selectionOverlayLayer = null;
         this.stateStack = [];
         this.state = {
             strokeStyle: SETTINGS.expressionStrokeFill,
@@ -658,6 +665,7 @@ class SvgDrawingContext {
         while (this.svg.firstChild) {
             this.svg.removeChild(this.svg.firstChild);
         }
+        this.selectionOverlayLayer = null;
     }
 
     beginPath() { this.pathCommands = []; }
@@ -701,7 +709,25 @@ class SvgDrawingContext {
     }
 
     appendSvgElement(element) {
-        this.svg.appendChild(element);
+        const shape = element.localName || element.name;
+        if ((shape === "rect" || shape === "path") && isSelectionBlueColor(element.getAttribute("fill"))) {
+            if (!this.selectionOverlayLayer) {
+                this.selectionOverlayLayer = document.createElementNS(SVG_NS, "g");
+                this.selectionOverlayLayer.setAttribute("data-selection-overlay", "true");
+                this.selectionOverlayLayer.setAttribute("opacity", String(SETTINGS.overlayAlpha));
+                this.selectionOverlayLayer.setAttribute("pointer-events", "none");
+            }
+            element.setAttribute("fill", SETTINGS.selectionBlue);
+            // Apply alpha to the complete layer once, including overlapping
+            // regions and separator fills, rather than tinting overlaps twice.
+            element.removeAttribute("opacity");
+            this.selectionOverlayLayer.appendChild(element);
+        } else {
+            this.svg.appendChild(element);
+        }
+        // appendChild moves the existing layer, keeping it above every later
+        // symbol, operation beam, outline, and opaque inverse background.
+        if (this.selectionOverlayLayer) this.svg.appendChild(this.selectionOverlayLayer);
     }
 
     applyPaintAttributes(element, mode) {

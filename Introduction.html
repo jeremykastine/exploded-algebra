@@ -11,7 +11,8 @@ body{font-family:"Courier New",Courier,"Liberation Mono",monospace;font-size:32p
 .expr,.number{font-family:"Courier New",Courier,"Liberation Mono",monospace;}
 .expr{white-space:pre;}
 .move-from{margin-bottom:.3em;}
-.blue{background:#DDEFFF;}
+.blue{position:relative;isolation:isolate;}
+.blue::after{content:"";position:absolute;inset:0;background:rgb(80,140,255);opacity:0.25;z-index:1;pointer-events:none;}
 .yellow{background:#FFF3BF;}
 .orange{background:#FFE1C7;}
 .swap{background:transparent;}
@@ -125,7 +126,7 @@ body.player-ready>#exploded-examples{display:none;}
 </style>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-08T20:38:39-04:00">10/8/26, 8:38 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-08T20:46:44-04:00">10/8/26, 8:46 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -269,12 +270,12 @@ body.player-ready>#exploded-examples{display:none;}
 </div>
 </template>
 
-<script src="exploded-algebra-renderer.js?v=20261008-paired-replacement-overlay"></script>
+<script src="exploded-algebra-renderer.js?v=20261008-blue-foreground"></script>
 <script>
 (() => {
     const Renderer = window.ExplodedAlgebraRenderer;
     const colors = {
-        blue: "#DDEFFF",
+        blue: Renderer.SETTINGS.selectionBlue,
         yellow: "#FFF3BF",
         orange: "#FFE1C7",
         gray: "transparent"
@@ -326,7 +327,7 @@ body.player-ready>#exploded-examples{display:none;}
         outline.setAttribute("stroke-width", "2");
         outline.setAttribute("vector-effect", "non-scaling-stroke");
         outline.setAttribute("pointer-events", "none");
-        svg.appendChild(outline);
+        svg.insertBefore(outline, svg.querySelector("[data-selection-overlay]"));
     }
 
     const examples = [

@@ -10,7 +10,12 @@ class SvgElement {
     constructor(name) { this.name = name; this.attributes = {}; this.children = []; this.style = {}; this.textContent = ""; }
     setAttribute(name, value) { this.attributes[name] = String(value); }
     getAttribute(name) { return this.attributes[name]; }
-    appendChild(child) { this.children.push(child); return child; }
+    removeAttribute(name) { delete this.attributes[name]; }
+    appendChild(child) {
+        if (this.children.includes(child)) this.removeChild(child);
+        this.children.push(child);
+        return child;
+    }
     removeChild(child) { this.children.splice(this.children.indexOf(child), 1); }
     get firstChild() { return this.children[0]; }
     get outerHTML() {
@@ -77,8 +82,12 @@ function render(builder) {
     }
     assert.equal(preview.layout.width, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.width : Math.max(...preview.args.map(child => child.layout.width)) + 16);
     assert.equal(preview.layout.height, preview.preserveOriginalLayoutWhenEmpty ? preview.args[0].layout.height : Math.max(...preview.args.map(child => child.layout.height)) + 16);
-    const shading = svg.children.find(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue);
-    assert(shading && shading.attributes.opacity === "0.25" && shading.attributes.stroke === "none", "The usual blue selection shading must remain without an entry outline");
+    const overlay = svg.children.at(-1);
+    assert.equal(overlay.attributes["data-selection-overlay"], "true", "Blue shading must be above all old and new expression content");
+    assert.equal(overlay.attributes.opacity, "0.25", "The entire blue layer must use one low global alpha");
+    assert.equal(overlay.attributes["pointer-events"], "none", "Foreground shading must allow selection and grouping through it");
+    const shading = overlay.children.find(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue);
+    assert(shading && shading.attributes.opacity === undefined && shading.attributes.stroke === "none", "The blue region must inherit the layer alpha without an entry outline");
     assert.equal(Number(shading.attributes.width), preview.layout.width + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
     assert.equal(Number(shading.attributes.height), preview.layout.height + (preview.preserveOriginalLayoutWhenEmpty ? 16 : 0));
     assert(!svg.children.some(child => child.attributes.fill === "rgb(184,184,184)"), "The old gray selection fill must be gone");
@@ -101,7 +110,7 @@ for (const text of ["x", "7"]) {
 const originalLabel = labels.find(label => label.textContent === "6");
 assert(originalLabel && originalLabel.attributes.opacity === "0.035", "Three inserted symbols must halve the old selection opacity three times");
 assert.equal(originalLabel.attributes.fill, labels.find(label => label.textContent === "x").attributes.fill, "The selection fades through opacity while surrounding values retain full ink");
-assert(single.svg.children.indexOf(originalLabel) < single.svg.children.findIndex(child => child.name === "rect" && child.attributes.fill === context.settings.selectionBlue), "Retained blue shading must cover the entire old selection, including inverse backgrounds");
+assert(single.svg.children.indexOf(originalLabel) < single.svg.children.length - 1, "Retained blue shading must cover the entire old selection, including inverse backgrounds");
 assert(single.svg.children.indexOf(originalLabel) < single.svg.children.indexOf(labels.find(label => label.textContent === "2")), "The new expression must be drawn on top of the old expression");
 for (const text of ["2", "3"]) {
     const label = labels.find(label => label.textContent === text);
@@ -269,6 +278,38 @@ for (const [tool, originalValue] of [["replaceOneWithInverseProduct", "1"], ["ca
     context.builderReviewActive = false;
 }
 
+// Every drawing path shares a foreground blue layer, including ordinary
+// selections and static teaching diagrams with legacy blue shading colors.
+const diagram = operation("prod", [value("x"), operation("inv", [value("2")])]);
+const diagramSvg = new SvgElement("svg");
+const diagramContext = context.svgContext(diagramSvg);
+context.layout(diagram, diagramContext);
+const shading = context.compileShading(diagram, [
+    { path: [], color: "#DDEFFF" },
+    { path: [1], color: context.settings.selectionBlue, convexHull: true },
+    { path: [0], color: "#FFF3BF" }
+]);
+context.drawShadingToContext(shading, diagramContext);
+context.paint(diagram, diagramContext);
+diagramContext.strokeStyle = "black";
+diagramContext.strokeRect(diagram.left(), diagram.top(), diagram.layout.width, diagram.layout.height);
+const blueLayer = diagramSvg.children.at(-1);
+assert.equal(blueLayer.attributes["data-selection-overlay"], "true", "Static highlights must stay above inverse backgrounds, symbols and later outlines");
+assert.equal(blueLayer.attributes.opacity, "0.25");
+assert(blueLayer.children.some(child => child.name === "path"), "Convex hull highlights must share the foreground layer");
+assert(blueLayer.children.some(child => child.name === "rect"), "Rectangular highlights must share the foreground layer");
+assert(blueLayer.children.every(child => child.attributes.fill === context.settings.selectionBlue && child.attributes.opacity === undefined), "Overlapping blue regions must share alpha once rather than darkening their overlap");
+assert(diagramSvg.children.some(child => child.attributes.fill === "#FFF3BF"), "Other diagram colors must retain their existing paint behavior");
+assert(diagramSvg.children.some(child => child.attributes.fill === "white"), "The test must include opaque inverse interiors under the tint");
+assert(diagramSvg.children.filter(child => child === blueLayer).length === 1, "Reordering must move the existing layer rather than duplicate it");
+diagramContext.clearRect();
+assert.equal(diagramSvg.children.length, 0);
+diagramContext.fillStyle = context.settings.selectionBlue;
+diagramContext.globalAlpha = 0.25;
+diagramContext.fillRect(0, 0, 10, 10);
+assert.notEqual(diagramSvg.children[0], blueLayer, "Redrawing must discard the previous selection layer");
+assert.equal(diagramSvg.children[0].children.length, 1);
+
 if (process.env.REWRITE_PREVIEW_PATH) {
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH, single.svg.outerHTML);
     for (const [name, result] of Object.entries(pairPreviews)) {
@@ -277,4 +318,4 @@ if (process.env.REWRITE_PREVIEW_PATH) {
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-empty.svg"), empty.svg.outerHTML);
     fs.writeFileSync(process.env.REWRITE_PREVIEW_PATH.replace(/\.svg$/, "-inverse.svg"), insideInverse.svg.outerHTML);
 }
-console.log("Numerical and pair rewrite context, layout, ink and isolation checks passed.");
+console.log("Numerical and pair rewrite context, layout, ink and foreground overlay checks passed.");
