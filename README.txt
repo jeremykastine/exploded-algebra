@@ -20,6 +20,18 @@ carries a mirrored copy of each JSON payload for transfer into the app. The
 standalone JSON files remain in the levels folder for hosting, distribution, and
 editing. No exploded-algebra-levels.js file is used.
 
+INTRODUCTION AUDIENCE AND GUIDED EXAMPLES
+
+Introduction.html is currently written for mathematics teachers. Take familiar
+ideas slowly to explain the representation and its purpose; keep conventional
+notation out of the opening discussion until the explicit comparison section.
+The introduction-only examples are in intro-levels, separate from the student
+exercise list. Sections on convenient factors, repeated factors, and distribution
+each link to direct and rearranged guided routes from the same starting expression.
+Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
+all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
+use mode=guided; the completion controls offer an Unguided repeat afterward.
+
 The conventional-notation panel uses three textbook-style sections separated by
 horizontal rules. `initialKatex` is the conventional form of the starting
 expression. The running solution shows completed steps plus the one current step.

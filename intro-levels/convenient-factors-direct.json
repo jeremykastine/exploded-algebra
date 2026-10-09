@@ -1,0 +1,647 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "convenient-factors-direct",
+  "title": "Bring convenient factors together — direct arithmetic",
+  "startExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+  "initialKatex": "25 \\cdot 37 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nMultiply 25 by 37, then multiply that result by 4. Separately, multiply 125 by 19, then multiply that result by 8. Add the two final results.\n\n## Route\n\nCarry out the arithmetic in the stated order. Follow the dotted yellow outlines and yellow-highlighted buttons. Conventional notation is hidden. At the end, you may repeat the exercise in Unguided mode.\n\n## Numerical Manipulation Restrictions\n\n- Nonnegative addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Signed number addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Non-negative fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Signed fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of one\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of negative one\n  - Forward — Manual\n  - Reverse — Manual\n- Negative one times negative one\n  - Forward — Manual\n  - Reverse — Manual",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "explodedExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "katex": "25 \\cdot 37 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+      "beforeKatex": "25 \\cdot 37 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+      "afterKatex": "25 \\cdot 37 \\cdot 4 + 125 \\cdot 19 \\cdot 8"
+    },
+    {
+      "expression": "(((925)*(4))+((125)*(19)*(8)))",
+      "explodedExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "katex": "925 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+      "beforeKatex": "925 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+      "afterKatex": "925 \\cdot 4 + 125 \\cdot 19 \\cdot 8",
+      "actionStartIndex": 0,
+      "actionEndIndex": 6
+    },
+    {
+      "expression": "((3700)+((125)*(19)*(8)))",
+      "explodedExpression": "((3700)+((125)*(19)*(8)))",
+      "katex": "3700 + 125 \\cdot 19 \\cdot 8",
+      "beforeKatex": "3700 + 125 \\cdot 19 \\cdot 8",
+      "afterKatex": "3700 + 125 \\cdot 19 \\cdot 8",
+      "actionStartIndex": 6,
+      "actionEndIndex": 13
+    },
+    {
+      "expression": "((3700)+((2375)*(8)))",
+      "explodedExpression": "((3700)+((2375)*(8)))",
+      "katex": "3700 + 2375 \\cdot 8",
+      "beforeKatex": "3700 + 2375 \\cdot 8",
+      "afterKatex": "3700 + 2375 \\cdot 8",
+      "actionStartIndex": 13,
+      "actionEndIndex": 20
+    },
+    {
+      "expression": "((3700)+(19000))",
+      "explodedExpression": "((3700)+(19000))",
+      "katex": "3700 + 19000",
+      "beforeKatex": "3700 + 19000",
+      "afterKatex": "3700 + 19000",
+      "actionStartIndex": 20,
+      "actionEndIndex": 28
+    },
+    {
+      "expression": "(22700)",
+      "explodedExpression": "(22700)",
+      "katex": "22700",
+      "beforeKatex": "22700",
+      "afterKatex": "22700",
+      "actionStartIndex": 28,
+      "actionEndIndex": 36
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((25)*(37))",
+        "path": [
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "9",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "5",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((925)*(4))",
+        "path": [
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "3",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((125)*(19))",
+        "path": [
+          1
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "3",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "5",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((2375)*(8))",
+        "path": [
+          1
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "9",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((3700)+(19000))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "7",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((25)*(37))",
+      "selectedType": "prod",
+      "path": [
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "index": 1
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "9",
+      "flowVersion": 5,
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "index": 2
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "index": 3
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "5",
+      "flowVersion": 5,
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "index": 4
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((25)*(37)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 5
+    },
+    {
+      "type": "select",
+      "expression": "((925)*(4))",
+      "selectedType": "prod",
+      "path": [
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 6
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 7
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "3",
+      "flowVersion": 5,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 8
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "flowVersion": 5,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 9
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 10
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "index": 11
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((925)*(4))+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 12
+    },
+    {
+      "type": "select",
+      "expression": "((125)*(19))",
+      "selectedType": "prod",
+      "path": [
+        1
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 13
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 14
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 15
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "3",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 16
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 17
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "5",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((125)*(19)*(8)))",
+      "index": 18
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((125)*(19)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 19
+    },
+    {
+      "type": "select",
+      "expression": "((2375)*(8))",
+      "selectedType": "prod",
+      "path": [
+        1
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "index": 20
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 21
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "1",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 22
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "9",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 23
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 24
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 25
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+((2375)*(8)))",
+      "index": 26
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+((2375)*(8)))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 27
+    },
+    {
+      "type": "select",
+      "expression": "((3700)+(19000))",
+      "selectedType": "sum",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((3700)+(19000))",
+      "index": 28
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 29
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 30
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 31
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "7",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 32
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 33
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "((3700)+(19000))",
+      "index": 34
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "((3700)+(19000))",
+      "afterExpression": "(22700)",
+      "index": 35
+    }
+  ],
+  "finalExpression": "(22700)",
+  "finalKatex": "22700"
+}
