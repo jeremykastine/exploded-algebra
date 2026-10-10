@@ -99,38 +99,32 @@ for (const type of ["sum", "prod"]) {
     const complex = parent(type, true);
     const simple = parent(type, false);
     for (const shape of shapes) {
-        for (const shading of shadings) {
-            const drawing = recordingContext();
-            rendererContext.drawNodeToContext(complex, drawing, {
-                ...settings, [type === "sum" ? "sumBeamStyle" : "productBeamStyle"]: shape,
-                operationBarShading: shading
-            });
-            assert.ok(drawing.operations.length > 0, `${type}/${shape}/${shading} must draw`);
-            assert.ok(drawing.operations.some(op => op[0] === "rect" && op[1] === "white"),
-                "The bar must leave a white reserved area for the black operation");
-            if (shading.startsWith("gradient")) {
-                const gradient = drawing.svgElements[0]?.children[0];
-                assert.ok(gradient, `${type}/${shape}/${shading} must use the chosen gradient`);
-                const edge = shading === "gradient-gray" ? "#666666" :
-                    shading === "gradient-light-gray" ? "#bdbdbd" : "black";
-                assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
-                    [edge, "white", "white", edge]);
-                const offsets = gradient.children.map(stop => parseFloat(stop.attributes.offset));
-                const symbolWidth = rendererContext.getOperationMarkGeometry(settings, type).width;
-                assert.ok(Math.abs((offsets[2] - offsets[1]) * (type === "sum" ? complex.layout.width : complex.layout.height) / 100 - symbolWidth) < 0.00001,
-                    "The fixed white area must span only the operation symbol");
-                assert.ok(Math.abs((offsets[1] + offsets[2]) / 2 - 50) < 0.000001,
-                    "The white area must stay centered on the operation");
+        for (const expression of [simple, complex]) {
+            for (const shading of shadings) {
+                const drawing = recordingContext();
+                rendererContext.drawNodeToContext(expression, drawing, {
+                    ...settings, [type === "sum" ? "sumBeamStyle" : "productBeamStyle"]: shape,
+                    operationBarShading: shading
+                });
+                assert.ok(drawing.operations.length > 0, `${type}/${shape}/${shading} must draw`);
+                assert.ok(drawing.operations.some(op => op[0] === "rect" && op[1] === "white"),
+                    "The bar must leave a white reserved area for the black operation");
+                if (shading.startsWith("gradient")) {
+                    const gradient = drawing.svgElements[0]?.children[0];
+                    assert.ok(gradient, `${type}/${shape}/${shading} must use the chosen gradient`);
+                    const edge = shading === "gradient-gray" ? "#666666" :
+                        shading === "gradient-light-gray" ? "#bdbdbd" : "black";
+                    assert.deepEqual(gradient.children.map(stop => stop.attributes["stop-color"]),
+                        [edge, "white", "white", edge]);
+                    const offsets = gradient.children.map(stop => parseFloat(stop.attributes.offset));
+                    const symbolWidth = rendererContext.getOperationMarkGeometry(settings, type).width;
+                    assert.ok(Math.abs((offsets[2] - offsets[1]) * (type === "sum" ? expression.layout.width : expression.layout.height) / 100 - symbolWidth) < 0.00001,
+                        "The fixed white area must span only the operation symbol");
+                    assert.ok(Math.abs((offsets[1] + offsets[2]) / 2 - 50) < 0.000001,
+                        "The white area must stay centered on the operation");
+                }
             }
         }
-        const simpleDraw = recordingContext();
-        rendererContext.drawNodeToContext(simple, simpleDraw, {
-            ...settings, [type === "sum" ? "sumBeamStyle" : "productBeamStyle"]: shape,
-            operationBarShading: "black"
-        });
-        assert.equal(simpleDraw.svgElements.length, 0);
-        assert.ok(!simpleDraw.operations.some(op => op[0] === "rect"),
-            `A simple ${type} must omit the ${shape} bar`);
     }
     for (const operationStyle of ["bare", "outlined", "filled"]) {
         for (const operationSize of ["100", "75", "50"]) {

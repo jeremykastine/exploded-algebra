@@ -983,7 +983,7 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const heights = node.args.map(child => child.layout.height);
         const separatorWidth = getOperatorThickness(settings);
         node.layout.width = widths.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorWidth + 2 * gap);
-        const minimumParenthesisHeight = nodeNeedsSeparatorFlares(node) && isParenthesesBeamStyle(settings.productBeamStyle)
+        const minimumParenthesisHeight = nodeHasSeparators(node) && isParenthesesBeamStyle(settings.productBeamStyle)
             ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.height = Math.max(getOperatorThickness(settings), ...heights, minimumParenthesisHeight);
 
@@ -1001,7 +1001,7 @@ function measureNodeWithContext(node, drawingContext, settings) {
         const widths = node.args.map(child => child.layout.width);
         const heights = node.args.map(child => child.layout.height);
         const separatorHeight = getOperatorThickness(settings);
-        const minimumParenthesisWidth = nodeNeedsSeparatorFlares(node) && isParenthesesBeamStyle(settings.sumBeamStyle)
+        const minimumParenthesisWidth = nodeHasSeparators(node) && isParenthesesBeamStyle(settings.sumBeamStyle)
             ? getParenthesisMinimumSpan(settings) : 0;
         node.layout.width = Math.max(getOperatorThickness(settings), ...widths, minimumParenthesisWidth);
         node.layout.height = heights.reduce((a, b) => a + b, 0) + (node.args.length - 1) * (separatorHeight + 2 * gap);
@@ -1336,27 +1336,13 @@ function drawInverseForegroundToContext(node, drawingContext, settings) {
     drawDebugComponentBounds(drawingContext, node.left(), node.top(), node.right(), node.bottom(), settings);
 }
 
-function nodeNeedsSeparatorFlares(node) {
-    if (!node || (node.type !== "sum" && node.type !== "prod") || !Array.isArray(node.args)) {
-        return false;
-    }
-    return node.args.some(child => {
-        if (!child) return false;
-        if (!child.isReplacementBuilderPreview) return child.type !== "value";
-        const visible = child.preserveOriginalLayoutWhenEmpty ? [child.args[0]] : child.args;
-        return visible.some(part => {
-            // Wrapping a range of existing terms/factors must not introduce
-            // grouping beams that were absent before the rewrite editor opened.
-            if (child.rewriteRangeType === node.type && part.type === node.type) {
-                return part.args.some(component => component.type !== "value");
-            }
-            return part.type !== "value";
-        });
-    });
+function nodeHasSeparators(node) {
+    return !!node && (node.type === "sum" || node.type === "prod") &&
+        Array.isArray(node.args) && node.args.length > 1;
 }
 
-// Bar geometry and central operation appearance are independent. A bar is
-// omitted when every child of the sum/product is a single value.
+// Simple and compound sums/products share the same separator bars.
+// Bar geometry and central operation appearance are independent.
 function getOperationMarkGeometry(settings, type) {
     const proportion = [100, 75, 50].includes(Number(settings.operationSize))
         ? Number(settings.operationSize) / 100 : 1;
@@ -1493,7 +1479,7 @@ function drawNodeToContext(
         drawValueNodeToContext(node, drawingContext, settings, nodeColor);
     } else if (node.type === "sum" || node.type === "prod") {
         const type = node.type;
-        const needsBar = nodeNeedsSeparatorFlares(node);
+        const needsBar = nodeHasSeparators(node);
         const lines = type === "sum" ? node.layout.hLines : node.layout.vLines;
         for (let j = 1; j < lines.length - 1; j++) {
             if (separatorHidden(node, j)) continue;
