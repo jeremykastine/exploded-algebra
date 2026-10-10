@@ -42,6 +42,8 @@ const SETTINGS = {
     marginY: 20,
     textFont: "20px Verdana, Arial, Helvetica, sans-serif",
     expressionStrokeFill: "rgb(95,95,95)",
+    expressionOutline: true,
+    expressionOutlineColor: "#999999",
     selectionBlue: "rgb(80,140,255)",
     overlayAlpha: 0.25,
     previewDurationMs: 500,
@@ -166,6 +168,19 @@ function getInverseCornerRadius(settings) {
 
 function getComponentGap(settings) {
     return settings.bufferSize || settings.debugComponentBuffer || 16;
+}
+
+// Match the half-buffer used by selection regions around an expression.
+function drawExpressionOutlineToContext(root, drawingContext, settings) {
+    if (!root || settings.expressionOutline === false) return;
+    const padding = getComponentGap(settings) / 2;
+    drawingContext.save();
+    drawingContext.strokeStyle = settings.expressionOutlineColor || "#999999";
+    drawingContext.lineWidth = getStructuralStrokeWidth(settings);
+    drawingContext.setLineDash([]);
+    drawingContext.strokeRect(root.left() - padding, root.top() - padding,
+        root.layout.width + padding * 2, root.layout.height + padding * 2);
+    drawingContext.restore();
 }
 
 function isNegativeUnit(node) {
@@ -1968,9 +1983,13 @@ function renderExpressionSvgMarkup(root, options = {}) {
     drawingContext.font = settings.textFont;
     drawingContext.textAlign = "center";
     drawingContext.textBaseline = "middle";
-    layoutExpressionWithSettings(root, drawingContext, settings, settings.marginX || 0, settings.marginY || 0);
-    const width = Math.ceil(root.right() + (settings.marginX || 0));
-    const height = Math.ceil(root.bottom() + (settings.marginY || 0));
+    const outlineMargin = settings.expressionOutline === false ? 0
+        : getComponentGap(settings) / 2 + getStructuralStrokeWidth(settings) / 2;
+    const marginX = Math.max(settings.marginX || 0, outlineMargin);
+    const marginY = Math.max(settings.marginY || 0, outlineMargin);
+    layoutExpressionWithSettings(root, drawingContext, settings, marginX, marginY);
+    const width = Math.ceil(root.right() + marginX);
+    const height = Math.ceil(root.bottom() + marginY);
     setSvgSize(svg, width, height);
     drawingContext.clearRect(0, 0, width, height);
     const compiledShading = compileShading(root, options.shading);
@@ -1986,6 +2005,7 @@ function renderExpressionSvgMarkup(root, options = {}) {
         (node, separatorIndex) => compiledShading.separatorForegrounds.get(`${node.id}:${separatorIndex}`) || null
     );
     drawOutlinesToContext(compiledOutlines, drawingContext);
+    drawExpressionOutlineToContext(root, drawingContext, settings);
     return svg.outerHTML;
 }
 
@@ -1997,6 +2017,7 @@ function renderMiniOopsSvg(node) {
         ariaHidden: true,
         focusable: false,
         settings: scaledSettings(SETTINGS, 0.55, {
+            expressionOutline: false,
             expressionStrokeFill: "currentColor"
         })
     });
@@ -2321,6 +2342,7 @@ window.ExplodedAlgebraRenderer = {
     drawShadingToContext,
     compileOutlines,
     drawOutlinesToContext,
+    drawExpressionOutlineToContext,
     drawNodeRecursiveToContext,
     drawNodeToContext,
     drawValueNodeToContext,

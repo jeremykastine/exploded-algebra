@@ -6070,6 +6070,7 @@ ctx.font = SETTINGS.textFont;
                 drawSelectionAndPreview();
             }
 
+            drawExpressionOutlineToContext(explodedDisplayRoot, ctx, SETTINGS);
             drawDemoSelectionPrompt();
 
             // setSvgSize restores the SVG's CSS size when the expression changes.
@@ -11996,6 +11997,7 @@ ctx.font = SETTINGS.textFont;
                 ariaHidden: true,
                 focusable: false,
                 settings: {
+                    expressionOutline: false,
                     padding: 4,
                     flare: 4,
                     marginX: 2,
