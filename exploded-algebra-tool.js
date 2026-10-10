@@ -6833,10 +6833,10 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "prod") {
                 const centerY = (node.top() + node.bottom()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
+                const hasSeparatorBar = nodeHasSeparators(node);
                 for (let j = 1; j < node.layout.vLines.length - 1; j++) {
                     const separatorX = relVLine(node, j);
-                    const distance = hasConnectorFlares
+                    const distance = hasSeparatorBar
                         ? distanceFromPointToSegment(x, y, separatorX, node.top(), separatorX, node.bottom())
                         : Math.max(0, Math.hypot(x - separatorX, y - centerY) - SETTINGS.flare);
                     candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
@@ -6846,10 +6846,10 @@ ctx.font = SETTINGS.textFont;
 
             if (node.type === "sum") {
                 const centerX = (node.left() + node.right()) / 2;
-                const hasConnectorFlares = nodeNeedsSeparatorFlares(node);
+                const hasSeparatorBar = nodeHasSeparators(node);
                 for (let j = 1; j < node.layout.hLines.length - 1; j++) {
                     const separatorY = relHLine(node, j);
-                    const distance = hasConnectorFlares
+                    const distance = hasSeparatorBar
                         ? distanceFromPointToSegment(x, y, node.left(), separatorY, node.right(), separatorY)
                         : Math.max(0, Math.hypot(x - centerX, y - separatorY) - SETTINGS.flare);
                     candidates.push({ node, firstPart: j - 1, lastPart: j, distance });
