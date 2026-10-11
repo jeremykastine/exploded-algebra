@@ -22,69 +22,21 @@ assert(/body\.narrative-ready\{visibility:visible;\}/.test(intro));
 assert(intro.includes('<noscript><style>body{visibility:visible;}</style></noscript>'));
 assert(intro.indexOf('document.body.appendChild(narrative)') < intro.indexOf('document.body.classList.add("narrative-ready")'));
 
-const animationContext = vm.createContext({ fadeTime: 1100 });
-for (const name of ["setOnlyVisible", "fadeShadingIn", "fadeShadingOut"]) {
-    loadFunction(animationContext, intro, name, 4);
-}
-function makeFrames() {
-    return Array.from({ length: 4 }, () => {
-        const frame = { style: { opacity: "0" }, animations: [] };
-        frame.getAnimations = () => frame.animations;
-        frame.animate = () => {
-            let resolve, reject;
-            const finished = new Promise((yes, no) => { resolve = yes; reject = no; });
-            const animation = {
-                finished, finish: resolve,
-                cancel() { frame.animations = []; reject(new Error("Canceled")); }
-            };
-            frame.animations.push(animation);
-            return animation;
-        };
-        return frame;
-    });
-}
-const opacity = frames => frames.map(frame => frame.style.opacity);
-
-async function verifyFades() {
-    for (const [name, first, second, shaded] of [["fadeShadingIn", 0, 1, 1], ["fadeShadingOut", 2, 3, 2]]) {
-        let frames = makeFrames();
-        let run = { active: true };
-        let pending = animationContext[name](frames, first, second, run);
-        run.active = false;
-        animationContext.setOnlyVisible(frames, 0);
-        const reset = opacity(frames);
-        await pending;
-        assert.deepEqual(opacity(frames), reset, "A canceled fade must never overwrite the reset frame");
-
-        frames = makeFrames();
-        run = { active: true };
-        pending = animationContext[name](frames, first, second, run);
-        run.active = false;
-        frames[shaded].animations[0].finish();
-        frames.forEach((frame, i) => { frame.style.opacity = i === 0 ? "1" : "0"; });
-        await pending;
-        assert.deepEqual(opacity(frames), ["1", "0", "0", "0"], "A finished fade from an inactive run must not change a newer display");
-
-        frames = makeFrames();
-        pending = animationContext[name](frames, first, second, { active: true });
-        frames[shaded].animations[0].finish();
-        await pending;
-        assert.equal(frames[second].style.opacity, "1", "Normal fades must still complete");
-        assert.equal(frames[first].style.opacity, "0");
-    }
-
-    const frames = makeFrames();
-    const previousRun = { active: true };
-    const previous = animationContext.fadeShadingIn(frames, 0, 1, previousRun);
-    previousRun.active = false;
-    animationContext.setOnlyVisible(frames, 0);
-    const current = animationContext.fadeShadingIn(frames, 3, 2, { active: true });
-    await previous;
-    assert.deepEqual(opacity(frames), ["0", "0", "0", "1"], "Rapid viewport reentry must keep the new run's frame");
-    frames[2].animations[0].finish();
-    await current;
-    assert.deepEqual(opacity(frames), ["0", "0", "1", "0"]);
-}
+assert(!intro.includes("IntersectionObserver"), "The introduction must not schedule diagram animation on viewport entry");
+assert(!intro.includes(".animate("), "Introduction diagrams must remain static");
+const staticContext = vm.createContext({});
+loadFunction(staticContext, intro, "prepareStaticExamples", 4);
+const frames = Array.from({ length: 4 }, () => ({ setAttribute() {} }));
+const phases = {
+    children: frames,
+    replaceChildren(...children) { this.children = children; },
+    classList: { add() {} }
+};
+const example = { children: [{}, phases], querySelector: () => null };
+staticContext.prepareStaticExamples({ matches: () => false, querySelectorAll: () => [example] });
+assert.equal(phases.children.length, 2, "Static examples must show exactly the before and after states");
+assert.equal(phases.children[0], frames[1]);
+assert.equal(phases.children[1], frames[2]);
 
 function verifyPanelTiming() {
     let nextId = 0;
@@ -160,7 +112,5 @@ function verifyPanelTiming() {
     assert(player.includes("leftPanel.scrollTop = 0;\n                    stepPanelScrollPending = false;\n                    animateStepPanelScroll();"), "The purposeful scroll-to-top must remain");
 }
 
-verifyFades().then(() => {
-    verifyPanelTiming();
-    console.log("Startup visibility, animation cancellation and panel timing checks passed.");
-}).catch(error => { console.error(error); process.exitCode = 1; });
+verifyPanelTiming();
+console.log("Startup visibility, static examples and panel timing checks passed.");
