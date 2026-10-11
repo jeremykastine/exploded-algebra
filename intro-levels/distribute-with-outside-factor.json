@@ -1,0 +1,337 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "distribute-with-outside-factor",
+  "title": "Distribution with a factor still outside",
+  "startExpression": "((2)*((x)+(3))*(4))",
+  "initialKatex": "2\\left(x + 3\\right) \\cdot 4",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nDouble the sum of x and 3, then multiply the entire result by 4. Simplify the expression.\n\n## What to notice\n\nFirst distribute only the 2. Pause and look at the remaining factor 4: its multiplication bar spans the height of the whole sum on its left. It therefore still multiplies both terms. Distribute the 4 across that complete sum, then simplify the numerical products. Follow the yellow outlines and highlighted buttons.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)*((x)+(3))*(4))",
+      "explodedExpression": "((2)*((x)+(3))*(4))",
+      "katex": "2\\left(x + 3\\right) \\cdot 4",
+      "beforeKatex": "2\\left(x + 3\\right) \\cdot 4",
+      "afterKatex": "2\\left(x + 3\\right) \\cdot 4"
+    },
+    {
+      "expression": "((((2)*(x))+((2)*(3)))*(4))",
+      "explodedExpression": "((((2)*(x))+((2)*(3)))*(4))",
+      "katex": "\\left(2x + 2 \\cdot 3\\right) \\cdot 4",
+      "beforeKatex": "\\left(2x + 2 \\cdot 3\\right) \\cdot 4",
+      "afterKatex": "\\left(2x + 2 \\cdot 3\\right) \\cdot 4",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2,
+      "guidance": "The factor 4 still multiplies the entire sum on its left. Its vertical multiplication bar spans both terms."
+    },
+    {
+      "expression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "explodedExpression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "katex": "2x \\cdot 4 + 2 \\cdot 3 \\cdot 4",
+      "beforeKatex": "2x \\cdot 4 + 2 \\cdot 3 \\cdot 4",
+      "afterKatex": "2x \\cdot 4 + 2 \\cdot 3 \\cdot 4",
+      "actionStartIndex": 2,
+      "actionEndIndex": 4
+    },
+    {
+      "expression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "explodedExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "katex": "2 \\cdot 4x + 2 \\cdot 3 \\cdot 4",
+      "beforeKatex": "2 \\cdot 4x + 2 \\cdot 3 \\cdot 4",
+      "afterKatex": "2 \\cdot 4x + 2 \\cdot 3 \\cdot 4",
+      "actionStartIndex": 4,
+      "actionEndIndex": 6
+    },
+    {
+      "expression": "(((8)*(x))+((2)*(3)*(4)))",
+      "explodedExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "katex": "8x + 2 \\cdot 3 \\cdot 4",
+      "beforeKatex": "8x + 2 \\cdot 3 \\cdot 4",
+      "afterKatex": "8x + 2 \\cdot 3 \\cdot 4",
+      "actionStartIndex": 6,
+      "actionEndIndex": 10
+    },
+    {
+      "expression": "(((8)*(x))+(24))",
+      "explodedExpression": "(((8)*(x))+(24))",
+      "katex": "8x + 24",
+      "beforeKatex": "8x + 24",
+      "afterKatex": "8x + 24",
+      "actionStartIndex": 10,
+      "actionEndIndex": 15
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*((x)+(3)))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((((2)*(x))+((2)*(3)))*(4))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "distributeRightToLeft"
+      },
+      {
+        "type": "select",
+        "expression": "((x)*(4))",
+        "path": [
+          0
+        ],
+        "firstPart": 1,
+        "lastPart": 2
+      },
+      {
+        "type": "tool",
+        "tool": "commuteFactors"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(4))",
+        "path": [
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "8",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(3)*(4))",
+        "path": [
+          1
+        ],
+        "firstPart": 0,
+        "lastPart": 2
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "4",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)*((x)+(3)))",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((2)*((x)+(3))*(4))",
+      "afterExpression": "((2)*((x)+(3))*(4))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "((2)*((x)+(3))*(4))",
+      "afterExpression": "((((2)*(x))+((2)*(3)))*(4))",
+      "index": 1
+    },
+    {
+      "type": "select",
+      "expression": "((((2)*(x))+((2)*(3)))*(4))",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((((2)*(x))+((2)*(3)))*(4))",
+      "afterExpression": "((((2)*(x))+((2)*(3)))*(4))",
+      "index": 2
+    },
+    {
+      "type": "tool",
+      "tool": "distributeRightToLeft",
+      "beforeExpression": "((((2)*(x))+((2)*(3)))*(4))",
+      "afterExpression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "index": 3
+    },
+    {
+      "type": "select",
+      "expression": "((x)*(4))",
+      "path": [
+        0
+      ],
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "afterExpression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "index": 4
+    },
+    {
+      "type": "tool",
+      "tool": "commuteFactors",
+      "beforeExpression": "(((2)*(x)*(4))+((2)*(3)*(4)))",
+      "afterExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "index": 5
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(4))",
+      "path": [
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "index": 6
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "index": 7
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "8",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "index": 8
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(4)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "index": 9
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(3)*(4))",
+      "path": [
+        1
+      ],
+      "firstPart": 0,
+      "lastPart": 2,
+      "beforeExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "index": 10
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "index": 11
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "index": 12
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "4",
+      "flowVersion": 5,
+      "beforeExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "index": 13
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((8)*(x))+((2)*(3)*(4)))",
+      "afterExpression": "(((8)*(x))+(24))",
+      "index": 14
+    }
+  ],
+  "finalExpression": "(((8)*(x))+(24))",
+  "finalKatex": "8x + 24"
+}

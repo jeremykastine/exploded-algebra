@@ -134,7 +134,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:11:31-04:00">10/11/26, 3:11 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:14:31-04:00">10/11/26, 3:14 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1273,6 +1273,8 @@ body.player-ready>#exploded-examples{display:none;}
         phraseCard("Double the sum of x and 3, then multiply the result by 4.", product(value(2), sum(value("x"), value(3)), value(4)), "Before distribution: the complete sum sits between the factors 2 and 4."),
         phraseCard("Add the products of 2 with x and 2 with 3, then multiply that whole sum by 4.", product(sum(product(value(2), value("x")), product(value(2), value(3))), value(4)), "After distributing 2: the complete new sum remains one factor beside 4.")
     ));
+    appendParagraph(familiarPatternsSection, "Now try the same expression in the Exploded Algebra interface. After the first distribution, pause and look at the 4 on the right. The vertical multiplication bar beside it spans the height of the entire sum on the left, making clear that 4 still multiplies the whole sub-expression, including both terms. Follow the yellow outlines and highlighted buttons to distribute the 4 and finish simplifying.");
+    addGuidedExerciseLink(familiarPatternsSection, "intro-levels/distribute-with-outside-factor.json", "Try distribution with the outside factor");
     appendParagraph(familiarPatternsSection, "When grouping is glossed over, learning algebra can become memorizing what expressions are supposed to look like in particular cases. Frustration follows when an expression looks a little different and the familiar pattern no longer makes clear how to apply the rule. Making the grouping explicit throughout a transformation helps us explain the property itself and carry it into unfamiliar cases.");
 
     const introTitles = ["A product", "A product inside a sum", "A sum inside a product"];
