@@ -134,7 +134,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-11T14:24:01-04:00">10/11/26, 2:24 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-11T14:46:53-04:00">10/11/26, 2:46 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1054,12 +1054,12 @@ body.player-ready>#exploded-examples{display:none;}
         "If one says “two … plus three times four” (pausing after “two”), then that pause suggests that “three times four” belongs together: multiply 3 by 4 to get 12, then add 2. The result is 14.",
         "If one says “two plus three … times four” (pausing after “three”), then that pause suggests that “two plus three” belongs together: add 2 and 3 to get 5, then multiply that entire result by 4. The result is 20. The same words can point toward two different groupings—and two different answers.",
         "In mathematics, we need a concise and unambiguous way to represent these calculations. That is what a mathematical expression is meant to provide: a description of a calculation, often involving several steps, in a concise arrangement of symbols. To communicate the intended calculation accurately, that arrangement must make clear which parts belong together.",
-        "Conventional mathematical notation and the English language have each developed their own ways of communicating grouping more clearly. For now, let’s set those familiar conventions aside and allow ourselves to experience a new way of visualizing structure and grouping within an expression."
+        "Conventional mathematical notation and the English language have each developed their own ways of communicating grouping more clearly than in the phrase discussed above. For now, let’s set those familiar conventions aside and allow ourselves to experience a new way of visualizing structure and grouping within an expression."
     ], null, "grouping");
 
     const explodedViewsSection = addSection("Exploded-view diagrams", [
         "An exploded-view diagram shows the parts of an assembled object separated in space. Pulling the parts apart in the picture makes it easier to see the individual components and how they fit together.",
-        "The parts are not scattered at random. Their relative positions help us see their relationships: which pieces fit inside others, which pieces sit beside one another, and which pieces combine to form a larger whole. Here are three examples. Select any image to see it at full size."
+        "The parts are not scattered at random. Their relative positions help us see their relationships: which pieces fit inside others, which pieces sit beside one another, and which pieces combine to form a larger whole. Here are three examples."
     ], slides[8].element, "exploded-view-diagrams-section");
     [
         "Exploded Algebra borrows this idea for mathematical expressions. We use spatial separation to help visualize grouping: which pieces belong together in one operation, and how that whole group fits into a larger calculation. A group can be seen as one part of an expression while its own smaller parts remain visible.",
@@ -1071,8 +1071,8 @@ body.player-ready>#exploded-examples{display:none;}
     });
 
     addSection("A fresh way to draw an expression", [
-        "In Exploded Algebra, the terms in a sum are arranged vertically, separated by plus symbols. The factors in a product are arranged horizontally, separated by times symbols.",
-        "When a term or a factor has a more complex structure than a single value, line segments extend in both directions from the operation symbol to clearly show the extent of the grouping: horizontally from a plus symbol and vertically from a times symbol. These segments make clear what is grouped with what.",
+        "In Exploded Algebra, the terms of a sum are arranged vertically. A plus sign is centered between each pair of adjacent terms, with a horizontal bar extending to its left and right. Each bar spans the width of the widest term, visually grouping all the terms that belong to the sum.",
+        "The factors of a product are arranged horizontally. A multiplication sign is centered between each pair of adjacent factors, with a vertical bar extending above and below it. Each bar spans the height of the tallest factor, visually grouping all the factors that belong to the product. These bars are present even when every term or factor is a single number.",
         "The ellipses below mark the same pauses we used in Section 1. In the first picture, the whole sum of 2 and 3 is a factor beside 4, giving 20. In the second, the whole product of 3 and 4 is a term below 2, giving 14. The grouping segments show which operation contains the other."
     ], phrasePair(
         phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "Add 2 and 3 first, then multiply by 4. The result is 20."),
@@ -1080,6 +1080,7 @@ body.player-ready>#exploded-examples{display:none;}
     ));
 
     const interfaceSection = addSection("Try the Exploded Algebra interface", [
+        "Exploded Algebra goes a step beyond an exploded-view diagram: its expressions can be manipulated in real time through an interactive interface. We can select parts of an expression and perform operations on them, watching the representation change as we work.",
         "Open either guided exercise below to try the calculation from Section 3. Follow the prompts: select the part inside the dotted yellow outline, then follow the yellow-highlighted buttons to enter and submit its value. Repeat for the remaining operation.",
         "These first two exercises each have just two calculations. The yellow outlines show what to select, and the yellow buttons show what to press, so you can see how the interface works one step at a time."
     ], null, "try-the-interface");
@@ -1100,41 +1101,72 @@ body.player-ready>#exploded-examples{display:none;}
     });
     interfaceSection.appendChild(interfaceLinks);
 
-    function addCalculationSection(title, paragraphs, phrase, expression, result, id, followUp) {
-        const card = phraseCard(phrase, expression, result);
-        card.classList.add("calculation-card");
-        const section = addSection(title, paragraphs, card, id);
-        followUp.forEach(copy => {
-            const paragraph = document.createElement("p");
-            paragraph.textContent = copy;
-            section.appendChild(paragraph);
-        });
-        [
-            { route: "direct", label: "Calculate directly" },
-            { route: "rearranged", label: "Rearrange for easier arithmetic" }
-        ].forEach(({ route, label }) => {
-            const link = document.createElement("a");
-            link.className = "practice-link";
-            link.href = `exploded-algebra.html?level=${encodeURIComponent(`intro-levels/${id}-${route}.json`)}&mode=guided`;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = `${label} — guided exercise (opens in a new tab)`;
-            section.appendChild(link);
-        });
-        return section;
+    function addGuidedExerciseLink(section, file, label) {
+        const link = document.createElement("a");
+        link.className = "practice-link";
+        link.href = `exploded-algebra.html?level=${encodeURIComponent(file)}&mode=guided`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = `${label} — guided exercise (opens in a new tab)`;
+        section.appendChild(link);
     }
 
-    addCalculationSection("Rearranging for easier arithmetic", [
-        "A clear grouping tells us what calculation an expression describes. We can also use the commutative, associative, and distributive properties to rearrange that expression while preserving its value—and sometimes make the arithmetic much easier.",
-        "The expression below contains three products inside a sum, with the entire sum multiplied by 2. Try evaluating it directly, then compare that route with an algebraic rearrangement."
-    ], "Multiply 35 by 43, 65 by 50, and 7 by 35. Add the three products, then multiply the total by 2.",
-    product(value(2), sum(product(value(35), value(43)), product(value(65), value(50)), product(value(7), value(35)))),
-    "Both guided routes evaluate the same expression to 10,000.", "easier-arithmetic", [
-        "The direct route calculates 1,505, 3,250, and 245, adds them to get 5,000, and doubles that result. It works, but those products and sums take some effort.",
-        "For the rearranged route, bring the two products containing 35 together and factor out 35. The remaining sum is 43 plus 7, which is 50. Both terms now share a factor of 50. Factoring again leaves 35 plus 65, which is 100. The expression is now a product of 2, 100, and 50. Bring 2 beside 50 to get another 100, then multiply 100 by 100.",
-        "The rearranged route uses more structural moves, but simpler arithmetic. The exploded representation lets us select the complete terms or factors involved in each move and see how their grouping changes.",
-        "Follow the dotted yellow outlines and yellow-highlighted buttons in each guided exercise. Conventional notation remains hidden. After completing a route, you can repeat it in Unguided mode."
-    ]);
+    function appendParagraph(section, copy) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = copy;
+        section.appendChild(paragraph);
+    }
+
+    const arithmeticExpression = product(value(2), sum(
+        product(value(35), value(43)), product(value(65), value(50)), product(value(7), value(35))
+    ));
+    const directSection = addSection("A more complicated calculation", [
+        "Now let’s look at a more complicated example. Open the guided exercise below and follow the yellow outlines and highlighted buttons to calculate its value.",
+        "Notice that both the structure and the arithmetic are more complicated than in the previous two examples."
+    ], null, "easier-arithmetic");
+    addGuidedExerciseLink(directSection, "intro-levels/easier-arithmetic-direct.json", "Calculate directly");
+    const arithmeticCard = phraseCard(
+        "Multiply 35 by 43, 65 by 50, and 7 by 35. Add the three products, then multiply the total by 2.",
+        arithmeticExpression,
+        "Each product is a complete term in the sum, and the entire sum is a complete factor beside 2."
+    );
+    arithmeticCard.classList.add("calculation-card");
+    directSection.appendChild(arithmeticCard);
+    appendParagraph(directSection, "Even though the expression is more complicated, its grouping is still explicit and clear. The bars show exactly which pieces belong to each product and to the sum. The arithmetic, however, is not so pleasant: multiplying 35 by 43 and then adding several large numbers takes more work than our first two calculations.");
+
+    const propertiesSection = addSection("Algebraic properties with numbers", [
+        "We can sometimes make a calculation easier by changing the arrangement of an expression while keeping its value the same. The commutative properties and the distributive property tell us which changes we can make. Let’s look at numerical examples, using English and exploded notation."
+    ], null, "algebraic-properties");
+    appendParagraph(propertiesSection, "The commutative property of addition lets us switch the order of two terms. Adding 2 to 3 gives the same total as adding 3 to 2. Imagine combining a group of two objects with a group of three objects: changing which group we count first does not change the total of five.");
+    propertiesSection.appendChild(phrasePair(
+        phraseCard("Add 2 and 3.", sum(value(2), value(3)), "The total is 5."),
+        phraseCard("Switch their order: add 3 and 2.", sum(value(3), value(2)), "The total is still 5.")
+    ));
+    appendParagraph(propertiesSection, "The commutative property of multiplication lets us switch the order of two factors. Three groups of four objects contain the same number of objects as four groups of three. Picture three rows with four objects in each row, then turn the picture to see four rows with three in each. Both arrangements contain twelve objects.");
+    propertiesSection.appendChild(phrasePair(
+        phraseCard("Multiply 3 by 4.", product(value(3), value(4)), "The product is 12."),
+        phraseCard("Switch their order: multiply 4 by 3.", product(value(4), value(3)), "The product is still 12.")
+    ));
+    appendParagraph(propertiesSection, "The distributive property lets us multiply a sum by a number by multiplying each term by that number and adding the resulting products. For example, adding 3 and 4 and then doubling the sum gives fourteen. Doubling means taking two copies of everything in the sum: two copies of 3 and two copies of 4. Those products are six and eight, whose sum is also fourteen.");
+    propertiesSection.appendChild(phrasePair(
+        phraseCard("Add 3 and 4, then multiply the sum by 2.", product(value(2), sum(value(3), value(4))), "The sum is 7; doubling it gives 14."),
+        phraseCard("Multiply 2 by 3 and 2 by 4, then add the products.", sum(product(value(2), value(3)), product(value(2), value(4))), "The products are 6 and 8; their sum is 14.")
+    ));
+    appendParagraph(propertiesSection, "We can also use the distributive property in reverse, which is called factoring. If we are adding two products that share a factor, we can take that shared factor outside a sum of the remaining factors. In the example below, both products contain 2. Adding two copies of 3 to two copies of 4 is the same as taking two copies of their combined amount. We can therefore add 3 and 4 first and then double the result.");
+    propertiesSection.appendChild(phrasePair(
+        phraseCard("Add the product of 2 and 3 to the product of 2 and 4.", sum(product(value(2), value(3)), product(value(2), value(4))), "The total is 14."),
+        phraseCard("Factor out the shared 2: add 3 and 4, then multiply by 2.", product(value(2), sum(value(3), value(4))), "The total is still 14.")
+    ));
+    appendParagraph(propertiesSection, "Each pair describes the same value in two different arrangements. The exploded diagrams show the complete terms or factors being switched, distributed, or factored, and make the resulting grouping explicit.");
+
+    const rearrangedSection = addSection("The same example with easier arithmetic", [
+        "Let’s return to the example from Section 5. This time, use the algebraic properties we have just discussed to simplify the arithmetic involved.",
+        "Open the guided exercise below and follow the yellow outlines and highlighted buttons. It starts from exactly the same expression, but switches terms and factors and uses factoring to bring convenient numbers together."
+    ], null, "easier-arithmetic-rearranged");
+    addGuidedExerciseLink(rearrangedSection, "intro-levels/easier-arithmetic-rearranged.json", "Rearrange for easier arithmetic");
+    appendParagraph(rearrangedSection, "Bring the two products containing 35 together and put 35 first in each product. Factoring out 35 leaves a sum of 43 and 7, which is 50. Both terms now share a factor of 50. Factoring again leaves a sum of 35 and 65, which is 100. The expression is now a product of 2, 100, and 50.");
+    appendParagraph(rearrangedSection, "Switch the first two factors to bring 2 beside 50. Their product is 100, so the remaining calculation is simply 100 times 100. The result is 10,000, just as it was in the direct route.");
+    appendParagraph(rearrangedSection, "The rearranged route uses more structural moves, but much simpler arithmetic. The algebraic properties preserve the value while letting us choose a more convenient way to calculate it. Throughout both routes, the grouping remains explicit.");
 
     const unknownExpression = sum(
         product(value(2), sum(value("x"), value(3))),
@@ -1192,7 +1224,7 @@ body.player-ready>#exploded-examples{display:none;}
         conventionalCard("two plus three … times four", "((2 + 3) × 4)", "The inner sum is evaluated first. The result is 20."),
         conventionalCard("two … plus three times four", "(2 + (3 × 4))", "The inner product is evaluated first. The result is 14.")
     ));
-    comparisonParagraph("For a larger expression, relying entirely on parentheses becomes cumbersome and visually confusing. Here is the expression from Section 6 with every operation explicitly grouped:");
+    comparisonParagraph("For a larger expression, relying entirely on parentheses becomes cumbersome and visually confusing. Here is the expression from Section 8 with every operation explicitly grouped:");
     comparisonSection.appendChild(conventionalCard(
         "Every operation parenthesized", "((2 × (x + 3)) + (4 × ((5 × x) + 6)))",
         "The nesting is explicit, but following all those parentheses takes work."
