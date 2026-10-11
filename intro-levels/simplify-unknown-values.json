@@ -1,0 +1,627 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "simplify-unknown-values",
+  "title": "Simplify an expression with an unknown value",
+  "startExpression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+  "initialKatex": "2\\left(x + 3\\right) + 4\\left(5x + 6\\right)",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedArithmetic": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "nonnegativeFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "signedFractionSimplification": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "inverseNegativeOne": {
+        "forward": "manual",
+        "reverse": "manual"
+      },
+      "doubleNegative": {
+        "forward": "manual",
+        "reverse": "manual"
+      }
+    }
+  },
+  "variables": [
+    "x"
+  ],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\n\\[\n2\\left(x + 3\\right) + 4\\left(5x + 6\\right)\n\\]\n\n## Numerical Manipulation Restrictions\n\n- Nonnegative addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Signed number addition and multiplication\n  - Forward — Manual\n  - Reverse — Manual\n- Non-negative fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Signed fraction simplification\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of one\n  - Forward — Manual\n  - Reverse — Manual\n- Inverse of negative one\n  - Forward — Manual\n  - Reverse — Manual\n- Negative one times negative one\n  - Forward — Manual\n  - Reverse — Manual",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+      "explodedExpression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+      "katex": "2\\left(x + 3\\right) + 4\\left(5x + 6\\right)",
+      "beforeKatex": "2\\left(x + 3\\right) + 4\\left(5x + 6\\right)",
+      "afterKatex": "2\\left(x + 3\\right) + 4\\left(5x + 6\\right)"
+    },
+    {
+      "expression": "(((2)*(x))+((2)*(3))+((4)*(((5)*(x))+(6))))",
+      "explodedExpression": "(((2)*(x))+((2)*(3))+((4)*(((5)*(x))+(6))))",
+      "katex": "2x + 2 \\cdot 3 + 4\\left(5x + 6\\right)",
+      "beforeKatex": "2x + 2 \\cdot 3 + 4\\left(5x + 6\\right)",
+      "afterKatex": "2x + 2 \\cdot 3 + 4\\left(5x + 6\\right)",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    },
+    {
+      "expression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "explodedExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "katex": "2x + 2 \\cdot 3 + 4 \\cdot 5x + 4 \\cdot 6",
+      "beforeKatex": "2x + 2 \\cdot 3 + 4 \\cdot 5x + 4 \\cdot 6",
+      "afterKatex": "2x + 2 \\cdot 3 + 4 \\cdot 5x + 4 \\cdot 6",
+      "actionStartIndex": 2,
+      "actionEndIndex": 4
+    },
+    {
+      "expression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "explodedExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "katex": "2x + 6 + 4 \\cdot 5x + 4 \\cdot 6",
+      "beforeKatex": "2x + 6 + 4 \\cdot 5x + 4 \\cdot 6",
+      "afterKatex": "2x + 6 + 4 \\cdot 5x + 4 \\cdot 6",
+      "actionStartIndex": 4,
+      "actionEndIndex": 8
+    },
+    {
+      "expression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "explodedExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "katex": "2x + 6 + 20x + 4 \\cdot 6",
+      "beforeKatex": "2x + 6 + 20x + 4 \\cdot 6",
+      "afterKatex": "2x + 6 + 20x + 4 \\cdot 6",
+      "actionStartIndex": 8,
+      "actionEndIndex": 13
+    },
+    {
+      "expression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "explodedExpression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "katex": "2x + 6 + 20x + 24",
+      "beforeKatex": "2x + 6 + 20x + 24",
+      "afterKatex": "2x + 6 + 20x + 24",
+      "actionStartIndex": 13,
+      "actionEndIndex": 18
+    },
+    {
+      "expression": "(((2)*(x))+((20)*(x))+(6)+(24))",
+      "explodedExpression": "(((2)*(x))+((20)*(x))+(6)+(24))",
+      "katex": "2x + 20x + 6 + 24",
+      "beforeKatex": "2x + 20x + 6 + 24",
+      "afterKatex": "2x + 20x + 6 + 24",
+      "actionStartIndex": 18,
+      "actionEndIndex": 20
+    },
+    {
+      "expression": "((((2)+(20))*(x))+(6)+(24))",
+      "explodedExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "katex": "\\left(2 + 20\\right) \\cdot x + 6 + 24",
+      "beforeKatex": "\\left(2 + 20\\right) \\cdot x + 6 + 24",
+      "afterKatex": "\\left(2 + 20\\right) \\cdot x + 6 + 24",
+      "actionStartIndex": 20,
+      "actionEndIndex": 22
+    },
+    {
+      "expression": "(((22)*(x))+(6)+(24))",
+      "explodedExpression": "(((22)*(x))+(6)+(24))",
+      "katex": "22x + 6 + 24",
+      "beforeKatex": "22x + 6 + 24",
+      "afterKatex": "22x + 6 + 24",
+      "actionStartIndex": 22,
+      "actionEndIndex": 27
+    },
+    {
+      "expression": "(((22)*(x))+(30))",
+      "explodedExpression": "(((22)*(x))+(30))",
+      "katex": "22x + 30",
+      "beforeKatex": "22x + 30",
+      "afterKatex": "22x + 30",
+      "actionStartIndex": 27,
+      "actionEndIndex": 32
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*((x)+(3)))",
+        "path": [
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((4)*(((5)*(x))+(6)))",
+        "path": [
+          2
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "distributeLeftToRight"
+      },
+      {
+        "type": "select",
+        "expression": "((2)*(3))",
+        "path": [
+          1
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "6",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((4)*(5))",
+        "path": [
+          2
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((4)*(6))",
+        "path": [
+          3
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "4",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((6)+((20)*(x)))",
+        "path": [],
+        "firstPart": 1,
+        "lastPart": 2
+      },
+      {
+        "type": "tool",
+        "tool": "commuteTerms"
+      },
+      {
+        "type": "select",
+        "expression": "(((2)*(x))+((20)*(x)))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "factorRight"
+      },
+      {
+        "type": "select",
+        "expression": "((2)+(20))",
+        "path": [
+          0,
+          0
+        ],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "2",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      },
+      {
+        "type": "select",
+        "expression": "((6)+(24))",
+        "path": [],
+        "firstPart": 1,
+        "lastPart": 2
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "3",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "0",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      }
+    ]
+  },
+  "recordedActions": [
+    {
+      "type": "select",
+      "expression": "((2)*((x)+(3)))",
+      "selectedType": "prod",
+      "path": [
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+      "index": 0
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+      "afterExpression": "(((2)*((x)+(3)))+((4)*(((5)*(x))+(6))))",
+      "index": 1
+    },
+    {
+      "type": "select",
+      "expression": "((4)*(((5)*(x))+(6)))",
+      "selectedType": "prod",
+      "path": [
+        2
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(((5)*(x))+(6))))",
+      "index": 2
+    },
+    {
+      "type": "tool",
+      "tool": "distributeLeftToRight",
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(((5)*(x))+(6))))",
+      "afterExpression": "(((2)*(x))+((2)*(3))+((4)*(((5)*(x))+(6))))",
+      "index": 3
+    },
+    {
+      "type": "select",
+      "expression": "((2)*(3))",
+      "selectedType": "prod",
+      "path": [
+        1
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "index": 4
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "index": 5
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "6",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "index": 6
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+((2)*(3))+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "index": 7
+    },
+    {
+      "type": "select",
+      "expression": "((4)*(5))",
+      "selectedType": "prod",
+      "path": [
+        2
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "index": 8
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "index": 9
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "index": 10
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "index": 11
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((4)*(5)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "index": 12
+    },
+    {
+      "type": "select",
+      "expression": "((4)*(6))",
+      "selectedType": "prod",
+      "path": [
+        3
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "index": 13
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "index": 14
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "index": 15
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "4",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "index": 16
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+((4)*(6)))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "index": 17
+    },
+    {
+      "type": "select",
+      "expression": "((6)+((20)*(x)))",
+      "selectedType": "sum",
+      "path": [],
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "index": 18
+    },
+    {
+      "type": "tool",
+      "tool": "commuteTerms",
+      "beforeExpression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "afterExpression": "(((2)*(x))+(6)+((20)*(x))+(24))",
+      "index": 19
+    },
+    {
+      "type": "select",
+      "expression": "(((2)*(x))+((20)*(x)))",
+      "selectedType": "sum",
+      "path": [],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "(((2)*(x))+((20)*(x))+(6)+(24))",
+      "index": 20
+    },
+    {
+      "type": "tool",
+      "tool": "factorRight",
+      "beforeExpression": "(((2)*(x))+((20)*(x))+(6)+(24))",
+      "afterExpression": "(((2)*(x))+((20)*(x))+(6)+(24))",
+      "index": 21
+    },
+    {
+      "type": "select",
+      "expression": "((2)+(20))",
+      "selectedType": "sum",
+      "path": [
+        0,
+        0
+      ],
+      "firstPart": 0,
+      "lastPart": 1,
+      "beforeExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "index": 22
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "afterExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "index": 23
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "afterExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "index": 24
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "2",
+      "flowVersion": 5,
+      "beforeExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "afterExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "index": 25
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "((((2)+(20))*(x))+(6)+(24))",
+      "afterExpression": "(((22)*(x))+(6)+(24))",
+      "index": 26
+    },
+    {
+      "type": "select",
+      "expression": "((6)+(24))",
+      "selectedType": "sum",
+      "path": [],
+      "firstPart": 1,
+      "lastPart": 2,
+      "beforeExpression": "(((22)*(x))+(6)+(24))",
+      "index": 27
+    },
+    {
+      "type": "tool",
+      "tool": "numericalRewrite",
+      "beforeExpression": "(((22)*(x))+(6)+(24))",
+      "afterExpression": "(((22)*(x))+(6)+(24))",
+      "index": 28
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "3",
+      "flowVersion": 5,
+      "beforeExpression": "(((22)*(x))+(6)+(24))",
+      "afterExpression": "(((22)*(x))+(6)+(24))",
+      "index": 29
+    },
+    {
+      "type": "builder",
+      "action": "digit",
+      "value": "0",
+      "flowVersion": 5,
+      "beforeExpression": "(((22)*(x))+(6)+(24))",
+      "afterExpression": "(((22)*(x))+(6)+(24))",
+      "index": 30
+    },
+    {
+      "type": "builder",
+      "action": "submit",
+      "flowVersion": 5,
+      "beforeExpression": "(((22)*(x))+(6)+(24))",
+      "afterExpression": "(((22)*(x))+(30))",
+      "index": 31
+    }
+  ],
+  "finalExpression": "(((22)*(x))+(30))",
+  "finalKatex": "22x + 30"
+}
