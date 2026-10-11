@@ -133,7 +133,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:37:07-04:00">10/11/26, 3:37 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:45:16-04:00">10/11/26, 3:45 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1354,21 +1354,42 @@ body.player-ready>#exploded-examples{display:none;}
     appendParagraph(familiarPatternsSection, "Now try the same expression in the Exploded Algebra interface. After the first distribution, pause and look at the 4 on the right. The vertical multiplication bar beside it spans the height of the entire sum on the left, making clear that 4 still multiplies the whole sub-expression, including both terms. Follow the yellow outlines and highlighted buttons to distribute the 4 and finish simplifying.");
     addGuidedExerciseLink(familiarPatternsSection, "intro-levels/distribute-with-outside-factor.json", "Try distribution with the outside factor");
     appendParagraph(familiarPatternsSection, "When grouping is glossed over, learning algebra can become memorizing what expressions are supposed to look like in particular cases. Frustration follows when an expression looks a little different and the familiar pattern no longer makes clear how to apply the rule. Making the grouping explicit throughout a transformation helps us explain the property itself and carry it into unfamiliar cases.");
-    slides.slice(1, 5).forEach((slide, index) =>
-        addSection(`Try the ${index < 3 ? "valid" : "invalid"} swap`, [slide.prompt], slide.element));
-    addSection("Swapping larger pieces", [slides[5].prompt], slides[5].element);
-    addSection("Distribution and an outside operation", [slides[6].prompt], slides[6].element);
-    addSection("Distribution into different terms", [slides[7].prompt], slides[7].element);
+    function addOutlineSection(title, points, id) {
+        const section = addSection(title, [], null, id);
+        const outline = document.createElement("ul");
+        points.forEach(copy => {
+            const point = document.createElement("li");
+            point.textContent = copy;
+            outline.appendChild(point);
+        });
+        section.appendChild(outline);
+        return section;
+    }
 
-    slides.slice(13, 24).forEach((slide, index) => {
-        const section = addSection(`Transformation ${index + 1}`, [slide.prompt], slide.element);
-        if (slide.explanation.text) {
-            const explanation = document.createElement("p");
-            explanation.textContent = slide.explanation.text;
-            section.appendChild(explanation);
-        }
-    });
-    addSection("Putting it all together", [], slides[24].element);
+    addOutlineSection("Negatives and the negative unit", [
+        "Introduce the negative unit, −1, as a factor that changes the sign of the expression it multiplies.",
+        "Show negative numbers and expressions as products with the negative unit, and subtraction as addition of such a product.",
+        "Add numerical and variable examples showing how the negative unit distributes across a sum and how two negative units multiply to 1."
+    ], "negative-unit");
+
+    addOutlineSection("Exponents as repeated multiplication", [
+        "Keep the scope to polynomials and rational functions, where positive integer powers can be shown as repeated multiplication.",
+        "Show repeated copies of a number, a variable, and an entire grouped expression as factors in exploded notation; relate each to its conventional power notation.",
+        "Include the zero power as 1 for a nonzero base, and connect negative integer powers of a nonzero expression to the inverse operator introduced next."
+    ], "repeated-multiplication");
+
+    addOutlineSection("Division and the inverse operator", [
+        "Introduce the inverse operator as taking the reciprocal of a nonzero expression. Division is multiplication by that inverse.",
+        "Show how the inverse encloses its entire operand, including a sum or product, and relate this grouping to the denominator of a conventional fraction.",
+        "Add numerical and rational-expression examples of simplifying inverses and multiplying a nonzero expression by its inverse to get 1; keep restrictions on zero visible."
+    ], "inverse-operator");
+
+    addOutlineSection("Building fluency with conventional notation", [
+        "Explain how students continue to see conventional notation during practice and are required to read and work with it in relation to the exploded representation.",
+        "Show how students connect each manipulation in exploded notation to the corresponding conventional step, identifying the complete terms, factors, and groups involved.",
+        "Describe the transition toward reading the grouping and applying algebraic properties directly in conventional notation, with less need for an explicit exploded diagram.",
+        "State the goal: students use and think about conventional notation correctly, eventually rarely or never needing to return explicitly to exploded notation."
+    ], "conventional-fluency");
 
     slides.forEach(({ element, ariaLabel }) => {
         element.setAttribute("aria-label", ariaLabel);
