@@ -134,7 +134,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-10-11T14:46:53-04:00">10/11/26, 2:46 PM EDT</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:11:31-04:00">10/11/26, 3:11 PM EDT</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1243,8 +1243,40 @@ body.player-ready>#exploded-examples{display:none;}
         phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "The entire product is visibly one term below 2.")
     ));
 
-    const introTitles = ["A sum", "A product", "A product inside a sum", "A sum inside a product"];
-    slides.slice(9, 13).forEach((slide, index) =>
+    const familiarPatternsSection = addSection("When a familiar pattern hides the grouping", [
+        "One response to the inconsistency discussed in Section 9 is that students can get used to it. The conventions are stable: once students learn which groupings are explicit and which are implicit, they should be able to work with them. In that sense, it is a consistent inconsistency.",
+        "But a familiar pattern can teach a misleading lesson about what an algebraic operation actually does. Distribution is a useful example. Students repeatedly see a factor outside parentheses distributed across the terms inside them, followed by an answer with no parentheses. It is easy to come away with the idea that distributing means getting rid of parentheses—and therefore getting rid of grouping."
+    ], null, "familiar-patterns");
+    familiarPatternsSection.appendChild(phrasePair(
+        conventionalCard("A familiar starting expression", "2(x + 3)", "Multiply 2 by the entire sum of x and 3."),
+        conventionalCard("After distributing 2", "2x + 2 · 3", "Each product is now grouped implicitly by the order of operations.")
+    ));
+    appendParagraph(familiarPatternsSection, "The parentheses disappear from the written expression, but grouping has not disappeared. Distribution replaces a product containing a sum with a sum of products. The products in the result still need to be grouped; conventional notation lets the order of operations communicate that grouping implicitly. The repeated disappearance of parentheses can obscure this change in structure.");
+    appendParagraph(familiarPatternsSection, "Now make the expression just a little less familiar: multiply 2 by the sum of x and 3, then multiply that entire result by 4.");
+    familiarPatternsSection.appendChild(conventionalCard(
+        "The same kind of distribution, with another factor outside", "2(x + 3) · 4",
+        "The factor 4 multiplies the entire result of doubling the sum."
+    ));
+    appendParagraph(familiarPatternsSection, "If we distribute only the 2, the resulting sum must remain one complete factor being multiplied by 4. A student following the familiar instruction to distribute and remove the parentheses may instead write the incorrect expression below, leaving the final 4 attached only to the second term.");
+    familiarPatternsSection.appendChild(phrasePair(
+        conventionalCard("Correct: distribute 2 and preserve the outside multiplication", "(2x + 2 · 3) · 4", "The factor 4 still multiplies both terms of the sum."),
+        conventionalCard("Incorrect: remove all the parentheses and leave 4 at the end", "2x + 2 · 3 · 4", "The factor 4 now multiplies only the second term.")
+    ));
+    appendParagraph(familiarPatternsSection, "This changes the value. If x is 1, the original expression gives 32, while the incorrect expression gives 26. To remove the remaining parentheses correctly, we must also distribute the 4 across the entire sum:");
+    familiarPatternsSection.appendChild(conventionalCard(
+        "Correct: distribute the remaining factor 4", "2 · x · 4 + 2 · 3 · 4",
+        "Both terms receive the factor 4. The expression simplifies to 8x + 24."
+    ));
+    appendParagraph(familiarPatternsSection, "The difficulty comes from the very consistency of the earlier examples: distribution kept producing an expression without parentheses. That visible pattern can become a substitute for understanding the property. When another outside factor appears, the familiar instruction no longer captures what must happen to the grouping.");
+    appendParagraph(familiarPatternsSection, "In exploded notation, the grouping stays visible before and after distributing 2. The new sum is still one complete factor beside 4. Its addition bar makes the extent of that sum explicit, so dropping the grouping would visibly change which parts the 4 multiplies.");
+    familiarPatternsSection.appendChild(phrasePair(
+        phraseCard("Double the sum of x and 3, then multiply the result by 4.", product(value(2), sum(value("x"), value(3)), value(4)), "Before distribution: the complete sum sits between the factors 2 and 4."),
+        phraseCard("Add the products of 2 with x and 2 with 3, then multiply that whole sum by 4.", product(sum(product(value(2), value("x")), product(value(2), value(3))), value(4)), "After distributing 2: the complete new sum remains one factor beside 4.")
+    ));
+    appendParagraph(familiarPatternsSection, "When grouping is glossed over, learning algebra can become memorizing what expressions are supposed to look like in particular cases. Frustration follows when an expression looks a little different and the familiar pattern no longer makes clear how to apply the rule. Making the grouping explicit throughout a transformation helps us explain the property itself and carry it into unfamiliar cases.");
+
+    const introTitles = ["A product", "A product inside a sum", "A sum inside a product"];
+    slides.slice(10, 13).forEach((slide, index) =>
         addSection(introTitles[index], [slide.prompt], slide.element));
 
     addSection("Four first attempts at swapping", [slides[0].prompt], slides[0].element);
