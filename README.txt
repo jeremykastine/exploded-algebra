@@ -33,9 +33,12 @@ Preserve showConventionalSteps: false, includeUndoActions: false, and the comple
 all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
 use mode=guided; the completion controls offer an Unguided repeat afterward.
 
-The conventional-notation panel uses three textbook-style sections separated by
-horizontal rules. `initialKatex` is the conventional form of the starting
-expression. The running solution shows completed steps plus the one current step.
+Conventional notation appears as one unboxed line immediately above the exploded
+expression. It says `Target expression:` followed by the next incomplete step's
+KaTeX, or `Replace [selection] with [live expression]` during replacement entry.
+The line uses the exploded numbers' font size and shares the expression's pan and
+application-zoom transform. `initialKatex` remains the conventional form of the
+starting expression in the level data.
 The pre-selection Exercise Guidance view includes the problem statement and the
 exercise's numerical-manipulation restrictions. New Problem Builder exports
 store the complete, author-editable view in the top-level `exerciseGuidance`
@@ -59,30 +62,22 @@ Older files remain compatible: `introduction` falls back to `instruction` in the
 problem-statement portion of Exercise Guidance. Legacy per-step guidance fields
 remain loadable but are no longer displayed.
 
-The exploded expression is left-aligned by default, with its top just below the
-fixed conventional-notation box at the upper-right; the Pan tool can move it from
-that starting position. The idle workspace controls, contextual action choices,
-and Expression Builder each use the same fixed six-column by four-row palette at
-the lower-right; only the controls for the current state are visible. The
-palette resizes from its upper-left corner while keeping its lower-right anchor.
-The conventional box resizes from its lower-left corner while keeping its
-upper-right anchor. Both boxes stay fully inside the visible viewport and
-remember the user's chosen size. The palette keeps the button arrangement fixed
+The conventional target line and exploded expression form one group anchored at
+the upper-left by default; the Pan tool moves them together. Idle workspace
+controls use a six-column by four-row palette anchored at the upper-right and
+resizable from its lower-left corner. Contextual action choices and Expression
+Builder use a separate palette anchored at the lower-right and resizable from
+its upper-left corner. Before a selection, the lower palette shows the full
+action layout in a quiet, inactive state so learners can see what becomes
+available after selecting. Both palettes stay fully inside the visible viewport
+and independently remember the user's chosen size. They keep the button arrangement fixed
 while labels and icons scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
-empty-workspace clicks. The conventional steps scroll vertically. Their Large,
-Medium, or Small text
-preference is responsive rather than a fixed pixel size: it refits after
-content, panel, viewport, device-input, and orientation changes without wrapping
-a step. In student portrait mode and in landscape, the steps panel snaps to
-exactly its bottom two rows and follows the current work at the bottom whenever
-its content changes.
-The settings screen replaces the exploded-expression workspace while open. It
-provides a control for the responsive conventional-steps text preference and
-an independent Child Alignment switch. Centered is the default. Center / Right
-keeps factors vertically centered in products and right-aligns terms in sums.
-Bottom / Right bottom-aligns factors and right-aligns terms. Four independent
-operation controls determine the appearance of sums and products. Bar Shape
+empty-workspace clicks. The target line is always a single non-wrapping line;
+long targets remain reachable by panning the shared workspace.
+The settings screen replaces the exploded-expression workspace while open.
+Four independent operation controls determine the appearance of sums and
+products. Bar Shape
 cycles through Thick, Endpoints, Ellipse, Flared, Midline, Nested ( ), Nested +
 Ops, and Outward ( ). Bar Shading offers solid black, gray, and light gray, plus
 three gradients with the corresponding color at each end and a white center
@@ -226,9 +221,9 @@ view-only controls and are never retained as solution moves.
 The home page links to Introduction.html and Exercises.html.
 The introduction keeps its source examples invisible until the narrative is
 ready, while retaining their geometry for rendering. Canceled or inactive
-animation runs cannot restore an older frame. Conventional-panel font fitting,
-height, and scroll correction settle together before painting; the deliberate
-new-step scroll-to-top and two-second scrolling animation remain unchanged.
+animation runs cannot restore an older frame. The conventional target updates
+before the shared workspace is painted, so it remains aligned with the exploded
+expression as the target changes.
 It also links to problem-builder.html, an authoring application with four or five phases that
 uses the real Exploded Algebra player in an embedded authoring session. Completed
 levels export with formatVersion 1,
@@ -238,11 +233,10 @@ every completed expression-changing manipulation is automatically saved as a
 major step. Phase 4 first chooses which recorded steps to show, then edits only
 their pre- and post-completion notation. Phase 5 provides one field prefilled with
 the problem statement and numerical restrictions, with View and Edit modes for
-reviewing or changing the complete student-facing guidance. Phase 1 defaults to
-showing conventional steps. Choosing Hide conventional steps exports
-showConventionalSteps: false, skips Phase 4, and removes the entire conventional
-steps panel from the student layout in both orientations. Recorded actions remain
-available for Guided mode. Existing levels without this setting still show steps.
+reviewing or changing the complete student-facing guidance. Phase 1 retains the
+legacy choice for exporting `showConventionalSteps` and may skip Phase 4, but the
+player always shows the single live target line rather than a conventional
+step-history panel. Recorded actions remain available for Guided mode.
 All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
@@ -252,8 +246,8 @@ Every level accepts mode=unguided, and a level that contains recorded guided ste
 also accepts mode=guided, for example:
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
-Guided follows the recorded action sequence. Unguided progressively reveals the
-conventional solution steps without controlling the learner's moves. If mode is
+Guided follows the recorded action sequence. Unguided updates the single
+conventional target line without controlling the learner's moves. If mode is
 absent or invalid, the learner is asked to choose Guided or Unguided. Guided is
 hidden for exercises without recorded guidance. Older assistance=high and
 assistance=medium URLs map to Guided and Unguided respectively; Low/final-only is

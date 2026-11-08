@@ -4392,9 +4392,9 @@
             }
         }
 
-        /* The expression workspace fills the screen. Conventional notation and
-           controls are fixed foreground boxes anchored at opposite right-hand
-           corners, each with one diagonally opposite resize handle. */
+        /* The expression workspace fills the screen. Its conventional target
+           line pans with the exploded notation, while the controls remain a
+           fixed, lower-right foreground palette. */
         .app-container,
         body.expression-builder-active .app-container,
         body.authoring-session:not(.expression-builder-active) .app-container,
@@ -4418,66 +4418,40 @@
         }
         .bottom-panel-resize-handle { display: none !important; }
 
-        .left-panel {
-            position: fixed !important;
-            z-index: 110;
-            inset: max(0.65rem, env(safe-area-inset-top)) max(0.65rem, env(safe-area-inset-right)) auto auto;
-            display: block;
-            width: min(32rem, calc(100dvw - 1.3rem));
-            height: min(7rem, calc(100dvh - 1.3rem));
-            min-width: 0;
-            min-height: 0;
-            max-width: none;
-            max-height: none;
-            margin: 0;
-            padding: 0.35rem 0.45rem;
-            overflow-x: auto;
-            overflow-y: auto;
-            border: 1px solid rgba(45, 55, 70, 0.5);
-            border-radius: 0.45rem;
-            box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: 0 0.3rem 1rem rgba(25, 35, 50, 0.22);
-            overscroll-behavior: contain;
-        }
-        .top-panel-resize-handle {
-            position: fixed !important;
-            z-index: 130;
-            display: block !important;
-            width: clamp(1.2rem, 4vmin, 1.65rem) !important;
-            height: clamp(1.2rem, 4vmin, 1.65rem) !important;
-            min-width: 0 !important;
-            min-height: 0 !important;
-            border: 0;
-            border-radius: 0.35rem;
-            outline: 0;
-            background: transparent;
-            cursor: nesw-resize !important;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        .top-panel-resize-handle::after {
-            content: "";
+        .left-panel,
+        .top-panel-resize-handle { display: none !important; }
+
+        .workspace-notation-layer {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0.4rem;
-            height: 0.4rem;
-            border-radius: 999px;
-            background: rgba(45, 55, 70, 0.45);
-            transform: translate(-50%, -50%);
+            z-index: 4;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            overflow: visible;
             pointer-events: none;
+            transform-origin: 0 0;
         }
-        .top-panel-resize-handle:hover,
-        .top-panel-resize-handle:focus-visible {
-            background: rgba(32, 95, 168, 0.2);
-            box-shadow: inset 0 0 0 1px rgba(32, 95, 168, 0.65);
+        .workspace-conventional-line {
+            position: absolute;
+            display: flex;
+            align-items: baseline;
+            gap: 0.38em;
+            width: max-content;
+            max-width: none;
+            min-height: 1.25em;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+            color: #111;
+            font: 20px/1.25 Verdana, Arial, Helvetica, sans-serif;
+            white-space: nowrap;
+            user-select: none;
         }
-        .top-panel-resize-handle:focus-visible {
-            outline: 2px solid #205fa8;
-            outline-offset: 1px;
-        }
+        .workspace-conventional-line .katex { font-size: 1em; }
+        .workspace-conventional-line[hidden] { display: none !important; }
 
         .bottom-controls-panel {
             --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
@@ -4498,10 +4472,35 @@
             pointer-events: auto;
             isolation: isolate;
         }
+        .pre-selection-controls-panel {
+            --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
+            --palette-corner-handle: clamp(1.2rem, 4vmin, 1.65rem);
+            --palette-content-scale: 1;
+            position: fixed;
+            z-index: 120;
+            inset: max(0.65rem, env(safe-area-inset-top)) max(0.65rem, env(safe-area-inset-right)) auto auto;
+            display: block;
+            width: min(22rem, calc(100dvw - 1.3rem));
+            height: min(14.667rem, calc(100dvh - 1.3rem));
+            min-width: 0;
+            min-height: 0;
+            border: 0;
+            box-sizing: border-box;
+            overflow: visible;
+            background: transparent;
+            pointer-events: auto;
+            isolation: isolate;
+        }
         .bottom-controls-panel.palette-resizing,
-        .bottom-controls-panel.palette-resizing * {
+        .bottom-controls-panel.palette-resizing *,
+        .pre-selection-controls-panel.palette-resizing,
+        .pre-selection-controls-panel.palette-resizing * {
             cursor: nwse-resize !important;
             user-select: none !important;
+        }
+        .pre-selection-controls-panel.palette-resizing,
+        .pre-selection-controls-panel.palette-resizing * {
+            cursor: nesw-resize !important;
         }
         .palette-content {
             position: absolute;
@@ -4575,6 +4574,79 @@
             max-width: 82%;
             max-height: 82%;
         }
+        .pre-selection-controls-panel .workspace-toolbar button,
+        .pre-selection-controls-panel .quadrant-tools button {
+            position: relative;
+            z-index: 1;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+        }
+        .pre-selection-controls-panel .workspace-toolbar button[data-workspace-mode].is-active {
+            z-index: 6;
+            background: rgba(232, 241, 255, 0.72);
+            box-shadow: inset 0 0 0 4px #205fa8;
+        }
+        .pre-selection-controls-panel .workspace-toolbar button:disabled {
+            background: #ececec;
+        }
+        body.selection-active .pre-selection-controls-panel,
+        body.expression-builder-active .pre-selection-controls-panel,
+        body.exercise-complete .pre-selection-controls-panel,
+        body.settings-active .pre-selection-controls-panel,
+        body.exercise-guidance-active .pre-selection-controls-panel,
+        body.builder-review-active .pre-selection-controls-panel {
+            display: none !important;
+        }
+        .main-action-panel.preselection-action-preview {
+            opacity: 0.46;
+            filter: grayscale(0.25);
+            pointer-events: none;
+        }
+        .main-action-panel.preselection-action-preview button,
+        .main-action-panel.preselection-action-preview button:disabled {
+            color: #48515b;
+            background: transparent;
+            cursor: default;
+        }
+        .pre-selection-resize-handle {
+            position: absolute;
+            z-index: 20;
+            bottom: 0;
+            left: 0;
+            display: block;
+            width: var(--palette-corner-handle);
+            height: var(--palette-corner-handle);
+            border: 0;
+            border-radius: 0.35rem;
+            outline: 0;
+            background: transparent;
+            cursor: nesw-resize;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .pre-selection-resize-handle::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.4rem;
+            height: 0.4rem;
+            border-radius: 999px;
+            background: rgba(45, 55, 70, 0.45);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .pre-selection-resize-handle:hover,
+        .pre-selection-resize-handle:focus-visible {
+            background: rgba(32, 95, 168, 0.2);
+            box-shadow: inset 0 0 0 1px rgba(32, 95, 168, 0.65);
+        }
+        .pre-selection-resize-handle:focus-visible {
+            outline: 2px solid #205fa8;
+            outline-offset: 1px;
+        }
         .palette-resize-handle-nw {
             position: absolute;
             z-index: 20;
@@ -4613,23 +4685,18 @@
             outline: 2px solid #205fa8;
             outline-offset: 1px;
         }
-        body.conventional-steps-hidden .top-panel-resize-handle,
-        body.settings-active .top-panel-resize-handle,
-        body.exercise-guidance-active .top-panel-resize-handle,
-        body.builder-review-active .top-panel-resize-handle { display: none !important; }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T16:00:00-05:00">11/8/26, 4:00 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T16:31:24-05:00">11/8/26, 4:31 PM EST</time></p>
     <div class="app-container">
-        <div id="leftPanel" class="left-panel">
+        <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
         </div>
-        <div id="topPanelResizeHandle" class="top-panel-resize-handle" role="button" aria-label="Resize conventional notation from lower left" tabindex="0"></div>
-        <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression controls">
+        <div id="preSelectionControlsPanel" class="pre-selection-controls-panel" aria-label="Workspace controls">
             <div class="palette-content">
             <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
@@ -4670,6 +4737,11 @@
                 </svg>
             </div>
             </div>
+            </div>
+            <div class="pre-selection-resize-handle" data-preselection-resize="sw" role="button" tabindex="0" aria-label="Resize workspace controls from bottom left"></div>
+        </div>
+        <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
+            <div class="palette-content">
             <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
             <div id="exerciseCompletionPanel" class="exercise-completion-panel hidden" role="group" aria-label="Exercise complete">
                 <div class="completion-message" role="status">Exercise complete!</div>
@@ -4718,6 +4790,9 @@
                 </div>
             </div>
             <div id="svgContainer" class="right-svg-wrap">
+                <div id="workspaceNotationLayer" class="workspace-notation-layer" aria-live="polite">
+                    <div id="workspaceConventionalLine" class="workspace-conventional-line" hidden></div>
+                </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
@@ -4731,10 +4806,6 @@
         <h2 id="settingsPanelTitle" class="level-menu-title">Settings</h2>
         <div class="settings-control-stack">
             <div class="level-menu-actions">
-                <button type="button" class="workspace-setting-button" data-workspace-setting="steps-text-size">
-                    <span class="workspace-setting-name">Steps Text</span>
-                    <span class="workspace-setting-value" data-setting-value>Medium</span>
-                </button>
                 <button type="button" class="workspace-setting-button" data-workspace-setting="bar-shape">
                     <span class="workspace-setting-name">Bar Shape</span>
                     <span class="workspace-setting-value" data-setting-value>Midline</span>
@@ -4775,7 +4846,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261108-fixed-corner-panels"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-split-control-palettes"></script>
 
 </body>
 </html>

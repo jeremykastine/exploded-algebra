@@ -20,14 +20,14 @@ assert(
 );
 assert(
     playerJs.includes("let workspaceViewManuallyPanned = false") &&
-        playerJs.includes('workspacePointerStart.mode === "pan"') &&
+        playerJs.includes('["pan", "builderPan"].includes(workspacePointerStart.mode)') &&
         playerJs.includes("workspaceViewManuallyPanned = true"),
-    "Only a real Pan gesture may mark the main workspace view as intentionally offset"
+    "Only a real workspace Pan gesture may mark the normal or builder view as intentionally offset"
 );
 assert(
-    /function getDefaultWorkspacePan\(\)[\s\S]*?leftPanel\.getBoundingClientRect\(\)\.bottom \+ spacing[\s\S]*?viewportBounds\.left[\s\S]*?function resetWorkspacePanToDefault/.test(playerJs)
+    /function getDefaultWorkspacePan\(\)[\s\S]*?getWorkspaceContentBounds\(\)[\s\S]*?viewportBounds\.left[\s\S]*?contentBounds\.top \* workspaceZoom[\s\S]*?function resetWorkspacePanToDefault/.test(playerJs)
         && /scheduleResponsiveLayoutRecalculation\(\)[\s\S]*?workspaceViewManuallyPanned[\s\S]*?resetWorkspacePanToDefault\(\)/.test(playerJs),
-    "Responsive mode changes must keep an unpanned expression left-aligned below conventional notation"
+    "Responsive mode changes must keep the combined notation group anchored at the upper-left"
 );
 assert(
     /body\.workspace-pan-active #svgContainer\s*\{[\s\S]*?touch-action: none;/.test(playerHtml),
@@ -38,17 +38,13 @@ assert(
     "Button clusters must float above rather than reduce the workspace"
 );
 assert(
-    /\.left-panel \{[\s\S]*?position: fixed !important;[\s\S]*?z-index: 110;/.test(playerHtml),
-    "The conventional panel must float above the full-screen workspace"
+    /\.workspace-notation-layer \{[\s\S]*?position: absolute;[\s\S]*?pointer-events: none;[\s\S]*?transform-origin: 0 0;/.test(playerHtml)
+        && /function applyWorkspaceContentTransform\(\)[\s\S]*?workspaceSvg\.style\.transform[\s\S]*?workspaceNotationLayer\.style\.transform/.test(playerJs),
+    "The conventional line must share the exploded expression's pan and zoom transform"
 );
 assert(
-    /\.textbook-solution \{[\s\S]*?flex-direction: column;/.test(playerHtml)
-        && /\.running-solution \{[\s\S]*?flex-direction: column;/.test(playerHtml),
-    "Conventional expressions must be arranged vertically"
-);
-assert(
-    playerJs.includes('leftPanel.scrollTop = startTop + (endTop - startTop) * easedProgress;'),
-    "Step progression must auto-scroll vertically"
+    /function positionWorkspaceConventionalLine\(\)[\s\S]*?bounds\.top - lineHeight - gap/.test(playerJs),
+    "The single conventional line must sit immediately above the exploded notation"
 );
 assert(
     !playerJs.includes('view-step-guidance-button')

@@ -54,15 +54,15 @@ function checkPlayer() {
   };
   vm.createContext(scope);
   vm.runInContext(extract(player, "syncConventionalStepsVisibility", "        "), scope);
-  for (const [level, expected] of [[{}, false], [{ showConventionalSteps: true }, false], [{ showConventionalSteps: false }, true], [null, false]]) {
+  for (const [level, expected] of [[{}, true], [{ showConventionalSteps: true }, true], [{ showConventionalSteps: false }, true], [null, false]]) {
     scope.level = level;
     assert.equal(vm.runInContext("syncConventionalStepsVisibility(level)", scope), expected);
-    assert.equal(scope.leftPanel.hidden, expected);
+    assert.equal(scope.leftPanel.hidden, true);
     assert.equal(classes.has("conventional-steps-hidden"), expected);
   }
   scope.authoringSessionActive = true;
   scope.level = { showConventionalSteps: false };
-  assert.equal(vm.runInContext("syncConventionalStepsVisibility(level)", scope), false, "Authoring retains the conventional preview");
+  assert.equal(vm.runInContext("syncConventionalStepsVisibility(level)", scope), true, "Authoring also uses the workspace conventional line");
 
   scope.clonePlainData = value => JSON.parse(JSON.stringify(value));
   scope.ExplodedAlgebraRenderer = { expressionToKatex: () => "0" };
@@ -79,6 +79,7 @@ function checkPlayer() {
   scope.maybePrepareCompletedLevelExport = () => {};
   scope.levelContent = { replaceChildren() {} };
   scope.renderMoveHistoryControls = () => {};
+  scope.renderWorkspaceConventionalLine = () => {};
   scope.getCurrentLevel = () => scope.level;
   scope.isInteractiveLevel = () => true;
   scope.uiState = { mode: "edit", stage: "idle", expressionBuilder: null };

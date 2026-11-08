@@ -50,13 +50,14 @@ assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3
 assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 3; }'));
 assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 3; }'));
 assert(
-    playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('class="palette-content"') &&
+    playerHtml.includes('id="preSelectionControlsPanel"') && playerHtml.includes('id="bottomControlsPanel"') &&
+        playerHtml.includes('class="palette-content"') &&
         !playerHtml.includes('id="bottomPanelResizeHandle"'),
-    "The app must provide one floating controls palette without the old bottom-panel divider"
+    "The app must provide separate pre-selection and post-selection palettes without the old bottom-panel divider"
 );
 assert(
     /The expression workspace fills the screen[\s\S]*?\.app-container,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important;[\s\S]*?grid-template-rows: minmax\(0, 1fr\) !important;/.test(playerHtml),
-    "The foreground boxes must leave the expression workspace at full-screen size"
+    "The pannable notation group and foreground palette must leave the workspace at full-screen size"
 );
 assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
@@ -68,14 +69,17 @@ assert(
     "All control modes must fill the floating palette's shared footprint"
 );
 assert(
-    playerHtml.indexOf('id="bottomControlsPanel"') < playerHtml.indexOf('class="quadrant-tools"') &&
-        playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('id="mainActionPanel"') &&
+    playerHtml.indexOf('id="preSelectionControlsPanel"') < playerHtml.indexOf('class="quadrant-tools"') &&
+        playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('data-preselection-resize="sw"') &&
+        playerHtml.indexOf('data-preselection-resize="sw"') < playerHtml.indexOf('id="bottomControlsPanel"') &&
+        playerHtml.indexOf('id="bottomControlsPanel"') < playerHtml.indexOf('id="mainActionPanel"') &&
         playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="exerciseCompletionPanel"') &&
         playerHtml.indexOf('id="exerciseCompletionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
         playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('data-palette-resize="nw"') &&
         playerHtml.indexOf('data-palette-resize="nw"') < playerHtml.indexOf('id="mainArea"'),
-    "All four control modes and the upper-left resize handle must be inside the fixed palette"
+    "Workspace controls and actions must be inside their independently anchored palettes"
 );
+assert(playerHtml.includes('data-preselection-resize="sw"'), "The upper-right palette must resize from its lower-left corner");
 assert(
     /\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
         /\.palette-content > \.quadrant-tools,[\s\S]*?\.palette-content > \.main-action-panel,[\s\S]*?\.palette-content > \.builder-keypad-panel,[\s\S]*?\.palette-content > \.exercise-completion-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
@@ -87,13 +91,16 @@ for (const corner of ["ne", "se", "sw"]) {
     assert(!playerHtml.includes(`data-palette-resize="${corner}"`), `The controls palette must not retain its ${corner} resize handle`);
 }
 assert(
-    /\.left-panel \{[\s\S]*?position: fixed !important;[\s\S]*?inset: max\(0\.65rem, env\(safe-area-inset-top\)\) max\(0\.65rem, env\(safe-area-inset-right\)\) auto auto;/.test(playerHtml),
-    "Conventional notation must remain fixed at the upper-right"
+    playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceConventionalLine"') &&
+        /\.workspace-conventional-line \{[\s\S]*?font: 20px\/1\.25 Verdana,[\s\S]*?white-space: nowrap;/.test(playerHtml),
+    "Conventional notation must be a single line in the expression workspace at the exploded expression's font size"
 );
-assert(playerHtml.includes('aria-label="Resize conventional notation from lower left"'), "Conventional notation must expose its lower-left resize handle");
-assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2"') && playerJs.includes('const CONVENTIONAL_PANEL_STORAGE_KEY = "explodedAlgebraConventionalPanelV1"'), "Both fixed foreground boxes must remember their sizes");
+assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
+assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");
+assert(playerJs.includes('appendWorkspaceConventionalText("Target expression:")'), "The workspace line must identify the current target expression");
+assert(playerJs.includes('appendWorkspaceConventionalText("Replace")') && playerJs.includes('appendWorkspaceConventionalText("with")'), "Builder mode must describe the live replacement on the same line");
+assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2"'), "The fixed controls palette must remember its size");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
-assert(/function setConventionalPanelSize\([\s\S]*?const left = bounds\.right - clampedWidth;[\s\S]*?const top = bounds\.top;/.test(playerJs), "Conventional-panel sizing must preserve its upper-right anchor");
 
 for (const levelFile of [
     "simplify-double-negative-unit.json",
@@ -108,9 +115,10 @@ for (const levelFile of [
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
-["steps-text-size", "bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
+["bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
 });
+assert(!playerHtml.includes('data-workspace-setting="steps-text-size"'), "The removed conventional history panel must not retain a text-size setting");
 assert(!playerHtml.includes('data-workspace-setting="child-alignment"'));
 assert(!playerJs.includes('CHILD_ALIGNMENT_STORAGE_KEY'));
 assert(!playerJs.includes('button.hidden = !classicBars'), "All four operation controls must stay independent");
@@ -131,25 +139,8 @@ assert(playerHtml.includes('M100 1 V300 M200 1 V300 M300 1 V399 M400 1 V300 M500
 assert(playerHtml.includes('body.selection-active:not(.expression-builder-active) .quadrant-tools { display: none; }'), "Post-selection must hide all pre-selection settings and tools");
 assert(/body\.expression-builder-active \.quadrant-menu,[\s\S]*?body\.expression-builder-active \.quadrant-tools,[\s\S]*?display: none;/.test(playerHtml), "Expression Builder must hide the pre-selection toolbar");
 assert(
-    !playerHtml.includes('body.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
-    "Student Expression Builder must not hide the KaTeX steps panel"
-);
-assert(
-    !playerHtml.includes('body.authoring-session:not(.expression-builder-active) .left-panel,') &&
-        !playerHtml.includes('body.authoring-session.expression-builder-active.builder-entry-mode .left-panel {\n            display: none !important;'),
-    "Problem Builder authoring must retain panel one in and outside expression entry"
-);
-assert(
-    /body\.expression-builder-active\.builder-review-active \.app-container\s*\{[\s\S]*?min\(var\(--top-panel-height\), 25dvh\)[\s\S]*?minmax\(0, 1fr\);/.test(playerHtml),
-    "Expression Builder Peek must retain the portrait conventional row"
-);
-assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?body\.expression-builder-active\.builder-review-active \.left-panel\s*\{[\s\S]*?grid-row: 1;/.test(playerHtml),
-    "Expression Builder Peek must retain the landscape conventional column"
-);
-assert(
     /if \(builderActive\) \{\s*renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
-    "Every Expression Builder refresh must update panel one's live conventional expression"
+    "Every Expression Builder refresh must update the live conventional workspace line"
 );
 assert(!playerHtml.includes("cancel-selection-button") && !playerJs.includes("data-cancel-selection"), "The action grid must not include a Cancel Selection button");
 assert(playerHtml.includes('.main-action-panel .intent-category-actions > [data-contextual-commute="commuteFactors"] { grid-column: 2 / span 2; grid-row: 3; }'));
@@ -300,7 +291,7 @@ assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0,
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-fixed-corner-panels'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-split-control-palettes'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -321,46 +312,46 @@ assert(playerJs.includes('const STEPS_LINE_HEIGHT_RATIO = 1.2;'));
 assert(playerJs.includes('window.matchMedia("(pointer: coarse)").matches'));
 assert(playerJs.includes('new ResizeObserver'));
 assert(playerJs.includes('new MutationObserver'));
-assert(playerJs.includes('layoutConventionalPanel(twoRowHeight);'));
-assert(playerJs.includes('stepsPanelContentObserver.observe(leftPanel'));
 assert(/\.problem-statement,[\s\S]*?\.step-column \{[\s\S]*?line-height: 1\.2;/.test(playerHtml));
 assert(/\.solution-column,[\s\S]*?padding: 0 6px;/.test(playerHtml));
 assert(/\.solution-step,[\s\S]*?padding: 0;[\s\S]*?line-height: inherit;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
-assert(playerJs.includes('const availableWidth = Math.max(1, paletteContent.clientWidth || plannedWidth - handleAllowance);'));
-assert(playerJs.includes('const availableHeight = Math.max(1, paletteContent.clientHeight || plannedHeight - handleAllowance);'));
+assert(playerJs.includes("function applyResponsivePaletteSize(panel, content)"));
+assert(playerJs.includes('const availableWidth = Math.max(1, content.clientWidth || plannedWidth - handleAllowance);'));
+assert(playerJs.includes('const availableHeight = Math.max(1, content.clientHeight || plannedHeight - handleAllowance);'));
 assert(playerJs.includes("const columns = 6;"));
 assert(playerJs.includes("const rows = 4;"));
 assert(playerJs.includes("Math.min(widthLimit, heightLimit)"));
 assert(!playerJs.includes("mainButtonSize"));
 assert(!playerHtml.includes("Button size"));
 assert(playerJs.includes("function installFloatingPaletteInteractions()"));
+assert(playerJs.includes("function installPreSelectionPaletteInteractions()"));
 assert(playerJs.includes("function resizeFloatingPaletteFromPoint("));
+assert(playerJs.includes("function resizePreSelectionPaletteFromPoint("));
 assert(playerJs.includes("function getFloatingPaletteViewportBounds()"));
 assert(playerJs.includes("function rememberFloatingPalettePreference()"));
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2";'));
+assert(playerJs.includes('const PRESELECTION_PALETTE_STORAGE_KEY = "explodedAlgebraPreSelectionPaletteV1";'));
 assert(playerJs.includes('Math.pow(effectiveSize / comfortableCellSize, 0.45)'), "Palette content must use gentle bounded scaling");
 assert(!playerJs.includes("function installBottomPanelResizing()"));
 assert(!playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO"));
 assert(!playerJs.includes("LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO"));
 assert(!playerJs.includes("LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO"));
 assert(playerJs.includes('appContainer.style.setProperty("--steps-two-row-height"'));
-assert(playerJs.includes('leftPanel.scrollTop = getStepPanelScrollTarget();'));
-assert(playerJs.includes("function setConventionalPanelSize(width, height, rememberUserChoice = false"));
-assert(/function installTopPanelResizing\(\)[\s\S]*?topPanelResizeState\.width - \(event\.clientX - topPanelResizeState\.startX\)[\s\S]*?topPanelResizeState\.height \+ \(event\.clientY - topPanelResizeState\.startY\)/.test(playerJs), "The lower-left handle must resize conventional notation horizontally and vertically");
 assert(playerJs.includes('window.addEventListener("orientationchange", handlePanelOrientationChange)'));
 assert(
     /The expression workspace fills the screen[\s\S]*?\.app-container,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important;/.test(playerHtml),
     "Every orientation must retain a full-width workspace behind the fixed boxes"
 );
 assert(
-    /\.top-panel-resize-handle \{[\s\S]*?position: fixed !important;[\s\S]*?cursor: nesw-resize !important;/.test(playerHtml),
-    "The conventional box must use a fixed diagonal lower-left resize handle"
-);
-assert(
     /\.palette-resize-handle-nw \{[\s\S]*?top: 0;[\s\S]*?left: 0;[\s\S]*?cursor: nwse-resize;/.test(playerHtml),
     "The controls must expose only their diagonally opposite upper-left resize handle"
 );
+assert(
+    /\.pre-selection-resize-handle \{[\s\S]*?bottom: 0;[\s\S]*?left: 0;[\s\S]*?cursor: nesw-resize;/.test(playerHtml),
+    "The pre-selection controls must expose a lower-left resize handle"
+);
+assert(playerJs.includes("function showInactivePostSelectionPalette()") && playerJs.includes('mainActionPanel.inert = true;'), "Post-selection actions must remain visible but inactive before selection");
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 // Each fixed commute control must reject selections from the other operation.
