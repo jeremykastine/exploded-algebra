@@ -49,36 +49,43 @@ assert(playerHtml.includes('[data-workspace-action="resetZoom"] { grid-column: 3
 assert(playerHtml.includes('[data-workspace-mode="select"] { grid-column: 5; grid-row: 1 / span 3; }'));
 assert(playerHtml.includes('[data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 / span 3; }'));
 assert(
-    playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('id="bottomPanelResizeHandle"'),
-    "The app must provide a distinct bottom controls panel and resize handle"
+    playerHtml.includes('id="bottomControlsPanel"') && playerHtml.includes('class="palette-content"') &&
+        !playerHtml.includes('id="bottomPanelResizeHandle"'),
+    "The app must provide one floating controls palette without the old bottom-panel divider"
 );
 assert(
-    /grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 33\.333dvh\);/.test(playerHtml),
-    "The student view must use separate top, workspace, and bottom control rows"
+    /\/\* Floating control palette[\s\S]*?grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
+    "The floating palette must leave the workspace as the final application row"
 );
 assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
-    /\.bottom-controls-panel \{[\s\S]*?grid-row: 5;[\s\S]*?pointer-events: auto;/.test(playerHtml),
-    "The controls panel must own bottom-panel white-space taps"
+    /\/\* Floating control palette[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;[\s\S]*?pointer-events: auto;/.test(playerHtml),
+    "The controls palette must float above the workspace and remain interactive"
 );
 assert(
-    /\.quadrant-tools,[\s\S]*?\.main-action-panel,[\s\S]*?align-self: stretch;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml),
-    "All control modes must fill the shared bottom-panel footprint"
+    /\.palette-content > \.quadrant-tools,[\s\S]*?\.palette-content > \.main-action-panel,[\s\S]*?align-self: stretch;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml),
+    "All control modes must fill the floating palette's shared footprint"
 );
 assert(
     playerHtml.indexOf('id="bottomControlsPanel"') < playerHtml.indexOf('class="quadrant-tools"') &&
         playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('id="mainActionPanel"') &&
         playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="exerciseCompletionPanel"') &&
         playerHtml.indexOf('id="exerciseCompletionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
-        playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('id="bottomPanelResizeHandle"') &&
-        playerHtml.indexOf('id="bottomPanelResizeHandle"') < playerHtml.indexOf('id="mainArea"'),
-    "All four control modes must be children of the shared bottom controls panel"
+        playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('data-palette-move="top"') &&
+        playerHtml.indexOf('data-palette-resize="sw"') < playerHtml.indexOf('id="mainArea"'),
+    "All four control modes and all eight handles must be inside the floating palette"
 );
 assert(
-    /\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
-        /\.bottom-controls-panel > \.quadrant-tools,[\s\S]*?\.bottom-controls-panel > \.main-action-panel,[\s\S]*?\.bottom-controls-panel > \.builder-keypad-panel,[\s\S]*?\.bottom-controls-panel > \.exercise-completion-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
-    "All control modes must use the panel's single four-by-six grid"
+    /\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
+        /\.palette-content > \.quadrant-tools,[\s\S]*?\.palette-content > \.main-action-panel,[\s\S]*?\.palette-content > \.builder-keypad-panel,[\s\S]*?\.palette-content > \.exercise-completion-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
+    "All control modes must retain the palette's single four-by-six grid"
 );
+for (const side of ["top", "right", "bottom", "left"]) {
+    assert(playerHtml.includes(`data-palette-move="${side}"`), `Missing ${side} palette move handle`);
+}
+for (const corner of ["nw", "ne", "se", "sw"]) {
+    assert(playerHtml.includes(`data-palette-resize="${corner}"`), `Missing ${corner} palette resize handle`);
+}
 assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
 ["steps-text-size", "bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
@@ -268,11 +275,11 @@ assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-contr
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(playerHtml.includes('class="controls-grid-overlay pre-selection-grid-overlay"'), "Pre-selection must draw the same continuous grid treatment as post-selection");
 assert(playerHtml.includes('class="controls-grid-overlay builder-grid-overlay"'), "Expression Builder must draw the same continuous grid treatment as post-selection");
-assert(/\.bottom-controls-panel \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?gap: 0;/.test(playerHtml), "All bottom-panel modes must use gapless shared grid tracks");
+assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);[\s\S]*?gap: 0;/.test(playerHtml), "All palette modes must use gapless shared grid tracks");
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261009-selection-bars-fix'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-floating-palette'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -301,16 +308,21 @@ assert(/\.problem-statement,[\s\S]*?\.step-column \{[\s\S]*?line-height: 1\.2;/.
 assert(/\.solution-column,[\s\S]*?padding: 0 6px;/.test(playerHtml));
 assert(/\.solution-step,[\s\S]*?padding: 0;[\s\S]*?line-height: inherit;/.test(playerHtml));
 assert(playerJs.includes("function applyResponsiveMainButtonSize()"));
-assert(playerJs.includes('const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);'));
-assert(playerJs.includes('const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);'));
+assert(playerJs.includes('const availableWidth = Math.max(1, paletteContent.clientWidth || plannedWidth - handleAllowance);'));
+assert(playerJs.includes('const availableHeight = Math.max(1, paletteContent.clientHeight || plannedHeight - handleAllowance);'));
 assert(playerJs.includes("const columns = 6;"));
 assert(playerJs.includes("const rows = 4;"));
 assert(playerJs.includes("Math.min(widthLimit, heightLimit)"));
 assert(!playerJs.includes("mainButtonSize"));
 assert(!playerHtml.includes("Button size"));
-assert(playerJs.includes("function installBottomPanelResizing()"));
-assert(playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;"));
-assert(playerJs.includes("const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;"));
+assert(playerJs.includes("function installFloatingPaletteInteractions()"));
+assert(playerJs.includes("function resizeFloatingPaletteFromPoint("));
+assert(playerJs.includes("function getFloatingPaletteViewportBounds()"));
+assert(playerJs.includes("function rememberFloatingPalettePreference()"));
+assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFloatingPaletteV1";'));
+assert(playerJs.includes('Math.pow(effectiveSize / comfortableCellSize, 0.45)'), "Palette content must use gentle bounded scaling");
+assert(!playerJs.includes("function installBottomPanelResizing()"));
+assert(!playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO"));
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;"));
 assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;"));
 assert(playerJs.includes('appContainer.style.setProperty("--steps-two-row-height"'));
@@ -330,10 +342,7 @@ assert(
     /\.top-panel-resize-handle,[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?cursor: col-resize;/.test(playerHtml),
     "The former top-panel handle must become the full-height vertical landscape divider"
 );
-assert(
-    /\.bottom-panel-resize-handle,[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 2;[\s\S]*?cursor: default;[\s\S]*?pointer-events: none;/.test(playerHtml),
-    "The landscape horizontal divider must remain snapped to the two-row panel height"
-);
+assert(/@media \(orientation: landscape\) \{[\s\S]*?\.bottom-controls-panel,[\s\S]*?position: fixed;/.test(playerHtml), "The palette must remain freely positioned in landscape");
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 // Each fixed commute control must reject selections from the other operation.

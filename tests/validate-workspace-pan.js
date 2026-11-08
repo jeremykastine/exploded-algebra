@@ -33,12 +33,12 @@ assert(
     "The entire workspace must suppress native touch scrolling while Pan is active"
 );
 assert(
-    /\.quadrant-tools,\s*\.quadrant-menu,\s*\.main-action-panel\s*\{[\s\S]*?grid-row: 5;/.test(playerHtml),
-    "Button clusters must occupy the dedicated controls row"
+    /\/\* Floating control palette[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;/.test(playerHtml),
+    "Button clusters must float above rather than reduce the workspace"
 );
 assert(
-    /grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\)\s*var\(--divider-size\)\s*min\(var\(--bottom-panel-height\), 33\.333dvh\);/.test(playerHtml),
-    "The conventional panel must stay below one quarter and controls below one third of the viewport"
+    /\/\* Floating control palette[\s\S]*?grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
+    "The conventional panel must stay below one quarter while the workspace takes the remaining row"
 );
 assert(
     /\.textbook-solution \{[\s\S]*?flex-direction: column;/.test(playerHtml)

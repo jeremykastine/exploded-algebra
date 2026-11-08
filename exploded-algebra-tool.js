@@ -1347,7 +1347,7 @@ Promise.resolve().then(() => {
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
-        const bottomPanelResizeHandle = document.getElementById("bottomPanelResizeHandle");
+        const paletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
@@ -1454,20 +1454,29 @@ Promise.resolve().then(() => {
         }
 
         function applyResponsiveMainButtonSize() {
-            if (!appContainer || !bottomControlsPanel) {
+            if (!appContainer || !bottomControlsPanel || !paletteContent) {
                 return;
             }
             const columns = 6;
             const rows = 4;
-            const compactViewport = window.innerWidth <= 520;
-            const gap = compactViewport ? 5 : 6;
-            const availableWidth = Math.max(1, bottomControlsPanel.clientWidth);
-            const availableHeight = Math.max(1, bottomControlsPanel.clientHeight);
-            const widthLimit = Math.floor((availableWidth - gap * (columns - 1)) / columns);
-            const heightLimit = Math.floor((availableHeight - gap * (rows - 1)) / rows);
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+            const handleAllowance = rootFontSize * (coarsePointer ? 1.5 : 1.05);
+            const plannedWidth = parseFloat(bottomControlsPanel.style.width) || 1;
+            const plannedHeight = parseFloat(bottomControlsPanel.style.height) || 1;
+            const availableWidth = Math.max(1, paletteContent.clientWidth || plannedWidth - handleAllowance);
+            const availableHeight = Math.max(1, paletteContent.clientHeight || plannedHeight - handleAllowance);
+            const widthLimit = availableWidth / columns;
+            const heightLimit = availableHeight / rows;
             const effectiveSize = Math.max(10, Math.min(widthLimit, heightLimit));
+            const comfortableCellSize = rootFontSize * 3.4;
+            const contentScale = Math.max(
+                0.72,
+                Math.min(1.18, Math.pow(effectiveSize / comfortableCellSize, 0.45))
+            );
             appContainer.style.setProperty("--main-key-size", `${effectiveSize}px`);
-            appContainer.style.setProperty("--main-icon-size", `${Math.max(14, effectiveSize - 16)}px`);
+            appContainer.style.setProperty("--main-icon-size", `${1.7 * contentScale}rem`);
+            bottomControlsPanel.style.setProperty("--palette-content-scale", contentScale.toFixed(3));
         }
 
         function loadSavedStepsTextSizePreference() {
@@ -2051,16 +2060,15 @@ Promise.resolve().then(() => {
 
         const TOP_PANEL_MIN_HEIGHT = 48;
         const TOP_PANEL_MAX_VIEWPORT_RATIO = 0.25;
-        const BOTTOM_PANEL_MIN_HEIGHT = 96;
-        const BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 3;
-        const LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO = 1 / 2;
         const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;
         const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;
+        const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFloatingPaletteV1";
         let userTopPanelHeight = null;
         let userLandscapeSidebarRatio = null;
         let topPanelResizeState = null;
-        let userBottomPanelHeight = null;
-        let bottomPanelResizeState = null;
+        let floatingPalettePreference = null;
+        let floatingPaletteInteraction = null;
+        let floatingPaletteSafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
 
         function getViewportHeight() {
             return window.visualViewport && window.visualViewport.height
@@ -2076,17 +2084,6 @@ Promise.resolve().then(() => {
 
         function getMaximumTopPanelHeight() {
             return Math.max(TOP_PANEL_MIN_HEIGHT, Math.floor(getViewportHeight() * TOP_PANEL_MAX_VIEWPORT_RATIO));
-        }
-
-        function getMaximumBottomPanelHeight() {
-            const maximumRatio = isLandscapePanelLayout()
-                ? LANDSCAPE_BOTTOM_PANEL_MAX_VIEWPORT_RATIO
-                : BOTTOM_PANEL_MAX_VIEWPORT_RATIO;
-            return Math.max(1, Math.floor(getViewportHeight() * maximumRatio));
-        }
-
-        function getMinimumBottomPanelHeight() {
-            return Math.min(BOTTOM_PANEL_MIN_HEIGHT, getMaximumBottomPanelHeight());
         }
 
         function setLandscapeSidebarWidth(width, rememberUserChoice = false) {
@@ -2117,10 +2114,6 @@ Promise.resolve().then(() => {
                 return;
             }
             const landscapeLayout = isLandscapePanelLayout();
-            if (bottomPanelResizeHandle) {
-                bottomPanelResizeHandle.toggleAttribute("aria-disabled", landscapeLayout);
-                bottomPanelResizeHandle.tabIndex = landscapeLayout ? -1 : 0;
-            }
             if (landscapeLayout) {
                 const viewportWidth = getViewportWidth();
                 const requestedWidth = userLandscapeSidebarRatio === null
@@ -2158,26 +2151,175 @@ Promise.resolve().then(() => {
             }
         }
 
-        function setBottomPanelHeight(height, rememberUserChoice = false) {
-            if (!appContainer) {
+        function refreshFloatingPaletteSafeArea() {
+            const probe = document.createElement("div");
+            probe.style.cssText = [
+                "position:fixed",
+                "visibility:hidden",
+                "pointer-events:none",
+                "padding-top:env(safe-area-inset-top, 0px)",
+                "padding-right:env(safe-area-inset-right, 0px)",
+                "padding-bottom:env(safe-area-inset-bottom, 0px)",
+                "padding-left:env(safe-area-inset-left, 0px)"
+            ].join(";");
+            document.body.appendChild(probe);
+            const style = window.getComputedStyle(probe);
+            floatingPaletteSafeArea = {
+                top: parseFloat(style.paddingTop) || 0,
+                right: parseFloat(style.paddingRight) || 0,
+                bottom: parseFloat(style.paddingBottom) || 0,
+                left: parseFloat(style.paddingLeft) || 0
+            };
+            probe.remove();
+        }
+
+        function getFloatingPaletteViewportBounds() {
+            const viewport = window.visualViewport;
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const safetyMargin = rootFontSize * 0.65;
+            const viewportLeft = viewport ? viewport.offsetLeft : 0;
+            const viewportTop = viewport ? viewport.offsetTop : 0;
+            const viewportWidth = viewport && viewport.width ? viewport.width : window.innerWidth;
+            const viewportHeight = viewport && viewport.height ? viewport.height : window.innerHeight;
+            const safeLeft = Math.min(floatingPaletteSafeArea.left, Math.max(0, viewportWidth - 1));
+            const safeRight = Math.min(floatingPaletteSafeArea.right, Math.max(0, viewportWidth - safeLeft - 1));
+            const safeTop = Math.min(floatingPaletteSafeArea.top, Math.max(0, viewportHeight - 1));
+            const safeBottom = Math.min(floatingPaletteSafeArea.bottom, Math.max(0, viewportHeight - safeTop - 1));
+            const horizontalMargin = Math.min(safetyMargin, Math.max(0, (viewportWidth - safeLeft - safeRight - 1) / 2));
+            const verticalMargin = Math.min(safetyMargin, Math.max(0, (viewportHeight - safeTop - safeBottom - 1) / 2));
+            return {
+                left: viewportLeft + safeLeft + horizontalMargin,
+                top: viewportTop + safeTop + verticalMargin,
+                right: viewportLeft + viewportWidth - safeRight - horizontalMargin,
+                bottom: viewportTop + viewportHeight - safeBottom - verticalMargin
+            };
+        }
+
+        function getFloatingPaletteLimits(bounds = getFloatingPaletteViewportBounds()) {
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+            const handleAllowance = rootFontSize * (coarsePointer ? 1.5 : 1.05);
+            const comfortableMinimumCellWidth = rootFontSize * 2.5;
+            const comfortableMinimumCellHeight = rootFontSize * 3;
+            const maximumWidth = Math.max(1, bounds.right - bounds.left);
+            const maximumHeight = Math.max(1, bounds.bottom - bounds.top);
+            return {
+                minimumWidth: Math.min(maximumWidth, comfortableMinimumCellWidth * 6 + handleAllowance),
+                minimumHeight: Math.min(maximumHeight, comfortableMinimumCellHeight * 4 + handleAllowance),
+                maximumWidth,
+                maximumHeight,
+                defaultWidth: Math.min(maximumWidth, rootFontSize * (coarsePointer ? 19.5 : 22)),
+                defaultHeight: Math.min(maximumHeight, rootFontSize * (coarsePointer ? 13 : 14.667))
+            };
+        }
+
+        function loadFloatingPalettePreference() {
+            try {
+                const parsed = JSON.parse(window.localStorage.getItem(FLOATING_PALETTE_STORAGE_KEY));
+                if (!parsed || parsed.version !== 1) {
+                    return null;
+                }
+                const values = [parsed.widthRem, parsed.heightRem, parsed.xRatio, parsed.yRatio];
+                if (!values.every(Number.isFinite)) {
+                    return null;
+                }
+                return {
+                    widthRem: parsed.widthRem,
+                    heightRem: parsed.heightRem,
+                    xRatio: Math.max(0, Math.min(1, parsed.xRatio)),
+                    yRatio: Math.max(0, Math.min(1, parsed.yRatio))
+                };
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function setFloatingPaletteRect(rect, bounds = getFloatingPaletteViewportBounds()) {
+            if (!bottomControlsPanel) {
                 return;
             }
-            const maximumHeight = getMaximumBottomPanelHeight();
-            const minimumHeight = getMinimumBottomPanelHeight();
-            const clampedHeight = Math.max(
-                minimumHeight,
-                Math.min(Number(height) || minimumHeight, maximumHeight)
-            );
-            if (rememberUserChoice) {
-                userBottomPanelHeight = clampedHeight;
-            }
-            appContainer.style.setProperty("--bottom-panel-height", `${Math.round(clampedHeight)}px`);
-            if (bottomPanelResizeHandle) {
-                bottomPanelResizeHandle.setAttribute("aria-valuemin", String(minimumHeight));
-                bottomPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
-                bottomPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedHeight)));
-            }
+            const limits = getFloatingPaletteLimits(bounds);
+            const requestedWidth = Number(rect.width);
+            const requestedHeight = Number(rect.height);
+            const requestedLeft = Number(rect.left);
+            const requestedTop = Number(rect.top);
+            const width = Math.max(limits.minimumWidth, Math.min(
+                Number.isFinite(requestedWidth) ? requestedWidth : limits.defaultWidth,
+                limits.maximumWidth
+            ));
+            const height = Math.max(limits.minimumHeight, Math.min(
+                Number.isFinite(requestedHeight) ? requestedHeight : limits.defaultHeight,
+                limits.maximumHeight
+            ));
+            const left = Math.max(bounds.left, Math.min(
+                Number.isFinite(requestedLeft) ? requestedLeft : bounds.left,
+                bounds.right - width
+            ));
+            const top = Math.max(bounds.top, Math.min(
+                Number.isFinite(requestedTop) ? requestedTop : bounds.top,
+                bounds.bottom - height
+            ));
+            bottomControlsPanel.style.left = `${left}px`;
+            bottomControlsPanel.style.top = `${top}px`;
+            bottomControlsPanel.style.right = "auto";
+            bottomControlsPanel.style.bottom = "auto";
+            bottomControlsPanel.style.width = `${width}px`;
+            bottomControlsPanel.style.height = `${height}px`;
             applyResponsiveMainButtonSize();
+        }
+
+        function rememberFloatingPalettePreference() {
+            if (!bottomControlsPanel) {
+                return;
+            }
+            const bounds = getFloatingPaletteViewportBounds();
+            const rect = bottomControlsPanel.getBoundingClientRect();
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const horizontalTravel = Math.max(0, bounds.right - bounds.left - rect.width);
+            const verticalTravel = Math.max(0, bounds.bottom - bounds.top - rect.height);
+            floatingPalettePreference = {
+                widthRem: rect.width / rootFontSize,
+                heightRem: rect.height / rootFontSize,
+                xRatio: horizontalTravel ? (rect.left - bounds.left) / horizontalTravel : 1,
+                yRatio: verticalTravel ? (rect.top - bounds.top) / verticalTravel : 1
+            };
+            try {
+                window.localStorage.setItem(FLOATING_PALETTE_STORAGE_KEY, JSON.stringify({
+                    version: 1,
+                    ...floatingPalettePreference
+                }));
+            } catch (error) {}
+        }
+
+        function layoutFloatingPalette() {
+            if (!bottomControlsPanel) {
+                return;
+            }
+            refreshFloatingPaletteSafeArea();
+            const bounds = getFloatingPaletteViewportBounds();
+            const limits = getFloatingPaletteLimits(bounds);
+            if (floatingPalettePreference === null) {
+                floatingPalettePreference = loadFloatingPalettePreference();
+            }
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const width = floatingPalettePreference
+                ? floatingPalettePreference.widthRem * rootFontSize
+                : limits.defaultWidth;
+            const height = floatingPalettePreference
+                ? floatingPalettePreference.heightRem * rootFontSize
+                : limits.defaultHeight;
+            const clampedWidth = Math.max(limits.minimumWidth, Math.min(width, limits.maximumWidth));
+            const clampedHeight = Math.max(limits.minimumHeight, Math.min(height, limits.maximumHeight));
+            const horizontalTravel = Math.max(0, limits.maximumWidth - clampedWidth);
+            const verticalTravel = Math.max(0, limits.maximumHeight - clampedHeight);
+            const xRatio = floatingPalettePreference ? floatingPalettePreference.xRatio : 1;
+            const yRatio = floatingPalettePreference ? floatingPalettePreference.yRatio : 1;
+            setFloatingPaletteRect({
+                left: bounds.left + horizontalTravel * xRatio,
+                top: bounds.top + verticalTravel * yRatio,
+                width: clampedWidth,
+                height: clampedHeight
+            }, bounds);
         }
 
         function renderProbeMath(probe) {
@@ -2350,59 +2492,141 @@ Promise.resolve().then(() => {
             });
         }
 
-        function installBottomPanelResizing() {
-            if (!bottomPanelResizeHandle || !bottomControlsPanel || !appContainer) {
+        function resizeFloatingPaletteFromPoint(direction, clientX, clientY, startRect, bounds) {
+            const limits = getFloatingPaletteLimits(bounds);
+            let left = startRect.left;
+            let top = startRect.top;
+            let right = startRect.right;
+            let bottom = startRect.bottom;
+            if (direction.includes("w")) {
+                left = Math.max(bounds.left, Math.min(clientX, right - limits.minimumWidth));
+            }
+            if (direction.includes("e")) {
+                right = Math.min(bounds.right, Math.max(clientX, left + limits.minimumWidth));
+            }
+            if (direction.includes("n")) {
+                top = Math.max(bounds.top, Math.min(clientY, bottom - limits.minimumHeight));
+            }
+            if (direction.includes("s")) {
+                bottom = Math.min(bounds.bottom, Math.max(clientY, top + limits.minimumHeight));
+            }
+            setFloatingPaletteRect({ left, top, width: right - left, height: bottom - top }, bounds);
+        }
+
+        function installFloatingPaletteInteractions() {
+            if (!bottomControlsPanel) {
                 return;
             }
+            const handles = Array.from(bottomControlsPanel.querySelectorAll("[data-palette-move], [data-palette-resize]"));
 
-            const finishResize = event => {
-                if (!bottomPanelResizeState || (event && event.pointerId !== bottomPanelResizeState.pointerId)) {
+            const finishInteraction = event => {
+                if (!floatingPaletteInteraction || (event && event.pointerId !== undefined && event.pointerId !== floatingPaletteInteraction.pointerId)) {
                     return;
                 }
-                bottomPanelResizeState = null;
+                floatingPaletteInteraction = null;
+                bottomControlsPanel.classList.remove("palette-interacting", "palette-resizing");
+                rememberFloatingPalettePreference();
             };
 
-            bottomPanelResizeHandle.addEventListener("pointerdown", event => {
-                if (isLandscapePanelLayout()) {
-                    return;
-                }
-                if (event.pointerType === "mouse" && event.button !== 0) {
-                    return;
-                }
-                bottomPanelResizeState = {
-                    pointerId: event.pointerId,
-                    panelBottom: bottomControlsPanel.getBoundingClientRect().bottom
-                };
-                if (bottomPanelResizeHandle.setPointerCapture) {
-                    bottomPanelResizeHandle.setPointerCapture(event.pointerId);
-                }
-                event.preventDefault();
-            });
-            bottomPanelResizeHandle.addEventListener("pointermove", event => {
-                if (!bottomPanelResizeState || event.pointerId !== bottomPanelResizeState.pointerId) {
-                    return;
-                }
-                setBottomPanelHeight(bottomPanelResizeState.panelBottom - event.clientY, true);
-                event.preventDefault();
-            });
-            bottomPanelResizeHandle.addEventListener("pointerup", finishResize);
-            bottomPanelResizeHandle.addEventListener("pointercancel", finishResize);
-            bottomPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
-            bottomPanelResizeHandle.addEventListener("keydown", event => {
-                if (isLandscapePanelLayout()) {
-                    return;
-                }
-                const currentHeight = bottomControlsPanel.getBoundingClientRect().height;
-                let nextHeight = null;
-                if (event.key === "ArrowUp") nextHeight = currentHeight + 8;
-                if (event.key === "ArrowDown") nextHeight = currentHeight - 8;
-                if (event.key === "Home") nextHeight = getMinimumBottomPanelHeight();
-                if (event.key === "End") nextHeight = getMaximumBottomPanelHeight();
-                if (nextHeight === null) {
-                    return;
-                }
-                setBottomPanelHeight(nextHeight, true);
-                event.preventDefault();
+            handles.forEach(handle => {
+                handle.addEventListener("pointerdown", event => {
+                    if (event.pointerType === "mouse" && event.button !== 0) {
+                        return;
+                    }
+                    const rect = bottomControlsPanel.getBoundingClientRect();
+                    floatingPaletteInteraction = {
+                        pointerId: event.pointerId,
+                        mode: handle.dataset.paletteResize ? "resize" : "move",
+                        direction: handle.dataset.paletteResize || "",
+                        startX: event.clientX,
+                        startY: event.clientY,
+                        startRect: {
+                            left: rect.left,
+                            top: rect.top,
+                            right: rect.right,
+                            bottom: rect.bottom,
+                            width: rect.width,
+                            height: rect.height
+                        },
+                        bounds: getFloatingPaletteViewportBounds()
+                    };
+                    bottomControlsPanel.classList.add("palette-interacting");
+                    bottomControlsPanel.classList.toggle("palette-resizing", floatingPaletteInteraction.mode === "resize");
+                    if (handle.setPointerCapture) {
+                        handle.setPointerCapture(event.pointerId);
+                    }
+                    event.preventDefault();
+                });
+
+                handle.addEventListener("pointermove", event => {
+                    const interaction = floatingPaletteInteraction;
+                    if (!interaction || interaction.pointerId !== event.pointerId) {
+                        return;
+                    }
+                    if (interaction.mode === "move") {
+                        setFloatingPaletteRect({
+                            left: interaction.startRect.left + event.clientX - interaction.startX,
+                            top: interaction.startRect.top + event.clientY - interaction.startY,
+                            width: interaction.startRect.width,
+                            height: interaction.startRect.height
+                        }, interaction.bounds);
+                    } else {
+                        const horizontalDelta = event.clientX - interaction.startX;
+                        const verticalDelta = event.clientY - interaction.startY;
+                        resizeFloatingPaletteFromPoint(
+                            interaction.direction,
+                            interaction.direction.includes("w")
+                                ? interaction.startRect.left + horizontalDelta
+                                : interaction.startRect.right + horizontalDelta,
+                            interaction.direction.includes("n")
+                                ? interaction.startRect.top + verticalDelta
+                                : interaction.startRect.bottom + verticalDelta,
+                            interaction.startRect,
+                            interaction.bounds
+                        );
+                    }
+                    event.preventDefault();
+                });
+
+                handle.addEventListener("pointerup", finishInteraction);
+                handle.addEventListener("pointercancel", finishInteraction);
+                handle.addEventListener("lostpointercapture", finishInteraction);
+
+                handle.addEventListener("keydown", event => {
+                    const keyOffsets = {
+                        ArrowLeft: [-1, 0],
+                        ArrowRight: [1, 0],
+                        ArrowUp: [0, -1],
+                        ArrowDown: [0, 1]
+                    };
+                    if (!keyOffsets[event.key]) {
+                        return;
+                    }
+                    const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+                    const step = event.shiftKey ? rootFontSize : rootFontSize * 0.5;
+                    const [horizontal, vertical] = keyOffsets[event.key];
+                    const bounds = getFloatingPaletteViewportBounds();
+                    const rect = bottomControlsPanel.getBoundingClientRect();
+                    if (handle.dataset.paletteResize) {
+                        const direction = handle.dataset.paletteResize;
+                        resizeFloatingPaletteFromPoint(
+                            direction,
+                            direction.includes("w") ? rect.left + horizontal * step : rect.right + horizontal * step,
+                            direction.includes("n") ? rect.top + vertical * step : rect.bottom + vertical * step,
+                            rect,
+                            bounds
+                        );
+                    } else {
+                        setFloatingPaletteRect({
+                            left: rect.left + horizontal * step,
+                            top: rect.top + vertical * step,
+                            width: rect.width,
+                            height: rect.height
+                        }, bounds);
+                    }
+                    rememberFloatingPalettePreference();
+                    event.preventDefault();
+                });
             });
         }
 
@@ -4669,7 +4893,7 @@ Promise.resolve().then(() => {
 
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
-            setBottomPanelHeight(getMaximumBottomPanelHeight());
+            layoutFloatingPalette();
             setStepsTextSizePreference(loadSavedStepsTextSizePreference());
             updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
@@ -4781,7 +5005,7 @@ Promise.resolve().then(() => {
                 hideExerciseGuidance();
             }, true);
             installTopPanelResizing();
-            installBottomPanelResizing();
+            installFloatingPaletteInteractions();
             if (toolOptionMenu) {
                 toolOptionMenu.addEventListener("click", event => {
                     const button = event.target.closest("button[data-tool-option]");
@@ -4812,6 +5036,7 @@ Promise.resolve().then(() => {
             window.addEventListener("orientationchange", handlePanelOrientationChange);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener("resize", scheduleResponsiveLayoutRecalculation);
+                window.visualViewport.addEventListener("scroll", scheduleResponsiveLayoutRecalculation);
             }
             if (screen.orientation && screen.orientation.addEventListener) {
                 screen.orientation.addEventListener("change", handlePanelOrientationChange);
@@ -5480,9 +5705,7 @@ ctx.font = SETTINGS.textFont;
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
                 updatePanelResizeHandleOrientation();
-                setBottomPanelHeight(
-                    userBottomPanelHeight === null ? getMaximumBottomPanelHeight() : userBottomPanelHeight
-                );
+                layoutFloatingPalette();
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
                     drawExpression();

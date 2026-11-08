@@ -60,11 +60,13 @@ remain loadable but are no longer displayed.
 
 The exploded expression is anchored at the upper-left of its workspace. The
 idle workspace controls, contextual action choices, and Expression Builder each
-use the same compact, bottom-corner keypad footprint; only the controls for the
-current state are visible. Each button is opaque, but the control clusters have
-no panel background. Tap inside the selection or outside the expression to
-clear it; guided demonstrations ignore off-target selections and empty-workspace
-clicks. The conventional steps remain visible
+use the same floating six-column by four-row palette; only the controls for the
+current state are visible. Drag any side to reposition the palette and any
+corner to resize its width and height independently. The palette remains fully
+inside the visible viewport, remembers the user's size and position, and keeps
+the button arrangement fixed while labels and icons scale gently. Tap inside the
+selection or outside the expression to clear it; guided demonstrations ignore
+off-target selections and empty-workspace clicks. The conventional steps remain visible
 above the controls and scroll vertically. Their Large, Medium, or Small text
 preference is responsive rather than a fixed pixel size: it refits after
 content, panel, viewport, device-input, and orientation changes without wrapping

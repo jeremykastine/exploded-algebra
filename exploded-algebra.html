@@ -4391,19 +4391,242 @@
                 display: none !important;
             }
         }
+
+        /* Floating control palette. Its four sides move the palette and its
+           four corners resize width and height independently. The inner
+           six-by-four control arrangement never changes. */
+        .app-container,
+        body.expression-builder-active .app-container {
+            grid-template-rows:
+                min(var(--top-panel-height), 25dvh)
+                var(--divider-size)
+                minmax(0, 1fr);
+        }
+        .bottom-panel-resize-handle { display: none !important; }
+
+        .bottom-controls-panel {
+            --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
+            --palette-corner-handle: clamp(1.1rem, 4vmin, 1.65rem);
+            --palette-content-scale: 1;
+            position: fixed;
+            z-index: 120;
+            inset: auto max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) auto;
+            display: block;
+            width: min(22rem, calc(100dvw - 1.5rem));
+            height: min(14.667rem, calc(100dvh - 1.5rem));
+            min-width: 0;
+            min-height: 0;
+            border: 0;
+            box-sizing: border-box;
+            overflow: visible;
+            background: transparent;
+            pointer-events: auto;
+            isolation: isolate;
+        }
+        .bottom-controls-panel.palette-interacting,
+        .bottom-controls-panel.palette-interacting * {
+            cursor: grabbing !important;
+            user-select: none !important;
+        }
+        .bottom-controls-panel.palette-resizing,
+        .bottom-controls-panel.palette-resizing * {
+            cursor: inherit !important;
+        }
+        .palette-content {
+            position: absolute;
+            z-index: 1;
+            inset: var(--palette-handle-rail);
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-rows: repeat(4, minmax(0, 1fr));
+            gap: 0;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            border: 1px solid rgba(45, 55, 70, 0.5);
+            border-radius: 0.45rem;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 0.3rem 1rem rgba(25, 35, 50, 0.22);
+        }
+        .palette-content > .quadrant-tools,
+        .palette-content > .main-action-panel,
+        .palette-content > .builder-keypad-panel,
+        .palette-content > .exercise-completion-panel {
+            position: relative;
+            inset: auto;
+            grid-column: 1 / -1 !important;
+            grid-row: 1 / -1 !important;
+            align-self: stretch;
+            justify-self: stretch;
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-template-rows: subgrid;
+            gap: inherit;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            max-width: none;
+            max-height: none;
+            margin: 0;
+        }
+        .palette-content > .quadrant-tools > .workspace-toolbar,
+        .palette-content > .main-action-panel > .panel-tool-menu,
+        .palette-content > .main-action-panel > .panel-tool-menu > .intent-category-list,
+        .palette-content > .main-action-panel > .panel-tool-menu > .intent-category-list > .intent-category-actions {
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            display: grid;
+            grid-template-columns: subgrid;
+            grid-template-rows: subgrid;
+            gap: inherit;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        .palette-content > .main-action-panel.hidden,
+        .palette-content > .builder-keypad-panel.hidden,
+        .palette-content > .exercise-completion-panel.hidden { display: none; }
+
+        .palette-content .workspace-undo-label,
+        .palette-content .workspace-setting-name,
+        .palette-content .workspace-setting-value,
+        .palette-content .workspace-finish-recording-label,
+        .palette-content .contextual-numerical-rewrite-label,
+        .palette-content .completion-message,
+        .palette-content button {
+            font-size: calc(1em * var(--palette-content-scale));
+        }
+        .palette-content .workspace-toolbar svg:not(.controls-grid-overlay),
+        .palette-content .builder-keypad-panel svg:not(.controls-grid-overlay) {
+            width: calc(var(--main-icon-size) * var(--palette-content-scale));
+            height: calc(var(--main-icon-size) * var(--palette-content-scale));
+            max-width: 82%;
+            max-height: 82%;
+        }
+
+        .palette-move-handle,
+        .palette-resize-handle {
+            position: absolute;
+            z-index: 20;
+            display: block;
+            border: 0;
+            border-radius: 0.35rem;
+            outline: 0;
+            background: transparent;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .palette-move-handle { cursor: grab; }
+        .palette-move-handle::after,
+        .palette-resize-handle::after {
+            content: "";
+            position: absolute;
+            display: block;
+            border-radius: 999px;
+            background: rgba(45, 55, 70, 0.38);
+            pointer-events: none;
+        }
+        .palette-move-handle-top,
+        .palette-move-handle-bottom {
+            left: var(--palette-corner-handle);
+            right: var(--palette-corner-handle);
+            height: var(--palette-handle-rail);
+        }
+        .palette-move-handle-top { top: 0; }
+        .palette-move-handle-bottom { bottom: 0; }
+        .palette-move-handle-top::after,
+        .palette-move-handle-bottom::after {
+            top: 50%;
+            left: 50%;
+            width: min(2.5rem, 28%);
+            height: 2px;
+            transform: translate(-50%, -50%);
+        }
+        .palette-move-handle-left,
+        .palette-move-handle-right {
+            top: var(--palette-corner-handle);
+            bottom: var(--palette-corner-handle);
+            width: var(--palette-handle-rail);
+        }
+        .palette-move-handle-left { left: 0; }
+        .palette-move-handle-right { right: 0; }
+        .palette-move-handle-left::after,
+        .palette-move-handle-right::after {
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: min(2.5rem, 28%);
+            transform: translate(-50%, -50%);
+        }
+        .palette-resize-handle {
+            width: var(--palette-corner-handle);
+            height: var(--palette-corner-handle);
+        }
+        .palette-resize-handle-nw { top: 0; left: 0; cursor: nwse-resize; }
+        .palette-resize-handle-ne { top: 0; right: 0; cursor: nesw-resize; }
+        .palette-resize-handle-se { right: 0; bottom: 0; cursor: nwse-resize; }
+        .palette-resize-handle-sw { bottom: 0; left: 0; cursor: nesw-resize; }
+        .palette-resize-handle::after {
+            top: 50%;
+            left: 50%;
+            width: 0.35rem;
+            height: 0.35rem;
+            transform: translate(-50%, -50%);
+        }
+        .palette-move-handle:hover,
+        .palette-move-handle:focus-visible,
+        .palette-resize-handle:hover,
+        .palette-resize-handle:focus-visible {
+            background: rgba(32, 95, 168, 0.2);
+            box-shadow: inset 0 0 0 1px rgba(32, 95, 168, 0.65);
+        }
+        .palette-move-handle:focus-visible,
+        .palette-resize-handle:focus-visible {
+            outline: 2px solid #205fa8;
+            outline-offset: 1px;
+        }
+
+        @media (orientation: portrait) {
+            body.conventional-steps-hidden:not(.settings-active) .app-container {
+                grid-template-rows: 0 0 minmax(0, 1fr);
+            }
+        }
+        @media (orientation: landscape) {
+            .app-container,
+            body.expression-builder-active .app-container,
+            body.authoring-session:not(.expression-builder-active) .app-container,
+            body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
+            body.expression-builder-active.builder-entry-mode .app-container {
+                grid-template-rows:
+                    var(--steps-two-row-height)
+                    var(--divider-size)
+                    minmax(0, 1fr);
+            }
+            .bottom-controls-panel,
+            body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
+            body.expression-builder-active .bottom-controls-panel {
+                position: fixed;
+                grid-column: auto;
+                grid-row: auto;
+            }
+        }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-10-11T15:45:16-04:00">10/11/26, 3:45 PM EDT</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T14:16:53-05:00">11/8/26, 2:16 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel">
             <div id="levelContent"></div>
         </div>
         <div id="topPanelResizeHandle" class="divider top-panel-resize-handle" role="separator" aria-label="Resize conventional steps panel" aria-orientation="horizontal" aria-valuemin="48" tabindex="0"></div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression controls">
+            <div class="palette-content">
             <div class="quadrant-tools">
             <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                 <button type="button" data-workspace-action="authoringFinishRecording" aria-label="All done" hidden>
@@ -4475,8 +4698,16 @@
                     <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 100 H500 M1 200 H599 M100 300 H500"/>
                 </svg>
             </div>
+            </div>
+            <div class="palette-move-handle palette-move-handle-top" data-palette-move="top" role="button" tabindex="0" aria-label="Move controls palette"></div>
+            <div class="palette-move-handle palette-move-handle-right" data-palette-move="right" role="button" tabindex="0" aria-label="Move controls palette"></div>
+            <div class="palette-move-handle palette-move-handle-bottom" data-palette-move="bottom" role="button" tabindex="0" aria-label="Move controls palette"></div>
+            <div class="palette-move-handle palette-move-handle-left" data-palette-move="left" role="button" tabindex="0" aria-label="Move controls palette"></div>
+            <div class="palette-resize-handle palette-resize-handle-nw" data-palette-resize="nw" role="button" tabindex="0" aria-label="Resize controls palette from top left"></div>
+            <div class="palette-resize-handle palette-resize-handle-ne" data-palette-resize="ne" role="button" tabindex="0" aria-label="Resize controls palette from top right"></div>
+            <div class="palette-resize-handle palette-resize-handle-se" data-palette-resize="se" role="button" tabindex="0" aria-label="Resize controls palette from bottom right"></div>
+            <div class="palette-resize-handle palette-resize-handle-sw" data-palette-resize="sw" role="button" tabindex="0" aria-label="Resize controls palette from bottom left"></div>
         </div>
-        <div id="bottomPanelResizeHandle" class="divider bottom-panel-resize-handle" role="separator" aria-label="Resize controls panel" aria-orientation="horizontal" aria-valuemin="96" tabindex="0"></div>
         <div class="main" id="mainArea">
             <div id="rightTopBar" class="right-top-bar">
                 <div class="right-top-row">
@@ -4547,7 +4778,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261009-selection-bars-fix"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-floating-palette"></script>
 
 </body>
 </html>
