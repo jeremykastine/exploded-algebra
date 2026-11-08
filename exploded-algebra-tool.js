@@ -1334,7 +1334,10 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
-        const authoringFinishRecordingButton = workspaceToolbar && workspaceToolbar.querySelector('[data-workspace-action="authoringFinishRecording"]');
+        const workspaceUtilityMenu = document.getElementById("workspaceUtilityMenu");
+        const workspaceUtilityMenuToggle = document.getElementById("workspaceUtilityMenuToggle");
+        const workspaceUtilityMenuItems = document.getElementById("workspaceUtilityMenuItems");
+        const authoringFinishRecordingButton = document.querySelector('[data-workspace-action="authoringFinishRecording"]');
         const settingsButton = document.getElementById("settingsButton");
         const settingsPanel = document.getElementById("settingsPanel");
         const mainActionPanel = document.getElementById("mainActionPanel");
@@ -1346,8 +1349,6 @@ Promise.resolve().then(() => {
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
-        const preSelectionControlsPanel = document.getElementById("preSelectionControlsPanel");
-        const preSelectionPaletteContent = preSelectionControlsPanel && preSelectionControlsPanel.querySelector(".palette-content");
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
@@ -1458,7 +1459,7 @@ Promise.resolve().then(() => {
                 return null;
             }
             const columns = 6;
-            const rows = 4;
+            const rows = 5;
             const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
             const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
             const handleAllowance = rootFontSize * (coarsePointer ? 1.5 : 1.05);
@@ -1485,7 +1486,6 @@ Promise.resolve().then(() => {
                 return;
             }
             const bottomSizing = applyResponsivePaletteSize(bottomControlsPanel, bottomPaletteContent);
-            applyResponsivePaletteSize(preSelectionControlsPanel, preSelectionPaletteContent);
             if (bottomSizing) {
                 appContainer.style.setProperty("--main-key-size", `${bottomSizing.effectiveSize}px`);
                 appContainer.style.setProperty("--main-icon-size", `${1.7 * bottomSizing.contentScale}rem`);
@@ -1791,6 +1791,7 @@ Promise.resolve().then(() => {
             if (!level || !expressionRoot) {
                 return null;
             }
+            const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
 
             const activeBuilder = uiState.mode === "edit" && uiState.stage === "builder"
                 ? uiState.expressionBuilder
@@ -1809,13 +1810,14 @@ Promise.resolve().then(() => {
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
                 return selectedKatex
                     ? { kind: "replace", selectedKatex, targetKatex: liveKatex || "\\square" }
-                    : { kind: "target", targetKatex: liveKatex || "\\square" };
+                    : { kind: "target", targetKatex: liveKatex || "\\square", currentKatex };
             }
 
             if (authoringSessionActive && authoringPhase === "recording") {
                 return {
                     kind: "target",
-                    targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
+                    targetKatex: currentKatex,
+                    currentKatex
                 };
             }
 
@@ -1831,7 +1833,7 @@ Promise.resolve().then(() => {
             const targetKatex = targetStep
                 ? targetStep.beforeKatex || targetStep.afterKatex || targetStep.katex || targetStep.expression
                 : level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(expressionRoot);
-            return { kind: "target", targetKatex: targetKatex || "\\square" };
+            return { kind: "target", targetKatex: targetKatex || "\\square", currentKatex };
         }
 
         function appendWorkspaceConventionalText(text) {
@@ -1859,6 +1861,8 @@ Promise.resolve().then(() => {
             const content = getWorkspaceConventionalLineContent();
             workspaceConventionalLine.replaceChildren();
             workspaceConventionalLine.hidden = !content;
+            workspaceConventionalLine.classList.toggle("replace-layout", !!content && content.kind === "replace");
+            workspaceConventionalLine.classList.toggle("target-layout", !!content && content.kind === "target");
             if (!content) {
                 return;
             }
@@ -1871,7 +1875,12 @@ Promise.resolve().then(() => {
             } else {
                 appendWorkspaceConventionalText("Target expression:");
                 appendWorkspaceConventionalMath(content.targetKatex);
-                workspaceConventionalLine.setAttribute("aria-label", "Target expression");
+                const spacer = document.createElement("span");
+                spacer.className = "workspace-conventional-spacer";
+                spacer.setAttribute("aria-hidden", "true");
+                workspaceConventionalLine.appendChild(spacer);
+                appendWorkspaceConventionalMath(content.currentKatex);
+                workspaceConventionalLine.setAttribute("aria-label", "Target expression followed by the current conventional expression");
             }
         }
 
@@ -2164,16 +2173,13 @@ Promise.resolve().then(() => {
             });
         }
 
-        const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2";
-        const PRESELECTION_PALETTE_STORAGE_KEY = "explodedAlgebraPreSelectionPaletteV1";
+        const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3";
         const CONVENTIONAL_PANEL_STORAGE_KEY = "explodedAlgebraConventionalPanelV1";
         let topPanelResizeState = null;
         let conventionalPanelPreference;
         let conventionalPanelDefaultHeight = null;
         let floatingPalettePreference;
         let floatingPaletteInteraction = null;
-        let preSelectionPalettePreference;
-        let preSelectionPaletteInteraction = null;
         let floatingPaletteSafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
 
         function getViewportHeight() {
@@ -2245,27 +2251,16 @@ Promise.resolve().then(() => {
             const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
             const handleAllowance = rootFontSize * (coarsePointer ? 1.5 : 1.05);
             const comfortableMinimumCellWidth = rootFontSize * 2.5;
-            const comfortableMinimumCellHeight = rootFontSize * 3;
+            const comfortableMinimumCellHeight = rootFontSize * 2.75;
             const maximumWidth = Math.max(1, bounds.right - bounds.left);
             const maximumHeight = Math.max(1, bounds.bottom - bounds.top);
             return {
                 minimumWidth: Math.min(maximumWidth, comfortableMinimumCellWidth * 6 + handleAllowance),
-                minimumHeight: Math.min(maximumHeight, comfortableMinimumCellHeight * 4 + handleAllowance),
+                minimumHeight: Math.min(maximumHeight, comfortableMinimumCellHeight * 5 + handleAllowance),
                 maximumWidth,
                 maximumHeight,
                 defaultWidth: Math.min(maximumWidth, rootFontSize * (coarsePointer ? 19.5 : 22)),
-                defaultHeight: Math.min(maximumHeight, rootFontSize * (coarsePointer ? 13 : 14.667))
-            };
-        }
-
-        function getPreSelectionPaletteLimits(bounds = getFloatingPaletteViewportBounds()) {
-            const limits = getFloatingPaletteLimits(bounds);
-            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-            const coarsePointer = typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
-            return {
-                ...limits,
-                defaultWidth: Math.min(limits.maximumWidth, rootFontSize * (coarsePointer ? 17.5 : 22)),
-                defaultHeight: Math.min(limits.maximumHeight, rootFontSize * (coarsePointer ? 13.5 : 14.667))
+                defaultHeight: Math.min(maximumHeight, rootFontSize * (coarsePointer ? 16.25 : 18.333))
             };
         }
 
@@ -2427,63 +2422,6 @@ Promise.resolve().then(() => {
             }, bounds);
         }
 
-        function setPreSelectionPaletteRect(rect, bounds = getFloatingPaletteViewportBounds()) {
-            if (!preSelectionControlsPanel) {
-                return;
-            }
-            const limits = getPreSelectionPaletteLimits(bounds);
-            const requestedWidth = Number(rect.width);
-            const requestedHeight = Number(rect.height);
-            const width = Math.max(limits.minimumWidth, Math.min(
-                Number.isFinite(requestedWidth) ? requestedWidth : limits.defaultWidth,
-                limits.maximumWidth
-            ));
-            const height = Math.max(limits.minimumHeight, Math.min(
-                Number.isFinite(requestedHeight) ? requestedHeight : limits.defaultHeight,
-                limits.maximumHeight
-            ));
-            preSelectionControlsPanel.style.left = `${bounds.right - width}px`;
-            preSelectionControlsPanel.style.top = `${bounds.top}px`;
-            preSelectionControlsPanel.style.right = "auto";
-            preSelectionControlsPanel.style.bottom = "auto";
-            preSelectionControlsPanel.style.width = `${width}px`;
-            preSelectionControlsPanel.style.height = `${height}px`;
-            applyResponsiveMainButtonSize();
-        }
-
-        function rememberPreSelectionPalettePreference() {
-            if (!preSelectionControlsPanel) {
-                return;
-            }
-            const rect = preSelectionControlsPanel.getBoundingClientRect();
-            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-            preSelectionPalettePreference = {
-                widthRem: rect.width / rootFontSize,
-                heightRem: rect.height / rootFontSize
-            };
-            saveSizePreference(PRESELECTION_PALETTE_STORAGE_KEY, preSelectionPalettePreference);
-        }
-
-        function layoutPreSelectionPalette() {
-            if (!preSelectionControlsPanel) {
-                return;
-            }
-            refreshFloatingPaletteSafeArea();
-            const bounds = getFloatingPaletteViewportBounds();
-            const limits = getPreSelectionPaletteLimits(bounds);
-            if (preSelectionPalettePreference === undefined) {
-                preSelectionPalettePreference = loadSizePreference(PRESELECTION_PALETTE_STORAGE_KEY);
-            }
-            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-            setPreSelectionPaletteRect({
-                width: preSelectionPalettePreference
-                    ? preSelectionPalettePreference.widthRem * rootFontSize
-                    : limits.defaultWidth,
-                height: preSelectionPalettePreference
-                    ? preSelectionPalettePreference.heightRem * rootFontSize
-                    : limits.defaultHeight
-            }, bounds);
-        }
 
         function renderProbeMath(probe) {
             probe.querySelectorAll(".katex-placeholder").forEach(node => {
@@ -2732,101 +2670,6 @@ Promise.resolve().then(() => {
                     getFloatingPaletteViewportBounds()
                 );
                 rememberFloatingPalettePreference();
-                event.preventDefault();
-            });
-        }
-
-        function resizePreSelectionPaletteFromPoint(clientX, clientY, startRect, bounds) {
-            const limits = getPreSelectionPaletteLimits(bounds);
-            const left = Math.max(bounds.left, Math.min(clientX, startRect.right - limits.minimumWidth));
-            const bottom = Math.min(bounds.bottom, Math.max(clientY, startRect.top + limits.minimumHeight));
-            setPreSelectionPaletteRect({
-                width: startRect.right - left,
-                height: bottom - startRect.top
-            }, bounds);
-        }
-
-        function installPreSelectionPaletteInteractions() {
-            if (!preSelectionControlsPanel) {
-                return;
-            }
-            const handle = preSelectionControlsPanel.querySelector('[data-preselection-resize="sw"]');
-            if (!handle) {
-                return;
-            }
-
-            const finishInteraction = event => {
-                if (!preSelectionPaletteInteraction || (event && event.pointerId !== undefined && event.pointerId !== preSelectionPaletteInteraction.pointerId)) {
-                    return;
-                }
-                preSelectionPaletteInteraction = null;
-                preSelectionControlsPanel.classList.remove("palette-resizing");
-                rememberPreSelectionPalettePreference();
-            };
-
-            handle.addEventListener("pointerdown", event => {
-                if (event.pointerType === "mouse" && event.button !== 0) {
-                    return;
-                }
-                const rect = preSelectionControlsPanel.getBoundingClientRect();
-                preSelectionPaletteInteraction = {
-                    pointerId: event.pointerId,
-                    startX: event.clientX,
-                    startY: event.clientY,
-                    startRect: {
-                        left: rect.left,
-                        top: rect.top,
-                        right: rect.right,
-                        bottom: rect.bottom,
-                        width: rect.width,
-                        height: rect.height
-                    },
-                    bounds: getFloatingPaletteViewportBounds()
-                };
-                preSelectionControlsPanel.classList.add("palette-resizing");
-                if (handle.setPointerCapture) {
-                    handle.setPointerCapture(event.pointerId);
-                }
-                event.preventDefault();
-            });
-
-            handle.addEventListener("pointermove", event => {
-                const interaction = preSelectionPaletteInteraction;
-                if (!interaction || interaction.pointerId !== event.pointerId) {
-                    return;
-                }
-                resizePreSelectionPaletteFromPoint(
-                    interaction.startRect.left + event.clientX - interaction.startX,
-                    interaction.startRect.bottom + event.clientY - interaction.startY,
-                    interaction.startRect,
-                    interaction.bounds
-                );
-                event.preventDefault();
-            });
-
-            handle.addEventListener("pointerup", finishInteraction);
-            handle.addEventListener("pointercancel", finishInteraction);
-            handle.addEventListener("lostpointercapture", finishInteraction);
-            handle.addEventListener("keydown", event => {
-                const offsets = {
-                    ArrowLeft: [-1, 0],
-                    ArrowRight: [1, 0],
-                    ArrowUp: [0, -1],
-                    ArrowDown: [0, 1]
-                };
-                if (!offsets[event.key]) {
-                    return;
-                }
-                const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-                const step = event.shiftKey ? rootFontSize : rootFontSize * 0.5;
-                const rect = preSelectionControlsPanel.getBoundingClientRect();
-                resizePreSelectionPaletteFromPoint(
-                    rect.left + offsets[event.key][0] * step,
-                    rect.bottom + offsets[event.key][1] * step,
-                    rect,
-                    getFloatingPaletteViewportBounds()
-                );
-                rememberPreSelectionPalettePreference();
                 event.preventDefault();
             });
         }
@@ -5053,10 +4896,21 @@ Promise.resolve().then(() => {
             notifyAuthoringHost("ready");
         }
 
+        function setWorkspaceUtilityMenuOpen(open) {
+            if (!workspaceUtilityMenuToggle || !workspaceUtilityMenuItems) {
+                return;
+            }
+            const shouldOpen = !!open;
+            workspaceUtilityMenuItems.classList.toggle("hidden", !shouldOpen);
+            workspaceUtilityMenuToggle.setAttribute("aria-expanded", String(shouldOpen));
+            workspaceUtilityMenuToggle.setAttribute("aria-label", shouldOpen ? "Close workspace menu" : "Open workspace menu");
+        }
+
         function openSettingsPanel() {
             if (!settingsPanel || !settingsButton) {
                 return;
             }
+            setWorkspaceUtilityMenuOpen(false);
             hideExerciseGuidance();
             hideToolOptionMenu();
             refreshQuickSettingButtons();
@@ -5077,8 +4931,8 @@ Promise.resolve().then(() => {
             settingsPanel.setAttribute("aria-hidden", "true");
             document.body.classList.remove("settings-active");
             scheduleResponsiveLayoutRecalculation();
-            if (settingsButton) {
-                settingsButton.focus();
+            if (workspaceUtilityMenuToggle) {
+                workspaceUtilityMenuToggle.focus();
             }
         }
 
@@ -5100,7 +4954,6 @@ Promise.resolve().then(() => {
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             layoutFloatingPalette();
-            layoutPreSelectionPalette();
             setStepsTextSizePreference(loadSavedStepsTextSizePreference());
             updatePanelResizeHandleOrientation();
             setOperationBarStyle(getSavedOperationBarStyle(SETTINGS.operationBarStyle || SETTINGS.sumBeamStyle));
@@ -5180,6 +5033,45 @@ Promise.resolve().then(() => {
                     setWorkspaceMode(mode);
                 });
             }
+            if (workspaceUtilityMenu) {
+                workspaceUtilityMenu.addEventListener("click", event => {
+                    if (event.target.closest("#workspaceUtilityMenuToggle")) {
+                        const open = workspaceUtilityMenuToggle.getAttribute("aria-expanded") !== "true";
+                        setWorkspaceUtilityMenuOpen(open);
+                        if (open) {
+                            const firstItem = workspaceUtilityMenuItems.querySelector('button:not([hidden]):not([disabled])');
+                            if (firstItem) firstItem.focus();
+                        }
+                        event.stopPropagation();
+                        return;
+                    }
+                    const button = event.target.closest("button[data-workspace-action]");
+                    if (!button || button.disabled) {
+                        return;
+                    }
+                    setWorkspaceUtilityMenuOpen(false);
+                    if (button.dataset.workspaceAction === "openSettings") {
+                        openSettingsPanel();
+                    } else if (button.dataset.workspaceAction === "showExerciseGuidance") {
+                        showExerciseGuidance();
+                    } else if (button.dataset.workspaceAction === "authoringFinishRecording") {
+                        notifyAuthoringHost("finish-recording");
+                    }
+                    event.stopPropagation();
+                });
+                document.addEventListener("click", event => {
+                    if (!workspaceUtilityMenu.contains(event.target)) {
+                        setWorkspaceUtilityMenuOpen(false);
+                    }
+                });
+                document.addEventListener("keydown", event => {
+                    if (event.key === "Escape" && workspaceUtilityMenuToggle.getAttribute("aria-expanded") === "true") {
+                        setWorkspaceUtilityMenuOpen(false);
+                        workspaceUtilityMenuToggle.focus();
+                        event.preventDefault();
+                    }
+                });
+            }
             if (settingsPanel) {
                 settingsPanel.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -5213,7 +5105,6 @@ Promise.resolve().then(() => {
             }, true);
             installTopPanelResizing();
             installFloatingPaletteInteractions();
-            installPreSelectionPaletteInteractions();
             if (toolOptionMenu) {
                 toolOptionMenu.addEventListener("click", event => {
                     const button = event.target.closest("button[data-tool-option]");
@@ -5963,7 +5854,6 @@ ctx.font = SETTINGS.textFont;
                 updatePanelResizeHandleOrientation();
                 layoutConventionalPanel();
                 layoutFloatingPalette();
-                layoutPreSelectionPalette();
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
                     drawExpression();

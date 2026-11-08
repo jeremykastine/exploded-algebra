@@ -69,8 +69,8 @@ assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes
 assert(!builderHtml.includes('id="exerciseInstruction"') && !builderHtml.includes('id="completionMessage"'), "Phase 1 must omit opening-instruction and completion-message fields");
 assert(!builderHtml.includes("Advanced tool permissions") && !builderHtml.includes('id="toolPermissionList"'), "Phase 1 must omit advanced tool permissions");
 assert(!builderHtml.includes('id="finishRecordingButton"') && !builderCss.includes(".record-step-button"), "Phase 3 must not use a detached checkpoint overlay");
-assert(playerHtml.includes('data-workspace-action="authoringFinishRecording"') && playerHtml.indexOf('data-workspace-action="authoringFinishRecording"') < playerHtml.indexOf('class="workspace-tool-group workspace-selection-group"'), "All Done must be the first control in the Phase 3 preselection toolbar");
-assert(playerHtml.includes('body.authoring-recording-session .workspace-toolbar [data-workspace-action="authoringFinishRecording"] { grid-column: 4 / span 3; grid-row: 4; }'), "All Done must occupy the lower-right three cells during recording");
+assert(playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('data-workspace-action="authoringFinishRecording"'), "All Done must remain available from the Phase 3 workspace menu");
+assert(playerJs.includes('authoringFinishRecordingButton.hidden = !visible'), "The authoring host must control All Done visibility in the workspace menu");
 for (const selector of [
   '[data-workspace-action="zoomIn"]',
   '[data-workspace-action="zoomOut"]',

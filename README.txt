@@ -33,11 +33,12 @@ Preserve showConventionalSteps: false, includeUndoActions: false, and the comple
 all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
 use mode=guided; the completion controls offer an Unguided repeat afterward.
 
-Conventional notation appears as one unboxed line immediately above the exploded
-expression. It says `Target expression:` followed by the next incomplete step's
-KaTeX, or `Replace [selection] with [live expression]` during replacement entry.
-The line uses the exploded numbers' font size and shares the expression's pan and
-application-zoom transform. `initialKatex` remains the conventional form of the
+Conventional notation appears as an unboxed stack immediately above the exploded
+expression. It shows `Target expression:` on its own line, the next incomplete
+step's KaTeX on the next line, a blank line, and then the current conventional
+expression. Replacement entry instead shows `Replace [selection] with [live
+expression]`. The stack uses the exploded numbers' font size and shares the
+expression's pan and application-zoom transform. `initialKatex` remains the conventional form of the
 starting expression in the level data.
 The pre-selection Exercise Guidance view includes the problem statement and the
 exercise's numerical-manipulation restrictions. New Problem Builder exports
@@ -62,19 +63,20 @@ Older files remain compatible: `introduction` falls back to `instruction` in the
 problem-statement portion of Exercise Guidance. Legacy per-step guidance fields
 remain loadable but are no longer displayed.
 
-The conventional target line and exploded expression form one group anchored at
-the upper-left by default; the Pan tool moves them together. Idle workspace
-controls use a six-column by four-row palette anchored at the upper-right and
-resizable from its lower-left corner. Contextual action choices and Expression
-Builder use a separate palette anchored at the lower-right and resizable from
-its upper-left corner. Before a selection, the lower palette shows the full
+The conventional notation stack and exploded expression form one group anchored
+at the upper-left by default; the Pan tool moves them together. A single
+six-column by five-row palette is anchored at the lower-right and resizes from
+its upper-left corner. Its permanent top row contains Zoom In, Zoom Out, Reset
+View, Pan, Select, and Undo. The lower four rows contain contextual actions or
+the Expression Builder. Before a selection, those action rows show the full
 action layout in a quiet, inactive state so learners can see what becomes
-available after selecting. Both palettes stay fully inside the visible viewport
-and independently remember the user's chosen size. They keep the button arrangement fixed
+available after selecting. A hamburger menu anchored at the upper-right contains
+Settings and Exercise Guidance. The palette stays fully inside the visible viewport
+and remembers the user's chosen size. It keeps the button arrangement fixed
 while labels and icons scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
-empty-workspace clicks. The target line is always a single non-wrapping line;
-long targets remain reachable by panning the shared workspace.
+empty-workspace clicks. Each notation row stays non-wrapping, and long expressions remain reachable by
+panning the shared workspace.
 The settings screen replaces the exploded-expression workspace while open.
 Four independent operation controls determine the appearance of sums and
 products. Bar Shape
@@ -235,8 +237,8 @@ their pre- and post-completion notation. Phase 5 provides one field prefilled wi
 the problem statement and numerical restrictions, with View and Edit modes for
 reviewing or changing the complete student-facing guidance. Phase 1 retains the
 legacy choice for exporting `showConventionalSteps` and may skip Phase 4, but the
-player always shows the single live target line rather than a conventional
-step-history panel. Recorded actions remain available for Guided mode.
+player always shows the live target-and-current notation stack rather than a
+conventional step-history panel. Recorded actions remain available for Guided mode.
 All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
