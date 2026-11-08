@@ -98,7 +98,7 @@ than in the action or expression-builder panels.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. Initial expression entry and zero-product insertion
-use the existing entry canvas and original-expression Peek control.
+use the shared expression entry canvas.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.
 Opening a replacement editor preserves the expression's footprint. An empty or
@@ -134,16 +134,15 @@ unchanged.
 Addition and multiplication are always entered explicitly. Their first press
 places the pending operation at its lowest available level; repeated presses of
 that same button, before the next value is entered, cycle it through the higher
-levels and back to the lowest. The former Move Up button's grid cell remains
-blank. Values, x, negative one, and inverses never insert an operation
-implicitly.
-The rightmost Builder column contains a double-height multiplication button
-above a double-height addition button. The three-column number pad sits
-immediately to its left, with negative one, zero, and Inverse across its bottom
-row. The next column to the left contains x, Backspace, and a double-height
-Submit button; the leftmost column retains Peek and the view controls. Level
-cycling flattens a lifted sum into an immediately surrounding sum, and likewise
-for products, while retaining meaningful grouping across unlike operations.
+levels and back to the lowest. Values, x, negative one, and inverses never
+insert an operation implicitly.
+Multiplication and Addition each occupy a two-by-two button on the left.
+The number pad sits in the middle, with negative one, zero, and Inverse
+across its bottom row. Variable x and Submit occupy two rows each on the
+right. The top workspace row provides the view controls and Undo, which
+acts as Backspace during entry. Level cycling flattens a lifted sum into an
+immediately surrounding sum, and likewise for products, while retaining
+meaningful grouping across unlike operations.
 
 Each exercise specifies Numerical Rewrite permissions with this structure:
 

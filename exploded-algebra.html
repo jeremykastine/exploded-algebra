@@ -2614,9 +2614,9 @@
 
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
-        .builder-keypad-panel .builder-variable-button { grid-column: 2; grid-row: 1; }
-        .builder-keypad-panel .builder-prod-button { grid-column: 6; grid-row: 1 / span 2; }
-        .builder-keypad-panel .builder-sum-button { grid-column: 6; grid-row: 3 / span 2; }
+        .builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 1 / span 2; grid-row: 3 / span 2; }
 
         .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 1; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 4; grid-row: 1; }
@@ -2631,63 +2631,10 @@
 
         .builder-keypad-panel .builder-negative-one-button { grid-column: 3; grid-row: 4; }
         .builder-keypad-panel .builder-inv-button { grid-column: 5; grid-row: 4; }
-        .builder-keypad-panel .builder-undo-button { grid-column: 1; grid-row: 1; }
-        .builder-keypad-panel .builder-action-row button.builder-submit-button {
-            grid-column: 1;
+        .builder-keypad-panel .builder-action-row button.builder-submit-button,
+        .builder-keypad-panel .builder-action-row button.builder-next-submit-button {
+            grid-column: 6;
             grid-row: 3 / span 2;
-            writing-mode: horizontal-tb;
-        }
-        .builder-keypad-panel .builder-action-row button.builder-review-button {
-            grid-column: 1;
-            grid-row: 2;
-        }
-        .builder-keypad-panel .builder-zoom-in-button { grid-column: 2; grid-row: 2; }
-        .builder-keypad-panel .builder-zoom-out-button { grid-column: 2; grid-row: 3; }
-        .builder-keypad-panel .builder-reset-view-button { grid-column: 2; grid-row: 4; }
-        .builder-keypad-panel .builder-view-button svg {
-            display: block;
-            width: 72%;
-            height: 72%;
-            margin: auto;
-            pointer-events: none;
-        }
-        .builder-review-button svg {
-            display: block;
-            width: 82%;
-            height: 82%;
-            margin: auto;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.8;
-        }
-
-        body.builder-review-active .builder-keypad-panel {
-            opacity: 0;
-            pointer-events: none;
-        }
-        .builder-peek-dismiss-layer {
-            position: fixed;
-            z-index: 190;
-            inset: 0;
-            display: none;
-            width: 100%;
-            height: 100%;
-            padding: 0;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            cursor: pointer;
-        }
-        body.builder-review-active .builder-peek-dismiss-layer {
-            display: block;
-        }
-
-        .builder-keypad-panel .builder-undo-button svg {
-            display: block;
-            width: min(30px, 70%);
-            height: min(30px, 70%);
-            margin: auto;
-            pointer-events: none;
         }
 
         .builder-keypad-panel .builder-instruction { display: none; }
@@ -3387,12 +3334,6 @@
             height: var(--builder-keypad-height);
             min-height: 0;
         }
-        .builder-keypad-panel .builder-review-button:disabled {
-            border-color: #d0d0d0;
-            background: #f5f5f5;
-            color: #aaa;
-            opacity: .65;
-        }
         .builder-keypad-panel button,
         .builder-keypad-panel .panel-tool-menu button,
         .builder-keypad-panel .builder-action-row button {
@@ -3793,23 +3734,31 @@
             font-weight: 800;
         }
         .builder-keypad-panel [data-builder-action="digit"],
-        .builder-keypad-panel .builder-plain-operator-button {
+        .builder-keypad-panel .builder-key-symbol {
             font-size: clamp(20px, calc(var(--main-key-size) * 0.48), 30px) !important;
             font-weight: 800;
             font-family: inherit;
             line-height: 1;
         }
+        .builder-keypad-panel .builder-labeled-key {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2em;
+        }
+        .builder-keypad-panel .builder-key-label {
+            font-size: 0.85em;
+            line-height: 1.15;
+            white-space: nowrap;
+        }
+        .builder-variable-button .builder-key-label { font-size: 0.62em; }
         .builder-keypad-panel .builder-symbol-icon {
             width: 78%;
             height: 78%;
             max-width: 78%;
             max-height: 78%;
         }
-        .builder-keypad-panel .builder-undo-button svg {
-            width: 72%;
-            height: 72%;
-        }
-        .builder-keypad-panel .builder-undo-button svg path { stroke-width: 2.5; }
         .main-action-panel .intent-category-commute-icon {
             font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", sans-serif;
             font-size: clamp(24px, calc(var(--main-key-size) * 0.68), 38px);
@@ -3939,27 +3888,9 @@
         body.settings-active .bottom-controls-panel,
         body.settings-active .bottom-panel-resize-handle,
         body.exercise-guidance-active .bottom-controls-panel,
-        body.exercise-guidance-active .bottom-panel-resize-handle,
-        body.builder-review-active .bottom-controls-panel,
-        body.builder-review-active .bottom-panel-resize-handle,
-        body.expression-builder-active.builder-entry-mode.builder-review-active .bottom-panel-resize-handle {
+        body.exercise-guidance-active .bottom-panel-resize-handle {
             display: none !important;
         }
-        /* Expression Builder always retains the live conventional panel.
-           During Peek, the controls row is removed but panel one remains above
-           the expression workspace for students and authors alike. */
-        @media (orientation: portrait) {
-            body.expression-builder-active.builder-review-active .app-container{
-                grid-template-rows:
-                    min(var(--top-panel-height), 25dvh)
-                    var(--divider-size)
-                    minmax(0, 1fr);
-            }
-            body.expression-builder-active.builder-review-active .main{
-                grid-row: 3;
-            }
-        }
-
         /* The permanent workspace row and every lower-panel state share the
            same six columns. */
         .quadrant-tools,
@@ -4329,13 +4260,6 @@
                 min-height: 0;
             }
 
-            body.expression-builder-active.builder-review-active .app-container{
-                grid-template-rows: minmax(0, 1fr);
-            }
-            body.expression-builder-active.builder-review-active .left-panel{
-                grid-row: 1;
-            }
-
             body.settings-active .app-container{
                 grid-template-columns: minmax(0, 1fr);
                 grid-template-rows: minmax(0, 1fr);
@@ -4346,8 +4270,7 @@
             }
             body.settings-active .top-panel-resize-handle,
             body.settings-active .bottom-panel-resize-handle,
-            body.exercise-guidance-active .bottom-panel-resize-handle,
-            body.builder-review-active .bottom-panel-resize-handle {
+            body.exercise-guidance-active .bottom-panel-resize-handle {
                 display: none !important;
             }
         }
@@ -4634,8 +4557,7 @@
         .workspace-utility-menu-items button:focus-visible { background: #e8f1ff; }
         body.authoring-session .workspace-utility-menu-items [data-workspace-action="showExerciseGuidance"] { display: none; }
         body.settings-active .workspace-utility-menu,
-        body.exercise-guidance-active .workspace-utility-menu,
-        body.builder-review-active .workspace-utility-menu { display: none !important; }
+        body.exercise-guidance-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
             position: absolute;
             z-index: 20;
@@ -4680,7 +4602,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T16:57:29-05:00">11/8/26, 4:57 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T18:50:16-05:00">11/8/26, 6:50 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4751,7 +4673,7 @@
                 </div>
                 <div id="builderCommandPanel" class="builder-command-panel"></div>
                 <svg class="controls-grid-overlay builder-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M1 100 H500 M1 200 H599 M100 300 H500"/>
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M200 100 H500 M1 200 H599 M200 300 H500"/>
                 </svg>
             </div>
             </div>
@@ -4777,7 +4699,6 @@
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
-            <button id="builderPeekDismissLayer" class="builder-peek-dismiss-layer" type="button" aria-label="Close expression peek" aria-hidden="true"></button>
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
             <div id="guidancePopover" class="exercise-guidance-popover hidden" role="region" aria-label="Exercise guidance" aria-live="polite"></div>
         </div>
@@ -4826,7 +4747,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261108-target-only-stack"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-builder-keypad"></script>
 
 </body>
 </html>

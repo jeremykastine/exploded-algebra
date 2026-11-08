@@ -26,7 +26,7 @@ class SvgElement {
 }
 const context = vm.createContext({
     window: {}, document: { createElementNS: (_, name) => new SvgElement(name) },
-    builderReviewActive: false, uiState: {},
+    uiState: {},
 });
 vm.runInContext(fs.readFileSync(path.join(root, "exploded-algebra-renderer.js"), "utf8"), context);
 function loadFunction(name) {
@@ -265,10 +265,6 @@ assert(context.inContext(builder));
 for (const tool of ["authorInitial", "insertZeroProduct"]) {
     assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");
 }
-context.builderReviewActive = true;
-assert.equal(context.inContext(builder), false);
-assert.equal(context.displayRoot(builder), mainRoot, "Peek must show the original expression without the temporary rewrite area");
-context.builderReviewActive = false;
 
 // Both generated pairs use the same selected-site overlay. Nothing new is
 // visible and no sibling moves before entry; after entry both copies update.
@@ -322,9 +318,6 @@ for (const [tool, originalValue] of [["replaceOneWithInverseProduct", "1"], ["ca
     const undone = render(pairBuilder);
     assert.equal(undone.display.layout.width, initial.display.layout.width, "Undoing all entry must restore the original layout");
     assert.equal(undone.preview.rewriteOriginalOpacity, 0.28);
-    context.builderReviewActive = true;
-    assert.equal(context.displayRoot(pairBuilder), expression, "Peek must show the original whole expression for pair rules too");
-    context.builderReviewActive = false;
 }
 
 // Every drawing path shares a foreground blue layer, including ordinary

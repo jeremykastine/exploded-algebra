@@ -1327,7 +1327,6 @@ Promise.resolve().then(() => {
         const floatingToolMenu = document.getElementById("floatingToolMenu");
         const builderRewritePreview = document.getElementById("builderRewritePreview");
         const builderKeypadPanel = document.getElementById("builderKeypadPanel");
-        const builderPeekDismissLayer = document.getElementById("builderPeekDismissLayer");
         const builderCommandPanel = document.getElementById("builderCommandPanel");
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
@@ -4995,8 +4994,8 @@ Promise.resolve().then(() => {
                     }
                     if (button.dataset.workspaceAction === "undoExpression") {
                         const builder = uiState.expressionBuilder;
-                        if (isIntegratedExpressionBuilder(builder)) {
-                            undoExpressionBuilderStep();
+                        if (uiState.stage === "builder" && builder) {
+                            performBuilderAction(isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace");
                         } else {
                             undoExpressionStep();
                         }
@@ -5188,40 +5187,6 @@ Promise.resolve().then(() => {
                     performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
                 });
             }
-            if (builderCommandPanel) {
-                builderCommandPanel.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-builder-view-action]");
-                    if (!button || button.disabled) {
-                        return;
-                    }
-                    const action = button.dataset.builderViewAction;
-                    if (action === "zoomIn") {
-                        zoomWorkspaceIn();
-                    } else if (action === "zoomOut") {
-                        zoomWorkspaceOut();
-                    } else if (action === "resetZoom") {
-                        resetWorkspaceZoom();
-                    }
-                    renderToolArea();
-                });
-                builderCommandPanel.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-builder-review]");
-                    if (!button || button.disabled) {
-                        return;
-                    }
-                    event.preventDefault();
-                    event.stopPropagation();
-                    showBuilderOriginalReview();
-                });
-            }
-            if (builderPeekDismissLayer) {
-                builderPeekDismissLayer.addEventListener("click", event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    hideBuilderOriginalReview();
-                });
-            }
-            window.addEventListener("blur", hideBuilderOriginalReview);
             updateWorkspaceToolbar();
             if (authoringSessionActive) {
                 showNoLevelSelectedState("Preparing the Problem Builder workspace…");
@@ -5351,7 +5316,6 @@ ctx.font = SETTINGS.textFont;
 
         let activeWorkspacePointerId = null;
         let workspacePointerStart = null;
-        let builderReviewActive = false;
         const selection = {
             status: "no",
             node: null,
@@ -5632,12 +5596,14 @@ ctx.font = SETTINGS.textFont;
                 button.setAttribute("aria-pressed", String(active));
             });
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
+            const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
+            const builderUndoAction = isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace";
             if (undoExpressionButton) {
-                const builder = uiState.expressionBuilder;
-                const builderUndoAvailable = isIntegratedExpressionBuilder(builder) && builder.history.length > 0;
-                undoExpressionButton.disabled = builderUndoAvailable
-                    ? false
+                undoExpressionButton.disabled = builder
+                    ? !isDemoBuilderActionAllowed(builderUndoAction)
                     : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
+                undoExpressionButton.setAttribute("aria-label", builder ? "Undo builder entry" : "Undo previous expression step");
+                undoExpressionButton.setAttribute("aria-keyshortcuts", builder ? "Backspace Delete" : "Control+Z Meta+Z");
             }
             workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
                 button.classList.remove("demo-target-button", "demo-blocked-button");
@@ -5645,8 +5611,9 @@ ctx.font = SETTINGS.textFont;
             if (isDemoModeActive()) {
                 const step = getCurrentDemoStep();
                 if (undoExpressionButton) {
-                    undoExpressionButton.classList.toggle("demo-target-button", !!step && step.type === "undo");
-                    undoExpressionButton.classList.toggle("demo-blocked-button", !step || step.type !== "undo");
+                    const undoIsNext = builder ? isDemoBuilderActionAllowed(builderUndoAction) : step?.type === "undo";
+                    undoExpressionButton.classList.toggle("demo-target-button", undoIsNext);
+                    undoExpressionButton.classList.toggle("demo-blocked-button", !undoIsNext);
                 }
             }
         }
@@ -6292,9 +6259,6 @@ ctx.font = SETTINGS.textFont;
         }
 
         function getExplodedBuilderDisplayRoot(builder = uiState.expressionBuilder) {
-            if (builderReviewActive && builder && builder.mainRoot && isInContextReplacementTool(builder.tool)) {
-                return builder.mainRoot;
-            }
             if (isInContextReplacementBuilder(builder)) {
                 return makeReplacementBuilderDisplayRoot(builder);
             }
@@ -6309,7 +6273,7 @@ ctx.font = SETTINGS.textFont;
 
         function isInContextReplacementBuilder(builder = uiState.expressionBuilder) {
             return !!builder && !!builder.mainRoot && !!builder.originalSelection &&
-                isInContextReplacementTool(builder.tool) && !builderReviewActive;
+                isInContextReplacementTool(builder.tool);
         }
 
         function isInContextReplacementTool(toolName) {
@@ -6423,12 +6387,7 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (uiState.expressionBuilder && uiState.stage === "builder") {
-                if (builderReviewActive) {
-                    hideBuilderRewritePreview();
-                    if (selection.node) {
-                        drawBasicSelectionHighlight(selection.node, selection.firstPart, selection.lastPart);
-                    }
-                } else if (integratedBuilder || contextualBuilder) {
+                if (integratedBuilder || contextualBuilder) {
                     hideBuilderRewritePreview();
                 } else {
                     drawExpressionBuilderContext();
@@ -11162,14 +11121,6 @@ ctx.font = SETTINGS.textFont;
 
         function cancelExpressionBuilder() {
             const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
-            builderReviewActive = false;
-            document.body.classList.remove("builder-review-active");
-            if (builderPeekDismissLayer) {
-                if (document.activeElement === builderPeekDismissLayer) {
-                    builderPeekDismissLayer.blur();
-                }
-                builderPeekDismissLayer.setAttribute("aria-hidden", "true");
-            }
             if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
                 expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
@@ -11179,47 +11130,6 @@ ctx.font = SETTINGS.textFont;
             if (cancelledInitialAuthoring) {
                 notifyAuthoringHost("state-change");
             }
-        }
-
-        function showBuilderOriginalReview() {
-            const builder = uiState.expressionBuilder;
-            if (!isIntegratedExpressionBuilder(builder) || !builder.mainRoot || builderReviewActive) {
-                return false;
-            }
-            builderReviewActive = true;
-            expressionRoot = builder.mainRoot;
-            if (builder.originalSelection) {
-                selection.status = "yes";
-                selection.node = builder.originalSelection.node;
-                selection.firstPart = builder.originalSelection.firstPart;
-                selection.lastPart = builder.originalSelection.lastPart;
-            }
-            document.body.classList.add("builder-review-active");
-            if (builderPeekDismissLayer) {
-                builderPeekDismissLayer.setAttribute("aria-hidden", "false");
-                builderPeekDismissLayer.focus({ preventScroll: true });
-            }
-            drawExpression();
-            return true;
-        }
-
-        function hideBuilderOriginalReview() {
-            if (!builderReviewActive) return false;
-            const builder = uiState.expressionBuilder;
-            builderReviewActive = false;
-            document.body.classList.remove("builder-review-active");
-            if (builderPeekDismissLayer) {
-                if (document.activeElement === builderPeekDismissLayer) {
-                    builderPeekDismissLayer.blur();
-                }
-                builderPeekDismissLayer.setAttribute("aria-hidden", "true");
-            }
-            if (isIntegratedExpressionBuilder(builder)) {
-                expressionRoot = builder.root;
-            }
-            clearSelection();
-            refreshExpressionBuilderPreview();
-            return true;
         }
 
         function replaceBuilderCurrentNode(replacement, autoAdvance = false) {
@@ -12414,7 +12324,7 @@ ctx.font = SETTINGS.textFont;
             }
             const disabled = !builderAllowsVariables(uiState.activeTool);
             const availability = disabled ? " unavailable in this expression" : "";
-            builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button" data-builder-action="value" data-value="x" aria-label="Insert x${availability}" title="${disabled ? "x is unavailable in this expression" : "Keyboard shortcut: x"}"${disabled ? " disabled" : ""}>${getBuilderSymbolIcon("value", "x")}</button>`;
+            builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button builder-labeled-key" data-builder-action="value" data-value="x" aria-label="Insert x${availability}" title="${disabled ? "x is unavailable in this expression" : "Keyboard shortcut: x"}"${disabled ? " disabled" : ""}><span class="builder-key-label">Variable</span><i class="builder-key-symbol">x</i></button>`;
         }
 
         function buildExpressionBuilderHtml() {
@@ -12437,25 +12347,18 @@ ctx.font = SETTINGS.textFont;
                     const title = cyclesLevel
                         ? `Press again to cycle the most recent ${operationName} through its available levels. Keyboard shortcut: ${shortcut}`
                         : `Keyboard shortcut: ${shortcut}`;
-                    return `<button class="builder-operator-button builder-${type}-button builder-plain-operator-button" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}>${glyph}</button>`;
+                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Addition" : "Multiplication"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
                 };
                 const inverseDisabled = !operationTypes.includes("inv");
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
-                const undoAtEmptyBuilder = expressionBuilderIsEmpty(builder);
-                const reviewDisabled = builder.tool === "authorInitial";
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        <button type="button" class="builder-review-button" data-builder-review aria-label="${reviewDisabled ? "Take a peek is unavailable while building the starting expression" : "Take a peek at the original expression"}" title="${reviewDisabled ? "No previous expression to peek at" : "Take a peek at the original expression"}"${reviewDisabled ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3.2"/></svg></button>
                         <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Submit</button>
-                        <button class="builder-undo-button" data-builder-action="undo" aria-label="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo"}" title="${undoAtEmptyBuilder ? "Cancel Expression Builder" : "Undo. Keyboard shortcut: Backspace or Delete"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
-                        <button type="button" class="builder-view-button builder-zoom-in-button" data-builder-view-action="zoomIn" aria-label="Zoom in" title="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                        <button type="button" class="builder-view-button builder-zoom-out-button" data-builder-view-action="zoomOut" aria-label="Zoom out" title="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                        <button type="button" class="builder-view-button builder-reset-view-button" data-builder-view-action="resetZoom" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg></button>
                     </div></div>
                 </div>`;
             }
@@ -12468,9 +12371,11 @@ ctx.font = SETTINGS.textFont;
                 const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
                 const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
                 const plainGlyph = type === "sum" ? "+" : type === "prod" ? "·" : "";
-                const content = plainGlyph || getBuilderSymbolIcon(type);
-                const plainClass = plainGlyph ? " builder-plain-operator-button" : "";
-                return `<button class="builder-operator-button builder-${type}-button${plainClass}" aria-label="${operationNames[type]}"${actionAttrs}${title}>${content}</button>`;
+                const content = plainGlyph
+                    ? `<span class="builder-key-label">${type === "sum" ? "Addition" : "Multiplication"}</span><span class="builder-key-symbol">${plainGlyph}</span>`
+                    : getBuilderSymbolIcon(type);
+                const keyClass = plainGlyph ? " builder-labeled-key" : "";
+                return `<button class="builder-operator-button builder-${type}-button${keyClass}" aria-label="${operationNames[type]}"${actionAttrs}${title}>${content}</button>`;
             };
             const negativeOneButton = builderAllowsNegativeOne(toolName)
                 ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`
@@ -12487,7 +12392,6 @@ ctx.font = SETTINGS.textFont;
                 <div class="builder-controls">
                     <div class="builder-action-row" aria-label="Expression builder actions">
                         ${nextOrSubmitButton}
-                        <button class="builder-undo-button" data-builder-action="undoBackspace" aria-label="Backspace" title="Keyboard shortcut: Backspace or Delete"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m12 9 6 6m0-6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
                         ${negativeOneButton}
                         ${buildOperationButton("sum")}
                         ${buildOperationButton("prod")}
@@ -13042,7 +12946,9 @@ ctx.font = SETTINGS.textFont;
                 cancelExpressionBuilder();
                 return true;
             }
-            const matchingButton = panel.querySelector(selector);
+            const matchingButton = action === "undo" || action === "undoBackspace"
+                ? workspaceToolbar?.querySelector('button[data-workspace-action="undoExpression"]')
+                : panel.querySelector(selector);
             if (!matchingButton || matchingButton.disabled) {
                 return false;
             }
@@ -13291,13 +13197,6 @@ function renderToolArea() {
                         !selection.node && !builderActive
                 });
             }
-            if (!builderActive && builderReviewActive) {
-                builderReviewActive = false;
-                document.body.classList.remove("builder-review-active");
-                if (builderPeekDismissLayer) {
-                    builderPeekDismissLayer.setAttribute("aria-hidden", "true");
-                }
-            }
             if (builderActive) {
                 // Save the main view before the builder layout changes the page.
                 syncBuilderWorkspaceView(true);
@@ -13330,6 +13229,7 @@ function renderToolArea() {
                 mainActionPanel.classList.add("hidden");
             }
             renderBuilderVariableRail(builderActive);
+            updateWorkspaceToolbar();
             requestAnimationFrame(updateSidePanelColumns);
 
             const exerciseFinished = isExerciseFinished();
