@@ -60,7 +60,7 @@ function verifyPanelTiming() {
         isLandscapePanelLayout: () => false,
         isStudentPortraitPanelLayout: () => true,
         getMaximumTopPanelHeight: () => 200,
-        setTopPanelHeight(height) { log.push([frame, "height", height]); },
+        layoutConventionalPanel(height) { log.push([frame, "height", height]); },
         updateStepPanelScrollSpace() { log.push([frame, "space"]); },
         getStepPanelScrollTarget: () => 120,
         applyResponsiveMainButtonSize() { log.push([frame, "buttons"]); },

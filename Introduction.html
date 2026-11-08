@@ -133,7 +133,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-11-08T14:16:53-05:00">11/8/26, 2:16 PM EST</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-11-08T16:00:00-05:00">11/8/26, 4:00 PM EST</time></p>
 
 <div class="section-title">Conventional notation</div>
 
@@ -290,6 +290,7 @@ body.player-ready>#exploded-examples{display:none;}
     const value = text => ({ type: "value", value: String(text) });
     const sum = (...args) => ({ type: "sum", args });
     const product = (...args) => ({ type: "prod", args });
+    const inverse = argument => ({ type: "inv", args: [argument] });
 
     const shadeNode = (path, color, hullGroup) => ({ kind: "node", path, color, convexHull: true, hullGroup });
     const shadeSeparator = (path, index, color) => ({ kind: "separator", path, index, color, convexHull: true });
@@ -1366,23 +1367,69 @@ body.player-ready>#exploded-examples{display:none;}
         return section;
     }
 
-    addOutlineSection("Negatives and the negative unit", [
-        "Introduce the negative unit, −1, as a factor that changes the sign of the expression it multiplies.",
-        "Show negative numbers and expressions as products with the negative unit, and subtraction as addition of such a product.",
-        "Add numerical and variable examples showing how the negative unit distributes across a sum and how two negative units multiply to 1."
-    ], "negative-unit");
+    const negativeSection = addSection("Negatives and the negative unit", [
+        "A negative sign can be understood as multiplication by the negative unit, −1. Multiplying a quantity by −1 changes its sign while preserving its size: 5 becomes −5, and x becomes −x. This interpretation makes a negative sign an algebraic operation rather than a decoration attached to a symbol.",
+        "In exploded notation, −1 appears as an ordinary factor. The horizontal product row makes its relationship to the rest of the expression explicit. A negative number such as −5 is the product (−1)·5, and the expression −x is the product (−1)·x."
+    ], phrasePair(
+        phraseCard("Negative five is negative one times five.", product(value(-1), value(5)), "The factor −1 changes the sign of 5, producing −5."),
+        phraseCard("Negative x is negative one times x.", product(value(-1), value("x")), "The factor −1 changes the sign of whatever value x has.")
+    ), "negative-unit");
+    appendParagraph(negativeSection, "Subtraction can then be read as addition of a negative quantity. The expression x−3 means x+(−1)·3. This does not change the calculation; it expresses subtraction using the two operations already visible in exploded notation—addition and multiplication.");
+    negativeSection.appendChild(phrasePair(
+        conventionalCard("Conventional subtraction", "x − 3", "Subtract 3 from x."),
+        phraseCard("Add x to negative one times three.", sum(value("x"), product(value(-1), value(3))), "The second term is −3, so the sum is x−3.")
+    ));
+    appendParagraph(negativeSection, "Because −1 is a factor, the distributive property applies to it just as it does to any other factor. Multiplying an entire sum by −1 changes the sign of every term. Thus −(x+3) becomes −x−3: one copy of −1 is distributed to x and another copy is distributed to 3.");
+    negativeSection.appendChild(phrasePair(
+        phraseCard("Change the sign of the entire sum x plus 3.", product(value(-1), sum(value("x"), value(3))), "The complete sum is one factor beside −1."),
+        phraseCard("Distribute negative one to both terms.", sum(product(value(-1), value("x")), product(value(-1), value(3))), "Both terms change sign, giving −x−3.")
+    ));
+    appendParagraph(negativeSection, "Two sign changes undo one another. Since (−1)(−1)=1, multiplying by two negative units has the same effect as multiplying by 1. In a longer product such as (−1)(−1)x, the two negative units become 1, and the identity factor 1 can then be removed, leaving x.");
+    addGuidedExerciseLink(negativeSection, "intro-levels/simplify-double-negative-unit.json", "Simplify two negative units multiplying x");
 
-    addOutlineSection("Exponents as repeated multiplication", [
-        "Keep the scope to polynomials and rational functions, where positive integer powers can be shown as repeated multiplication.",
-        "Show repeated copies of a number, a variable, and an entire grouped expression as factors in exploded notation; relate each to its conventional power notation.",
-        "Include the zero power as 1 for a nonzero base, and connect negative integer powers of a nonzero expression to the inverse operator introduced next."
-    ], "repeated-multiplication");
+    const exponentSection = addSection("Exponents as repeated multiplication", [
+        "A positive whole-number exponent is a compact instruction to use the same base as a factor repeatedly. For example, 2⁴ means 2·2·2·2, not 2·4. The exponent tells us how many copies of the base appear in the product.",
+        "Exploded notation displays those copies directly on one horizontal multiplication row. This introduction therefore writes positive integer powers as repeated products, while the conventional expression shown beside each example uses familiar exponent notation."
+    ], phrasePair(
+        conventionalCard("Conventional power notation", "2⁴", "Four copies of 2 are multiplied."),
+        phraseCard("Multiply four copies of two.", product(value(2), value(2), value(2), value(2)), "The repeated product has value 16.")
+    ), "repeated-multiplication");
+    appendParagraph(exponentSection, "The base can be a variable. The expression x³ means x·x·x. We cannot combine those factors into a number until x is known, but the repeated product still makes the structure of the power clear.");
+    exponentSection.appendChild(phrasePair(
+        conventionalCard("A variable raised to a power", "x³", "The base x occurs three times as a factor."),
+        phraseCard("Multiply three copies of x.", product(value("x"), value("x"), value("x")), "Each x is a complete factor in the same product.")
+    ));
+    appendParagraph(exponentSection, "An entire grouped expression can also be the base. In (x+2)², the exponent applies to the complete sum x+2. It means (x+2)(x+2), not x+2·x+2. Exploded notation shows each complete vertical sum occupying one factor position in the surrounding horizontal product.");
+    exponentSection.appendChild(phrasePair(
+        conventionalCard("A grouped base", "(x + 2)²", "The complete sum is the base of the power."),
+        phraseCard("Multiply two copies of the sum x plus 2.", product(sum(value("x"), value(2)), sum(value("x"), value(2))), "Each whole sum is one factor.")
+    ));
+    appendParagraph(exponentSection, "A first power contains one copy of the base, so A¹=A. For a nonzero base, the zero power is defined as 1, so A⁰=1 when A≠0. Negative integer powers involve the reciprocal of a repeated product; that idea becomes clearer after introducing the inverse operator in the next section.");
+    addGuidedExerciseLink(exponentSection, "intro-levels/evaluate-repeated-factors.json", "Evaluate 2⁴ as repeated multiplication");
 
-    addOutlineSection("Division and the inverse operator", [
-        "Introduce the inverse operator as taking the reciprocal of a nonzero expression. Division is multiplication by that inverse.",
-        "Show how the inverse encloses its entire operand, including a sum or product, and relate this grouping to the denominator of a conventional fraction.",
-        "Add numerical and rational-expression examples of simplifying inverses and multiplying a nonzero expression by its inverse to get 1; keep restrictions on zero visible."
-    ], "inverse-operator");
+    const inverseSection = addSection("Division and the inverse operator", [
+        "The multiplicative inverse of a nonzero expression A is the quantity that multiplies A to make 1. It is written 1/A in conventional fraction notation. Exploded notation represents taking an inverse as an operator that encloses its complete operand, making the scope of the denominator explicit.",
+        "The restriction A≠0 matters: no number multiplied by 0 can produce 1, so zero has no multiplicative inverse. Any cancellation involving an expression and its inverse is valid only where that expression is nonzero."
+    ], phrasePair(
+        conventionalCard("Conventional reciprocal", "1/x", "The denominator is x, with the restriction x≠0."),
+        phraseCard("Take the inverse of x.", inverse(value("x")), "The inverse operator encloses its complete operand x.")
+    ), "inverse-operator");
+    appendParagraph(inverseSection, "Division by a nonzero expression is multiplication by its inverse. Thus A÷B and A·(1/B) describe the same operation when B≠0. Treating division this way lets products and quotients share one visible structure: the divisor appears as an inverse factor.");
+    inverseSection.appendChild(phrasePair(
+        conventionalCard("Division in conventional notation", "a / b", "Divide a by b, where b≠0."),
+        phraseCard("Multiply a by the inverse of b.", product(value("a"), inverse(value("b"))), "The inverse of b is one complete factor beside a.")
+    ));
+    appendParagraph(inverseSection, "The operand of the inverse may itself be a sum or product. In 1/(x+3), the entire sum x+3 is the denominator. Inverting only the 3 would create a different expression. The exploded diagram encloses the complete vertical sum inside one inverse operator, so its scope does not depend on remembering a fraction bar’s grouping role.");
+    inverseSection.appendChild(phrasePair(
+        conventionalCard("A complete sum in the denominator", "1 / (x + 3)", "The reciprocal is defined when x+3≠0."),
+        phraseCard("Take the inverse of the complete sum x plus 3.", inverse(sum(value("x"), value(3))), "Both terms belong to the inverse’s operand.")
+    ));
+    appendParagraph(inverseSection, "Finally, a nonzero expression multiplied by its own inverse equals 1. In x·(1/x), the two factors cancel when x≠0. This is the multiplicative counterpart of adding opposite quantities to obtain 0, and it is the basic simplification behind canceling common nonzero factors in rational expressions.");
+    inverseSection.appendChild(phrasePair(
+        phraseCard("Multiply x by its inverse.", product(value("x"), inverse(value("x"))), "For x≠0, the product is 1."),
+        phraseCard("The resulting multiplicative identity.", value(1), "The factor and its inverse have canceled.")
+    ));
+    addGuidedExerciseLink(inverseSection, "intro-levels/cancel-expression-with-inverse.json", "Cancel x with its inverse");
 
     addOutlineSection("Building fluency with conventional notation", [
         "Explain how students continue to see conventional notation during practice and are required to read and work with it in relation to the exploded representation.",

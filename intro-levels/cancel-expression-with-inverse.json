@@ -1,0 +1,63 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "cancel-expression-with-inverse",
+  "title": "Cancel an expression with its inverse",
+  "startExpression": "((x)*((1)/(x)))",
+  "initialKatex": "x\\cdot\\frac{1}{x}",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": { "forward": "manual", "reverse": "manual" },
+      "signedArithmetic": { "forward": "manual", "reverse": "manual" },
+      "nonnegativeFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "signedFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "inverseOne": { "forward": "manual", "reverse": "manual" },
+      "inverseNegativeOne": { "forward": "manual", "reverse": "manual" },
+      "doubleNegative": { "forward": "manual", "reverse": "manual" }
+    }
+  },
+  "variables": ["x"],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nSimplify \\(x\\cdot\\frac{1}{x}\\), where \\(x\\ne0\\).\n\n## What to notice\n\nThe inverse of a nonzero expression is the factor that multiplies it to make 1. Select the complete product and cancel x with its inverse.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((x)*((1)/(x)))",
+      "explodedExpression": "((x)*((1)/(x)))",
+      "katex": "x\\cdot\\frac{1}{x}",
+      "beforeKatex": "x\\cdot\\frac{1}{x}",
+      "afterKatex": "x\\cdot\\frac{1}{x}"
+    },
+    {
+      "expression": "(1)",
+      "explodedExpression": "(1)",
+      "katex": "1",
+      "beforeKatex": "1",
+      "afterKatex": "1",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((x)*((1)/(x)))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "cancelProductWithInverse"
+      }
+    ]
+  },
+  "finalExpression": "(1)",
+  "finalKatex": "1"
+}

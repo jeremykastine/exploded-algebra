@@ -25,20 +25,21 @@ assert(
     "Only a real Pan gesture may mark the main workspace view as intentionally offset"
 );
 assert(
-    /scheduleResponsiveLayoutRecalculation\(\)[\s\S]*?workspaceViewManuallyPanned[\s\S]*?setWorkspacePan\(0, 0\)/.test(playerJs),
-    "Responsive mode changes must keep an unpanned expression anchored at the workspace's upper left"
+    /function getDefaultWorkspacePan\(\)[\s\S]*?leftPanel\.getBoundingClientRect\(\)\.bottom \+ spacing[\s\S]*?viewportBounds\.left[\s\S]*?function resetWorkspacePanToDefault/.test(playerJs)
+        && /scheduleResponsiveLayoutRecalculation\(\)[\s\S]*?workspaceViewManuallyPanned[\s\S]*?resetWorkspacePanToDefault\(\)/.test(playerJs),
+    "Responsive mode changes must keep an unpanned expression left-aligned below conventional notation"
 );
 assert(
     /body\.workspace-pan-active #svgContainer\s*\{[\s\S]*?touch-action: none;/.test(playerHtml),
     "The entire workspace must suppress native touch scrolling while Pan is active"
 );
 assert(
-    /\/\* Floating control palette[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;/.test(playerHtml),
+    /The expression workspace fills the screen[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;/.test(playerHtml),
     "Button clusters must float above rather than reduce the workspace"
 );
 assert(
-    /\/\* Floating control palette[\s\S]*?grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
-    "The conventional panel must stay below one quarter while the workspace takes the remaining row"
+    /\.left-panel \{[\s\S]*?position: fixed !important;[\s\S]*?z-index: 110;/.test(playerHtml),
+    "The conventional panel must float above the full-screen workspace"
 );
 assert(
     /\.textbook-solution \{[\s\S]*?flex-direction: column;/.test(playerHtml)

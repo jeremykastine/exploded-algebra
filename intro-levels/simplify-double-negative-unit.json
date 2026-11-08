@@ -1,0 +1,83 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "simplify-double-negative-unit",
+  "title": "Two negative units",
+  "startExpression": "((-1)*(-1)*(x))",
+  "initialKatex": "(-1)(-1)x",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": { "forward": "manual", "reverse": "manual" },
+      "signedArithmetic": { "forward": "manual", "reverse": "manual" },
+      "nonnegativeFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "signedFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "inverseOne": { "forward": "manual", "reverse": "manual" },
+      "inverseNegativeOne": { "forward": "manual", "reverse": "manual" },
+      "doubleNegative": { "forward": "manual", "reverse": "manual" }
+    }
+  },
+  "variables": ["x"],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nSimplify \\( (-1)(-1)x \\).\n\n## What to notice\n\nTwo sign changes undo one another. Select the whole product and replace the two negative units with 1. Then remove the multiplicative identity.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((-1)*(-1)*(x))",
+      "explodedExpression": "((-1)*(-1)*(x))",
+      "katex": "(-1)(-1)x",
+      "beforeKatex": "(-1)(-1)x",
+      "afterKatex": "(-1)(-1)x"
+    },
+    {
+      "expression": "((1)*(x))",
+      "explodedExpression": "((1)*(x))",
+      "katex": "1\\cdot x",
+      "beforeKatex": "1\\cdot x",
+      "afterKatex": "1\\cdot x",
+      "actionStartIndex": 0,
+      "actionEndIndex": 2
+    },
+    {
+      "expression": "(x)",
+      "explodedExpression": "(x)",
+      "katex": "x",
+      "beforeKatex": "x",
+      "afterKatex": "x",
+      "actionStartIndex": 2,
+      "actionEndIndex": 4
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((-1)*(-1)*(x))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 2
+      },
+      {
+        "type": "tool",
+        "tool": "doubleNegative"
+      },
+      {
+        "type": "select",
+        "expression": "((1)*(x))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 1
+      },
+      {
+        "type": "tool",
+        "tool": "eliminateIdentities"
+      }
+    ]
+  },
+  "finalExpression": "(x)",
+  "finalKatex": "x"
+}

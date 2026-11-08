@@ -1,0 +1,80 @@
+{
+  "format": "exploded-algebra-level",
+  "formatVersion": 1,
+  "kind": "guidedCapable",
+  "id": "evaluate-repeated-factors",
+  "title": "A power as repeated multiplication",
+  "startExpression": "((2)*(2)*(2)*(2))",
+  "initialKatex": "2^4=2\\cdot2\\cdot2\\cdot2",
+  "numericalRewrite": {
+    "rules": {
+      "nonnegativeArithmetic": { "forward": "manual", "reverse": "manual" },
+      "signedArithmetic": { "forward": "manual", "reverse": "manual" },
+      "nonnegativeFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "signedFractionSimplification": { "forward": "manual", "reverse": "manual" },
+      "inverseOne": { "forward": "manual", "reverse": "manual" },
+      "inverseNegativeOne": { "forward": "manual", "reverse": "manual" },
+      "doubleNegative": { "forward": "manual", "reverse": "manual" }
+    }
+  },
+  "variables": [],
+  "excludedDefaultTools": [],
+  "allowedUnavailableTools": [],
+  "showConventionalSteps": false,
+  "includeUndoActions": false,
+  "exerciseGuidance": "## Problem Statement\n\nEvaluate \\(2^4\\) by treating it as four factors of 2.\n\n## What to notice\n\nThe exponent 4 counts copies of the base. Select the complete repeated product, choose the numerical rewrite, and enter its value.",
+  "exerciseGuidanceIsComplete": true,
+  "steps": [
+    {
+      "expression": "((2)*(2)*(2)*(2))",
+      "explodedExpression": "((2)*(2)*(2)*(2))",
+      "katex": "2^4=2\\cdot2\\cdot2\\cdot2",
+      "beforeKatex": "2^4=2\\cdot2\\cdot2\\cdot2",
+      "afterKatex": "2^4=2\\cdot2\\cdot2\\cdot2"
+    },
+    {
+      "expression": "(16)",
+      "explodedExpression": "(16)",
+      "katex": "16",
+      "beforeKatex": "16",
+      "afterKatex": "16",
+      "actionStartIndex": 0,
+      "actionEndIndex": 4
+    }
+  ],
+  "demo": {
+    "format": "exploded-algebra-guided-actions-v1",
+    "steps": [
+      {
+        "type": "select",
+        "expression": "((2)*(2)*(2)*(2))",
+        "path": [],
+        "firstPart": 0,
+        "lastPart": 3
+      },
+      {
+        "type": "tool",
+        "tool": "numericalRewrite"
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "1",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "digit",
+        "value": "6",
+        "flowVersion": 5
+      },
+      {
+        "type": "builder",
+        "action": "submit",
+        "flowVersion": 5
+      }
+    ]
+  },
+  "finalExpression": "(16)",
+  "finalKatex": "16"
+}

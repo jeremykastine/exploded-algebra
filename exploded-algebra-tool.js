@@ -1409,10 +1409,6 @@ Promise.resolve().then(() => {
                 : window.innerWidth > window.innerHeight;
         }
 
-        function isStudentPortraitPanelLayout() {
-            return !authoringSessionActive && !isLandscapePanelLayout();
-        }
-
         function refreshQuickSettingButtons() {
             quickSettingButtons.forEach(button => {
                 const setting = button.dataset.workspaceSetting;
@@ -1589,7 +1585,7 @@ Promise.resolve().then(() => {
             appContainer.style.setProperty("--steps-font-size", `${fittedSize}px`);
 
             let twoRowHeight = getTwoRowPanelHeight(fittedSize);
-            if (!isLandscapePanelLayout() && twoRowHeight > getMaximumTopPanelHeight()) {
+            if (twoRowHeight > getMaximumTopPanelHeight()) {
                 fittedSize = Math.max(
                     8,
                     Math.floor(fittedSize * getMaximumTopPanelHeight() / twoRowHeight * 10) / 10
@@ -1598,21 +1594,14 @@ Promise.resolve().then(() => {
                 twoRowHeight = getTwoRowPanelHeight(fittedSize);
             }
             appContainer.style.setProperty("--steps-two-row-height", `${twoRowHeight}px`);
-            const shouldSnapToBottomTwoRows = isLandscapePanelLayout() || isStudentPortraitPanelLayout();
-            if (shouldSnapToBottomTwoRows) {
-                if (isStudentPortraitPanelLayout()) {
-                    setTopPanelHeight(twoRowHeight);
-                }
-                // Finish geometry and scroll correction in the same pre-paint
-                // pass. A second frame exposes the rows at their old offset.
-                updateStepPanelScrollSpace();
-                if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
-                    leftPanel.scrollTop = getStepPanelScrollTarget();
-                }
-                applyResponsiveMainButtonSize();
-            } else {
-                updateTopPanelHeight(getCurrentLevel(), twoRowHeight);
+            layoutConventionalPanel(twoRowHeight);
+            // Finish geometry and scroll correction in the same pre-paint
+            // pass. A second frame exposes the rows at their old offset.
+            updateStepPanelScrollSpace();
+            if (!stepPanelScrollPending && stepPanelScrollAnimationFrame === null) {
+                leftPanel.scrollTop = getStepPanelScrollTarget();
             }
+            applyResponsiveMainButtonSize();
         }
 
         function scheduleStepsFontSizeRecalculation() {
@@ -2058,15 +2047,12 @@ Promise.resolve().then(() => {
             });
         }
 
-        const TOP_PANEL_MIN_HEIGHT = 48;
-        const TOP_PANEL_MAX_VIEWPORT_RATIO = 0.25;
-        const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;
-        const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;
-        const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFloatingPaletteV1";
-        let userTopPanelHeight = null;
-        let userLandscapeSidebarRatio = null;
+        const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2";
+        const CONVENTIONAL_PANEL_STORAGE_KEY = "explodedAlgebraConventionalPanelV1";
         let topPanelResizeState = null;
-        let floatingPalettePreference = null;
+        let conventionalPanelPreference;
+        let conventionalPanelDefaultHeight = null;
+        let floatingPalettePreference;
         let floatingPaletteInteraction = null;
         let floatingPaletteSafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -2082,73 +2068,12 @@ Promise.resolve().then(() => {
                 : window.innerWidth;
         }
 
-        function getMaximumTopPanelHeight() {
-            return Math.max(TOP_PANEL_MIN_HEIGHT, Math.floor(getViewportHeight() * TOP_PANEL_MAX_VIEWPORT_RATIO));
-        }
-
-        function setLandscapeSidebarWidth(width, rememberUserChoice = false) {
-            if (!appContainer) {
-                return;
-            }
-            const viewportWidth = getViewportWidth();
-            const minimumWidth = Math.floor(viewportWidth * LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO);
-            const maximumWidth = Math.floor(viewportWidth * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO);
-            const clampedWidth = Math.max(minimumWidth, Math.min(Number(width) || maximumWidth, maximumWidth));
-            if (rememberUserChoice) {
-                userLandscapeSidebarRatio = clampedWidth / Math.max(1, viewportWidth);
-            }
-            appContainer.style.setProperty("--landscape-sidebar-width", `${Math.round(clampedWidth)}px`);
-            if (topPanelResizeHandle && isLandscapePanelLayout()) {
-                topPanelResizeHandle.setAttribute("aria-label", "Resize left panels");
-                topPanelResizeHandle.setAttribute("aria-orientation", "vertical");
-                topPanelResizeHandle.setAttribute("aria-valuemin", String(minimumWidth));
-                topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumWidth));
-                topPanelResizeHandle.setAttribute("aria-valuenow", String(Math.round(clampedWidth)));
-            }
-            applyResponsiveMainButtonSize();
-            scheduleStepsFontSizeRecalculation();
-        }
-
         function updatePanelResizeHandleOrientation() {
             if (!topPanelResizeHandle) {
                 return;
             }
-            const landscapeLayout = isLandscapePanelLayout();
-            if (landscapeLayout) {
-                const viewportWidth = getViewportWidth();
-                const requestedWidth = userLandscapeSidebarRatio === null
-                    ? viewportWidth * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO
-                    : viewportWidth * userLandscapeSidebarRatio;
-                setLandscapeSidebarWidth(requestedWidth);
-                return;
-            }
-            topPanelResizeHandle.setAttribute("aria-label", "Resize conventional steps panel");
-            topPanelResizeHandle.setAttribute("aria-orientation", "horizontal");
-            topPanelResizeHandle.setAttribute("aria-valuemin", String(TOP_PANEL_MIN_HEIGHT));
-        }
-
-        function setTopPanelHeight(height, rememberUserChoice = false) {
-            if (!appContainer) {
-                return;
-            }
-            const maximumHeight = getMaximumTopPanelHeight();
-            const clampedHeight = Math.max(
-                TOP_PANEL_MIN_HEIGHT,
-                Math.min(Number(height) || TOP_PANEL_MIN_HEIGHT, maximumHeight)
-            );
-            if (rememberUserChoice) {
-                userTopPanelHeight = clampedHeight;
-            }
-            const roundedHeight = Math.round(clampedHeight);
-            const nextHeight = `${roundedHeight}px`;
-            if (appContainer.style.getPropertyValue("--top-panel-height") !== nextHeight) {
-                appContainer.style.setProperty("--top-panel-height", nextHeight);
-                scheduleStepsFontSizeRecalculation();
-            }
-            if (topPanelResizeHandle) {
-                topPanelResizeHandle.setAttribute("aria-valuemax", String(maximumHeight));
-                topPanelResizeHandle.setAttribute("aria-valuenow", String(roundedHeight));
-            }
+            topPanelResizeHandle.setAttribute("aria-label", "Resize conventional notation from lower left");
+            layoutConventionalPanel();
         }
 
         function refreshFloatingPaletteSafeArea() {
@@ -2213,25 +2138,98 @@ Promise.resolve().then(() => {
             };
         }
 
-        function loadFloatingPalettePreference() {
+        function getConventionalPanelLimits(bounds = getFloatingPaletteViewportBounds()) {
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const maximumWidth = Math.max(1, bounds.right - bounds.left);
+            const maximumHeight = Math.max(1, bounds.bottom - bounds.top);
+            const preferredHeight = conventionalPanelDefaultHeight || rootFontSize * 7;
+            return {
+                minimumWidth: Math.min(maximumWidth, rootFontSize * 18),
+                minimumHeight: Math.min(maximumHeight, rootFontSize * 4),
+                maximumWidth,
+                maximumHeight,
+                defaultWidth: Math.min(maximumWidth, rootFontSize * 32),
+                defaultHeight: Math.min(maximumHeight, Math.max(rootFontSize * 4, preferredHeight))
+            };
+        }
+
+        function loadSizePreference(storageKey) {
             try {
-                const parsed = JSON.parse(window.localStorage.getItem(FLOATING_PALETTE_STORAGE_KEY));
-                if (!parsed || parsed.version !== 1) {
+                const parsed = JSON.parse(window.localStorage.getItem(storageKey));
+                if (!parsed || parsed.version !== 1 || !Number.isFinite(parsed.widthRem) || !Number.isFinite(parsed.heightRem)) {
                     return null;
                 }
-                const values = [parsed.widthRem, parsed.heightRem, parsed.xRatio, parsed.yRatio];
-                if (!values.every(Number.isFinite)) {
-                    return null;
-                }
-                return {
-                    widthRem: parsed.widthRem,
-                    heightRem: parsed.heightRem,
-                    xRatio: Math.max(0, Math.min(1, parsed.xRatio)),
-                    yRatio: Math.max(0, Math.min(1, parsed.yRatio))
-                };
+                return { widthRem: parsed.widthRem, heightRem: parsed.heightRem };
             } catch (error) {
                 return null;
             }
+        }
+
+        function saveSizePreference(storageKey, preference) {
+            try {
+                window.localStorage.setItem(storageKey, JSON.stringify({ version: 1, ...preference }));
+            } catch (error) {}
+        }
+
+        function setConventionalPanelSize(width, height, rememberUserChoice = false, bounds = getFloatingPaletteViewportBounds()) {
+            if (!leftPanel || !topPanelResizeHandle) {
+                return;
+            }
+            const limits = getConventionalPanelLimits(bounds);
+            const clampedWidth = Math.max(limits.minimumWidth, Math.min(Number(width) || limits.defaultWidth, limits.maximumWidth));
+            const clampedHeight = Math.max(limits.minimumHeight, Math.min(Number(height) || limits.defaultHeight, limits.maximumHeight));
+            const left = bounds.right - clampedWidth;
+            const top = bounds.top;
+            leftPanel.style.left = `${left}px`;
+            leftPanel.style.top = `${top}px`;
+            leftPanel.style.right = "auto";
+            leftPanel.style.bottom = "auto";
+            leftPanel.style.width = `${clampedWidth}px`;
+            leftPanel.style.height = `${clampedHeight}px`;
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const handleSize = Math.min(rootFontSize * 1.65, clampedWidth, clampedHeight);
+            topPanelResizeHandle.style.left = `${left}px`;
+            topPanelResizeHandle.style.top = `${top + clampedHeight - handleSize}px`;
+            if (rememberUserChoice) {
+                conventionalPanelPreference = {
+                    widthRem: clampedWidth / rootFontSize,
+                    heightRem: clampedHeight / rootFontSize
+                };
+                saveSizePreference(CONVENTIONAL_PANEL_STORAGE_KEY, conventionalPanelPreference);
+            }
+            if (!workspaceViewManuallyPanned) {
+                resetWorkspacePanToDefault();
+            }
+        }
+
+        function layoutConventionalPanel(defaultHeight = null) {
+            if (!leftPanel || !topPanelResizeHandle) {
+                return;
+            }
+            if (Number.isFinite(defaultHeight) && defaultHeight > 0) {
+                conventionalPanelDefaultHeight = defaultHeight;
+            }
+            refreshFloatingPaletteSafeArea();
+            const bounds = getFloatingPaletteViewportBounds();
+            const limits = getConventionalPanelLimits(bounds);
+            if (conventionalPanelPreference === undefined) {
+                conventionalPanelPreference = loadSizePreference(CONVENTIONAL_PANEL_STORAGE_KEY);
+            }
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            setConventionalPanelSize(
+                conventionalPanelPreference ? conventionalPanelPreference.widthRem * rootFontSize : limits.defaultWidth,
+                conventionalPanelPreference ? conventionalPanelPreference.heightRem * rootFontSize : limits.defaultHeight,
+                false,
+                bounds
+            );
+        }
+
+        function getMaximumTopPanelHeight() {
+            return getConventionalPanelLimits().maximumHeight;
+        }
+
+        function loadFloatingPalettePreference() {
+            return loadSizePreference(FLOATING_PALETTE_STORAGE_KEY);
         }
 
         function setFloatingPaletteRect(rect, bounds = getFloatingPaletteViewportBounds()) {
@@ -2241,8 +2239,6 @@ Promise.resolve().then(() => {
             const limits = getFloatingPaletteLimits(bounds);
             const requestedWidth = Number(rect.width);
             const requestedHeight = Number(rect.height);
-            const requestedLeft = Number(rect.left);
-            const requestedTop = Number(rect.top);
             const width = Math.max(limits.minimumWidth, Math.min(
                 Number.isFinite(requestedWidth) ? requestedWidth : limits.defaultWidth,
                 limits.maximumWidth
@@ -2251,14 +2247,8 @@ Promise.resolve().then(() => {
                 Number.isFinite(requestedHeight) ? requestedHeight : limits.defaultHeight,
                 limits.maximumHeight
             ));
-            const left = Math.max(bounds.left, Math.min(
-                Number.isFinite(requestedLeft) ? requestedLeft : bounds.left,
-                bounds.right - width
-            ));
-            const top = Math.max(bounds.top, Math.min(
-                Number.isFinite(requestedTop) ? requestedTop : bounds.top,
-                bounds.bottom - height
-            ));
+            const left = bounds.right - width;
+            const top = bounds.bottom - height;
             bottomControlsPanel.style.left = `${left}px`;
             bottomControlsPanel.style.top = `${top}px`;
             bottomControlsPanel.style.right = "auto";
@@ -2272,23 +2262,13 @@ Promise.resolve().then(() => {
             if (!bottomControlsPanel) {
                 return;
             }
-            const bounds = getFloatingPaletteViewportBounds();
             const rect = bottomControlsPanel.getBoundingClientRect();
             const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-            const horizontalTravel = Math.max(0, bounds.right - bounds.left - rect.width);
-            const verticalTravel = Math.max(0, bounds.bottom - bounds.top - rect.height);
             floatingPalettePreference = {
                 widthRem: rect.width / rootFontSize,
-                heightRem: rect.height / rootFontSize,
-                xRatio: horizontalTravel ? (rect.left - bounds.left) / horizontalTravel : 1,
-                yRatio: verticalTravel ? (rect.top - bounds.top) / verticalTravel : 1
+                heightRem: rect.height / rootFontSize
             };
-            try {
-                window.localStorage.setItem(FLOATING_PALETTE_STORAGE_KEY, JSON.stringify({
-                    version: 1,
-                    ...floatingPalettePreference
-                }));
-            } catch (error) {}
+            saveSizePreference(FLOATING_PALETTE_STORAGE_KEY, floatingPalettePreference);
         }
 
         function layoutFloatingPalette() {
@@ -2298,7 +2278,7 @@ Promise.resolve().then(() => {
             refreshFloatingPaletteSafeArea();
             const bounds = getFloatingPaletteViewportBounds();
             const limits = getFloatingPaletteLimits(bounds);
-            if (floatingPalettePreference === null) {
+            if (floatingPalettePreference === undefined) {
                 floatingPalettePreference = loadFloatingPalettePreference();
             }
             const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
@@ -2310,13 +2290,7 @@ Promise.resolve().then(() => {
                 : limits.defaultHeight;
             const clampedWidth = Math.max(limits.minimumWidth, Math.min(width, limits.maximumWidth));
             const clampedHeight = Math.max(limits.minimumHeight, Math.min(height, limits.maximumHeight));
-            const horizontalTravel = Math.max(0, limits.maximumWidth - clampedWidth);
-            const verticalTravel = Math.max(0, limits.maximumHeight - clampedHeight);
-            const xRatio = floatingPalettePreference ? floatingPalettePreference.xRatio : 1;
-            const yRatio = floatingPalettePreference ? floatingPalettePreference.yRatio : 1;
             setFloatingPaletteRect({
-                left: bounds.left + horizontalTravel * xRatio,
-                top: bounds.top + verticalTravel * yRatio,
                 width: clampedWidth,
                 height: clampedHeight
             }, bounds);
@@ -2382,35 +2356,10 @@ Promise.resolve().then(() => {
             if (!appContainer || !leftPanel || leftPanel.hidden || !level) {
                 return;
             }
-            if (isLandscapePanelLayout()) {
-                updatePanelResizeHandleOrientation();
-                return;
-            }
-            const minimumHeight = Math.max(
-                TOP_PANEL_MIN_HEIGHT,
-                Number(minimumTwoRowHeight) || getTwoRowPanelHeight(
-                    parseFloat(window.getComputedStyle(appContainer).getPropertyValue("--steps-font-size")) || 15
-                )
+            const twoRowHeight = Number(minimumTwoRowHeight) || getTwoRowPanelHeight(
+                parseFloat(window.getComputedStyle(appContainer).getPropertyValue("--steps-font-size")) || 15
             );
-            if (userTopPanelHeight !== null) {
-                userTopPanelHeight = Math.max(minimumHeight, Math.min(userTopPanelHeight, getMaximumTopPanelHeight()));
-                setTopPanelHeight(userTopPanelHeight);
-                return;
-            }
-            const visibleColumns = Array.from(leftPanel.querySelectorAll(".solution-column"));
-            if (!visibleColumns.length) {
-                return;
-            }
-
-            const panelStyle = window.getComputedStyle(leftPanel);
-            const verticalPadding = style => style
-                ? (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0)
-                : 0;
-            const contentHeight = visibleColumns.reduce((total, column) => (
-                total + Math.max(column.scrollHeight, column.getBoundingClientRect().height)
-            ), 0);
-            const fittedHeight = Math.ceil(contentHeight + verticalPadding(panelStyle) + 4);
-            setTopPanelHeight(Math.max(minimumHeight, fittedHeight));
+            layoutConventionalPanel(twoRowHeight);
         }
 
         function scheduleTopPanelHeightUpdate() {
@@ -2421,7 +2370,7 @@ Promise.resolve().then(() => {
         }
 
         function installTopPanelResizing() {
-            if (!topPanelResizeHandle || !appContainer) {
+            if (!topPanelResizeHandle || !leftPanel) {
                 return;
             }
 
@@ -2430,6 +2379,7 @@ Promise.resolve().then(() => {
                     return;
                 }
                 topPanelResizeState = null;
+                scheduleStepsFontSizeRecalculation();
             };
 
             topPanelResizeHandle.addEventListener("pointerdown", event => {
@@ -2437,12 +2387,13 @@ Promise.resolve().then(() => {
                     return;
                 }
                 const panelBounds = leftPanel.getBoundingClientRect();
-                const containerBounds = appContainer.getBoundingClientRect();
                 topPanelResizeState = {
                     pointerId: event.pointerId,
-                    landscape: isLandscapePanelLayout(),
-                    panelTop: panelBounds.top,
-                    containerLeft: containerBounds.left
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    width: panelBounds.width,
+                    height: panelBounds.height,
+                    bounds: getFloatingPaletteViewportBounds()
                 };
                 if (topPanelResizeHandle.setPointerCapture) {
                     topPanelResizeHandle.setPointerCapture(event.pointerId);
@@ -2453,41 +2404,36 @@ Promise.resolve().then(() => {
                 if (!topPanelResizeState || event.pointerId !== topPanelResizeState.pointerId) {
                     return;
                 }
-                if (topPanelResizeState.landscape) {
-                    setLandscapeSidebarWidth(event.clientX - topPanelResizeState.containerLeft, true);
-                } else {
-                    setTopPanelHeight(event.clientY - topPanelResizeState.panelTop, true);
-                }
+                setConventionalPanelSize(
+                    topPanelResizeState.width - (event.clientX - topPanelResizeState.startX),
+                    topPanelResizeState.height + (event.clientY - topPanelResizeState.startY),
+                    true,
+                    topPanelResizeState.bounds
+                );
                 event.preventDefault();
             });
             topPanelResizeHandle.addEventListener("pointerup", finishResize);
             topPanelResizeHandle.addEventListener("pointercancel", finishResize);
             topPanelResizeHandle.addEventListener("lostpointercapture", finishResize);
             topPanelResizeHandle.addEventListener("keydown", event => {
-                if (isLandscapePanelLayout()) {
-                    const currentWidth = leftPanel.getBoundingClientRect().width;
-                    let nextWidth = null;
-                    if (event.key === "ArrowLeft") nextWidth = currentWidth - 8;
-                    if (event.key === "ArrowRight") nextWidth = currentWidth + 8;
-                    if (event.key === "Home") nextWidth = getViewportWidth() * LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO;
-                    if (event.key === "End") nextWidth = getViewportWidth() * LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO;
-                    if (nextWidth === null) {
-                        return;
-                    }
-                    setLandscapeSidebarWidth(nextWidth, true);
-                    event.preventDefault();
+                const offsets = {
+                    ArrowLeft: [1, 0],
+                    ArrowRight: [-1, 0],
+                    ArrowUp: [0, -1],
+                    ArrowDown: [0, 1]
+                };
+                if (!offsets[event.key]) {
                     return;
                 }
-                const currentHeight = leftPanel.getBoundingClientRect().height;
-                let nextHeight = null;
-                if (event.key === "ArrowUp") nextHeight = currentHeight - 8;
-                if (event.key === "ArrowDown") nextHeight = currentHeight + 8;
-                if (event.key === "Home") nextHeight = TOP_PANEL_MIN_HEIGHT;
-                if (event.key === "End") nextHeight = getMaximumTopPanelHeight();
-                if (nextHeight === null) {
-                    return;
-                }
-                setTopPanelHeight(nextHeight, true);
+                const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+                const step = event.shiftKey ? rootFontSize : rootFontSize * 0.5;
+                const rect = leftPanel.getBoundingClientRect();
+                setConventionalPanelSize(
+                    rect.width + offsets[event.key][0] * step,
+                    rect.height + offsets[event.key][1] * step,
+                    true
+                );
+                scheduleStepsFontSizeRecalculation();
                 event.preventDefault();
             });
         }
@@ -2517,116 +2463,87 @@ Promise.resolve().then(() => {
             if (!bottomControlsPanel) {
                 return;
             }
-            const handles = Array.from(bottomControlsPanel.querySelectorAll("[data-palette-move], [data-palette-resize]"));
+            const handle = bottomControlsPanel.querySelector('[data-palette-resize="nw"]');
+            if (!handle) {
+                return;
+            }
 
             const finishInteraction = event => {
                 if (!floatingPaletteInteraction || (event && event.pointerId !== undefined && event.pointerId !== floatingPaletteInteraction.pointerId)) {
                     return;
                 }
                 floatingPaletteInteraction = null;
-                bottomControlsPanel.classList.remove("palette-interacting", "palette-resizing");
+                bottomControlsPanel.classList.remove("palette-resizing");
                 rememberFloatingPalettePreference();
             };
 
-            handles.forEach(handle => {
-                handle.addEventListener("pointerdown", event => {
-                    if (event.pointerType === "mouse" && event.button !== 0) {
-                        return;
-                    }
-                    const rect = bottomControlsPanel.getBoundingClientRect();
-                    floatingPaletteInteraction = {
-                        pointerId: event.pointerId,
-                        mode: handle.dataset.paletteResize ? "resize" : "move",
-                        direction: handle.dataset.paletteResize || "",
-                        startX: event.clientX,
-                        startY: event.clientY,
-                        startRect: {
-                            left: rect.left,
-                            top: rect.top,
-                            right: rect.right,
-                            bottom: rect.bottom,
-                            width: rect.width,
-                            height: rect.height
-                        },
-                        bounds: getFloatingPaletteViewportBounds()
-                    };
-                    bottomControlsPanel.classList.add("palette-interacting");
-                    bottomControlsPanel.classList.toggle("palette-resizing", floatingPaletteInteraction.mode === "resize");
-                    if (handle.setPointerCapture) {
-                        handle.setPointerCapture(event.pointerId);
-                    }
-                    event.preventDefault();
-                });
+            handle.addEventListener("pointerdown", event => {
+                if (event.pointerType === "mouse" && event.button !== 0) {
+                    return;
+                }
+                const rect = bottomControlsPanel.getBoundingClientRect();
+                floatingPaletteInteraction = {
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    startRect: {
+                        left: rect.left,
+                        top: rect.top,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        width: rect.width,
+                        height: rect.height
+                    },
+                    bounds: getFloatingPaletteViewportBounds()
+                };
+                bottomControlsPanel.classList.add("palette-resizing");
+                if (handle.setPointerCapture) {
+                    handle.setPointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+            });
 
-                handle.addEventListener("pointermove", event => {
-                    const interaction = floatingPaletteInteraction;
-                    if (!interaction || interaction.pointerId !== event.pointerId) {
-                        return;
-                    }
-                    if (interaction.mode === "move") {
-                        setFloatingPaletteRect({
-                            left: interaction.startRect.left + event.clientX - interaction.startX,
-                            top: interaction.startRect.top + event.clientY - interaction.startY,
-                            width: interaction.startRect.width,
-                            height: interaction.startRect.height
-                        }, interaction.bounds);
-                    } else {
-                        const horizontalDelta = event.clientX - interaction.startX;
-                        const verticalDelta = event.clientY - interaction.startY;
-                        resizeFloatingPaletteFromPoint(
-                            interaction.direction,
-                            interaction.direction.includes("w")
-                                ? interaction.startRect.left + horizontalDelta
-                                : interaction.startRect.right + horizontalDelta,
-                            interaction.direction.includes("n")
-                                ? interaction.startRect.top + verticalDelta
-                                : interaction.startRect.bottom + verticalDelta,
-                            interaction.startRect,
-                            interaction.bounds
-                        );
-                    }
-                    event.preventDefault();
-                });
+            handle.addEventListener("pointermove", event => {
+                const interaction = floatingPaletteInteraction;
+                if (!interaction || interaction.pointerId !== event.pointerId) {
+                    return;
+                }
+                resizeFloatingPaletteFromPoint(
+                    "nw",
+                    interaction.startRect.left + event.clientX - interaction.startX,
+                    interaction.startRect.top + event.clientY - interaction.startY,
+                    interaction.startRect,
+                    interaction.bounds
+                );
+                event.preventDefault();
+            });
 
-                handle.addEventListener("pointerup", finishInteraction);
-                handle.addEventListener("pointercancel", finishInteraction);
-                handle.addEventListener("lostpointercapture", finishInteraction);
+            handle.addEventListener("pointerup", finishInteraction);
+            handle.addEventListener("pointercancel", finishInteraction);
+            handle.addEventListener("lostpointercapture", finishInteraction);
 
-                handle.addEventListener("keydown", event => {
-                    const keyOffsets = {
-                        ArrowLeft: [-1, 0],
-                        ArrowRight: [1, 0],
-                        ArrowUp: [0, -1],
-                        ArrowDown: [0, 1]
-                    };
-                    if (!keyOffsets[event.key]) {
-                        return;
-                    }
-                    const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
-                    const step = event.shiftKey ? rootFontSize : rootFontSize * 0.5;
-                    const [horizontal, vertical] = keyOffsets[event.key];
-                    const bounds = getFloatingPaletteViewportBounds();
-                    const rect = bottomControlsPanel.getBoundingClientRect();
-                    if (handle.dataset.paletteResize) {
-                        const direction = handle.dataset.paletteResize;
-                        resizeFloatingPaletteFromPoint(
-                            direction,
-                            direction.includes("w") ? rect.left + horizontal * step : rect.right + horizontal * step,
-                            direction.includes("n") ? rect.top + vertical * step : rect.bottom + vertical * step,
-                            rect,
-                            bounds
-                        );
-                    } else {
-                        setFloatingPaletteRect({
-                            left: rect.left + horizontal * step,
-                            top: rect.top + vertical * step,
-                            width: rect.width,
-                            height: rect.height
-                        }, bounds);
-                    }
-                    rememberFloatingPalettePreference();
-                    event.preventDefault();
-                });
+            handle.addEventListener("keydown", event => {
+                const offsets = {
+                    ArrowLeft: [-1, 0],
+                    ArrowRight: [1, 0],
+                    ArrowUp: [0, -1],
+                    ArrowDown: [0, 1]
+                };
+                if (!offsets[event.key]) {
+                    return;
+                }
+                const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+                const step = event.shiftKey ? rootFontSize : rootFontSize * 0.5;
+                const rect = bottomControlsPanel.getBoundingClientRect();
+                resizeFloatingPaletteFromPoint(
+                    "nw",
+                    rect.left + offsets[event.key][0] * step,
+                    rect.top + offsets[event.key][1] * step,
+                    rect,
+                    getFloatingPaletteViewportBounds()
+                );
+                rememberFloatingPalettePreference();
+                event.preventDefault();
             });
         }
 
@@ -4491,6 +4408,7 @@ Promise.resolve().then(() => {
             renderCurrentExpressionDisplay();
             refreshStatus();
             drawExpression();
+            resetWorkspacePanToDefault();
             stableExpressionState = captureExpressionUndoState();
             updateWorkspaceToolbar();
         }
@@ -5594,6 +5512,35 @@ ctx.font = SETTINGS.textFont;
             };
         }
 
+        function getDefaultWorkspacePan() {
+            if (!expressionRoot || !svgContainer) {
+                return { x: 0, y: 0 };
+            }
+            const expressionBounds = getExpressionBounds();
+            const containerBounds = svgContainer.getBoundingClientRect();
+            const viewportBounds = getFloatingPaletteViewportBounds();
+            const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16;
+            const spacing = rootFontSize * 0.75;
+            let targetScreenTop = viewportBounds.top;
+            const conventionalVisible = leftPanel
+                && !leftPanel.hidden
+                && !document.body.classList.contains("conventional-steps-hidden")
+                && !document.body.classList.contains("settings-active")
+                && leftPanel.getClientRects().length;
+            if (conventionalVisible) {
+                targetScreenTop = Math.max(targetScreenTop, leftPanel.getBoundingClientRect().bottom + spacing);
+            }
+            return clampWorkspacePan(
+                viewportBounds.left - containerBounds.left - expressionBounds.left * workspaceZoom,
+                targetScreenTop - containerBounds.top - expressionBounds.top * workspaceZoom
+            );
+        }
+
+        function resetWorkspacePanToDefault() {
+            const defaultPan = getDefaultWorkspacePan();
+            setWorkspacePan(defaultPan.x, defaultPan.y);
+        }
+
         function setWorkspacePan(x, y) {
             const clamped = clampWorkspacePan(x, y);
             workspacePanX = clamped.x;
@@ -5641,7 +5588,10 @@ ctx.font = SETTINGS.textFont;
         }
 
         function resetWorkspaceZoom() {
-            const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001 || workspacePanX !== 0 || workspacePanY !== 0;
+            const defaultPan = getDefaultWorkspacePan();
+            const viewChanged = Math.abs(workspaceZoom - 1) >= 0.001
+                || Math.abs(workspacePanX - defaultPan.x) >= 0.5
+                || Math.abs(workspacePanY - defaultPan.y) >= 0.5;
             workspaceViewManuallyPanned = false;
             if (!viewChanged) {
                 setWorkspaceMode("select");
@@ -5653,9 +5603,7 @@ ctx.font = SETTINGS.textFont;
             } else {
                 applyWorkspaceZoomSizing();
             }
-            workspacePanX = 0;
-            workspacePanY = 0;
-            applyWorkspaceZoomSizing();
+            resetWorkspacePanToDefault();
             setWorkspaceMode("select");
             return true;
         }
@@ -5705,6 +5653,7 @@ ctx.font = SETTINGS.textFont;
             responsiveLayoutFrame = requestAnimationFrame(() => {
                 responsiveLayoutFrame = null;
                 updatePanelResizeHandleOrientation();
+                layoutConventionalPanel();
                 layoutFloatingPalette();
                 renderCurrentExpressionDisplay();
                 if (expressionRoot) {
@@ -5713,7 +5662,7 @@ ctx.font = SETTINGS.textFont;
                 if (!builderWorkspaceViewActive && pendingResponsiveWorkspaceView) {
                     restoreWorkspaceView(pendingResponsiveWorkspaceView);
                 } else if (!builderWorkspaceViewActive && !workspaceViewManuallyPanned) {
-                    setWorkspacePan(0, 0);
+                    resetWorkspacePanToDefault();
                 }
                 positionToolOptionMenu();
                 updateSidePanelColumns();

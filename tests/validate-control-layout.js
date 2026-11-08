@@ -7,6 +7,7 @@ const indexHtml = fs.readFileSync(path.resolve(__dirname, "..", "index.html"), "
 const exercisesHtml = fs.readFileSync(path.resolve(__dirname, "..", "Exercises.html"), "utf8");
 const playerHtml = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra.html"), "utf8");
 const playerJs = fs.readFileSync(path.resolve(__dirname, "..", "exploded-algebra-tool.js"), "utf8");
+const introductionHtml = fs.readFileSync(path.resolve(__dirname, "..", "Introduction.html"), "utf8");
 const htmlFileNames = fs.readdirSync(path.resolve(__dirname, ".."))
     .filter(fileName => fileName.toLowerCase().endsWith(".html"));
 const lastUpdatedCss = fs.readFileSync(path.resolve(__dirname, "..", "last-updated.css"), "utf8");
@@ -54,13 +55,13 @@ assert(
     "The app must provide one floating controls palette without the old bottom-panel divider"
 );
 assert(
-    /\/\* Floating control palette[\s\S]*?grid-template-rows:\s*min\(var\(--top-panel-height\), 25dvh\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
-    "The floating palette must leave the workspace as the final application row"
+    /The expression workspace fills the screen[\s\S]*?\.app-container,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important;[\s\S]*?grid-template-rows: minmax\(0, 1fr\) !important;/.test(playerHtml),
+    "The foreground boxes must leave the expression workspace at full-screen size"
 );
 assert(/\.main-action-panel \{[\s\S]*?overflow: visible;/.test(playerHtml), "The top Commute button must not be clipped by the action-panel boundary");
 assert(
-    /\/\* Floating control palette[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;[\s\S]*?pointer-events: auto;/.test(playerHtml),
-    "The controls palette must float above the workspace and remain interactive"
+    /The expression workspace fills the screen[\s\S]*?\.bottom-controls-panel \{[\s\S]*?position: fixed;[\s\S]*?inset: auto max\(0\.65rem, env\(safe-area-inset-right\)\) max\(0\.65rem, env\(safe-area-inset-bottom\)\) auto;[\s\S]*?pointer-events: auto;/.test(playerHtml),
+    "The controls palette must remain fixed and interactive at the lower-right"
 );
 assert(
     /\.palette-content > \.quadrant-tools,[\s\S]*?\.palette-content > \.main-action-panel,[\s\S]*?align-self: stretch;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml),
@@ -71,21 +72,41 @@ assert(
         playerHtml.indexOf('class="quadrant-tools"') < playerHtml.indexOf('id="mainActionPanel"') &&
         playerHtml.indexOf('id="mainActionPanel"') < playerHtml.indexOf('id="exerciseCompletionPanel"') &&
         playerHtml.indexOf('id="exerciseCompletionPanel"') < playerHtml.indexOf('id="builderKeypadPanel"') &&
-        playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('data-palette-move="top"') &&
-        playerHtml.indexOf('data-palette-resize="sw"') < playerHtml.indexOf('id="mainArea"'),
-    "All four control modes and all eight handles must be inside the floating palette"
+        playerHtml.indexOf('id="builderKeypadPanel"') < playerHtml.indexOf('data-palette-resize="nw"') &&
+        playerHtml.indexOf('data-palette-resize="nw"') < playerHtml.indexOf('id="mainArea"'),
+    "All four control modes and the upper-left resize handle must be inside the fixed palette"
 );
 assert(
     /\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(4, minmax\(0, 1fr\)\);/.test(playerHtml) &&
         /\.palette-content > \.quadrant-tools,[\s\S]*?\.palette-content > \.main-action-panel,[\s\S]*?\.palette-content > \.builder-keypad-panel,[\s\S]*?\.palette-content > \.exercise-completion-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;/.test(playerHtml),
     "All control modes must retain the palette's single four-by-six grid"
 );
-for (const side of ["top", "right", "bottom", "left"]) {
-    assert(playerHtml.includes(`data-palette-move="${side}"`), `Missing ${side} palette move handle`);
+assert(playerHtml.includes('data-palette-resize="nw"'), "The controls palette must resize from its upper-left corner");
+assert(!playerHtml.includes("data-palette-move="), "The fixed controls palette must not have move handles");
+for (const corner of ["ne", "se", "sw"]) {
+    assert(!playerHtml.includes(`data-palette-resize="${corner}"`), `The controls palette must not retain its ${corner} resize handle`);
 }
-for (const corner of ["nw", "ne", "se", "sw"]) {
-    assert(playerHtml.includes(`data-palette-resize="${corner}"`), `Missing ${corner} palette resize handle`);
+assert(
+    /\.left-panel \{[\s\S]*?position: fixed !important;[\s\S]*?inset: max\(0\.65rem, env\(safe-area-inset-top\)\) max\(0\.65rem, env\(safe-area-inset-right\)\) auto auto;/.test(playerHtml),
+    "Conventional notation must remain fixed at the upper-right"
+);
+assert(playerHtml.includes('aria-label="Resize conventional notation from lower left"'), "Conventional notation must expose its lower-left resize handle");
+assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2"') && playerJs.includes('const CONVENTIONAL_PANEL_STORAGE_KEY = "explodedAlgebraConventionalPanelV1"'), "Both fixed foreground boxes must remember their sizes");
+assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
+assert(/function setConventionalPanelSize\([\s\S]*?const left = bounds\.right - clampedWidth;[\s\S]*?const top = bounds\.top;/.test(playerJs), "Conventional-panel sizing must preserve its upper-right anchor");
+
+for (const levelFile of [
+    "simplify-double-negative-unit.json",
+    "evaluate-repeated-factors.json",
+    "cancel-expression-with-inverse.json"
+]) {
+    const fullPath = path.resolve(__dirname, "..", "intro-levels", levelFile);
+    const level = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    assert(level.kind === "guidedCapable" && level.demo.steps.length >= 2, `${levelFile} must be an interactive guided Introduction exercise`);
+    assert(introductionHtml.includes(`intro-levels/${levelFile}`), `${levelFile} must be linked from the Introduction`);
 }
+assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
+assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "Pre-selection must open the separate Settings screen");
 ["steps-text-size", "bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
@@ -279,7 +300,7 @@ assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0,
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-floating-palette'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-fixed-corner-panels'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
@@ -300,9 +321,7 @@ assert(playerJs.includes('const STEPS_LINE_HEIGHT_RATIO = 1.2;'));
 assert(playerJs.includes('window.matchMedia("(pointer: coarse)").matches'));
 assert(playerJs.includes('new ResizeObserver'));
 assert(playerJs.includes('new MutationObserver'));
-assert(playerJs.includes('function isStudentPortraitPanelLayout()'));
-assert(playerJs.includes('const shouldSnapToBottomTwoRows = isLandscapePanelLayout() || isStudentPortraitPanelLayout();'));
-assert(playerJs.includes('setTopPanelHeight(twoRowHeight);'));
+assert(playerJs.includes('layoutConventionalPanel(twoRowHeight);'));
 assert(playerJs.includes('stepsPanelContentObserver.observe(leftPanel'));
 assert(/\.problem-statement,[\s\S]*?\.step-column \{[\s\S]*?line-height: 1\.2;/.test(playerHtml));
 assert(/\.solution-column,[\s\S]*?padding: 0 6px;/.test(playerHtml));
@@ -319,30 +338,29 @@ assert(playerJs.includes("function installFloatingPaletteInteractions()"));
 assert(playerJs.includes("function resizeFloatingPaletteFromPoint("));
 assert(playerJs.includes("function getFloatingPaletteViewportBounds()"));
 assert(playerJs.includes("function rememberFloatingPalettePreference()"));
-assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFloatingPaletteV1";'));
+assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV2";'));
 assert(playerJs.includes('Math.pow(effectiveSize / comfortableCellSize, 0.45)'), "Palette content must use gentle bounded scaling");
 assert(!playerJs.includes("function installBottomPanelResizing()"));
 assert(!playerJs.includes("const BOTTOM_PANEL_MAX_VIEWPORT_RATIO"));
-assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO = 1 / 6;"));
-assert(playerJs.includes("const LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO = 1 / 3;"));
+assert(!playerJs.includes("LANDSCAPE_SIDEBAR_MIN_VIEWPORT_RATIO"));
+assert(!playerJs.includes("LANDSCAPE_SIDEBAR_MAX_VIEWPORT_RATIO"));
 assert(playerJs.includes('appContainer.style.setProperty("--steps-two-row-height"'));
 assert(playerJs.includes('leftPanel.scrollTop = getStepPanelScrollTarget();'));
-assert(playerJs.includes("function setLandscapeSidebarWidth(width, rememberUserChoice = false)"));
-assert(playerJs.includes('topPanelResizeHandle.setAttribute("aria-orientation", "vertical")'));
+assert(playerJs.includes("function setConventionalPanelSize(width, height, rememberUserChoice = false"));
+assert(/function installTopPanelResizing\(\)[\s\S]*?topPanelResizeState\.width - \(event\.clientX - topPanelResizeState\.startX\)[\s\S]*?topPanelResizeState\.height \+ \(event\.clientY - topPanelResizeState\.startY\)/.test(playerJs), "The lower-left handle must resize conventional notation horizontally and vertically");
 assert(playerJs.includes('window.addEventListener("orientationchange", handlePanelOrientationChange)'));
 assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-columns:\s*clamp\(16\.667vw, var\(--landscape-sidebar-width\), 33\.333vw\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
-    "Landscape must use a one-sixth-to-one-third resizable left column and a full-height right workspace"
+    /The expression workspace fills the screen[\s\S]*?\.app-container,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important;/.test(playerHtml),
+    "Every orientation must retain a full-width workspace behind the fixed boxes"
 );
 assert(
-    /@media \(orientation: landscape\) \{[\s\S]*?grid-template-rows:\s*var\(--steps-two-row-height\)\s*var\(--divider-size\)\s*minmax\(0, 1fr\);/.test(playerHtml),
-    "Landscape panel one must snap to the responsive height of exactly two step rows"
+    /\.top-panel-resize-handle \{[\s\S]*?position: fixed !important;[\s\S]*?cursor: nesw-resize !important;/.test(playerHtml),
+    "The conventional box must use a fixed diagonal lower-left resize handle"
 );
 assert(
-    /\.top-panel-resize-handle,[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?cursor: col-resize;/.test(playerHtml),
-    "The former top-panel handle must become the full-height vertical landscape divider"
+    /\.palette-resize-handle-nw \{[\s\S]*?top: 0;[\s\S]*?left: 0;[\s\S]*?cursor: nwse-resize;/.test(playerHtml),
+    "The controls must expose only their diagonally opposite upper-left resize handle"
 );
-assert(/@media \(orientation: landscape\) \{[\s\S]*?\.bottom-controls-panel,[\s\S]*?position: fixed;/.test(playerHtml), "The palette must remain freely positioned in landscape");
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 // Each fixed commute control must reject selections from the other operation.

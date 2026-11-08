@@ -26,8 +26,9 @@ Introduction.html is currently written for mathematics teachers. Take familiar
 ideas slowly to explain the representation and its purpose; keep conventional
 notation out of the opening discussion until the explicit comparison section.
 The introduction-only examples are in intro-levels, separate from the student
-exercise list. Sections on convenient factors, repeated factors, and distribution
-each link to direct and rearranged guided routes from the same starting expression.
+exercise list. Expanded sections on the negative unit, exponents as repeated
+multiplication, and the inverse operator each include a guided exercise, alongside
+the earlier guided examples of arithmetic, algebraic properties, and distribution.
 Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
 all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
 use mode=guided; the completion controls offer an Unguided repeat afterward.
@@ -58,16 +59,19 @@ Older files remain compatible: `introduction` falls back to `instruction` in the
 problem-statement portion of Exercise Guidance. Legacy per-step guidance fields
 remain loadable but are no longer displayed.
 
-The exploded expression is anchored at the upper-left of its workspace. The
-idle workspace controls, contextual action choices, and Expression Builder each
-use the same floating six-column by four-row palette; only the controls for the
-current state are visible. Drag any side to reposition the palette and any
-corner to resize its width and height independently. The palette remains fully
-inside the visible viewport, remembers the user's size and position, and keeps
-the button arrangement fixed while labels and icons scale gently. Tap inside the
-selection or outside the expression to clear it; guided demonstrations ignore
-off-target selections and empty-workspace clicks. The conventional steps remain visible
-above the controls and scroll vertically. Their Large, Medium, or Small text
+The exploded expression is left-aligned by default, with its top just below the
+fixed conventional-notation box at the upper-right; the Pan tool can move it from
+that starting position. The idle workspace controls, contextual action choices,
+and Expression Builder each use the same fixed six-column by four-row palette at
+the lower-right; only the controls for the current state are visible. The
+palette resizes from its upper-left corner while keeping its lower-right anchor.
+The conventional box resizes from its lower-left corner while keeping its
+upper-right anchor. Both boxes stay fully inside the visible viewport and
+remember the user's chosen size. The palette keeps the button arrangement fixed
+while labels and icons scale gently. Tap inside the selection or outside the
+expression to clear it; guided demonstrations ignore off-target selections and
+empty-workspace clicks. The conventional steps scroll vertically. Their Large,
+Medium, or Small text
 preference is responsive rather than a fixed pixel size: it refits after
 content, panel, viewport, device-input, and orientation changes without wrapping
 a step. In student portrait mode and in landscape, the steps panel snaps to
