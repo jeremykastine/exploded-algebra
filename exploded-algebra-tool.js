@@ -1791,8 +1791,6 @@ Promise.resolve().then(() => {
             if (!level || !expressionRoot) {
                 return null;
             }
-            const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
-
             const activeBuilder = uiState.mode === "edit" && uiState.stage === "builder"
                 ? uiState.expressionBuilder
                 : null;
@@ -1810,14 +1808,13 @@ Promise.resolve().then(() => {
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
                 return selectedKatex
                     ? { kind: "replace", selectedKatex, targetKatex: liveKatex || "\\square" }
-                    : { kind: "target", targetKatex: liveKatex || "\\square", currentKatex };
+                    : { kind: "target", targetKatex: liveKatex || "\\square" };
             }
 
             if (authoringSessionActive && authoringPhase === "recording") {
                 return {
                     kind: "target",
-                    targetKatex: currentKatex,
-                    currentKatex
+                    targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
                 };
             }
 
@@ -1833,7 +1830,7 @@ Promise.resolve().then(() => {
             const targetKatex = targetStep
                 ? targetStep.beforeKatex || targetStep.afterKatex || targetStep.katex || targetStep.expression
                 : level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(expressionRoot);
-            return { kind: "target", targetKatex: targetKatex || "\\square", currentKatex };
+            return { kind: "target", targetKatex: targetKatex || "\\square" };
         }
 
         function appendWorkspaceConventionalText(text) {
@@ -1879,8 +1876,7 @@ Promise.resolve().then(() => {
                 spacer.className = "workspace-conventional-spacer";
                 spacer.setAttribute("aria-hidden", "true");
                 workspaceConventionalLine.appendChild(spacer);
-                appendWorkspaceConventionalMath(content.currentKatex);
-                workspaceConventionalLine.setAttribute("aria-label", "Target expression followed by the current conventional expression");
+                workspaceConventionalLine.setAttribute("aria-label", "Target expression");
             }
         }
 

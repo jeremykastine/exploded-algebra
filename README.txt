@@ -35,8 +35,7 @@ use mode=guided; the completion controls offer an Unguided repeat afterward.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. It shows `Target expression:` on its own line, the next incomplete
-step's KaTeX on the next line, a blank line, and then the current conventional
-expression. Replacement entry instead shows `Replace [selection] with [live
+step's KaTeX on the next line, and then a blank line. Replacement entry instead shows `Replace [selection] with [live
 expression]`. The stack uses the exploded numbers' font size and shares the
 expression's pan and application-zoom transform. `initialKatex` remains the conventional form of the
 starting expression in the level data.

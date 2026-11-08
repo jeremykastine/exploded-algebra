@@ -97,7 +97,7 @@ assert(
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");
 assert(playerJs.includes('appendWorkspaceConventionalText("Target expression:")'), "The workspace line must identify the current target expression");
-assert(playerJs.includes('spacer.className = "workspace-conventional-spacer"') && playerJs.includes('appendWorkspaceConventionalMath(content.currentKatex);'), "Target notation must include a blank line before the current conventional expression");
+assert(playerJs.includes('spacer.className = "workspace-conventional-spacer"') && !playerJs.includes('appendWorkspaceConventionalMath(content.currentKatex);'), "Target notation must retain its trailing blank line without a current conventional-expression row");
 assert(playerJs.includes('appendWorkspaceConventionalText("Replace")') && playerJs.includes('appendWorkspaceConventionalText("with")'), "Builder mode must describe the live replacement on the same line");
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
@@ -287,7 +287,7 @@ assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0,
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-unified-five-row-palette'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-target-only-stack'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
