@@ -75,6 +75,7 @@ function checkPlayer() {
   scope.level = { showConventionalSteps: false, startExpression: "((2)+(3))", initialKatex: "2+3", steps: [{ expression: "((2)+(3))" }, { expression: "(5)", afterKatex: "5" }] };
   scope.LEVELS = [scope.level];
   scope.completedSteps = [true, false];
+  scope.buildingStartingExpression = false;
   scope.expressionMatchesParenthesizedText = expression => expression === "(5)";
   scope.maybePrepareCompletedLevelExport = () => {};
   scope.levelContent = { replaceChildren() {} };

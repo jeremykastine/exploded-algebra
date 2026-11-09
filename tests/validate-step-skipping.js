@@ -10,8 +10,8 @@ assert.ok(start >= 0 && end > start);
 const updateSource = source.slice(start, end);
 const level = { steps: ["start", "one", "two", "three"].map(expression => ({ expression })) };
 
-function check(initial, expression, expected) {
-    const scope = { completedSteps: initial.slice(), level,
+function check(initial, expression, expected, buildingStartingExpression = false) {
+    const scope = { completedSteps: initial.slice(), level, buildingStartingExpression,
         expressionMatchesParenthesizedText: target => target === expression,
         maybePrepareCompletedLevelExport() {} };
     vm.runInNewContext(`${updateSource}; updateStepCompletion(level);`, scope);
@@ -24,9 +24,11 @@ check([true, false, false, false], "unmatched", [true, false, false, false]);
 check([true, false, false, false], "three", [true, "skipped", "skipped", true]);
 check([true, "skipped", true, false], "three", [true, "skipped", true, true]);
 check([true, false, false, false], "start", [true, false, false, false]);
+check([false, false, false, false], "start", [false, false, false, false], true);
 
 const matchingScope = vm.createContext({
     window: {},
+    buildingStartingExpression: false,
     maybePrepareCompletedLevelExport() {},
 });
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "exploded-algebra-renderer.js"), "utf8"), matchingScope);

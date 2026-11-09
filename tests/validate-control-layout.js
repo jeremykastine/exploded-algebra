@@ -28,7 +28,7 @@ assert.deepEqual(indexChoices, [
     { href: "problem-builder.html", label: "Instructor" }
 ], "The landing page must link to Introduction, Student, and Instructor, in that order");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
-assert(exercisesHtml.includes("<strong>Restart Guided</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
+assert(exercisesHtml.includes("<strong>Restart Problem</strong>") && exercisesHtml.includes("<strong>Use guided steps</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
 assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
@@ -38,9 +38,14 @@ assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MOD
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["Restart Guided", "Restart Unguided", "Download Moves", "Close Problem"]) {
+for (const label of ["Restart Problem", "Download Moves", "Close Problem"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
+assert.equal((workspaceMenu.match(/data-workspace-action="restartExercise"/g) || []).length, 1);
+const restartDialog = playerHtml.match(/<dialog id="restartProblemDialog"[^>]*>([\s\S]*?)<\/dialog>/)[1];
+assert(restartDialog.includes('id="restartGuidedInput" type="checkbox"'));
+assert(restartDialog.includes('id="restartBuildInput" type="checkbox"'));
+assert(playerJs.includes('url.searchParams.set("build", "1")') && playerJs.includes('url.searchParams.delete("build")'));
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
 assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
 assert(playerJs.includes('heading: "You transformed"') && playerJs.includes('completion.at(-1) === true'));
@@ -283,7 +288,7 @@ assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0,
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261109-reciprocal-matching'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261109-build-first'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

@@ -1331,11 +1331,16 @@ Promise.resolve().then(() => {
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
         const builderDigitRail = document.getElementById("builderDigitRail");
+        const startingExpressionStatus = document.getElementById("startingExpressionStatus");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const workspaceUtilityMenu = document.getElementById("workspaceUtilityMenu");
         const workspaceUtilityMenuToggle = document.getElementById("workspaceUtilityMenuToggle");
         const workspaceUtilityMenuItems = document.getElementById("workspaceUtilityMenuItems");
+        const restartProblemButton = document.querySelector('[data-workspace-action="restartExercise"]');
+        const restartProblemDialog = document.getElementById("restartProblemDialog");
+        const restartGuidedInput = document.getElementById("restartGuidedInput");
+        const restartBuildInput = document.getElementById("restartBuildInput");
         const authoringFinishRecordingButton = document.querySelector('[data-workspace-action="authoringFinishRecording"]');
         const settingsButton = document.getElementById("settingsButton");
         const settingsPanel = document.getElementById("settingsPanel");
@@ -1386,6 +1391,8 @@ Promise.resolve().then(() => {
         let authoringPhase = "";
         let authoringInitialExpressionCommitted = false;
         let assistanceMode = ASSISTANCE_MODES.unguided;
+        let buildFirstEnabled = false;
+        let buildingStartingExpression = false;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -1726,7 +1733,7 @@ Promise.resolve().then(() => {
         function undoExpressionBuilderStep() {
             const builder = uiState.expressionBuilder;
             if (!builder || !Array.isArray(builder.history) || !builder.history.length) {
-                if (builder && expressionBuilderIsEmpty(builder)) {
+                if (builder && expressionBuilderIsEmpty(builder) && !buildingStartingExpression) {
                     cancelExpressionBuilder();
                     return true;
                 }
@@ -1792,6 +1799,14 @@ Promise.resolve().then(() => {
                 ? uiState.expressionBuilder
                 : null;
             if (activeBuilder) {
+                if (activeBuilder.tool === "studentInitial") {
+                    return {
+                        heading: "Build the starting expression",
+                        sourceKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.mainRoot),
+                        connector: "as",
+                        targetKatex: ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root) || "\\square"
+                    };
+                }
                 const insertionBuilder = ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"]
                     .includes(activeBuilder.tool);
                 const liveBuilderRoot = insertionBuilder
@@ -2929,7 +2944,7 @@ Promise.resolve().then(() => {
 
         function recordSolutionAction(action, demoStep) {
             const level = getCurrentLevel();
-            if (!solutionRecorder || !isInteractiveLevel(level)) {
+            if (buildingStartingExpression || !solutionRecorder || !isInteractiveLevel(level)) {
                 return;
             }
             const actionCopy = clonePlainData(action || {});
@@ -3622,7 +3637,8 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return assistanceMode === ASSISTANCE_MODES.guided && demoStepIndex < getCurrentDemoSteps().length;
+            return !buildingStartingExpression && assistanceMode === ASSISTANCE_MODES.guided &&
+                demoStepIndex < getCurrentDemoSteps().length;
         }
 
         function getCurrentDemoStep() {
@@ -3676,13 +3692,18 @@ Promise.resolve().then(() => {
             updateModeControls();
         }
 
-        function updateModeQueryString(mode) {
+        function updateModeQueryString(mode, buildFirst) {
             if (!window.history || !window.history.replaceState) {
                 return;
             }
             const url = new URL(window.location.href);
             url.searchParams.delete("assistance");
             url.searchParams.set("mode", mode);
+            if (buildFirst) {
+                url.searchParams.set("build", "1");
+            } else {
+                url.searchParams.delete("build");
+            }
             window.history.replaceState(null, "", url.toString());
         }
 
@@ -3711,10 +3732,11 @@ Promise.resolve().then(() => {
             return null;
         }
 
-        function startLoadedLevel(mode) {
+        function startLoadedLevel(mode, buildFirst = new URLSearchParams(window.location.search).get("build") === "1") {
             assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
+            buildFirstEnabled = buildFirst && isInteractiveLevel(getCurrentLevel()) && !authoringSessionActive;
             document.body.classList.remove("no-level-loaded");
-            loadLevel(0);
+            loadLevel(0, buildFirstEnabled);
         }
 
         function getDemoTargetNode(step) {
@@ -4117,7 +4139,7 @@ Promise.resolve().then(() => {
         }
 
         function updateStepCompletion(level) {
-            if (!level || !Array.isArray(level.steps)) {
+            if (buildingStartingExpression || !level || !Array.isArray(level.steps)) {
                 return;
             }
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
@@ -4159,10 +4181,8 @@ Promise.resolve().then(() => {
         }
 
         function updateExerciseMenu(level) {
-            workspaceUtilityMenuItems.querySelectorAll("[data-restart-mode]").forEach(button => {
-                button.disabled = !level || !normalizeAssistanceModeForLevel(button.dataset.restartMode, level);
-            });
-            moveHistoryButton.disabled = !level || !solutionRecorder;
+            restartProblemButton.disabled = !level;
+            moveHistoryButton.disabled = !level || !solutionRecorder || buildingStartingExpression;
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4456,13 +4476,14 @@ Promise.resolve().then(() => {
             }
 
         }
-        function loadLevel(levelIndex) {
+        function loadLevel(levelIndex, buildFirst = false) {
             const level = LEVELS[levelIndex];
             if (!level) {
                 return;
             }
 
             currentLevelIndex = levelIndex;
+            buildingStartingExpression = buildFirst;
             resetDemoStateForCurrentLevel();
             hideExerciseGuidance();
             resetSolutionRecorderForCurrentLevel();
@@ -4493,6 +4514,13 @@ Promise.resolve().then(() => {
             }
             clearSelection();
             clearInteraction();
+            if (buildingStartingExpression) {
+                selectWholeExpression();
+                uiState.activeTool = "studentInitial";
+                uiState.stage = "builder";
+                beginExpressionBuilder("studentInitial");
+                return;
+            }
             layoutExpression(expressionRoot);
             updateStepCompletion(getCurrentLevel());
             renderLevelInfo(currentLevelIndex);
@@ -4556,7 +4584,7 @@ Promise.resolve().then(() => {
             return validated;
         }
 
-        function selectWholeExpressionForAuthoring() {
+        function selectWholeExpression() {
             if (!expressionRoot) {
                 return false;
             }
@@ -4661,7 +4689,7 @@ Promise.resolve().then(() => {
                 return false;
             }
             clearInteraction();
-            if (!selectWholeExpressionForAuthoring()) {
+            if (!selectWholeExpression()) {
                 return false;
             }
             uiState.activeTool = "authorInitial";
@@ -4895,9 +4923,21 @@ Promise.resolve().then(() => {
             }
         }
 
-        function restartCurrentExercise(mode) {
-            updateModeQueryString(mode);
-            startLoadedLevel(mode);
+        function openRestartProblemDialog() {
+            const level = getCurrentLevel();
+            restartGuidedInput.disabled = !hasGuidedMode(level);
+            restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
+            restartBuildInput.disabled = !isInteractiveLevel(level);
+            restartBuildInput.checked = buildFirstEnabled;
+            document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
+            document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
+            restartProblemDialog.returnValue = "";
+            restartProblemDialog.showModal();
+        }
+
+        function restartCurrentExercise(mode, buildFirst) {
+            startLoadedLevel(mode, buildFirst);
+            updateModeQueryString(assistanceMode, buildFirstEnabled);
         }
 
         function closeCurrentExercise() {
@@ -4924,6 +4964,21 @@ Promise.resolve().then(() => {
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             setOperationStyle(getSavedOperationStyle());
             setOperationSize(getSavedOperationSize());
+            restartProblemDialog.addEventListener("submit", event => {
+                if (event.submitter?.value !== "restart") {
+                    return;
+                }
+                event.preventDefault();
+                const mode = restartGuidedInput.checked ? ASSISTANCE_MODES.guided : ASSISTANCE_MODES.unguided;
+                restartProblemDialog.close("restart");
+                restartCurrentExercise(mode, restartBuildInput.checked);
+            });
+            restartProblemDialog.addEventListener("close", () => {
+                const focusTarget = restartProblemDialog.returnValue === "restart"
+                    ? workspaceConventionalLine
+                    : workspaceUtilityMenuToggle;
+                focusTarget.focus({ preventScroll: true });
+            });
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -4998,8 +5053,7 @@ Promise.resolve().then(() => {
                     } else if (button.dataset.workspaceAction === "authoringFinishRecording") {
                         notifyAuthoringHost("finish-recording");
                     } else if (button.dataset.workspaceAction === "restartExercise") {
-                        restartCurrentExercise(button.dataset.restartMode);
-                        workspaceUtilityMenuToggle.focus();
+                        openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
                         downloadCurrentMoveHistory();
                         workspaceUtilityMenuToggle.focus();
@@ -5119,6 +5173,13 @@ Promise.resolve().then(() => {
                     }
                     performBuilderAction(button.dataset.builderAction, button.dataset.value || "");
                 });
+                builderVariableRail.addEventListener("change", event => {
+                    if (event.target.matches(".builder-extra-value") && event.target.value) {
+                        const value = event.target.value;
+                        event.target.value = "";
+                        performBuilderAction("value", value);
+                    }
+                });
             }
             updateWorkspaceToolbar();
             if (authoringSessionActive) {
@@ -5143,6 +5204,10 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
+                if (event.defaultPrevented || restartProblemDialog.open ||
+                    (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
+                    return;
+                }
                 if (event.key === "Escape" && document.body.classList.contains("settings-active")) {
                     closeSettingsPanel();
                     return;
@@ -5533,7 +5598,7 @@ ctx.font = SETTINGS.textFont;
             const builderUndoAction = isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace";
             if (undoExpressionButton) {
                 undoExpressionButton.disabled = builder
-                    ? !isDemoBuilderActionAllowed(builderUndoAction)
+                    ? (buildingStartingExpression && !builder.history.length) || !isDemoBuilderActionAllowed(builderUndoAction)
                     : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
                 undoExpressionButton.setAttribute("aria-label", builder ? "Undo builder entry" : "Undo previous expression step");
                 undoExpressionButton.setAttribute("aria-keyshortcuts", builder ? "Backspace Delete" : "Control+Z Meta+Z");
@@ -9852,6 +9917,7 @@ ctx.font = SETTINGS.textFont;
         function isExpressionBuilderTool(toolName) {
             return [
                 "authorInitial",
+                "studentInitial",
                 "replaceOneWithInverseProduct",
                 "insertZeroProduct",
                 "cancelOpposites",
@@ -9937,7 +10003,7 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
                 return ["sum", "prod"];
             }
-            if (toolName === "replaceOneWithInverseProduct" || toolName === "authorInitial") {
+            if (["replaceOneWithInverseProduct", "authorInitial", "studentInitial"].includes(toolName)) {
                 return ["sum", "prod", "inv"];
             }
             return ["sum", "prod"];
@@ -11035,6 +11101,15 @@ ctx.font = SETTINGS.textFont;
                 zeroProductOrientation: uiState.zeroProductOrientation || "left",
                 history: []
             };
+            if (toolName === "studentInitial") {
+                const extraValues = new Set();
+                traversePreOrder(selectedNode, node => {
+                    if (node.type === "value" && !/^(?:[0-9]+|x|-1)$/.test(node.value)) {
+                        extraValues.add(node.value);
+                    }
+                });
+                common.extraValues = [...extraValues];
+            }
             if (shouldUseLegacyBuilderFlow()) {
                 uiState.expressionBuilder = {
                     ...common,
@@ -11058,6 +11133,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function cancelExpressionBuilder() {
+            if (buildingStartingExpression) {
+                return false;
+            }
             const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
             if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
                 expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
@@ -11338,6 +11416,30 @@ ctx.font = SETTINGS.textFont;
             return collapseCompletedIntegratedBuilderNode(cloneBuilderNodeForHistory(builder.root));
         }
 
+        function getStartingExpressionHint(expected, attempt = null) {
+            const path = [];
+            while (expected.type !== "value" && attempt?.type === expected.type &&
+                attempt.args.length === expected.args.length) {
+                const index = expected.args.findIndex((node, i) => !sameExpression(node, attempt.args[i]));
+                if (index < 0) {
+                    break;
+                }
+                path.push(expected.type === "inv" ? "the denominator"
+                    : `${expected.type === "sum" ? "term" : "factor"} ${index + 1}`);
+                expected = expected.args[index];
+                attempt = attempt.args[index];
+            }
+            const structure = {
+                sum: `a sum of ${expected.args.length} terms`,
+                prod: `a product of ${expected.args.length} factors`,
+                inv: "an inverse around the whole denominator",
+                value: "a single value"
+            }[expected.type];
+            return path.length
+                ? `Check ${path.reverse().join(" of ")}. It should be ${structure}.`
+                : `The starting expression should be ${structure}.`;
+        }
+
         function submitExpressionBuilder() {
             const builder = uiState.expressionBuilder;
             if (!builder) {
@@ -11350,6 +11452,25 @@ ctx.font = SETTINGS.textFont;
                 return builderValidationFailed("Complete the missing entry before submitting.");
             }
             const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
+            if (builder.tool === "studentInitial") {
+                if (!sameExpressionForMatching(completed, builder.mainRoot)) {
+                    const feedback = "Match the starting expression’s terms, factors, and grouping.";
+                    const hint = assistanceMode === ASSISTANCE_MODES.guided
+                        ? " " + getStartingExpressionHint(
+                            normalizeCloneForMatching(builder.mainRoot, true),
+                            normalizeCloneForMatching(completed, true)
+                        )
+                        : "";
+                    return builderValidationFailed(feedback + hint);
+                }
+                // Keep the authored tree so recorded selection paths still apply.
+                expressionRoot = builder.mainRoot;
+                buildingStartingExpression = false;
+                refreshDemoBodyClass();
+                finishOperation();
+                resetWorkspacePanToDefault();
+                return true;
+            }
             if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
                 uiState.message = "That expression is always 0, so its inverse would be undefined. Choose a nonzero expression.";
                 renderToolArea();
@@ -12260,6 +12381,14 @@ ctx.font = SETTINGS.textFont;
                 builderVariableRail.replaceChildren();
                 return;
             }
+            const extraValues = uiState.expressionBuilder.extraValues;
+            if (extraValues?.length) {
+                builderVariableRail.innerHTML = `<select class="builder-extra-value" aria-label="Insert a value">
+                    <option value="">Value</option>
+                    ${["x", ...extraValues].map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
+                </select>`;
+                return;
+            }
             const disabled = !builderAllowsVariables(uiState.activeTool);
             const availability = disabled ? " unavailable in this expression" : "";
             builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button builder-labeled-key" data-builder-action="value" data-value="x" aria-label="Insert x${availability}" title="${disabled ? "x is unavailable in this expression" : "Keyboard shortcut: x"}"${disabled ? " disabled" : ""}><span class="builder-key-label">Variable</span><i class="builder-key-symbol">x</i></button>`;
@@ -12290,7 +12419,7 @@ ctx.font = SETTINGS.textFont;
                 const inverseDisabled = !operationTypes.includes("inv");
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
                 return `<div class="expression-builder-panel integrated-builder-panel">
-                    ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
+                    ${uiState.message && builder.tool !== "studentInitial" ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
@@ -12779,7 +12908,9 @@ ctx.font = SETTINGS.textFont;
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "negativeOne") {
                 result = enterIntegratedBuilderValue("-1");
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "value") {
-                result = value === "x" ? enterIntegratedBuilderValue("x") : false;
+                result = value === "x" || builderAtStart.extraValues?.includes(value)
+                    ? enterIntegratedBuilderValue(value)
+                    : false;
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "pendingOperation") {
                 result = insertIntegratedBuilderOperation(value);
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "enterInverse") {
@@ -12814,7 +12945,7 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            if (result !== false) {
+            if (result !== false && builderAtStart.tool !== "studentInitial") {
                 recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null);
                 // Submit completes the mathematical rewrite before this input
                 // action is appended. Keep the stable state's recorder cursor
@@ -12883,6 +13014,10 @@ ctx.font = SETTINGS.textFont;
                 event.preventDefault();
                 cancelExpressionBuilder();
                 return true;
+            }
+            if (action === "value" && builder.extraValues?.length) {
+                event.preventDefault();
+                return performBuilderAction(action, value);
             }
             const matchingButton = action === "undo" || action === "undoBackspace"
                 ? workspaceToolbar?.querySelector('button[data-workspace-action="undoExpression"]')
@@ -13148,6 +13283,18 @@ function renderToolArea() {
                 renderLevelInfo(currentLevelIndex);
             }
             applyResponsiveMainButtonSize();
+            const showStartingStatus = builderActive && buildingStartingExpression;
+            startingExpressionStatus.hidden = !showStartingStatus;
+            if (showStartingStatus) {
+                const entryTip = "Press Plus or Times again before the next value to change the operation’s grouping.";
+                const tip = assistanceMode === ASSISTANCE_MODES.guided
+                    ? getStartingExpressionHint(uiState.expressionBuilder.mainRoot) + " " + entryTip
+                    : entryTip;
+                const message = uiState.message || tip;
+                if (startingExpressionStatus.textContent !== message) {
+                    startingExpressionStatus.textContent = message;
+                }
+            }
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
             }

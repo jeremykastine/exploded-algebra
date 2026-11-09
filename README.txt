@@ -31,7 +31,8 @@ multiplication, and the inverse operator each include a guided exercise, alongsi
 the earlier guided examples of arithmetic, algebraic properties, and distribution.
 Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
 all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
-use mode=guided; the workspace menu offers a restart in either mode.
+use mode=guided. Restart Problem in the workspace menu lets learners choose the
+guide and the starting-expression builder independently.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. A Transform heading introduces the current expression followed by
@@ -96,8 +97,8 @@ the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Exercise Guidance pre-selection button shows numerical
 permissions as a two-level bulleted list. The Numerical Manipulation action button
 is marked with bold `123`. Operation display
-settings appear on the settings screen. Restart Guided, Restart Unguided,
-Download Moves, and Close Problem are available in the workspace menu.
+settings appear on the settings screen. Restart Problem, Download Moves, and
+Close Problem are available in the workspace menu.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. Initial expression entry and zero-product insertion
@@ -252,10 +253,18 @@ also accepts mode=guided, for example:
 Guided follows the recorded action sequence. Unguided updates the single
 conventional target without controlling the learner's moves. Unguided is the
 default when the URL lacks a supported mode. Older assistance=high and
-assistance=medium URLs still map to Guided and Unguided. Restart Guided is
-available for exercises with recorded guidance. Restarting replaces the mode
-parameter and starts the exercise over in the same tab. Close Problem returns
-to the launcher by closing the exercise tab or by going back after a same-tab
+assistance=medium URLs still map to Guided and Unguided. Add build=1 to either
+mode on an interactive exercise link to require the learner to build the
+starting expression from its conventional notation. Without build=1, the
+starting expression opens already built. This link starts a guided exercise in
+build-first mode.
+  exploded-algebra.html?level=intro-levels%2Fevaluate-sum-then-product.json&mode=guided&build=1
+Guided construction hints come from the starting expression tree. The recorded
+guide begins after the builder accepts the original structure. Move downloads
+record the transformations starting from that expression.
+Restart Problem sets both options and starts the exercise over in the same tab.
+The Guided option is available for exercises with recorded guidance. Close
+Problem returns to the launcher by closing the exercise tab or by going back after a same-tab
 launch.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:

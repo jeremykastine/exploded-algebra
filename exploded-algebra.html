@@ -2546,6 +2546,12 @@
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
         .builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-extra-value {
+            grid-column: 6;
+            grid-row: 1 / span 2;
+            min-width: 0;
+            pointer-events: auto;
+        }
         .builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 1 / span 2; }
         .builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 3 / span 2; }
 
@@ -4282,6 +4288,19 @@
             cursor: nwse-resize !important;
             user-select: none !important;
         }
+        .starting-expression-status {
+            position: absolute;
+            right: var(--palette-handle-rail);
+            bottom: calc(100% + 0.25rem);
+            left: var(--palette-handle-rail);
+            margin: 0;
+            padding: 0.55rem 0.7rem;
+            border: 1px solid #c6cfda;
+            border-radius: 0.45rem;
+            color: #202020;
+            background: #fff;
+            font: 0.85rem/1.35 Verdana, Arial, Helvetica, sans-serif;
+        }
         .palette-content {
             position: absolute;
             z-index: 1;
@@ -4446,6 +4465,28 @@
         .workspace-utility-menu-items button:not(:disabled):hover,
         .workspace-utility-menu-items button:focus-visible { background: #e8f1ff; }
         .workspace-utility-menu-items button:disabled { color: #666; cursor: default; }
+        .restart-problem-dialog {
+            width: min(23rem, calc(100% - 2rem));
+            box-sizing: border-box;
+            padding: 1.2rem;
+            border: 1px solid #858e9b;
+            border-radius: 0.5rem;
+            color: #202020;
+            background: #fff;
+            font: 1rem/1.4 Verdana, Arial, Helvetica, sans-serif;
+        }
+        .restart-problem-dialog::backdrop { background: rgba(25, 35, 50, 0.45); }
+        .restart-problem-dialog h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
+        .restart-problem-dialog label { display: block; padding: 0.45rem 0; }
+        .restart-problem-dialog small { color: #515151; }
+        .restart-problem-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .restart-problem-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
         body.authoring-session .exercise-menu-action { display: none; }
         body.settings-active .workspace-utility-menu,
         body.exercise-guidance-active .workspace-utility-menu { display: none !important; }
@@ -4493,7 +4534,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-09T15:42:42-05:00">11/9/26, 3:42 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-09T16:00:10-05:00">11/9/26, 4:00 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4505,14 +4546,14 @@
             <div id="workspaceUtilityMenuItems" class="workspace-utility-menu-items hidden" role="menu" aria-label="Workspace menu">
                 <button id="settingsButton" type="button" data-workspace-action="openSettings" role="menuitem">Settings</button>
                 <button type="button" class="exercise-guidance-button exercise-menu-action" data-workspace-action="showExerciseGuidance" role="menuitem">Exercise Guidance</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" data-restart-mode="guided" role="menuitem" disabled>Restart Guided</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" data-restart-mode="unguided" role="menuitem" disabled>Restart Unguided</button>
+                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Problem</button>
                 <button type="button" class="exercise-menu-action" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
                 <button type="button" class="exercise-menu-action" data-workspace-action="closeExercise" role="menuitem">Close Problem</button>
                 <button type="button" data-workspace-action="authoringFinishRecording" role="menuitem" hidden>All Done</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
+            <p id="startingExpressionStatus" class="starting-expression-status" role="status" hidden></p>
             <div class="palette-content">
                 <div class="quadrant-tools">
                     <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
@@ -4578,7 +4619,7 @@
             </div>
             <div id="svgContainer" class="right-svg-wrap">
                 <div id="workspaceNotationLayer" class="workspace-notation-layer" aria-live="polite">
-                    <div id="workspaceConventionalLine" class="workspace-conventional-line" hidden></div>
+                    <div id="workspaceConventionalLine" class="workspace-conventional-line" tabindex="-1" hidden></div>
                 </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <svg class="workspace-selection-feedback" aria-hidden="true" focusable="false">
@@ -4591,6 +4632,19 @@
             <div id="guidancePopover" class="exercise-guidance-popover hidden" role="region" aria-label="Exercise guidance" aria-live="polite"></div>
         </div>
     </div>
+    <dialog id="restartProblemDialog" class="restart-problem-dialog" aria-labelledby="restartProblemTitle">
+        <form method="dialog">
+            <h2 id="restartProblemTitle">Restart Problem</h2>
+            <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
+            <small id="restartGuidedUnavailable" hidden>This problem has no recorded guide.</small>
+            <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
+            <small id="restartBuildUnavailable" hidden>Build-first mode is available for interactive exercises.</small>
+            <div class="restart-problem-actions">
+                <button value="cancel" autofocus>Cancel</button>
+                <button value="restart">Restart</button>
+            </div>
+        </form>
+    </dialog>
     <section id="settingsPanel" class="level-menu-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
         <h2 id="settingsPanelTitle" class="level-menu-title">Settings</h2>
         <div class="settings-control-stack">
@@ -4617,7 +4671,7 @@
     </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261109-reciprocal-matching"></script>
+    <script src="exploded-algebra-tool.js?v=20261109-build-first"></script>
 
 </body>
 </html>
