@@ -66,6 +66,12 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .narrative{max-width:1040px;margin:0 auto;padding:48px 28px 96px;font-family:Arial,Helvetica,sans-serif;color:#18232d;}
 .narrative h2{font-size:clamp(26px,3.4vw,38px);line-height:1.18;margin:0 0 18px;}
 .narrative p{font-size:clamp(18px,2vw,22px);line-height:1.55;max-width:75ch;margin:0 0 18px;}
+.intro-audio{margin-bottom:12px;padding:20px;border:1px solid #d4dce1;border-radius:8px;background:#f5f8fa;}
+.intro-audio h1{font-size:clamp(28px,4vw,42px);line-height:1.15;margin:0 0 12px;}
+.intro-audio label,.intro-audio select{display:block;font-size:1rem;}
+.intro-audio select{width:100%;max-width:28rem;margin:6px 0 12px;padding:8px;font-family:inherit;}
+.intro-audio audio{display:block;width:100%;max-width:28rem;margin-bottom:10px;}
+.intro-audio a{font-size:1rem;}
 body.narrative-ready>.page-last-updated{position:static;width:max-content;max-width:100%;margin:0 16px 12px;white-space:normal;}
 .narrative-section{padding:42px 0;border-top:1px solid #d4dce1;scroll-margin-top:24px;}
 .narrative-section:first-of-type{border-top:0;}
@@ -133,7 +139,18 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-11-08T23:00:31-05:00">11/8/26, 11:00 PM EST</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-11-08T23:11:44-05:00">11/8/26, 11:11 PM EST</time></p>
+
+<main class="narrative">
+    <header class="intro-audio">
+        <h1>Introduction to Exploded Algebra</h1>
+        <p>Listen section by section. The exploded-view diagrams are described in Section 2.</p>
+        <label for="intro-audio-section">Choose a section</label>
+        <select id="intro-audio-section"></select>
+        <audio id="intro-audio-player" controls preload="metadata" aria-label="Introduction to Exploded Algebra audio" src="assets/introduction-audio/section-01.mp3"></audio>
+        <a id="intro-audio-download" href="assets/introduction-audio/section-01.mp3" download>Download this section as an MP3</a>
+    </header>
+</main>
 
 <div class="section-title">Conventional notation</div>
 
@@ -1016,9 +1033,14 @@ body.player-ready>#exploded-examples{display:none;}
         }
     ];
 
-    const narrative = document.createElement("main");
-    narrative.className = "narrative";
-    document.body.appendChild(narrative);
+    const narrative = document.querySelector("main.narrative");
+    const audioSection = document.getElementById("intro-audio-section");
+    const audioPlayer = document.getElementById("intro-audio-player");
+    const audioDownload = document.getElementById("intro-audio-download");
+    audioSection.addEventListener("change", () => {
+        audioPlayer.src = audioSection.value;
+        audioDownload.href = audioSection.value;
+    });
     const lastUpdated = document.querySelector("body > .page-last-updated");
     if (lastUpdated) document.body.appendChild(lastUpdated);
 
@@ -1029,6 +1051,8 @@ body.player-ready>#exploded-examples{display:none;}
         if (id) section.id = id;
         const heading = document.createElement("h2");
         heading.textContent = `${++sectionNumber}. ${title}`;
+        const audioFile = `assets/introduction-audio/section-${String(sectionNumber).padStart(2, "0")}.mp3`;
+        audioSection.add(new Option(heading.textContent, audioFile));
         section.appendChild(heading);
         paragraphs.forEach(copy => {
             const paragraph = document.createElement("p");
