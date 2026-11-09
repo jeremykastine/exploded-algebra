@@ -5643,13 +5643,12 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            const expressionBounds = expressionRoot ? getExpressionBounds() : { left: 0, top: 0 };
-            const expressionScreenLeft = expressionBounds.left * workspaceZoom + workspacePanX;
-            const expressionScreenTop = expressionBounds.top * workspaceZoom + workspacePanY;
-            const fixedScreenX = Math.max(0, expressionScreenLeft);
-            const fixedScreenY = Math.max(0, expressionScreenTop);
-            const fixedExpressionX = (fixedScreenX - workspacePanX) / workspaceZoom;
-            const fixedExpressionY = (fixedScreenY - workspacePanY) / workspaceZoom;
+            // The shared content bounds begin at the conventional heading when it is visible.
+            const { left, top } = expressionRoot ? getWorkspaceContentBounds() : { left: 0, top: 0 };
+            const anchorPadding = 8;
+            const zoomDelta = workspaceZoom - boundedZoom;
+            const panX = workspacePanX + (left - anchorPadding) * zoomDelta;
+            const panY = workspacePanY + (top - anchorPadding) * zoomDelta;
 
             workspaceZoom = boundedZoom;
             if (expressionRoot) {
@@ -5657,10 +5656,7 @@ ctx.font = SETTINGS.textFont;
             } else {
                 applyWorkspaceZoomSizing();
             }
-            setWorkspacePan(
-                fixedScreenX - fixedExpressionX * workspaceZoom,
-                fixedScreenY - fixedExpressionY * workspaceZoom
-            );
+            setWorkspacePan(panX, panY);
             return true;
         }
 
