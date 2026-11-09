@@ -1351,6 +1351,7 @@ Promise.resolve().then(() => {
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
+        const workspaceSelectionDragLine = document.getElementById("workspaceSelectionDragLine");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceConventionalLine = document.getElementById("workspaceConventionalLine");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
@@ -13863,6 +13864,7 @@ function renderToolArea() {
         }
 
         function releaseWorkspacePointer() {
+            workspaceSelectionDragLine.setAttribute("visibility", "hidden");
             activeWorkspacePointerId = null;
             workspacePointerStart = null;
             document.body.classList.remove("workspace-panning");
@@ -13929,6 +13931,28 @@ function renderToolArea() {
             };
         }
 
+        function isWorkspaceTap(event, start) {
+            const tolerance = start.pointerType === "mouse" ? 6 : 12;
+            return Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) <= tolerance;
+        }
+
+        function updateWorkspaceSelectionDrag(event) {
+            const start = workspacePointerStart;
+            if (event.pointerId !== activeWorkspacePointerId || start?.mode !== "selection") {
+                return;
+            }
+            if (isWorkspaceTap(event, start)) {
+                workspaceSelectionDragLine.setAttribute("visibility", "hidden");
+                return;
+            }
+            const { left, top } = workspaceSelectionDragLine.ownerSVGElement.getBoundingClientRect();
+            workspaceSelectionDragLine.setAttribute("x1", start.clientX - left);
+            workspaceSelectionDragLine.setAttribute("y1", start.clientY - top);
+            workspaceSelectionDragLine.setAttribute("x2", event.clientX - left);
+            workspaceSelectionDragLine.setAttribute("y2", event.clientY - top);
+            workspaceSelectionDragLine.setAttribute("visibility", "visible");
+        }
+
         function finishWorkspaceTap(e) {
             if (e.pointerId !== activeWorkspacePointerId || !workspacePointerStart) {
                 return;
@@ -13948,9 +13972,7 @@ function renderToolArea() {
                 releaseWorkspacePointer();
                 return;
             }
-            const movement = Math.hypot(e.clientX - pointerStart.clientX, e.clientY - pointerStart.clientY);
-            const tapTolerance = pointerStart.pointerType === "mouse" ? 6 : 12;
-            if (movement <= tapTolerance) {
+            if (isWorkspaceTap(e, pointerStart)) {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
                 if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
@@ -14142,6 +14164,8 @@ function renderToolArea() {
         svgContainer.addEventListener("lostpointercapture", e => {
             cancelWorkspaceTap(e);
         });
+
+        document.addEventListener("pointermove", updateWorkspaceSelectionDrag);
 
         document.addEventListener("pointerup", e => {
             if (activeWorkspacePointerId !== null) {

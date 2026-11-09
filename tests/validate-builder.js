@@ -194,7 +194,7 @@ assert(/function appendDirectBuilderDigit[\s\S]*?String\(current\.value\) === "-
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
-assert(/if \(pointerStart\.mode === "commute"\)[\s\S]{0,500}releaseWorkspacePointer\(\);[\s\S]{0,100}return;[\s\S]{0,200}const movement =/.test(playerJs), "Commute choices must bypass the ordinary tap-movement threshold");
+assert(/if \(pointerStart\.mode === "commute"\)[\s\S]{0,500}releaseWorkspacePointer\(\);[\s\S]{0,100}return;[\s\S]{0,200}if \(isWorkspaceTap\(e, pointerStart\)\)/.test(playerJs), "Commute choices must bypass the ordinary tap-movement threshold");
 assert(playerJs.includes('let currentProduct = completedArgs[0]') && playerJs.includes('completedTerms.push(currentProduct)'), "Submit must resolve unresolved multiplication before unresolved addition");
 assert(!/getIntegratedBuilderCompletedRoot[\s\S]{0,250}builder\.currentPath\.length/.test(playerJs), "A complete expression must be submittable while entry remains inside an inverse");
 

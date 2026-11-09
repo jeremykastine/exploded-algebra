@@ -4336,6 +4336,19 @@
             pointer-events: none;
             transform-origin: 0 0;
         }
+        .workspace-selection-feedback {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .workspace-selection-feedback line {
+            stroke: #2563eb;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
         .workspace-conventional-line {
             position: absolute;
             display: flex;
@@ -4471,6 +4484,12 @@
         .palette-content button {
             font-size: calc(1em * var(--palette-content-scale));
         }
+        .palette-content .workspace-toolbar > button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
         .palette-content .workspace-toolbar svg:not(.controls-grid-overlay),
         .palette-content .builder-keypad-panel svg:not(.controls-grid-overlay) {
             width: calc(var(--main-icon-size) * var(--palette-content-scale));
@@ -4602,7 +4621,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T19:10:32-05:00">11/8/26, 7:10 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T19:59:12-05:00">11/8/26, 7:59 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4622,16 +4641,16 @@
                 <div class="quadrant-tools">
                     <div id="workspaceToolbar" class="workspace-toolbar" role="toolbar" aria-label="Expression workspace tools">
                         <button type="button" data-workspace-action="zoomIn" aria-label="Zoom in">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            <svg viewBox="0.5 0.5 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M10.5 7v7M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </button>
                         <button type="button" data-workspace-action="zoomOut" aria-label="Zoom out">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                            <svg viewBox="0.5 0.5 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21M7 10.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                         </button>
                         <button type="button" data-workspace-action="resetZoom" aria-label="Reset view">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg>
+                            <svg viewBox="0 -0.75 24 24" aria-hidden="true"><text x="12" y="10" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">Reset</text><text x="12" y="17" text-anchor="middle" font-size="6.5" font-weight="800" fill="currentColor">View</text></svg>
                         </button>
                         <button type="button" data-workspace-mode="pan" aria-pressed="false" aria-label="Move view">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <svg viewBox="-0.8 0 24 24" aria-hidden="true"><path d="M7.8 11.2V6.8a1.45 1.45 0 0 1 2.9 0v3.1-5a1.45 1.45 0 0 1 2.9 0v5-4a1.45 1.45 0 0 1 2.9 0v4.5-2.7a1.45 1.45 0 0 1 2.9 0v5.8c0 4.1-2.5 7-6.5 7h-1.1c-2.2 0-3.8-.9-5.1-2.6l-3.3-4.3a1.55 1.55 0 0 1 2.3-2.1l2.1 1.8z" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </button>
                         <button type="button" data-workspace-mode="select" class="is-active" aria-pressed="true" aria-label="Select">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.6"/></svg>
@@ -4696,6 +4715,9 @@
                     <div id="workspaceConventionalLine" class="workspace-conventional-line" hidden></div>
                 </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
+                <svg class="workspace-selection-feedback" aria-hidden="true" focusable="false">
+                    <line id="workspaceSelectionDragLine" visibility="hidden"/>
+                </svg>
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
@@ -4747,7 +4769,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261108-wide-zero"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-selection-feedback"></script>
 
 </body>
 </html>
