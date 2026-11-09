@@ -136,10 +136,10 @@ places the pending operation at its lowest available level; repeated presses of
 that same button, before the next value is entered, cycle it through the higher
 levels and back to the lowest. Values, x, negative one, and inverses never
 insert an operation implicitly.
-Multiplication and Addition each occupy a two-by-two button on the left.
-The number pad sits in the middle, with negative one, zero, and Inverse
-across its bottom row. Variable x and Submit occupy two rows each on the
-right. The top workspace row provides the view controls and Undo, which
+Inverse and negative one occupy two rows each in the leftmost column.
+Times and Plus occupy two rows each beside them. The number pad sits in the
+middle, with a single zero key under 1, 2, and 3. Variable x and Submit
+occupy two rows each on the right. The top workspace row provides the view controls and Undo, which
 acts as Backspace during entry. Level cycling flattens a lifted sum into an
 immediately surrounding sum, and likewise for products, while retaining
 meaningful grouping across unlike operations.

@@ -2615,8 +2615,8 @@
         .builder-keypad-panel button:disabled { background: #f5f5f5; }
 
         .builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 1 / span 2; }
-        .builder-keypad-panel .builder-prod-button { grid-column: 1 / span 2; grid-row: 1 / span 2; }
-        .builder-keypad-panel .builder-sum-button { grid-column: 1 / span 2; grid-row: 3 / span 2; }
+        .builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 1 / span 2; }
+        .builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 3 / span 2; }
 
         .builder-keypad-panel [data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 1; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="8"] { grid-column: 4; grid-row: 1; }
@@ -2627,10 +2627,10 @@
         .builder-keypad-panel [data-builder-action="digit"][data-value="1"] { grid-column: 3; grid-row: 3; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="2"] { grid-column: 4; grid-row: 3; }
         .builder-keypad-panel [data-builder-action="digit"][data-value="3"] { grid-column: 5; grid-row: 3; }
-        .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 4; grid-row: 4; }
+        .builder-keypad-panel [data-builder-action="digit"][data-value="0"] { grid-column: 3 / span 3; grid-row: 4; }
 
-        .builder-keypad-panel .builder-negative-one-button { grid-column: 3; grid-row: 4; }
-        .builder-keypad-panel .builder-inv-button { grid-column: 5; grid-row: 4; }
+        .builder-keypad-panel .builder-negative-one-button { grid-column: 1; grid-row: 3 / span 2; }
+        .builder-keypad-panel .builder-inv-button { grid-column: 1; grid-row: 1 / span 2; }
         .builder-keypad-panel .builder-action-row button.builder-submit-button,
         .builder-keypad-panel .builder-action-row button.builder-next-submit-button {
             grid-column: 6;
@@ -4602,7 +4602,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T18:50:16-05:00">11/8/26, 6:50 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T19:10:32-05:00">11/8/26, 7:10 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4673,7 +4673,7 @@
                 </div>
                 <div id="builderCommandPanel" class="builder-command-panel"></div>
                 <svg class="controls-grid-overlay builder-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M200 1 V399 M300 1 V399 M400 1 V399 M500 1 V399 M200 100 H500 M1 200 H599 M200 300 H500"/>
+                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V300 M400 1 V300 M500 1 V399 M200 100 H500 M1 200 H599 M200 300 H500"/>
                 </svg>
             </div>
             </div>
@@ -4747,7 +4747,7 @@
     </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261108-builder-keypad"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-wide-zero"></script>
 
 </body>
 </html>

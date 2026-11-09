@@ -12347,7 +12347,7 @@ ctx.font = SETTINGS.textFont;
                     const title = cyclesLevel
                         ? `Press again to cycle the most recent ${operationName} through its available levels. Keyboard shortcut: ${shortcut}`
                         : `Keyboard shortcut: ${shortcut}`;
-                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Addition" : "Multiplication"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
+                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
                 };
                 const inverseDisabled = !operationTypes.includes("inv");
                 const submitDisabled = !getIntegratedBuilderCompletedRoot(builder);
@@ -12372,7 +12372,7 @@ ctx.font = SETTINGS.textFont;
                 const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
                 const plainGlyph = type === "sum" ? "+" : type === "prod" ? "·" : "";
                 const content = plainGlyph
-                    ? `<span class="builder-key-label">${type === "sum" ? "Addition" : "Multiplication"}</span><span class="builder-key-symbol">${plainGlyph}</span>`
+                    ? `<span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${plainGlyph}</span>`
                     : getBuilderSymbolIcon(type);
                 const keyClass = plainGlyph ? " builder-labeled-key" : "";
                 return `<button class="builder-operator-button builder-${type}-button${keyClass}" aria-label="${operationNames[type]}"${actionAttrs}${title}>${content}</button>`;
