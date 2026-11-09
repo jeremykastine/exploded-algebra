@@ -34,13 +34,12 @@ all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links mus
 use mode=guided; the workspace menu offers a restart in either mode.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
-expression. It shows `Target expression:` on its own line, the next incomplete
-step's KaTeX on the next line, and then a blank line. Replacement entry uses
-a Replace heading followed by the selected expression, with, and the live
-replacement on one line. On completion, You transformed introduces the starting
-expression and the completed target on one line. Each heading and math line
-is followed by a blank line before the exploded notation. The expression stays
-editable after completion. The stack shares the workspace pan and zoom.
+expression. A Transform heading introduces the current expression followed by
+into on the second line and the next target on the third. Replace uses the
+selected expression followed by with and the live replacement on the third
+line. You transformed uses the original and completed expressions in the same
+layout. The expression stays editable after completion. The stack shares the
+workspace pan and zoom.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
 The pre-selection Exercise Guidance view includes the problem statement and the

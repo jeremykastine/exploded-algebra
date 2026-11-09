@@ -43,7 +43,7 @@ for (const label of ["Restart Guided", "Restart Unguided", "Download Moves", "Cl
 }
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
 assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
-assert(playerJs.includes('appendWorkspaceConventionalText("You transformed")') && playerJs.includes('completion.at(-1) === true'));
+assert(playerJs.includes('heading: "You transformed"') && playerJs.includes('completion.at(-1) === true'));
 assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 !important; }'));
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 !important; }'));
@@ -94,9 +94,9 @@ assert(
 );
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");
-assert(playerJs.includes('appendWorkspaceConventionalText("Target expression:")'), "The workspace line must identify the current target expression");
-assert(playerJs.includes('spacer.className = "workspace-conventional-spacer"') && !playerJs.includes('appendWorkspaceConventionalMath(content.currentKatex);'), "Target notation must retain its trailing blank line without a current conventional-expression row");
-assert(playerJs.includes('appendWorkspaceConventionalText("Replace")') && playerJs.includes('appendWorkspaceConventionalText("with", expressions)'), "Builder mode must show the two expressions on their own row");
+assert(playerJs.includes('heading: "Transform"') && playerJs.includes('sourceKatex: currentKatex'), "The workspace line must show the current expression and the next target");
+assert(playerJs.includes('appendWorkspaceConventionalMath(content.sourceKatex, sourceRow)') && playerJs.includes('appendWorkspaceConventionalMath(content.targetKatex);'), "The source and target expressions must occupy separate rows");
+assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: "with"'), "Builder mode must show the selected expression followed by with");
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
 
@@ -283,7 +283,7 @@ assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0,
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
-assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-zoom-anchor'));
+assert(playerHtml.includes('exploded-algebra-tool.js?v=20261108-three-line-notation'));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
 assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));

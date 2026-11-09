@@ -39,6 +39,6 @@ assert.equal(phases.children[0], frames[1]);
 assert.equal(phases.children[1], frames[2]);
 
 assert(player.includes("function renderWorkspaceConventionalLine()"));
-assert(player.includes('appendWorkspaceConventionalText("Target expression:")'));
+assert(player.includes('appendWorkspaceConventionalText(content.heading)'));
 assert(player.includes("function positionWorkspaceConventionalLine()"));
 console.log("Startup visibility, static examples, and workspace target-line checks passed.");

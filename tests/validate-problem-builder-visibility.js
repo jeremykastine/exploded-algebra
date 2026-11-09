@@ -91,8 +91,8 @@ function checkPlayer() {
   assert.equal(scope.completedSteps[1], true, "Hidden panels must still track the final solution step");
   scope.expressionMatchesParenthesizedText = () => false;
   const completion = vm.runInContext("getWorkspaceConventionalLineContent()", scope);
-  assert.equal(completion.kind, "complete", "The completion message must persist after further edits");
-  assert.equal(completion.startKatex, "2+3");
+  assert.equal(completion.heading, "You transformed", "The completion message must persist after further edits");
+  assert.equal(completion.sourceKatex, "2+3");
   assert.equal(completion.targetKatex, "5");
 
   scope.isValidTextBlocks = () => true;

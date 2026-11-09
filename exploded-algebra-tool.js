@@ -1804,23 +1804,34 @@ Promise.resolve().then(() => {
                     ? ""
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
                 return selectedKatex
-                    ? { kind: "replace", selectedKatex, targetKatex: liveKatex || "\\square" }
-                    : { kind: "target", targetKatex: liveKatex || "\\square" };
+                    ? {
+                        heading: "Replace",
+                        sourceKatex: selectedKatex,
+                        connector: "with",
+                        targetKatex: liveKatex || "\\square"
+                    }
+                    : { heading: "Build the starting expression", targetKatex: liveKatex || "\\square" };
             }
 
-            if (authoringSessionActive && authoringPhase === "recording") {
-                return {
-                    kind: "target",
-                    targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
-                };
+            if (authoringSessionActive) {
+                const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
+                return authoringPhase === "recording"
+                    ? {
+                        heading: "Recording the transformation",
+                        sourceKatex: getProblemStatementKatex(level),
+                        connector: "into",
+                        targetKatex: currentKatex
+                    }
+                    : { heading: "Starting expression", targetKatex: currentKatex };
             }
 
             const completion = getStepCompletionStates(level);
             const lastStep = level.steps?.at(-1);
-            if (lastStep && !authoringSessionActive && uiState.mode === "edit" && completion.at(-1) === true) {
+            if (lastStep && uiState.mode === "edit" && completion.at(-1) === true) {
                 return {
-                    kind: "complete",
-                    startKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(level.startExpression)),
+                    heading: "You transformed",
+                    sourceKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(level.startExpression)),
+                    connector: "into",
                     targetKatex: lastStep.afterKatex || lastStep.katex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(lastStep.expression))
                 };
             }
@@ -1833,10 +1844,16 @@ Promise.resolve().then(() => {
                 targetIndex = uiState.inspectStepIndex;
             }
             const targetStep = level.steps && level.steps[targetIndex];
+            const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
             const targetKatex = targetStep
                 ? targetStep.beforeKatex || targetStep.afterKatex || targetStep.katex || targetStep.expression
-                : level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(expressionRoot);
-            return { kind: "target", targetKatex: targetKatex || "\\square" };
+                : level.initialKatex || currentKatex;
+            return {
+                heading: "Transform",
+                sourceKatex: currentKatex,
+                connector: "into",
+                targetKatex
+            };
         }
 
         function appendWorkspaceConventionalText(text, row = workspaceConventionalLine) {
@@ -1846,7 +1863,7 @@ Promise.resolve().then(() => {
             row.appendChild(span);
         }
 
-        function appendWorkspaceConventionalMath(katexSource, row) {
+        function appendWorkspaceConventionalMath(katexSource, row = workspaceConventionalLine) {
             const span = document.createElement("span");
             span.className = "workspace-conventional-math";
             if (window.katex) {
@@ -1867,27 +1884,16 @@ Promise.resolve().then(() => {
             if (!content) {
                 return;
             }
-            const expressions = document.createElement("div");
-            expressions.className = "workspace-conventional-expressions";
-            if (content.kind === "replace") {
-                appendWorkspaceConventionalText("Replace");
-                appendWorkspaceConventionalMath(content.selectedKatex, expressions);
-                appendWorkspaceConventionalText("with", expressions);
-                workspaceConventionalLine.setAttribute("aria-label", "Replace the selected expression with the expression being built");
-            } else if (content.kind === "complete") {
-                appendWorkspaceConventionalText("You transformed");
-                appendWorkspaceConventionalMath(content.startKatex, expressions);
-                appendWorkspaceConventionalText("into", expressions);
-                workspaceConventionalLine.setAttribute("aria-label", "Exercise complete");
-            } else {
-                appendWorkspaceConventionalText("Target expression:");
-                workspaceConventionalLine.setAttribute("aria-label", "Target expression");
+            appendWorkspaceConventionalText(content.heading);
+            workspaceConventionalLine.setAttribute("aria-label", content.heading);
+            if (content.sourceKatex) {
+                const sourceRow = document.createElement("div");
+                sourceRow.className = "workspace-conventional-expressions";
+                appendWorkspaceConventionalMath(content.sourceKatex, sourceRow);
+                appendWorkspaceConventionalText(content.connector, sourceRow);
+                workspaceConventionalLine.appendChild(sourceRow);
             }
-            appendWorkspaceConventionalMath(content.targetKatex, expressions);
-            const spacer = document.createElement("span");
-            spacer.className = "workspace-conventional-spacer";
-            spacer.setAttribute("aria-hidden", "true");
-            workspaceConventionalLine.append(expressions, spacer);
+            appendWorkspaceConventionalMath(content.targetKatex);
         }
 
         function positionWorkspaceConventionalLine() {
