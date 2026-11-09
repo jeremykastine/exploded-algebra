@@ -1342,7 +1342,6 @@ Promise.resolve().then(() => {
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
-        const exerciseCompletionPanel = document.getElementById("exerciseCompletionPanel");
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const guidancePopover = document.getElementById("guidancePopover");
         const leftPanel = document.getElementById("leftPanel");
@@ -1377,8 +1376,6 @@ Promise.resolve().then(() => {
         const levelFileInput = document.getElementById("levelFileInput");
         const loadedLevelFileName = document.getElementById("loadedLevelFileName");
         const levelContent = document.getElementById("levelContent");
-        const modeChoiceBackdrop = document.getElementById("modeChoiceBackdrop");
-        const modeChoiceTitle = document.getElementById("modeChoiceTitle");
 
         const ASSISTANCE_MODES = {
             guided: "guided",
@@ -1819,6 +1816,15 @@ Promise.resolve().then(() => {
             }
 
             const completion = getStepCompletionStates(level);
+            const lastStep = level.steps?.at(-1);
+            if (lastStep && !authoringSessionActive && uiState.mode === "edit" && completion.at(-1) === true) {
+                return {
+                    kind: "complete",
+                    startKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(level.startExpression)),
+                    targetKatex: lastStep.afterKatex || lastStep.katex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(lastStep.expression))
+                };
+            }
+
             let targetIndex = completion.findIndex(isComplete => !isComplete);
             if (targetIndex < 0) {
                 targetIndex = Math.max(0, (level.steps || []).length - 1);
@@ -1833,14 +1839,14 @@ Promise.resolve().then(() => {
             return { kind: "target", targetKatex: targetKatex || "\\square" };
         }
 
-        function appendWorkspaceConventionalText(text) {
+        function appendWorkspaceConventionalText(text, row = workspaceConventionalLine) {
             const span = document.createElement("span");
             span.className = "workspace-conventional-label";
             span.textContent = text;
-            workspaceConventionalLine.appendChild(span);
+            row.appendChild(span);
         }
 
-        function appendWorkspaceConventionalMath(katexSource) {
+        function appendWorkspaceConventionalMath(katexSource, row) {
             const span = document.createElement("span");
             span.className = "workspace-conventional-math";
             if (window.katex) {
@@ -1848,7 +1854,7 @@ Promise.resolve().then(() => {
             } else {
                 span.textContent = katexSource || "□";
             }
-            workspaceConventionalLine.appendChild(span);
+            row.appendChild(span);
         }
 
         function renderWorkspaceConventionalLine() {
@@ -1858,26 +1864,30 @@ Promise.resolve().then(() => {
             const content = getWorkspaceConventionalLineContent();
             workspaceConventionalLine.replaceChildren();
             workspaceConventionalLine.hidden = !content;
-            workspaceConventionalLine.classList.toggle("replace-layout", !!content && content.kind === "replace");
-            workspaceConventionalLine.classList.toggle("target-layout", !!content && content.kind === "target");
             if (!content) {
                 return;
             }
+            const expressions = document.createElement("div");
+            expressions.className = "workspace-conventional-expressions";
             if (content.kind === "replace") {
                 appendWorkspaceConventionalText("Replace");
-                appendWorkspaceConventionalMath(content.selectedKatex);
-                appendWorkspaceConventionalText("with");
-                appendWorkspaceConventionalMath(content.targetKatex);
+                appendWorkspaceConventionalMath(content.selectedKatex, expressions);
+                appendWorkspaceConventionalText("with", expressions);
                 workspaceConventionalLine.setAttribute("aria-label", "Replace the selected expression with the expression being built");
+            } else if (content.kind === "complete") {
+                appendWorkspaceConventionalText("You transformed");
+                appendWorkspaceConventionalMath(content.startKatex, expressions);
+                appendWorkspaceConventionalText("into", expressions);
+                workspaceConventionalLine.setAttribute("aria-label", "Exercise complete");
             } else {
                 appendWorkspaceConventionalText("Target expression:");
-                appendWorkspaceConventionalMath(content.targetKatex);
-                const spacer = document.createElement("span");
-                spacer.className = "workspace-conventional-spacer";
-                spacer.setAttribute("aria-hidden", "true");
-                workspaceConventionalLine.appendChild(spacer);
                 workspaceConventionalLine.setAttribute("aria-label", "Target expression");
             }
+            appendWorkspaceConventionalMath(content.targetKatex, expressions);
+            const spacer = document.createElement("span");
+            spacer.className = "workspace-conventional-spacer";
+            spacer.setAttribute("aria-hidden", "true");
+            workspaceConventionalLine.append(expressions, spacer);
         }
 
         function positionWorkspaceConventionalLine() {
@@ -2872,6 +2882,7 @@ Promise.resolve().then(() => {
             if (replayingGuidedUndo) {
                 const steps = getCurrentDemoSteps();
                 demoStepIndex = Math.min(guidedUndoStepIndex + 1, steps.length);
+                refreshDemoBodyClass();
             }
             completionExportReadyForRun = !!snapshot.completionExportReadyForRun;
             completionExportCompletedAtDate = snapshot.completionExportCompletedAt
@@ -3089,6 +3100,10 @@ Promise.resolve().then(() => {
             completionExportCompletedAtDate = new Date();
             solutionRecorder.completedAt = completionExportCompletedAtDate.toISOString();
             solutionRecorder.finalExpression = getExpressionTextForTrace();
+            if (isDemoModeActive()) {
+                demoStepIndex = getCurrentDemoSteps().length;
+                refreshDemoBodyClass();
+            }
         }
 
         function isMultiTermCommuteToolName(toolName) {
@@ -3387,7 +3402,7 @@ Promise.resolve().then(() => {
                     <p>${escapeHtml(message)}</p>
                 </div>
             `;
-            renderMoveHistoryControls(null);
+            updateExerciseMenu(null);
             clearParenthesizedExpressionSvg(targetExpressionSvg, targetExpressionCtx);
             clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
             workspaceSvg.replaceChildren();
@@ -3405,7 +3420,7 @@ Promise.resolve().then(() => {
                 LEVELS.splice(0, LEVELS.length, level);
                 currentLevelIndex = 0;
                 setLevelFileStatus(`${file.name} — ${level.title}`);
-                beginLoadedLevel(level);
+                startLoadedLevel(assistanceModeFromQueryString());
                 loadSucceeded = true;
             } catch (error) {
                 console.error("The selected level file could not be loaded.", error);
@@ -3461,7 +3476,7 @@ Promise.resolve().then(() => {
             const level = validateChosenLevel(parsed, sourceName);
             LEVELS.splice(0, LEVELS.length, level);
             currentLevelIndex = 0;
-            beginLoadedLevel(level);
+            startLoadedLevel(assistanceModeFromQueryString());
             return true;
         }
 
@@ -3601,7 +3616,7 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return assistanceMode === ASSISTANCE_MODES.guided && hasGuidedMode(getCurrentLevel());
+            return assistanceMode === ASSISTANCE_MODES.guided && demoStepIndex < getCurrentDemoSteps().length;
         }
 
         function getCurrentDemoStep() {
@@ -3665,16 +3680,6 @@ Promise.resolve().then(() => {
             window.history.replaceState(null, "", url.toString());
         }
 
-        function clearModeQueryString() {
-            if (!window.history || !window.history.replaceState) {
-                return;
-            }
-            const url = new URL(window.location.href);
-            url.searchParams.delete("assistance");
-            url.searchParams.delete("mode");
-            window.history.replaceState(null, "", url.toString());
-        }
-
         function assistanceModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
             const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
@@ -3700,49 +3705,10 @@ Promise.resolve().then(() => {
             return null;
         }
 
-        function hideModeChoice() {
-            if (modeChoiceBackdrop) {
-                modeChoiceBackdrop.classList.add("hidden");
-            }
-        }
-
         function startLoadedLevel(mode) {
             assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
-            hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
-        }
-
-        function showModeChoice(level) {
-            if (!modeChoiceBackdrop) {
-                startLoadedLevel(ASSISTANCE_MODES.unguided);
-                return;
-            }
-            if (modeChoiceTitle) {
-                modeChoiceTitle.textContent = level && level.title ? level.title : "Choose a mode";
-            }
-            const guidedButton = modeChoiceBackdrop.querySelector('[data-assistance-mode="guided"]');
-            const guidedAvailable = hasGuidedMode(level);
-            if (guidedButton) {
-                guidedButton.classList.toggle("hidden", !guidedAvailable);
-            }
-            showNoLevelSelectedState("Choose Guided or Unguided to begin this exercise.");
-            modeChoiceBackdrop.classList.remove("hidden");
-            const unguidedButton = modeChoiceBackdrop.querySelector('[data-assistance-mode="unguided"]');
-            const firstAvailableButton = guidedAvailable ? guidedButton : unguidedButton;
-            if (firstAvailableButton) {
-                requestAnimationFrame(() => firstAvailableButton.focus());
-            }
-        }
-
-        function beginLoadedLevel(level) {
-            const requestedMode = assistanceModeFromQueryString();
-            const validMode = normalizeAssistanceModeForLevel(requestedMode, level);
-            if (validMode) {
-                startLoadedLevel(validMode);
-                return;
-            }
-            showModeChoice(level);
         }
 
         function getDemoTargetNode(step) {
@@ -4177,15 +4143,6 @@ Promise.resolve().then(() => {
             return completedSteps.slice();
         }
 
-        function isExerciseFinished() {
-            const level = getCurrentLevel();
-            const lastStep = level && Array.isArray(level.steps) && level.steps.at(-1);
-            return !!lastStep && isInteractiveLevel(level) && !authoringSessionActive && uiState.mode === "edit" &&
-                uiState.stage === "idle" && !uiState.expressionBuilder &&
-                completedSteps[level.steps.length - 1] === true &&
-                expressionMatchesParenthesizedText(lastStep.expression);
-        }
-
         function downloadCurrentMoveHistory() {
             if (!solutionRecorder) {
                 return;
@@ -4195,11 +4152,11 @@ Promise.resolve().then(() => {
             downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
         }
 
-        function renderMoveHistoryControls(level) {
-            if (!moveHistoryButton) {
-                return;
-            }
-            moveHistoryButton.hidden = !isInteractiveLevel(level);
+        function updateExerciseMenu(level) {
+            workspaceUtilityMenuItems.querySelectorAll("[data-restart-mode]").forEach(button => {
+                button.disabled = !level || !normalizeAssistanceModeForLevel(button.dataset.restartMode, level);
+            });
+            moveHistoryButton.disabled = !level || !solutionRecorder;
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4302,12 +4259,12 @@ Promise.resolve().then(() => {
             if (syncConventionalStepsVisibility(level)) {
                 updateStepCompletion(level);
                 levelContent.replaceChildren();
-                renderMoveHistoryControls(level);
+                updateExerciseMenu(level);
                 return;
             }
             if (!level) {
                 levelContent.innerHTML = "";
-                renderMoveHistoryControls(null);
+                updateExerciseMenu(null);
                 hideExerciseGuidance();
                 return;
             }
@@ -4344,7 +4301,7 @@ Promise.resolve().then(() => {
                         </section>
                     </div>
                 `;
-                renderMoveHistoryControls(level);
+                updateExerciseMenu(level);
                 renderLeftPanelMath();
                 scheduleTopPanelHeightUpdate(level);
                 return;
@@ -4369,7 +4326,7 @@ Promise.resolve().then(() => {
                         </section>
                     </div>
                 `;
-                renderMoveHistoryControls(level);
+                updateExerciseMenu(level);
                 renderLeftPanelMath();
                 scheduleTopPanelHeightUpdate(level);
                 return;
@@ -4444,7 +4401,7 @@ Promise.resolve().then(() => {
                     </section>
                 </div>
             `;
-            renderMoveHistoryControls(level);
+            updateExerciseMenu(level);
 
             renderLeftPanelMath();
             scheduleTopPanelHeightUpdate(level);
@@ -4515,6 +4472,7 @@ Promise.resolve().then(() => {
             currentExpressionRoot = textToExpression(level.startExpression);
             currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
             expressionRoot = currentExpressionRoot;
+            savedMainWorkspaceView = null;
             workspaceZoom = 1;
             workspacePanX = 0;
             workspacePanY = 0;
@@ -4587,7 +4545,6 @@ Promise.resolve().then(() => {
             LEVELS.splice(0, LEVELS.length, validated);
             currentLevelIndex = 0;
             assistanceMode = ASSISTANCE_MODES.unguided;
-            hideModeChoice();
             document.body.classList.remove("no-level-loaded");
             loadLevel(0);
             return validated;
@@ -4932,19 +4889,24 @@ Promise.resolve().then(() => {
             }
         }
 
-        function resetCurrentExercise() {
-            if (!window.confirm("Are you sure you want to reset the exercise?")) {
-                return;
-            }
-            clearModeQueryString();
-            window.location.reload();
+        function restartCurrentExercise(mode) {
+            updateModeQueryString(mode);
+            startLoadedLevel(mode);
         }
 
-        function repeatCurrentExercise(mode) {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("assistance");
-            url.searchParams.set("mode", mode);
-            window.location.href = url.toString();
+        function closeCurrentExercise() {
+            window.close();
+            // Same-tab launches can return through browser history if closing is blocked.
+            setTimeout(() => {
+                if (window.closed) {
+                    return;
+                }
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.alert("Close this tab using your browser controls.");
+                }
+            }, 0);
         }
 
         function initializeExplodedAlgebra() {
@@ -4956,21 +4918,6 @@ Promise.resolve().then(() => {
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             setOperationStyle(getSavedOperationStyle());
             setOperationSize(getSavedOperationSize());
-            if (exerciseCompletionPanel) {
-                exerciseCompletionPanel.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-completion-action]");
-                    if (!button || button.disabled) return;
-                    if (button.dataset.completionAction === "repeat-guided") {
-                        repeatCurrentExercise(ASSISTANCE_MODES.guided);
-                    } else if (button.dataset.completionAction === "repeat-unguided") {
-                        repeatCurrentExercise(ASSISTANCE_MODES.unguided);
-                    } else if (button.dataset.completionAction === "download-moves") {
-                        downloadCurrentMoveHistory();
-                    } else if (button.dataset.completionAction === "more-exercises") {
-                        window.location.href = "Exercises.html";
-                    }
-                });
-            }
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -5000,14 +4947,6 @@ Promise.resolve().then(() => {
                         } else {
                             undoExpressionStep();
                         }
-                        return;
-                    }
-                    if (button.dataset.workspaceAction === "resetExercise") {
-                        resetCurrentExercise();
-                        return;
-                    }
-                    if (button.dataset.workspaceAction === "downloadMoveHistory") {
-                        downloadCurrentMoveHistory();
                         return;
                     }
                     if (button.dataset.workspaceAction === "showExerciseGuidance") {
@@ -5052,6 +4991,14 @@ Promise.resolve().then(() => {
                         showExerciseGuidance();
                     } else if (button.dataset.workspaceAction === "authoringFinishRecording") {
                         notifyAuthoringHost("finish-recording");
+                    } else if (button.dataset.workspaceAction === "restartExercise") {
+                        restartCurrentExercise(button.dataset.restartMode);
+                        workspaceUtilityMenuToggle.focus();
+                    } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
+                        downloadCurrentMoveHistory();
+                        workspaceUtilityMenuToggle.focus();
+                    } else if (button.dataset.workspaceAction === "closeExercise") {
+                        closeCurrentExercise();
                     }
                     event.stopPropagation();
                 });
@@ -5081,13 +5028,6 @@ Promise.resolve().then(() => {
                     if (button.dataset.workspaceSetting) {
                         cycleQuickSetting(button.dataset.workspaceSetting);
                         return;
-                    }
-                    if (button.dataset.workspaceAction === "resetExercise") {
-                        resetCurrentExercise();
-                        return;
-                    }
-                    if (button.dataset.workspaceAction === "downloadMoveHistory") {
-                        downloadCurrentMoveHistory();
                     }
                 });
             }
@@ -5154,20 +5094,6 @@ Promise.resolve().then(() => {
                     childList: true,
                     subtree: true,
                     characterData: true
-                });
-            }
-            if (modeChoiceBackdrop) {
-                modeChoiceBackdrop.addEventListener("click", event => {
-                    const button = event.target.closest("button[data-assistance-mode]");
-                    if (!button) {
-                        return;
-                    }
-                    const selectedMode = normalizeAssistanceModeForLevel(button.dataset.assistanceMode, getCurrentLevel());
-                    if (!selectedMode) {
-                        return;
-                    }
-                    updateModeQueryString(selectedMode);
-                    startLoadedLevel(selectedMode);
                 });
             }
             if (builderDigitRail) {
@@ -13233,30 +13159,6 @@ function renderToolArea() {
             updateWorkspaceToolbar();
             requestAnimationFrame(updateSidePanelColumns);
 
-            const exerciseFinished = isExerciseFinished();
-            document.body.classList.toggle("exercise-complete", exerciseFinished);
-            if (exerciseCompletionPanel) {
-                exerciseCompletionPanel.classList.toggle("hidden", !exerciseFinished);
-                const repeatGuided = exerciseCompletionPanel.querySelector('[data-completion-action="repeat-guided"]');
-                if (repeatGuided) {
-                    repeatGuided.disabled = !hasGuidedMode(getCurrentLevel());
-                    repeatGuided.title = repeatGuided.disabled ? "Guided mode is unavailable for this exercise" : "";
-                }
-                const downloadMoves = exerciseCompletionPanel.querySelector('[data-completion-action="download-moves"]');
-                if (downloadMoves) {
-                    downloadMoves.disabled = !solutionRecorder;
-                }
-            }
-            if (exerciseFinished) {
-                document.body.classList.remove("tool-area-active");
-                if (mainActionPanel) {
-                    clearInactivePostSelectionPalette();
-                    mainActionPanel.replaceChildren();
-                    mainActionPanel.classList.add("hidden");
-                }
-                return;
-            }
-
             if (uiState.mode !== "edit") {
                 document.body.classList.remove("tool-area-active");
                 if (mainActionPanel) {
@@ -13871,9 +13773,6 @@ function renderToolArea() {
         }
 
         function selectFromWorkspaceTap(x, y, pointerType, allowSelectionCancel = true) {
-            if (isExerciseFinished()) {
-                return false;
-            }
             if (
                 allowSelectionCancel &&
                 selection.node &&

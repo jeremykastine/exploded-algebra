@@ -72,23 +72,28 @@ function checkPlayer() {
   assert.equal(vm.runInContext("makeAuthoringLevel({showConventionalSteps: false}, '(0)').showConventionalSteps", scope), false);
 
   scope.authoringSessionActive = false;
-  scope.level = { showConventionalSteps: false, steps: [{ expression: "((2)+(3))" }, { expression: "(5)" }] };
+  scope.level = { showConventionalSteps: false, startExpression: "((2)+(3))", initialKatex: "2+3", steps: [{ expression: "((2)+(3))" }, { expression: "(5)", afterKatex: "5" }] };
   scope.LEVELS = [scope.level];
   scope.completedSteps = [true, false];
   scope.expressionMatchesParenthesizedText = expression => expression === "(5)";
   scope.maybePrepareCompletedLevelExport = () => {};
   scope.levelContent = { replaceChildren() {} };
-  scope.renderMoveHistoryControls = () => {};
+  scope.updateExerciseMenu = () => {};
   scope.renderWorkspaceConventionalLine = () => {};
   scope.getCurrentLevel = () => scope.level;
   scope.isInteractiveLevel = () => true;
+  scope.expressionRoot = {};
   scope.uiState = { mode: "edit", stage: "idle", expressionBuilder: null };
-  for (const name of ["updateStepCompletion", "renderLevelInfo", "isExerciseFinished"]) {
+  for (const name of ["updateStepCompletion", "getStepCompletionStates", "renderLevelInfo", "getWorkspaceConventionalLineContent"]) {
     vm.runInContext(extract(player, name, "        "), scope);
   }
   vm.runInContext("renderLevelInfo(0)", scope);
   assert.equal(scope.completedSteps[1], true, "Hidden panels must still track the final solution step");
-  assert.equal(vm.runInContext("isExerciseFinished()", scope), true, "Hidden-step problems must expose completion controls");
+  scope.expressionMatchesParenthesizedText = () => false;
+  const completion = vm.runInContext("getWorkspaceConventionalLineContent()", scope);
+  assert.equal(completion.kind, "complete", "The completion message must persist after further edits");
+  assert.equal(completion.startKatex, "2+3");
+  assert.equal(completion.targetKatex, "5");
 
   scope.isValidTextBlocks = () => true;
   vm.runInContext(extract(player, "validateChosenLevel", "        "), scope);

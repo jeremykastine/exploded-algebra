@@ -47,11 +47,11 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-08T19:59:12-05:00">11/8/26, 7:59 PM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-08T20:14:19-05:00">11/8/26, 8:14 PM EST</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
-    <p>The best way to see what Exploded Algebra is all about is to jump in and try it. Choose a problem below and select <strong>Guided</strong> when prompted. Guided mode tells you exactly what to do.</p>
-    <p>When you see a dotted yellow outline, select the part inside it by dragging across it or tapping multiple times until the whole part is selected. Press the button highlighted in yellow, and keep following the prompts until the exercise is complete. Then try another problem or repeat the same one in Unguided mode.</p>
+    <p>The best way to see what Exploded Algebra is all about is to jump in and try it. Choose a problem below to start in Unguided mode. To follow a recorded solution, open the workspace menu and choose <strong>Restart Guided</strong>.</p>
+    <p>When you see a dotted yellow outline, select the part inside it by dragging across it or tapping multiple times until the whole part is selected. Press the button highlighted in yellow, and keep following the prompts until the exercise is complete. Use the workspace menu to restart in Unguided mode or close the problem and return here.</p>
     <!-- Keep built-in exercises in pedagogical order, from foundational/easiest to most advanced.
          When adding a JSON exercise, insert its link at the appropriate point (including the
          beginning or middle), and add its matching embedded JSON and builtInLevelDataIds entry. -->
@@ -1868,18 +1868,7 @@
         'levels/add-rational-expressions-with-unlike-denominators.json': 'builtInLevelDataAddRationalExpressions'
       };
 
-      function clearLevelTransfer() {
-        try {
-          window.sessionStorage.removeItem(customLevelStorageKey);
-        } catch (error) {
-          // file:// pages can have browser-specific storage behavior.
-        }
-        if (typeof window.name === 'string' && window.name.startsWith(customLevelWindowNamePrefix)) {
-          window.name = '';
-        }
-      }
-
-      function saveLevelTransfer(fileName, levelText) {
+      function saveLevelTransfer(exerciseTab, fileName, levelText) {
         const payloadText = JSON.stringify({
           version: 1,
           fileName: fileName,
@@ -1888,14 +1877,14 @@
 
         let sessionSaved = false;
         try {
-          window.sessionStorage.setItem(customLevelStorageKey, payloadText);
+          exerciseTab.sessionStorage.setItem(customLevelStorageKey, payloadText);
           sessionSaved = true;
         } catch (error) {
           // window.name is the local-file fallback below.
         }
 
-        window.name = customLevelWindowNamePrefix + payloadText;
-        if (!sessionSaved && !window.name.startsWith(customLevelWindowNamePrefix)) {
+        exerciseTab.name = customLevelWindowNamePrefix + payloadText;
+        if (!sessionSaved && !exerciseTab.name.startsWith(customLevelWindowNamePrefix)) {
           throw new Error('This browser could not carry the selected exercise into the app page.');
         }
       }
@@ -1909,20 +1898,25 @@
         return dataNode.textContent.trim();
       }
 
-      function openBuiltInLevel(levelFile) {
-        if (!levelFile) {
-          return;
+      async function openExercise(fileName, source, readLevelText) {
+        const exerciseTab = window.open('about:blank', '_blank') || window;
+        try {
+          saveLevelTransfer(exerciseTab, fileName, await readLevelText());
+          exerciseTab.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(fileName) + '&source=' + source;
+        } catch (error) {
+          if (exerciseTab !== window) {
+            exerciseTab.close();
+          }
+          throw error;
         }
-        clearLevelTransfer();
-        saveLevelTransfer(levelFile, getBuiltInLevelText(levelFile));
-        window.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(levelFile) + '&source=builtin';
       }
 
       builtInExerciseLinks.forEach(function (link) {
-        link.addEventListener('click', function (event) {
+        link.addEventListener('click', async function (event) {
           event.preventDefault();
           try {
-            openBuiltInLevel(link.dataset.exerciseFile);
+            const levelFile = link.dataset.exerciseFile;
+            await openExercise(levelFile, 'builtin', () => getBuiltInLevelText(levelFile));
           } catch (error) {
             if (customLevelFileStatus) {
               customLevelFileStatus.textContent = error && error.message
@@ -1945,9 +1939,9 @@
           }
 
           try {
-            clearLevelTransfer();
-            saveLevelTransfer(file.name, await file.text());
-            window.location.href = 'exploded-algebra.html?level=' + encodeURIComponent(file.name) + '&source=custom';
+            await openExercise(file.name, 'custom', () => file.text());
+            customLevelFileStatus.textContent = '';
+            customLevelFileInput.value = '';
           } catch (error) {
             if (customLevelFileStatus) {
               customLevelFileStatus.textContent = error && error.message

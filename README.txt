@@ -31,14 +31,18 @@ multiplication, and the inverse operator each include a guided exercise, alongsi
 the earlier guided examples of arithmetic, algebraic properties, and distribution.
 Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
 all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
-use mode=guided; the completion controls offer an Unguided repeat afterward.
+use mode=guided; the workspace menu offers a restart in either mode.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. It shows `Target expression:` on its own line, the next incomplete
-step's KaTeX on the next line, and then a blank line. Replacement entry instead shows `Replace [selection] with [live
-expression]`. The stack uses the exploded numbers' font size and shares the
-expression's pan and application-zoom transform. `initialKatex` remains the conventional form of the
-starting expression in the level data.
+step's KaTeX on the next line, and then a blank line. Replacement entry uses
+a Replace heading followed by the selected expression, with, and the live
+replacement on one line. On completion, You transformed introduces the starting
+expression and the completed target on one line. Each heading and math line
+is followed by a blank line before the exploded notation. The expression stays
+editable after completion. The stack shares the workspace pan and zoom.
+`initialKatex` remains the conventional form of the starting expression in the
+level data.
 The pre-selection Exercise Guidance view includes the problem statement and the
 exercise's numerical-manipulation restrictions. New Problem Builder exports
 store the complete, author-editable view in the top-level `exerciseGuidance`
@@ -93,8 +97,8 @@ the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Exercise Guidance pre-selection button shows numerical
 permissions as a two-level bulleted list. The Numerical Manipulation action button
 is marked with bold `123`. Operation display
-settings, Reset, and Download Move History appear on the settings screen rather
-than in the action or expression-builder panels.
+settings appear on the settings screen. Restart Guided, Restart Unguided,
+Download Moves, and Close Problem are available in the workspace menu.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. Initial expression entry and zero-product insertion
@@ -247,12 +251,13 @@ also accepts mode=guided, for example:
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
   exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
 Guided follows the recorded action sequence. Unguided updates the single
-conventional target line without controlling the learner's moves. If mode is
-absent or invalid, the learner is asked to choose Guided or Unguided. Guided is
-hidden for exercises without recorded guidance. Older assistance=high and
-assistance=medium URLs map to Guided and Unguided respectively; Low/final-only is
-no longer supported. Reset Exercise clears either query convention and returns to
-the Guided/Unguided choice.
+conventional target without controlling the learner's moves. Unguided is the
+default when the URL lacks a supported mode. Older assistance=high and
+assistance=medium URLs still map to Guided and Unguided. Restart Guided is
+available for exercises with recorded guidance. Restarting replaces the mode
+parameter and starts the exercise over in the same tab. Close Problem returns
+to the launcher by closing the exercise tab or by going back after a same-tab
+launch.
 The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom

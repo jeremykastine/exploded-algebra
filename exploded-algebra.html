@@ -1856,16 +1856,6 @@
             padding-bottom: 12px;
             border-bottom: 1px solid #ddd;
         }
-        .level-menu-actions .reset-exercise-button{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 44px;
-            min-width: 0;
-            min-height: 44px;
-            margin: 0;
-        }
         .level-menu-actions svg { width: 28px; height: 28px; }
         .layout-size-controls {
             display: grid;
@@ -2133,65 +2123,6 @@
             transform: translate(-50%, -50%);
         }
         .numerical-rewrite-error.hidden { display: none; }
-        .mode-choice-backdrop {
-            position: fixed;
-            z-index: 1000;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            box-sizing: border-box;
-            background: rgba(20, 20, 28, 0.58);
-        }
-        .mode-choice-backdrop.hidden { display: none; }
-        .mode-choice-dialog {
-            width: min(560px, 100%);
-            padding: clamp(22px, 5vw, 38px);
-            border: 2px solid #7040a0;
-            border-radius: 16px;
-            box-sizing: border-box;
-            background: #fff;
-            box-shadow: 0 18px 56px rgba(0, 0, 0, 0.34);
-            color: #222;
-            text-align: center;
-        }
-        .mode-choice-dialog h2 {
-            margin: 0 0 10px;
-            color: #4f2878;
-            font-size: clamp(20px, 4vw, 28px);
-            line-height: 1.2;
-        }
-        .mode-choice-dialog p {
-            margin: 0 0 22px;
-            font-size: clamp(16px, 2.5vw, 19px);
-            line-height: 1.45;
-        }
-        .mode-choice-actions {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 14px;
-        }
-        .mode-choice-actions button.hidden { display: none; }
-        .mode-choice-actions button {
-            min-height: 58px;
-            padding: 12px 16px;
-            border: 2px solid #7040a0;
-            border-radius: 10px;
-            background: #fff;
-            color: #4f2878;
-            font: inherit;
-            font-size: clamp(16px, 2.8vw, 20px);
-            font-weight: 800;
-            cursor: pointer;
-        }
-        .mode-choice-actions button:focus-visible {
-            outline: 3px solid #f2c94c;
-            outline-offset: 3px;
-        }
-        @media (max-width: 460px) {
-            .mode-choice-actions { grid-template-columns: 1fr; }
-        }
         .exercise-guidance-popover-title,
         .exercise-guidance-popover .rule-name {
             display: block;
@@ -3933,7 +3864,6 @@
         .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1; }
         .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1; }
         .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1; }
-        body.authoring-session #settingsPanel [data-workspace-action="resetExercise"] { display: none !important; }
         .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .quadrant-menu .settings-button { grid-column: 6; grid-row: 4; }
 
@@ -3953,9 +3883,7 @@
             overflow-wrap: anywhere;
             pointer-events: none;
         }
-        .level-menu-panel .workspace-setting-button,
-        .level-menu-panel [data-workspace-action="resetExercise"],
-        .level-menu-panel [data-workspace-action="downloadMoveHistory"] {
+        .level-menu-panel .workspace-setting-button {
             flex-direction: column;
             gap: 3px;
         }
@@ -4033,8 +3961,7 @@
         }
         .bottom-controls-panel > .quadrant-tools,
         .bottom-controls-panel > .main-action-panel,
-        .bottom-controls-panel > .builder-keypad-panel,
-        .bottom-controls-panel > .exercise-completion-panel {
+        .bottom-controls-panel > .builder-keypad-panel {
             position: relative;
             inset: auto;
             grid-column: 1 / -1 !important;
@@ -4074,53 +4001,9 @@
         }
 
         .bottom-controls-panel > .main-action-panel.hidden,
-        .bottom-controls-panel > .builder-keypad-panel.hidden,
-        .bottom-controls-panel > .exercise-completion-panel.hidden {
+        .bottom-controls-panel > .builder-keypad-panel.hidden {
             display: none;
         }
-        .exercise-completion-panel .completion-message {
-            grid-column: 1 / -1;
-            grid-row: 1;
-            align-self: center;
-            justify-self: center;
-            padding: 2px 8px;
-            font-size: clamp(14px, 2.6vw, 22px);
-            font-weight: 800;
-            color: #126f37;
-            text-align: center;
-        }
-        .exercise-completion-panel button {
-            z-index: 1;
-            min-width: 0;
-            min-height: 0;
-            padding: 4px 8px;
-            border: 0;
-            border-radius: 0;
-            background: transparent;
-            color: #202020;
-            font: inherit;
-            font-size: clamp(11px, 2vw, 17px);
-            font-weight: 700;
-            line-height: 1.2;
-            cursor: pointer;
-        }
-        .exercise-completion-panel button:hover,
-        .exercise-completion-panel button:focus-visible {
-            background: #e5f2e9;
-        }
-        .exercise-completion-panel button:focus-visible {
-            outline: 3px solid #205fa8;
-            outline-offset: -4px;
-        }
-        .exercise-completion-panel button:disabled {
-            color: #777;
-            background: #ececec;
-            cursor: not-allowed;
-        }
-        .exercise-completion-panel [data-completion-action="repeat-guided"] { grid-column: 1 / 4; grid-row: 2 / 4; }
-        .exercise-completion-panel [data-completion-action="repeat-unguided"] { grid-column: 4 / 7; grid-row: 2 / 4; }
-        .exercise-completion-panel [data-completion-action="download-moves"] { grid-column: 1 / 4; grid-row: 4; }
-        .exercise-completion-panel [data-completion-action="more-exercises"] { grid-column: 4 / 7; grid-row: 4; }
         body.selection-active:not(.expression-builder-active) .bottom-controls-panel,
         body.selection-active:not(.expression-builder-active) .main-action-panel .intent-category-actions {
             gap: 0;
@@ -4352,8 +4235,8 @@
         .workspace-conventional-line {
             position: absolute;
             display: flex;
-            align-items: baseline;
-            gap: 0.38em;
+            flex-direction: column;
+            align-items: flex-start;
             width: max-content;
             max-width: none;
             min-height: 1.25em;
@@ -4367,14 +4250,10 @@
             white-space: nowrap;
             user-select: none;
         }
-        .workspace-conventional-line.target-layout {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0;
-        }
-        .workspace-conventional-line.replace-layout {
-            flex-direction: row;
+        .workspace-conventional-expressions {
+            display: flex;
             align-items: baseline;
+            gap: 0.38em;
         }
         .workspace-conventional-spacer {
             display: block;
@@ -4427,8 +4306,7 @@
         }
         .palette-content > .quadrant-tools,
         .palette-content > .main-action-panel,
-        .palette-content > .builder-keypad-panel,
-        .palette-content > .exercise-completion-panel {
+        .palette-content > .builder-keypad-panel {
             position: relative;
             inset: auto;
             grid-column: 1 / -1 !important;
@@ -4451,8 +4329,7 @@
             display: grid !important;
         }
         .palette-content > .main-action-panel,
-        .palette-content > .builder-keypad-panel,
-        .palette-content > .exercise-completion-panel {
+        .palette-content > .builder-keypad-panel {
             grid-row: 2 / -1 !important;
         }
         .palette-content > .quadrant-tools > .workspace-toolbar,
@@ -4473,14 +4350,12 @@
             grid-template-rows: minmax(0, 1fr);
         }
         .palette-content > .main-action-panel.hidden,
-        .palette-content > .builder-keypad-panel.hidden,
-        .palette-content > .exercise-completion-panel.hidden { display: none; }
+        .palette-content > .builder-keypad-panel.hidden { display: none; }
         .palette-content .workspace-undo-label,
         .palette-content .workspace-setting-name,
         .palette-content .workspace-setting-value,
         .palette-content .workspace-finish-recording-label,
         .palette-content .contextual-numerical-rewrite-label,
-        .palette-content .completion-message,
         .palette-content button {
             font-size: calc(1em * var(--palette-content-scale));
         }
@@ -4553,7 +4428,8 @@
             display: grid;
             width: max-content;
             min-width: 11rem;
-            overflow: hidden;
+            max-height: calc(100dvh - 4rem);
+            overflow: auto;
             border: 1px solid rgba(45, 55, 70, 0.5);
             border-radius: 0.45rem;
             background: rgba(255, 255, 255, 0.98);
@@ -4572,9 +4448,10 @@
             cursor: pointer;
         }
         .workspace-utility-menu-items button:last-child { border-bottom: 0; }
-        .workspace-utility-menu-items button:hover,
+        .workspace-utility-menu-items button:not(:disabled):hover,
         .workspace-utility-menu-items button:focus-visible { background: #e8f1ff; }
-        body.authoring-session .workspace-utility-menu-items [data-workspace-action="showExerciseGuidance"] { display: none; }
+        .workspace-utility-menu-items button:disabled { color: #666; cursor: default; }
+        body.authoring-session .exercise-menu-action { display: none; }
         body.settings-active .workspace-utility-menu,
         body.exercise-guidance-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
@@ -4621,7 +4498,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T19:59:12-05:00">11/8/26, 7:59 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-08T20:14:19-05:00">11/8/26, 8:14 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4632,7 +4509,11 @@
             </button>
             <div id="workspaceUtilityMenuItems" class="workspace-utility-menu-items hidden" role="menu" aria-label="Workspace menu">
                 <button id="settingsButton" type="button" data-workspace-action="openSettings" role="menuitem">Settings</button>
-                <button type="button" class="exercise-guidance-button" data-workspace-action="showExerciseGuidance" role="menuitem">Exercise Guidance</button>
+                <button type="button" class="exercise-guidance-button exercise-menu-action" data-workspace-action="showExerciseGuidance" role="menuitem">Exercise Guidance</button>
+                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" data-restart-mode="guided" role="menuitem" disabled>Restart Guided</button>
+                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" data-restart-mode="unguided" role="menuitem" disabled>Restart Unguided</button>
+                <button type="button" class="exercise-menu-action" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
+                <button type="button" class="exercise-menu-action" data-workspace-action="closeExercise" role="menuitem">Close Problem</button>
                 <button type="button" data-workspace-action="authoringFinishRecording" role="menuitem" hidden>All Done</button>
             </div>
         </div>
@@ -4664,16 +4545,6 @@
                     </div>
                 </div>
                 <div id="mainActionPanel" class="main-action-panel hidden" role="group" aria-label="Expression actions"></div>
-            <div id="exerciseCompletionPanel" class="exercise-completion-panel hidden" role="group" aria-label="Exercise complete">
-                <div class="completion-message" role="status">Exercise complete!</div>
-                <button type="button" data-completion-action="repeat-guided">Repeat Exercise<br>Guided</button>
-                <button type="button" data-completion-action="repeat-unguided">Repeat Exercise<br>Unguided</button>
-                <button type="button" data-completion-action="download-moves">Download Moves</button>
-                <button type="button" data-completion-action="more-exercises">Try More Exercises</button>
-                <svg class="controls-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                    <path class="controls-grid-lines" d="M1 1 H599 V399 H1 Z M1 100 H599 M1 300 H599 M300 100 V399"/>
-                </svg>
-            </div>
             <div id="builderKeypadPanel" class="builder-keypad-panel hidden" role="group" aria-label="Expression builder keypad">
                 <div id="builderInputRail" class="builder-input-rail hidden">
                     <div id="builderVariableRail" class="builder-variable-rail" aria-label="Expression builder variables"></div>
@@ -4745,31 +4616,13 @@
                     <span class="workspace-setting-name">Operation Size</span>
                     <span class="workspace-setting-value" data-setting-value>100%</span>
                 </button>
-                <button type="button" class="reset-exercise-button" data-workspace-action="resetExercise">
-                    <span class="workspace-setting-name">Reset</span>
-                    <span class="workspace-setting-value">Exercise</span>
-                </button>
-                <button type="button" class="move-history-button" data-workspace-action="downloadMoveHistory" hidden>
-                    <span class="workspace-setting-name">Download</span>
-                    <span class="workspace-setting-value">Move History</span>
-                </button>
             </div>
         </div>
         <button type="button" class="exit-settings-button" data-settings-action="close">Done</button>
     </section>
-    <div id="modeChoiceBackdrop" class="mode-choice-backdrop hidden">
-        <section class="mode-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-describedby="modeChoicePrompt">
-            <h2 id="modeChoiceTitle">Choose a mode</h2>
-            <p id="modeChoicePrompt">Do you want to work Guided or Unguided?</p>
-            <div class="mode-choice-actions">
-                <button type="button" data-assistance-mode="guided">Guided</button>
-                <button type="button" data-assistance-mode="unguided">Unguided</button>
-            </div>
-        </section>
-    </div>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261108-selection-feedback"></script>
+    <script src="exploded-algebra-tool.js?v=20261108-exercise-menu"></script>
 
 </body>
 </html>
