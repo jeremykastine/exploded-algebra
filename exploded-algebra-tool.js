@@ -6060,12 +6060,16 @@ ctx.font = SETTINGS.textFont;
             return true;
         }
 
-        function normalizeCloneForMatching(node) {
-            return node ? normalizeExpressionTree(cloneNode(node)) : null;
+        function normalizeCloneForMatching(node, omitUnitsBeforeInverses = false) {
+            return node ? normalizeExpressionTree(cloneNode(node), omitUnitsBeforeInverses) : null;
         }
 
         function sameExpressionForMatching(a, b) {
-            return sameExpression(normalizeCloneForMatching(a), normalizeCloneForMatching(b));
+            const omitUnitsBeforeInverses = true;
+            return sameExpression(
+                normalizeCloneForMatching(a, omitUnitsBeforeInverses),
+                normalizeCloneForMatching(b, omitUnitsBeforeInverses)
+            );
         }
 
         function getSumTermsForMatching(node) {
@@ -6109,12 +6113,12 @@ ctx.font = SETTINGS.textFont;
             return matchedIndices;
         }
 
-        function normalizeExpressionTree(node) {
+        function normalizeExpressionTree(node, omitUnitsBeforeInverses = false) {
             if (!node || node.type === "value") {
                 return node;
             }
 
-            node.args = node.args.map(normalizeExpressionTree);
+            node.args = node.args.map(child => normalizeExpressionTree(child, omitUnitsBeforeInverses));
 
             if (node.type === "sum" || node.type === "prod") {
                 const flattenedArgs = [];
@@ -6123,6 +6127,14 @@ ctx.font = SETTINGS.textFont;
                         flattenedArgs.push(...child.args);
                     } else {
                         flattenedArgs.push(child);
+                    }
+                }
+                if (omitUnitsBeforeInverses && node.type === "prod") {
+                    // Flatten first so grouping cannot hide a 1 next to an inverse.
+                    for (let i = flattenedArgs.length - 2; i >= 0; i--) {
+                        if (isValueNode(flattenedArgs[i], 1) && isInvNode(flattenedArgs[i + 1])) {
+                            flattenedArgs.splice(i, 1);
+                        }
                     }
                 }
                 node.args = flattenedArgs;
@@ -8856,10 +8868,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function numericalRewriteNodesHaveSameStructure(first, second) {
-            return !!first && !!second && sameExpressionForMatching(
-                normalizeExpressionTree(cloneNode(first)),
-                normalizeExpressionTree(cloneNode(second))
-            );
+            return sameExpression(normalizeCloneForMatching(first), normalizeCloneForMatching(second));
         }
 
         function getAutomaticNumericalRewriteData() {
