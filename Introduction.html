@@ -136,7 +136,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-11-09T08:35:29-05:00">11/9/26, 8:35 AM EST</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-11-09T15:15:16-05:00">11/9/26, 3:15 PM EST</time></p>
 
 <main class="narrative">
     <header class="intro-header">
@@ -1226,29 +1226,28 @@ body.player-ready>#exploded-examples{display:none;}
     appendParagraph(directSection, "Even though the expression is more complicated, its grouping is still explicit and clear. The bars show exactly which pieces belong to each product and to the sum. The arithmetic, however, is not so pleasant: multiplying 35 by 43 and then adding several large numbers takes more work than our first two calculations.");
 
     const propertiesSection = addSection("Algebraic properties with numbers", [
-        "We can sometimes make a calculation easier by changing the arrangement of an expression while keeping its value the same. The commutative properties and the distributive property tell us which changes we can make. Let’s look at numerical examples, using English and exploded notation."
+        "Commutativity and distributivity give us two important ways to transform an expression while preserving its value. These moves can make a calculation easier. Here’s what they look like in exploded notation."
     ], null, "algebraic-properties");
-    appendParagraph(propertiesSection, "The commutative property of addition lets us switch the order of two terms. Adding 2 to 3 gives the same total as adding 3 to 2. Imagine combining a group of two objects with a group of three objects: changing which group we count first does not change the total of five.");
+    appendParagraph(propertiesSection, "In exploded notation, commuting terms swaps their vertical positions in a sum.");
     propertiesSection.appendChild(phrasePair(
         phraseCard("Add 2 and 3.", sum(value(2), value(3)), "The total is 5.", "Two is above three in the sum, with a horizontal addition bar between them."),
         phraseCard("Switch their order: add 3 and 2.", sum(value(3), value(2)), "The total is still 5.", "Three is now above two. The addition bar still groups the same two terms.")
     ));
-    appendParagraph(propertiesSection, "The commutative property of multiplication lets us switch the order of two factors. Three groups of four objects contain the same number of objects as four groups of three. Picture three rows with four objects in each row, then turn the picture to see four rows with three in each. Both arrangements contain twelve objects.");
+    appendParagraph(propertiesSection, "Commuting factors swaps their horizontal positions in a product.");
     propertiesSection.appendChild(phrasePair(
         phraseCard("Multiply 3 by 4.", product(value(3), value(4)), "The product is 12.", "Three and four sit side by side, with a vertical multiplication bar between them."),
         phraseCard("Switch their order: multiply 4 by 3.", product(value(4), value(3)), "The product is still 12.", "Four is now to the left of three. Both are still in the same product row.")
     ));
-    appendParagraph(propertiesSection, "The distributive property lets us multiply a sum by a number by multiplying each term by that number and adding the resulting products. For example, adding 3 and 4 and then doubling the sum gives fourteen. Doubling means taking two copies of everything in the sum: two copies of 3 and two copies of 4. Those products are six and eight, whose sum is also fourteen.");
+    appendParagraph(propertiesSection, "Distributing the 2 turns a product containing a sum into a sum of products.");
     propertiesSection.appendChild(phrasePair(
         phraseCard("Add 3 and 4, then multiply the sum by 2.", product(value(2), sum(value(3), value(4))), "The sum is 7; doubling it gives 14.", "The vertical sum of three and four sits to the right of a single factor of two."),
         phraseCard("Multiply 2 by 3 and 2 by 4, then add the products.", sum(product(value(2), value(3)), product(value(2), value(4))), "The products are 6 and 8; their sum is 14.", "Two horizontal product rows are stacked as terms of a sum. Each row begins with its own factor of two.")
     ));
-    appendParagraph(propertiesSection, "We can also use the distributive property in reverse, which is called factoring. If we are adding two products that share a factor, we can take that shared factor outside a sum of the remaining factors. In the example below, both products contain 2. Adding two copies of 3 to two copies of 4 is the same as taking two copies of their combined amount. We can therefore add 3 and 4 first and then double the result.");
+    appendParagraph(propertiesSection, "Factoring reverses that move by pulling the shared 2 outside the sum.");
     propertiesSection.appendChild(phrasePair(
         phraseCard("Add the product of 2 and 3 to the product of 2 and 4.", sum(product(value(2), value(3)), product(value(2), value(4))), "The total is 14.", "A stack of two product rows shows the same leading factor of two in each row."),
         phraseCard("Factor out the shared 2: add 3 and 4, then multiply by 2.", product(value(2), sum(value(3), value(4))), "The total is still 14.", "The two copies of the common factor have been replaced by one factor beside a vertical sum.")
     ));
-    appendParagraph(propertiesSection, "Each pair describes the same value in two different arrangements. The exploded diagrams show the complete terms or factors being switched, distributed, or factored, and make the resulting grouping explicit.");
 
     const rearrangedSection = addSection("The same example with easier arithmetic", [
         "Let’s return to the example from Section 5. This time, use the algebraic properties we have just discussed to simplify the arithmetic involved.",
