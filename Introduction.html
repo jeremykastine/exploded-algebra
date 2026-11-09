@@ -66,12 +66,9 @@ hr{border:0;border-top:2px solid #999;margin:8px 0;}
 .narrative{max-width:1040px;margin:0 auto;padding:48px 28px 96px;font-family:Arial,Helvetica,sans-serif;color:#18232d;}
 .narrative h2{font-size:clamp(26px,3.4vw,38px);line-height:1.18;margin:0 0 18px;}
 .narrative p{font-size:clamp(18px,2vw,22px);line-height:1.55;max-width:75ch;margin:0 0 18px;}
-.intro-audio{margin-bottom:12px;padding:20px;border:1px solid #d4dce1;border-radius:8px;background:#f5f8fa;}
-.intro-audio h1{font-size:clamp(28px,4vw,42px);line-height:1.15;margin:0 0 12px;}
-.intro-audio label,.intro-audio select{display:block;font-size:1rem;}
-.intro-audio select{width:100%;max-width:28rem;margin:6px 0 12px;padding:8px;font-family:inherit;}
-.intro-audio audio{display:block;width:100%;max-width:28rem;margin-bottom:10px;}
-.intro-audio a{font-size:1rem;}
+.intro-header{margin-bottom:12px;padding:20px;border:1px solid #d4dce1;border-radius:8px;background:#f5f8fa;}
+.intro-header h1{font-size:clamp(28px,4vw,42px);line-height:1.15;margin:0 0 12px;}
+.intro-header a{font-size:1rem;}
 body.narrative-ready>.page-last-updated{position:static;width:max-content;max-width:100%;margin:0 16px 12px;white-space:normal;}
 .narrative-section{padding:42px 0;border-top:1px solid #d4dce1;scroll-margin-top:24px;}
 .narrative-section:first-of-type{border-top:0;}
@@ -139,16 +136,12 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-11-08T23:11:44-05:00">11/8/26, 11:11 PM EST</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-11-09T08:30:26-05:00">11/9/26, 8:30 AM EST</time></p>
 
 <main class="narrative">
-    <header class="intro-audio">
+    <header class="intro-header">
         <h1>Introduction to Exploded Algebra</h1>
-        <p>Listen section by section. The exploded-view diagrams are described in Section 2.</p>
-        <label for="intro-audio-section">Choose a section</label>
-        <select id="intro-audio-section"></select>
-        <audio id="intro-audio-player" controls preload="metadata" aria-label="Introduction to Exploded Algebra audio" src="assets/introduction-audio/section-01.mp3"></audio>
-        <a id="intro-audio-download" href="assets/introduction-audio/section-01.mp3" download>Download this section as an MP3</a>
+        <a href="Introduction-read-aloud.html" target="_blank" rel="noopener">Text-only read-aloud version (opens in a new tab)</a>
     </header>
 </main>
 
@@ -1034,15 +1027,74 @@ body.player-ready>#exploded-examples{display:none;}
     ];
 
     const narrative = document.querySelector("main.narrative");
-    const audioSection = document.getElementById("intro-audio-section");
-    const audioPlayer = document.getElementById("intro-audio-player");
-    const audioDownload = document.getElementById("intro-audio-download");
-    audioSection.addEventListener("change", () => {
-        audioPlayer.src = audioSection.value;
-        audioDownload.href = audioSection.value;
-    });
     const lastUpdated = document.querySelector("body > .page-last-updated");
     if (lastUpdated) document.body.appendChild(lastUpdated);
+
+    const inlineMathDescriptions = {
+        "2(x + 3) + 4(5x + 6)": "the sum of two products, each with a grouped sum as a factor",
+        "x·3": "x multiplied by three",
+        "8x + 24": "the sum of eight copies of x and twenty-four",
+        "−1": "negative one",
+        "−5": "negative five",
+        "−x": "negative x",
+        "−3": "negative three",
+        "(−1)·5": "formed by multiplying negative one and five",
+        "(−1)·x": "formed by multiplying negative one and x",
+        "x−3": "x decreased by three",
+        "x+(−1)·3": "the sum of x and negative three",
+        "−(x+3)": "the opposite of the entire sum of x and three",
+        "−x−3": "the sum of the opposites of x and three",
+        "(−1)(−1)=1": "the product of two negative units equals one",
+        "(−1)(−1)x": "the product of two negative units and x",
+        "2⁴": "the fourth power of two",
+        "2·2·2·2": "the product of four copies of two",
+        "2·4": "the product of two and four",
+        "x³": "x raised to the third power",
+        "x·x·x": "the product of three copies of x",
+        "(x+2)²": "the square of the entire sum of x and two",
+        "x+2": "formed by adding x and two",
+        "(x+2)(x+2)": "the product of two copies of that entire sum",
+        "x+2·x+2": "a sum in which only the middle two entries form a product",
+        "A¹=A": "the first power of A equals A",
+        "A⁰=1": "the zero power of A equals one",
+        "A≠0": "A is nonzero",
+        "restriction A≠0": "restriction that A be nonzero",
+        "1/A": "one divided by A",
+        "x≠0": "x is nonzero",
+        "restriction x≠0": "restriction that x be nonzero",
+        "For x≠0": "For nonzero x",
+        "A÷B": "the quotient of A and B",
+        "A·(1/B)": "the product of A and the reciprocal of B",
+        "B≠0": "B is nonzero",
+        "b≠0": "b is nonzero",
+        "1/(x+3)": "the reciprocal of the entire sum of x and three",
+        "x+3": "formed by adding x and three",
+        "x+3≠0": "the sum of x and three is nonzero",
+        "x·(1/x)": "the product of x and its reciprocal"
+    };
+    // Match longer expressions first, including nearby words where needed for natural speech.
+    const inlineMathPattern = new RegExp(Object.keys(inlineMathDescriptions)
+        .sort((a, b) => b.length - a.length)
+        .map(formula => formula.replace(/[.*+?^{}$()|[\]\\]/g, "\\$&"))
+        .join("|"), "g");
+
+    function formulaElement(text, description, tag = "span") {
+        const formula = document.createElement(tag);
+        formula.setAttribute("role", "img");
+        formula.setAttribute("aria-label", description);
+        formula.textContent = text;
+        return formula;
+    }
+
+    function setNarrativeText(element, copy) {
+        let offset = 0;
+        for (const match of copy.matchAll(inlineMathPattern)) {
+            const [formula] = match;
+            element.append(copy.slice(offset, match.index), formulaElement(formula, inlineMathDescriptions[formula]));
+            offset = match.index + formula.length;
+        }
+        element.append(copy.slice(offset));
+    }
 
     let sectionNumber = 0;
     function addSection(title, paragraphs = [], content = null, id = "") {
@@ -1051,12 +1103,10 @@ body.player-ready>#exploded-examples{display:none;}
         if (id) section.id = id;
         const heading = document.createElement("h2");
         heading.textContent = `${++sectionNumber}. ${title}`;
-        const audioFile = `assets/introduction-audio/section-${String(sectionNumber).padStart(2, "0")}.mp3`;
-        audioSection.add(new Option(heading.textContent, audioFile));
         section.appendChild(heading);
         paragraphs.forEach(copy => {
             const paragraph = document.createElement("p");
-            paragraph.textContent = copy;
+            setNarrativeText(paragraph, copy);
             section.appendChild(paragraph);
         });
         if (content) section.appendChild(content);
@@ -1064,7 +1114,7 @@ body.player-ready>#exploded-examples{display:none;}
         return section;
     }
 
-    function phraseCard(phrase, expression, result) {
+    function phraseCard(phrase, expression, result, description) {
         const card = document.createElement("article");
         card.className = "phrase-card";
         const quote = document.createElement("blockquote");
@@ -1073,11 +1123,11 @@ body.player-ready>#exploded-examples{display:none;}
         figure.className = "exploded-figure";
         Renderer.renderExpressionInto(figure, expression, {
             ...renderOptions,
-            ariaLabel: `Exploded notation: ${phrase}`
+            ariaLabel: description
         });
         const caption = document.createElement("p");
         caption.className = "result";
-        caption.textContent = result;
+        setNarrativeText(caption, result);
         card.append(quote, figure, caption);
         return card;
     }
@@ -1106,7 +1156,7 @@ body.player-ready>#exploded-examples{display:none;}
         "The calculation itself does not change. We are changing how we arrange its symbols so that its structure is easier to see. Let’s return to “two plus three times four” and see what this approach looks like."
     ].forEach(copy => {
         const paragraph = document.createElement("p");
-        paragraph.textContent = copy;
+        setNarrativeText(paragraph, copy);
         explodedViewsSection.appendChild(paragraph);
     });
 
@@ -1115,8 +1165,8 @@ body.player-ready>#exploded-examples{display:none;}
         "The factors of a product are arranged horizontally. A multiplication sign is centered between each pair of adjacent factors, with a vertical bar extending above and below it. Each bar spans the height of the tallest factor, visually grouping all the factors that belong to the product. These bars are present even when every term or factor is a single number.",
         "The ellipses below mark the same pauses we used in Section 1. In the first picture, the whole sum of 2 and 3 is a factor beside 4, giving 20. In the second, the whole product of 3 and 4 is a term below 2, giving 14. The grouping segments show which operation contains the other."
     ], phrasePair(
-        phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "Add 2 and 3 first, then multiply by 4. The result is 20."),
-        phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "Multiply 3 and 4 first, then add 2. The result is 14.")
+        phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "Add 2 and 3 first, then multiply by 4. The result is 20.", "A vertical sum sits to the left of four. A multiplication bar spans the height of the whole sum."),
+        phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "Multiply 3 and 4 first, then add 2. The result is 14.", "Two is stacked above a horizontal product. The addition bar spans the width of both factors.")
     ));
 
     const interfaceSection = addSection("Try the Exploded Algebra interface", [
@@ -1147,13 +1197,13 @@ body.player-ready>#exploded-examples{display:none;}
         link.href = `exploded-algebra.html?level=${encodeURIComponent(file)}&mode=guided`;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
-        link.textContent = `${label} — guided exercise (opens in a new tab)`;
+        setNarrativeText(link, `${label} — guided exercise (opens in a new tab)`);
         section.appendChild(link);
     }
 
     function appendParagraph(section, copy) {
         const paragraph = document.createElement("p");
-        paragraph.textContent = copy;
+        setNarrativeText(paragraph, copy);
         section.appendChild(paragraph);
     }
 
@@ -1168,7 +1218,8 @@ body.player-ready>#exploded-examples{display:none;}
     const arithmeticCard = phraseCard(
         "Multiply 35 by 43, 65 by 50, and 7 by 35. Add the three products, then multiply the total by 2.",
         arithmeticExpression,
-        "Each product is a complete term in the sum, and the entire sum is a complete factor beside 2."
+        "Each product is a complete term in the sum, and the entire sum is a complete factor beside 2.",
+        "Three product rows are stacked into one sum. A single multiplication bar joins the whole stack to the two on its left."
     );
     arithmeticCard.classList.add("calculation-card");
     directSection.appendChild(arithmeticCard);
@@ -1179,23 +1230,23 @@ body.player-ready>#exploded-examples{display:none;}
     ], null, "algebraic-properties");
     appendParagraph(propertiesSection, "The commutative property of addition lets us switch the order of two terms. Adding 2 to 3 gives the same total as adding 3 to 2. Imagine combining a group of two objects with a group of three objects: changing which group we count first does not change the total of five.");
     propertiesSection.appendChild(phrasePair(
-        phraseCard("Add 2 and 3.", sum(value(2), value(3)), "The total is 5."),
-        phraseCard("Switch their order: add 3 and 2.", sum(value(3), value(2)), "The total is still 5.")
+        phraseCard("Add 2 and 3.", sum(value(2), value(3)), "The total is 5.", "Two is above three in the sum, with a horizontal addition bar between them."),
+        phraseCard("Switch their order: add 3 and 2.", sum(value(3), value(2)), "The total is still 5.", "Three is now above two. The addition bar still groups the same two terms.")
     ));
     appendParagraph(propertiesSection, "The commutative property of multiplication lets us switch the order of two factors. Three groups of four objects contain the same number of objects as four groups of three. Picture three rows with four objects in each row, then turn the picture to see four rows with three in each. Both arrangements contain twelve objects.");
     propertiesSection.appendChild(phrasePair(
-        phraseCard("Multiply 3 by 4.", product(value(3), value(4)), "The product is 12."),
-        phraseCard("Switch their order: multiply 4 by 3.", product(value(4), value(3)), "The product is still 12.")
+        phraseCard("Multiply 3 by 4.", product(value(3), value(4)), "The product is 12.", "Three and four sit side by side, with a vertical multiplication bar between them."),
+        phraseCard("Switch their order: multiply 4 by 3.", product(value(4), value(3)), "The product is still 12.", "Four is now to the left of three. Both are still in the same product row.")
     ));
     appendParagraph(propertiesSection, "The distributive property lets us multiply a sum by a number by multiplying each term by that number and adding the resulting products. For example, adding 3 and 4 and then doubling the sum gives fourteen. Doubling means taking two copies of everything in the sum: two copies of 3 and two copies of 4. Those products are six and eight, whose sum is also fourteen.");
     propertiesSection.appendChild(phrasePair(
-        phraseCard("Add 3 and 4, then multiply the sum by 2.", product(value(2), sum(value(3), value(4))), "The sum is 7; doubling it gives 14."),
-        phraseCard("Multiply 2 by 3 and 2 by 4, then add the products.", sum(product(value(2), value(3)), product(value(2), value(4))), "The products are 6 and 8; their sum is 14.")
+        phraseCard("Add 3 and 4, then multiply the sum by 2.", product(value(2), sum(value(3), value(4))), "The sum is 7; doubling it gives 14.", "The vertical sum of three and four sits to the right of a single factor of two."),
+        phraseCard("Multiply 2 by 3 and 2 by 4, then add the products.", sum(product(value(2), value(3)), product(value(2), value(4))), "The products are 6 and 8; their sum is 14.", "Two horizontal product rows are stacked as terms of a sum. Each row begins with its own factor of two.")
     ));
     appendParagraph(propertiesSection, "We can also use the distributive property in reverse, which is called factoring. If we are adding two products that share a factor, we can take that shared factor outside a sum of the remaining factors. In the example below, both products contain 2. Adding two copies of 3 to two copies of 4 is the same as taking two copies of their combined amount. We can therefore add 3 and 4 first and then double the result.");
     propertiesSection.appendChild(phrasePair(
-        phraseCard("Add the product of 2 and 3 to the product of 2 and 4.", sum(product(value(2), value(3)), product(value(2), value(4))), "The total is 14."),
-        phraseCard("Factor out the shared 2: add 3 and 4, then multiply by 2.", product(value(2), sum(value(3), value(4))), "The total is still 14.")
+        phraseCard("Add the product of 2 and 3 to the product of 2 and 4.", sum(product(value(2), value(3)), product(value(2), value(4))), "The total is 14.", "A stack of two product rows shows the same leading factor of two in each row."),
+        phraseCard("Factor out the shared 2: add 3 and 4, then multiply by 2.", product(value(2), sum(value(3), value(4))), "The total is still 14.", "The two copies of the common factor have been replaced by one factor beside a vertical sum.")
     ));
     appendParagraph(propertiesSection, "Each pair describes the same value in two different arrangements. The exploded diagrams show the complete terms or factors being switched, distributed, or factored, and make the resulting grouping explicit.");
 
@@ -1215,7 +1266,8 @@ body.player-ready>#exploded-examples{display:none;}
     const unknownCard = phraseCard(
         "Add 3 to an unknown value x and double that sum. Separately, multiply x by 5, add 6, and multiply that sum by 4. Add the two results.",
         unknownExpression,
-        "The expression simplifies to 22 times x plus 30."
+        "The expression simplifies to 22 times x plus 30.",
+        "The outer addition bar separates two product rows. Each row ends in a grouped sum. In the lower sum, the first term is itself a product."
     );
     unknownCard.classList.add("calculation-card");
     const unknownSection = addSection("Working with unknown values", [
@@ -1227,7 +1279,7 @@ body.player-ready>#exploded-examples{display:none;}
         "The simplified expression describes the same value for every choice of x. We have reduced the calculation to multiplying x by 22 and adding 30, even though x itself is still undetermined."
     ].forEach(copy => {
         const paragraph = document.createElement("p");
-        paragraph.textContent = copy;
+        setNarrativeText(paragraph, copy);
         unknownSection.appendChild(paragraph);
     });
     const unknownLink = document.createElement("a");
@@ -1241,76 +1293,93 @@ body.player-ready>#exploded-examples{display:none;}
     const comparisonSection = addSection("Grouping in conventional and exploded notation", [
         "Let’s return to the two calculations from Section 3. In conventional notation, parentheses can explicitly specify the hierarchy: the calculation inside a pair of parentheses forms one complete part of the surrounding calculation. Here every operation is enclosed in parentheses."
     ], null, "conventional-comparison");
-    function conventionalCard(label, expression, result) {
+    function conventionalCard(label, expression, result, description) {
         const card = document.createElement("article");
         card.className = "phrase-card";
         const heading = document.createElement("blockquote");
         heading.textContent = label;
-        const formula = document.createElement("div");
+        const formula = formulaElement(expression, description, "div");
         formula.className = "grouping-formula";
-        formula.textContent = expression;
         const caption = document.createElement("p");
         caption.className = "result";
-        caption.textContent = result;
+        setNarrativeText(caption, result);
         card.append(heading, formula, caption);
         return card;
     }
     function comparisonParagraph(copy) {
         const paragraph = document.createElement("p");
-        paragraph.textContent = copy;
+        setNarrativeText(paragraph, copy);
         comparisonSection.appendChild(paragraph);
     }
     comparisonSection.appendChild(phrasePair(
-        conventionalCard("two plus three … times four", "((2 + 3) × 4)", "The inner sum is evaluated first. The result is 20."),
-        conventionalCard("two … plus three times four", "(2 + (3 × 4))", "The inner product is evaluated first. The result is 14.")
+        conventionalCard("two plus three … times four", "((2 + 3) × 4)", "The inner sum is evaluated first. The result is 20.", "One pair of parentheses marks the sum of two and three. Another encloses the whole calculation, including multiplication by four."),
+        conventionalCard("two … plus three times four", "(2 + (3 × 4))", "The inner product is evaluated first. The result is 14.", "One pair of parentheses marks the product of three and four. Another encloses the whole calculation, including addition of two.")
     ));
     comparisonParagraph("For a larger expression, relying entirely on parentheses becomes cumbersome and visually confusing. Here is the expression from Section 8 with every operation explicitly grouped:");
     comparisonSection.appendChild(conventionalCard(
         "Every operation parenthesized", "((2 × (x + 3)) + (4 × ((5 × x) + 6)))",
-        "The nesting is explicit, but following all those parentheses takes work."
+        "The nesting is explicit, but following all those parentheses takes work.",
+        "The outer parentheses enclose a sum of two products. Inside the second product, a sum encloses a smaller product of five and x."
     ));
     comparisonParagraph("Doesn’t that look awful? The parentheses make the grouping precise, but they also crowd the expression and make its structure harder to follow at a glance.");
     comparisonParagraph("Conventional notation uses the order of operations to imply certain parentheses that we do not write. Multiplication is grouped before addition unless parentheses specify otherwise. With that convention, the two examples from Section 3 become:");
     comparisonSection.appendChild(phrasePair(
-        conventionalCard("two plus three … times four", "(2 + 3) × 4", "Parentheses explicitly keep the sum together as one factor."),
-        conventionalCard("two … plus three times four", "2 + 3 × 4", "The order of operations implicitly keeps the product together as one term.")
+        conventionalCard("two plus three … times four", "(2 + 3) × 4", "Parentheses explicitly keep the sum together as one factor.", "Only the sum of two and three is enclosed in parentheses. Four sits outside that group as the other factor."),
+        conventionalCard("two … plus three times four", "2 + 3 × 4", "The order of operations implicitly keeps the product together as one term.", "The same three numbers appear without parentheses. Multiplication joins the last two as a single term.")
     ));
     comparisonParagraph("The expression with x becomes 2(x + 3) + 4(5x + 6). Its sums need parentheses, while its products are grouped implicitly by the order of operations.");
     comparisonParagraph("This inconsistency in how grouping is communicated can cause students trouble: some groups are explicitly marked, while others are left implicit for the student to fill in. Reading the structure requires switching between written grouping marks and remembered conventions.");
     comparisonParagraph("Exploded Algebra always shows grouping explicitly, in the same way. Horizontal lines extending from plus symbols show the extent of a sum; vertical lines extending from times symbols show the extent of a product. The same lines show those groups whether they stand alone or sit inside a larger expression. There are no alternative grouping conventions to switch between, and no implied parentheses to supply.");
     comparisonSection.appendChild(phrasePair(
-        phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "The entire sum is visibly one factor beside 4."),
-        phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "The entire product is visibly one term below 2.")
+        phraseCard("two plus three … times four", product(sum(value(2), value(3)), value(4)), "The entire sum is visibly one factor beside 4.", "A multiplication bar runs alongside the entire stack of two terms, linking that group to four."),
+        phraseCard("two … plus three times four", sum(value(2), product(value(3), value(4))), "The entire product is visibly one term below 2.", "An addition bar stretches over the entire row of two factors, grouping the row as one term below two.")
     ));
 
     const swappingSection = addSection("Four first attempts at swapping", [
         "Recall that the commutative properties of addition and multiplication allow us to swap the order of two terms in the same sum or two factors in the same product. Consider the following attempts to apply these properties in conventional notation."
     ], null, "four-swaps");
     const attemptedSwaps = [
-        { before: "2+x+3", after: "x+2+3", exploded: examples[0] },
-        { before: "2·x·3", after: "x·2·3", exploded: examples[1] },
+        {
+            before: "2+x+3", after: "x+2+3", exploded: examples[0],
+            beforeDescription: "Two and x are the first two terms of a three-term sum.",
+            afterDescription: "The first two terms exchange places. Three stays as the last term.",
+            grouping: "The highlights mark two complete terms in the same vertical stack."
+        },
+        {
+            before: "2·x·3", after: "x·2·3", exploded: examples[1],
+            beforeDescription: "Two and x are the first two factors of a three-factor product.",
+            afterDescription: "The first two factors exchange places. Three stays as the last factor.",
+            grouping: "The highlights mark two complete factors in the same horizontal row."
+        },
         {
             before: "2·x+3", after: "x·2+3",
+            beforeDescription: "The first term of the sum is a product, with two before x.",
+            afterDescription: "X comes first inside the product. The product and the separate term of three stay in place.",
+            grouping: "Both highlights are inside one product row above the separate term of three.",
             exploded: {
                 ...productAboveSum,
                 after: sum(product(value("x"), value(2)), value(3)),
                 afterShading: [shadeNode([0, 0], colors.orange), shadeNode([0, 1], colors.yellow)]
             }
         },
-        { before: "2+x·3", after: "x+2·3", exploded: examples[2] }
+        {
+            before: "2+x·3", after: "x+2·3", exploded: examples[2],
+            beforeDescription: "Two stands alone as a term. X is a factor in the other term, a product with three.",
+            afterDescription: "X is now a term on its own, and two is inside the product with three.",
+            grouping: "One highlight covers the complete top term. The other covers only one factor of the lower product row."
+        }
     ];
     const attempts = document.createElement("div");
     attempts.className = "commute-attempts";
     attemptedSwaps.forEach(attempt => {
         const row = document.createElement("div");
         row.className = "commute-attempt";
-        const before = document.createElement("div");
-        before.textContent = attempt.before;
+        const before = formulaElement(attempt.before, attempt.beforeDescription, "div");
         const arrow = document.createElement("div");
         arrow.className = "attempt-arrow";
+        arrow.setAttribute("aria-hidden", "true");
         arrow.textContent = "→";
-        const after = document.createElement("div");
-        after.textContent = attempt.after;
+        const after = formulaElement(attempt.after, attempt.afterDescription, "div");
         row.append(before, arrow, after);
         attempts.appendChild(row);
     });
@@ -1327,16 +1396,16 @@ body.player-ready>#exploded-examples{display:none;}
         columnHeadings.appendChild(heading);
     });
     swapGrid.appendChild(columnHeadings);
-    attemptedSwaps.forEach(({ exploded }, index) => {
+    attemptedSwaps.forEach(attempt => {
         const row = document.createElement("div");
         row.className = "static-swap-row";
         ["before", "after"].forEach(state => {
             const figure = document.createElement("div");
             figure.className = "static-swap-figure";
-            const svg = Renderer.renderExpressionInto(figure, exploded[state], {
+            const svg = Renderer.renderExpressionInto(figure, attempt.exploded[state], {
                 ...renderOptions,
-                shading: exploded[`${state}Shading`],
-                ariaLabel: `Attempted swap ${index + 1}, ${state === "before" ? "original expression" : "attempted result"}`
+                shading: attempt.exploded[`${state}Shading`],
+                ariaLabel: `${attempt[`${state}Description`]} ${attempt.grouping}`
             });
             if (svg) svg.style.removeProperty("height");
             row.appendChild(figure);
@@ -1351,30 +1420,32 @@ body.player-ready>#exploded-examples{display:none;}
         "But a familiar pattern can teach a misleading lesson about what an algebraic operation actually does. Distribution is a useful example. Students repeatedly see a factor outside parentheses distributed across the terms inside them, followed by an answer with no parentheses. It is easy to come away with the idea that distributing means getting rid of parentheses—and therefore getting rid of grouping."
     ], null, "familiar-patterns");
     familiarPatternsSection.appendChild(phrasePair(
-        conventionalCard("A familiar starting expression", "2(x + 3)", "Multiply 2 by the entire sum of x and 3."),
-        conventionalCard("After distributing 2", "2x + 2 · 3", "Each product is now grouped implicitly by the order of operations.")
+        conventionalCard("A familiar starting expression", "2(x + 3)", "Multiply 2 by the entire sum of x and 3.", "Parentheses around the sum show what the factor of two multiplies."),
+        conventionalCard("After distributing 2", "2x + 2 · 3", "Each product is now grouped implicitly by the order of operations.", "Two products are separated by a plus sign. Each begins with a copy of the distributed factor of two.")
     ));
     appendParagraph(familiarPatternsSection, "The parentheses disappear from the written expression, but grouping has not disappeared. Distribution replaces a product containing a sum with a sum of products. The products in the result still need to be grouped; conventional notation lets the order of operations communicate that grouping implicitly. The repeated disappearance of parentheses can obscure this change in structure.");
     appendParagraph(familiarPatternsSection, "Now make the expression just a little less familiar: multiply 2 by the sum of x and 3, then multiply that entire result by 4.");
     familiarPatternsSection.appendChild(conventionalCard(
         "The same kind of distribution, with another factor outside", "2(x + 3) · 4",
-        "The factor 4 multiplies the entire result of doubling the sum."
+        "The factor 4 multiplies the entire result of doubling the sum.",
+        "The parenthesized sum sits between two outside factors, two and four."
     ));
     appendParagraph(familiarPatternsSection, "If we distribute only the 2, the resulting sum must remain one complete factor being multiplied by 4. A student following the familiar instruction to distribute and remove the parentheses may instead write the incorrect expression below, leaving the final 4 attached only to the second term.");
     familiarPatternsSection.appendChild(phrasePair(
-        conventionalCard("Correct: distribute 2 and preserve the outside multiplication", "(2x + 2 · 3) · 4", "The factor 4 still multiplies both terms of the sum."),
-        conventionalCard("Incorrect: remove all the parentheses and leave 4 at the end", "2x + 2 · 3 · 4", "The factor 4 now multiplies only the second term.")
+        conventionalCard("Correct: distribute 2 and preserve the outside multiplication", "(2x + 2 · 3) · 4", "The factor 4 still multiplies both terms of the sum.", "Parentheses enclose both products as a single sum. The factor of four stays outside the parentheses."),
+        conventionalCard("Incorrect: remove all the parentheses and leave 4 at the end", "2x + 2 · 3 · 4", "The factor 4 now multiplies only the second term.", "Without the parentheses, the trailing four belongs to the second product only.")
     ));
     appendParagraph(familiarPatternsSection, "This changes the value. If x is 1, the original expression gives 32, while the incorrect expression gives 26. To remove the remaining parentheses correctly, we must also distribute the 4 across the entire sum:");
     familiarPatternsSection.appendChild(conventionalCard(
         "Correct: distribute the remaining factor 4", "2 · x · 4 + 2 · 3 · 4",
-        "Both terms receive the factor 4. The expression simplifies to 8x + 24."
+        "Both terms receive the factor 4. The expression simplifies to 8x + 24.",
+        "Each of the two products now ends with a factor of four. The plus sign separates the products."
     ));
     appendParagraph(familiarPatternsSection, "The difficulty comes from the very consistency of the earlier examples: distribution kept producing an expression without parentheses. That visible pattern can become a substitute for understanding the property. When another outside factor appears, the familiar instruction no longer captures what must happen to the grouping.");
     appendParagraph(familiarPatternsSection, "In exploded notation, the grouping stays visible before and after distributing 2. The new sum is still one complete factor beside 4. Its addition bar makes the extent of that sum explicit, so dropping the grouping would visibly change which parts the 4 multiplies.");
     familiarPatternsSection.appendChild(phrasePair(
-        phraseCard("Double the sum of x and 3, then multiply the result by 4.", product(value(2), sum(value("x"), value(3)), value(4)), "Before distribution: the complete sum sits between the factors 2 and 4."),
-        phraseCard("Add the products of 2 with x and 2 with 3, then multiply that whole sum by 4.", product(sum(product(value(2), value("x")), product(value(2), value(3))), value(4)), "After distributing 2: the complete new sum remains one factor beside 4.")
+        phraseCard("Double the sum of x and 3, then multiply the result by 4.", product(value(2), sum(value("x"), value(3)), value(4)), "Before distribution: the complete sum sits between the factors 2 and 4.", "Two multiplication bars span the height of the central sum, joining it to two on the left and four on the right."),
+        phraseCard("Add the products of 2 with x and 2 with 3, then multiply that whole sum by 4.", product(sum(product(value(2), value("x")), product(value(2), value(3))), value(4)), "After distributing 2: the complete new sum remains one factor beside 4.", "Two product rows are stacked as a sum. The multiplication bar on the right spans both rows, so four still multiplies the entire stack.")
     ));
     appendParagraph(familiarPatternsSection, "Now try the same expression in the Exploded Algebra interface. After the first distribution, pause and look at the 4 on the right. The vertical multiplication bar beside it spans the height of the entire sum on the left, making clear that 4 still multiplies the whole sub-expression, including both terms. Follow the yellow outlines and highlighted buttons to distribute the 4 and finish simplifying.");
     addGuidedExerciseLink(familiarPatternsSection, "intro-levels/distribute-with-outside-factor.json", "Try distribution with the outside factor");
@@ -1384,7 +1455,7 @@ body.player-ready>#exploded-examples{display:none;}
         const outline = document.createElement("ul");
         points.forEach(copy => {
             const point = document.createElement("li");
-            point.textContent = copy;
+            setNarrativeText(point, copy);
             outline.appendChild(point);
         });
         section.appendChild(outline);
@@ -1395,18 +1466,18 @@ body.player-ready>#exploded-examples{display:none;}
         "A negative sign can be understood as multiplication by the negative unit, −1. Multiplying a quantity by −1 changes its sign while preserving its size: 5 becomes −5, and x becomes −x. This interpretation makes a negative sign an algebraic operation rather than a decoration attached to a symbol.",
         "In exploded notation, −1 appears as an ordinary factor. The horizontal product row makes its relationship to the rest of the expression explicit. A negative number such as −5 is the product (−1)·5, and the expression −x is the product (−1)·x."
     ], phrasePair(
-        phraseCard("Negative five is negative one times five.", product(value(-1), value(5)), "The factor −1 changes the sign of 5, producing −5."),
-        phraseCard("Negative x is negative one times x.", product(value(-1), value("x")), "The factor −1 changes the sign of whatever value x has.")
+        phraseCard("Negative five is negative one times five.", product(value(-1), value(5)), "The factor −1 changes the sign of 5, producing −5.", "The negative unit and five sit in the same horizontal product row."),
+        phraseCard("Negative x is negative one times x.", product(value(-1), value("x")), "The factor −1 changes the sign of whatever value x has.", "The negative unit and x are separated by a multiplication bar, showing the sign change as a product.")
     ), "negative-unit");
     appendParagraph(negativeSection, "Subtraction can then be read as addition of a negative quantity. The expression x−3 means x+(−1)·3. This does not change the calculation; it expresses subtraction using the two operations already visible in exploded notation—addition and multiplication.");
     negativeSection.appendChild(phrasePair(
-        conventionalCard("Conventional subtraction", "x − 3", "Subtract 3 from x."),
-        phraseCard("Add x to negative one times three.", sum(value("x"), product(value(-1), value(3))), "The second term is −3, so the sum is x−3.")
+        conventionalCard("Conventional subtraction", "x − 3", "Subtract 3 from x.", "The minus sign between x and three indicates subtraction."),
+        phraseCard("Add x to negative one times three.", sum(value("x"), product(value(-1), value(3))), "The second term is −3, so the sum is x−3.", "The top term is x. A horizontal addition bar separates it from the lower product of negative one and three.")
     ));
     appendParagraph(negativeSection, "Because −1 is a factor, the distributive property applies to it just as it does to any other factor. Multiplying an entire sum by −1 changes the sign of every term. Thus −(x+3) becomes −x−3: one copy of −1 is distributed to x and another copy is distributed to 3.");
     negativeSection.appendChild(phrasePair(
-        phraseCard("Change the sign of the entire sum x plus 3.", product(value(-1), sum(value("x"), value(3))), "The complete sum is one factor beside −1."),
-        phraseCard("Distribute negative one to both terms.", sum(product(value(-1), value("x")), product(value(-1), value(3))), "Both terms change sign, giving −x−3.")
+        phraseCard("Change the sign of the entire sum x plus 3.", product(value(-1), sum(value("x"), value(3))), "The complete sum is one factor beside −1.", "A multiplication bar links negative one to a vertical sum containing both x and three."),
+        phraseCard("Distribute negative one to both terms.", sum(product(value(-1), value("x")), product(value(-1), value(3))), "Both terms change sign, giving −x−3.", "The sum now has two product rows, each with its own factor of negative one.")
     ));
     appendParagraph(negativeSection, "Two sign changes undo one another. Since (−1)(−1)=1, multiplying by two negative units has the same effect as multiplying by 1. In a longer product such as (−1)(−1)x, the two negative units become 1, and the identity factor 1 can then be removed, leaving x.");
     addGuidedExerciseLink(negativeSection, "intro-levels/simplify-double-negative-unit.json", "Simplify two negative units multiplying x");
@@ -1415,18 +1486,18 @@ body.player-ready>#exploded-examples{display:none;}
         "A positive whole-number exponent is a compact instruction to use the same base as a factor repeatedly. For example, 2⁴ means 2·2·2·2, not 2·4. The exponent tells us how many copies of the base appear in the product.",
         "Exploded notation displays those copies directly on one horizontal multiplication row. This introduction therefore writes positive integer powers as repeated products, while the conventional expression shown beside each example uses familiar exponent notation."
     ], phrasePair(
-        conventionalCard("Conventional power notation", "2⁴", "Four copies of 2 are multiplied."),
-        phraseCard("Multiply four copies of two.", product(value(2), value(2), value(2), value(2)), "The repeated product has value 16.")
+        conventionalCard("Conventional power notation", "2⁴", "Four copies of 2 are multiplied.", "The four is written as a superscript on the base two."),
+        phraseCard("Multiply four copies of two.", product(value(2), value(2), value(2), value(2)), "The repeated product has value 16.", "Four identical factors of two sit in one horizontal product row.")
     ), "repeated-multiplication");
     appendParagraph(exponentSection, "The base can be a variable. The expression x³ means x·x·x. We cannot combine those factors into a number until x is known, but the repeated product still makes the structure of the power clear.");
     exponentSection.appendChild(phrasePair(
-        conventionalCard("A variable raised to a power", "x³", "The base x occurs three times as a factor."),
-        phraseCard("Multiply three copies of x.", product(value("x"), value("x"), value("x")), "Each x is a complete factor in the same product.")
+        conventionalCard("A variable raised to a power", "x³", "The base x occurs three times as a factor.", "The three is written as a superscript on the variable x."),
+        phraseCard("Multiply three copies of x.", product(value("x"), value("x"), value("x")), "Each x is a complete factor in the same product.", "Three copies of x appear side by side with multiplication bars between them.")
     ));
     appendParagraph(exponentSection, "An entire grouped expression can also be the base. In (x+2)², the exponent applies to the complete sum x+2. It means (x+2)(x+2), not x+2·x+2. Exploded notation shows each complete vertical sum occupying one factor position in the surrounding horizontal product.");
     exponentSection.appendChild(phrasePair(
-        conventionalCard("A grouped base", "(x + 2)²", "The complete sum is the base of the power."),
-        phraseCard("Multiply two copies of the sum x plus 2.", product(sum(value("x"), value(2)), sum(value("x"), value(2))), "Each whole sum is one factor.")
+        conventionalCard("A grouped base", "(x + 2)²", "The complete sum is the base of the power.", "The superscript two is outside the parentheses, so it applies to the whole sum."),
+        phraseCard("Multiply two copies of the sum x plus 2.", product(sum(value("x"), value(2)), sum(value("x"), value(2))), "Each whole sum is one factor.", "Two identical vertical sums sit side by side. The multiplication bar reaches across their full height.")
     ));
     appendParagraph(exponentSection, "A first power contains one copy of the base, so A¹=A. For a nonzero base, the zero power is defined as 1, so A⁰=1 when A≠0. Negative integer powers involve the reciprocal of a repeated product; that idea becomes clearer after introducing the inverse operator in the next section.");
     addGuidedExerciseLink(exponentSection, "intro-levels/evaluate-repeated-factors.json", "Evaluate 2⁴ as repeated multiplication");
@@ -1435,23 +1506,23 @@ body.player-ready>#exploded-examples{display:none;}
         "The multiplicative inverse of a nonzero expression A is the quantity that multiplies A to make 1. It is written 1/A in conventional fraction notation. Exploded notation represents taking an inverse as an operator that encloses its complete operand, making the scope of the denominator explicit.",
         "The restriction A≠0 matters: no number multiplied by 0 can produce 1, so zero has no multiplicative inverse. Any cancellation involving an expression and its inverse is valid only where that expression is nonzero."
     ], phrasePair(
-        conventionalCard("Conventional reciprocal", "1/x", "The denominator is x, with the restriction x≠0."),
-        phraseCard("Take the inverse of x.", inverse(value("x")), "The inverse operator encloses its complete operand x.")
+        conventionalCard("Conventional reciprocal", "1/x", "The denominator is x, with the restriction x≠0.", "One is the numerator and x is the entire denominator."),
+        phraseCard("Take the inverse of x.", inverse(value("x")), "The inverse operator encloses its complete operand x.", "The inverse symbol surrounds the single variable x.")
     ), "inverse-operator");
     appendParagraph(inverseSection, "Division by a nonzero expression is multiplication by its inverse. Thus A÷B and A·(1/B) describe the same operation when B≠0. Treating division this way lets products and quotients share one visible structure: the divisor appears as an inverse factor.");
     inverseSection.appendChild(phrasePair(
-        conventionalCard("Division in conventional notation", "a / b", "Divide a by b, where b≠0."),
-        phraseCard("Multiply a by the inverse of b.", product(value("a"), inverse(value("b"))), "The inverse of b is one complete factor beside a.")
+        conventionalCard("Division in conventional notation", "a / b", "Divide a by b, where b≠0.", "The division slash separates the dividend a from the divisor b."),
+        phraseCard("Multiply a by the inverse of b.", product(value("a"), inverse(value("b"))), "The inverse of b is one complete factor beside a.", "The inverse symbol encloses b. The resulting group sits to the right of a on one product row.")
     ));
     appendParagraph(inverseSection, "The operand of the inverse may itself be a sum or product. In 1/(x+3), the entire sum x+3 is the denominator. Inverting only the 3 would create a different expression. The exploded diagram encloses the complete vertical sum inside one inverse operator, so its scope does not depend on remembering a fraction bar’s grouping role.");
     inverseSection.appendChild(phrasePair(
-        conventionalCard("A complete sum in the denominator", "1 / (x + 3)", "The reciprocal is defined when x+3≠0."),
-        phraseCard("Take the inverse of the complete sum x plus 3.", inverse(sum(value("x"), value(3))), "Both terms belong to the inverse’s operand.")
+        conventionalCard("A complete sum in the denominator", "1 / (x + 3)", "The reciprocal is defined when x+3≠0.", "Parentheses keep the entire sum of x and three together as the denominator."),
+        phraseCard("Take the inverse of the complete sum x plus 3.", inverse(sum(value("x"), value(3))), "Both terms belong to the inverse’s operand.", "The inverse symbol encloses the entire vertical sum, including its addition bar.")
     ));
     appendParagraph(inverseSection, "Finally, a nonzero expression multiplied by its own inverse equals 1. In x·(1/x), the two factors cancel when x≠0. This is the multiplicative counterpart of adding opposite quantities to obtain 0, and it is the basic simplification behind canceling common nonzero factors in rational expressions.");
     inverseSection.appendChild(phrasePair(
-        phraseCard("Multiply x by its inverse.", product(value("x"), inverse(value("x"))), "For x≠0, the product is 1."),
-        phraseCard("The resulting multiplicative identity.", value(1), "The factor and its inverse have canceled.")
+        phraseCard("Multiply x by its inverse.", product(value("x"), inverse(value("x"))), "For x≠0, the product is 1.", "The same variable appears on both sides of the multiplication bar. On the right it is enclosed by the inverse symbol."),
+        phraseCard("The resulting multiplicative identity.", value(1), "The factor and its inverse have canceled.", "The product row is replaced by the single value one.")
     ));
     addGuidedExerciseLink(inverseSection, "intro-levels/cancel-expression-with-inverse.json", "Cancel x with its inverse");
 
