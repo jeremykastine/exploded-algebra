@@ -1393,7 +1393,6 @@ Promise.resolve().then(() => {
         let assistanceMode = ASSISTANCE_MODES.unguided;
         let buildFirstEnabled = false;
         let buildingStartingExpression = false;
-        let renderedStartingExpressionKatex = null;
         let demoStepIndex = 0;
 
         let currentLevelIndex = 0;
@@ -1803,8 +1802,7 @@ Promise.resolve().then(() => {
                 if (activeBuilder.tool === "studentInitial") {
                     return {
                         heading: "Build the expression:",
-                        targetKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.mainRoot),
-                        showBuildDone: true
+                        targetKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.mainRoot)
                     };
                 }
                 const insertionBuilder = ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"]
@@ -1894,10 +1892,6 @@ Promise.resolve().then(() => {
                 return;
             }
             const content = getWorkspaceConventionalLineContent();
-            if (content?.showBuildDone && renderedStartingExpressionKatex === content.targetKatex) {
-                return;
-            }
-            renderedStartingExpressionKatex = content?.showBuildDone ? content.targetKatex : null;
             workspaceConventionalLine.replaceChildren();
             workspaceConventionalLine.hidden = !content;
             if (!content) {
@@ -1913,16 +1907,6 @@ Promise.resolve().then(() => {
                 workspaceConventionalLine.appendChild(sourceRow);
             }
             appendWorkspaceConventionalMath(content.targetKatex);
-            if (content.showBuildDone) {
-                const button = document.createElement("button");
-                button.type = "button";
-                button.className = "starting-expression-done";
-                button.dataset.builderAction = "submit";
-                button.textContent = "Done";
-                button.title = "Keyboard shortcut: Enter";
-                button.addEventListener("click", () => performBuilderAction("submit"));
-                workspaceConventionalLine.appendChild(button);
-            }
         }
 
         function positionWorkspaceConventionalLine() {
@@ -11479,16 +11463,12 @@ ctx.font = SETTINGS.textFont;
                         : "";
                     return builderValidationFailed(feedback + hint);
                 }
-                const focusWasInPrompt = workspaceConventionalLine.contains(document.activeElement);
                 // Keep the authored tree so recorded selection paths still apply.
                 expressionRoot = builder.mainRoot;
                 buildingStartingExpression = false;
                 refreshDemoBodyClass();
                 finishOperation();
                 resetWorkspacePanToDefault();
-                if (focusWasInPrompt) {
-                    workspaceConventionalLine.focus({ preventScroll: true });
-                }
                 return true;
             }
             if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
@@ -12437,15 +12417,15 @@ ctx.font = SETTINGS.textFont;
                     return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
                 };
                 const inverseDisabled = !operationTypes.includes("inv");
-                const submitButton = builder.tool === "studentInitial" ? ""
-                    : `<button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${getIntegratedBuilderCompletedRoot(builder) ? "" : " disabled"}>Submit</button>`;
+                const isStudentInitial = builder.tool === "studentInitial";
+                const submitDisabled = !isStudentInitial && !getIntegratedBuilderCompletedRoot(builder);
                 return `<div class="expression-builder-panel integrated-builder-panel">
-                    ${uiState.message && builder.tool !== "studentInitial" ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
+                    ${uiState.message && !isStudentInitial ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        ${submitButton}
+                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>${isStudentInitial ? "Enter" : "Submit"}</button>
                         ${negativeOneButton}
                     </div></div>
                 </div>`;
@@ -13040,11 +13020,9 @@ ctx.font = SETTINGS.textFont;
                 event.preventDefault();
                 return performBuilderAction(action, value);
             }
-            const actionPanel = action === "submit" && builder.tool === "studentInitial"
-                ? workspaceConventionalLine : panel;
             const matchingButton = action === "undo" || action === "undoBackspace"
                 ? workspaceToolbar?.querySelector('button[data-workspace-action="undoExpression"]')
-                : actionPanel.querySelector(selector);
+                : panel.querySelector(selector);
             if (!matchingButton || matchingButton.disabled) {
                 return false;
             }
