@@ -127,7 +127,9 @@ meaningful grouping across unlike operations.
 
 Free Numerical Rewrites accepts any different expression of the same exact
 numerical value. Only Prescribed Numerical Rewrites offers the replacements
-recorded for the selected expression.
+recorded for the selected expression. Add `rewrites=prescribed` to the player URL
+to use choices. The default is free rewrites, and the downloaded level JSON can
+be used with either setting.
 
 Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
 Selecting a literal 1 adds a Product of Inverses choice

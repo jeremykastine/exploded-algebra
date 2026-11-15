@@ -51,11 +51,6 @@
       const api = await waitForApi();
       const imported = api.inspectMoveHistory(history, true);
       const rewriteMode = new FormData(event.target).get("rewriteMode");
-      if (imported.moves.some(move => move.isRecordedNumerical &&
-          (rewriteMode === "prescribed" || move.demo[move.toolIndex].tool === "automaticNumericalRewrite") &&
-          !move.numericalRewrite)) {
-        throw new Error("A recorded numerical replacement could not be recovered. Recreate that rewrite in Creative Mode and download the moves again.");
-      }
       const authored = history.kind !== "demoOnly" ? history : null;
       draft = {
         ...imported,
@@ -113,29 +108,12 @@
     const demoSteps = [];
     const recordedActions = [];
     const moveEnds = [];
-    const rewritePairs = new Map();
     for (const move of draft.moves) {
-      if (move.numericalRewrite) {
-        rewritePairs.set(JSON.stringify(move.numericalRewrite), move.numericalRewrite);
-      }
-      const useChoice = move.isRecordedNumerical &&
-        (draft.rewriteMode === "prescribed" || move.demo[move.toolIndex].tool === "automaticNumericalRewrite");
-      if (useChoice) {
-        const { to } = move.numericalRewrite;
-        const choice = { type: "action", action: "chooseNumericalRewrite", value: to };
-        const tool = { type: "tool", tool: "numericalRewrite" };
-        const beforeExpression = move.actions[0].beforeExpression;
-        demoSteps.push(move.demo[0], tool, choice);
-        recordedActions.push(move.actions[0], { ...tool, beforeExpression }, {
-          ...choice,
-          beforeExpression,
-          afterExpression: move.expression,
-          numericalRewrite: move.numericalRewrite
-        });
-      } else {
-        demoSteps.push(...move.demo);
-        recordedActions.push(...move.actions);
-      }
+      demoSteps.push(...move.demo);
+      const lastIndex = move.actions.length - 1;
+      recordedActions.push(...move.actions.map((action, index) =>
+        index === lastIndex && move.numericalRewrite ? { ...action, numericalRewrite: move.numericalRewrite } : action
+      ));
       moveEnds.push(demoSteps.length);
     }
 
@@ -168,18 +146,6 @@
       ...(draft.initialBuilderActions && { initialBuilderActions: draft.initialBuilderActions }),
       finalExpression: steps.at(-1).expression,
       finalKatex: steps.at(-1).afterKatex,
-      numericalRewriteMode: draft.rewriteMode,
-      ...(draft.rewriteMode === "prescribed" && {
-        prescribedNumericalRewrites: [...rewritePairs.values()],
-        moveHistory: {
-          startExpression: draft.initial,
-          finalExpression: steps.at(-1).expression,
-          initialBuilderActions: draft.initialBuilderActions,
-          recordedActions: draft.moves.flatMap(move => move.actions)
-            .map((action, index) => ({ ...action, index })),
-          demo: { steps: draft.moves.flatMap(move => move.demo) }
-        }
-      }),
       exerciseGuidance: draft.metadata.exerciseGuidance.trim() || defaultExerciseGuidance(),
       exerciseGuidanceIsComplete: true,
       requireFullDemo: true,
@@ -466,6 +432,7 @@
       if (preview) {
         const fileName = `${level.id}.json`;
         const params = { source: "problem-editor", level: fileName, mode: "guided", build: "1" };
+        if (draft.rewriteMode === "prescribed") params.rewrites = "prescribed";
         ExplodedAlgebraTransfer.open("exploded-algebra.html", params,
           { fileName, text: JSON.stringify(level) }, preview);
         status.textContent = "Opened in Player.";
@@ -493,7 +460,7 @@
       byId("problemTitle").value = transferredLevel.kind === "demoOnly"
         ? (transferredLevel.sourceLevelTitle || "New problem")
         : (transferredLevel.title || "New problem");
-      const prescribed = transferredLevel.kind !== "demoOnly" && transferredLevel.numericalRewriteMode === "prescribed";
+      const prescribed = payload.rewriteMode === "prescribed";
       byId("setupForm").elements.rewriteMode.value = prescribed ? "prescribed" : "free";
     } catch (error) {
       byId("setupError").textContent = error.message || "The level could not be transferred.";

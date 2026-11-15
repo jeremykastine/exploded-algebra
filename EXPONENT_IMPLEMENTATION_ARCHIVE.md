@@ -285,15 +285,7 @@ Its guided demo selected `((x)*(x))` and invoked
 `((x)^(2))`, while their conventional KaTeX used `x^2`.
 
 The current version removes that conversion. Its exploded steps retain
-`(2)*(x)*(x)` while the conventional panel continues to show `2x^2`. If the
-feature is restored, update both sources of built-in data:
-
-- `levels/exercise-3-multiply-binomials.json`
-- `levels/exercise-3-multiply-binomials-demo.json`
-- the mirrored JSON payloads inside `Exercises.html`
-
-The standalone JSON and embedded mirror must remain byte-for-byte equivalent as
-parsed JSON, or file-based and hosted launches can behave differently.
+`(2)*(x)*(x)` while the conventional panel continues to show `2x^2`..
 
 ## Recommended restoration sequence
 

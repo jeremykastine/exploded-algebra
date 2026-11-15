@@ -1390,6 +1390,8 @@ Promise.resolve().then(() => {
 
         const playerQuery = new URLSearchParams(window.location.search);
         const creativeSessionActive = playerQuery.get("mode") === "creative";
+        const prescribedRewritesEnabled = !creativeSessionActive && playerQuery.get("rewrites") === "prescribed";
+        let prescribedGuide = null;
         const problemEditorApiRequested = playerQuery.get("editor") === "1";
         let assistanceMode = ASSISTANCE_MODES.unguided;
         let buildFirstEnabled = false;
@@ -2819,6 +2821,8 @@ Promise.resolve().then(() => {
             delete copy.arithmeticOutputLevel;
             delete copy.includeUndoActions;
             delete copy.moveHistory;
+            delete copy.numericalRewriteMode;
+            delete copy.prescribedNumericalRewrites;
             copy.format = copy.format || "exploded-algebra-level";
             copy.formatVersion = copy.formatVersion || 1;
             copy.kind = "interactive";
@@ -3184,7 +3188,6 @@ Promise.resolve().then(() => {
                 initialBuilderActions,
                 finalExpression: final?.expression || initial,
                 steps: [{ expression: final?.expression || initial, katex: final?.katex || initialKatex }],
-                numericalRewriteMode: "free",
                 requireFullDemo: true,
                 demo: { steps: moves.flatMap(move => move.demo) },
                 recordedActions: moves.flatMap(move => move.actions)
@@ -3490,26 +3493,6 @@ Promise.resolve().then(() => {
             if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
                 throw new Error(`${sourceName} has an invalid initialKatex.`);
             }
-            if (level.numericalRewriteMode !== undefined && !["free", "prescribed"].includes(level.numericalRewriteMode)) {
-                throw new Error(`${sourceName} has an invalid numerical rewrite mode.`);
-            }
-            if (level.numericalRewriteMode === "prescribed") {
-                if (!Array.isArray(level.prescribedNumericalRewrites)) {
-                    throw new Error(`${sourceName} is missing its prescribed numerical rewrites.`);
-                }
-                for (const rewrite of level.prescribedNumericalRewrites) {
-                    if (typeof rewrite?.from !== "string" || typeof rewrite.to !== "string") {
-                        throw new Error(`${sourceName} contains an invalid prescribed numerical rewrite.`);
-                    }
-                    const from = textToExpression(rewrite.from);
-                    const to = textToExpression(rewrite.to);
-                    if (!exactRationalsAreEqual(evaluateNumericalRewriteNodeExactly(from), evaluateNumericalRewriteNodeExactly(to)) ||
-                        numericalRewriteNodesHaveSameStructure(from, to)) {
-                        throw new Error(`${sourceName} contains an invalid prescribed numerical rewrite.`);
-                    }
-                }
-            }
-
             textToExpression(level.startExpression);
             level.steps.forEach((step, index) => {
                 if (!step || typeof step.expression !== "string" || !step.expression.trim()) {
@@ -3550,6 +3533,14 @@ Promise.resolve().then(() => {
                 copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
                 return copy;
             }
+            if (copy.moveHistory?.demo && Array.isArray(copy.moveHistory.recordedActions)) {
+                copy.demo = copy.moveHistory.demo;
+                copy.recordedActions = copy.moveHistory.recordedActions;
+                copy.initialBuilderActions = copy.moveHistory.initialBuilderActions || copy.initialBuilderActions;
+                delete copy.moveHistory;
+            }
+            delete copy.numericalRewriteMode;
+            delete copy.prescribedNumericalRewrites;
             upgradeLegacyCommuteDemoSteps(copy);
             if (isDemoOnlyLevel(copy) && copy.sourceLevel && typeof copy.sourceLevel === "object") {
                 copy = {
@@ -3774,9 +3765,37 @@ Promise.resolve().then(() => {
             return getAllowedToolsForLevel(getCurrentLevel()).includes(toolName);
         }
 
+        function makePrescribedNumericalGuide(level) {
+            if (!Array.isArray(level.recordedActions) || !Array.isArray(level.demo?.steps)) return null;
+
+            const { moves } = inspectMoveHistory(level, true);
+            const steps = [];
+            const choices = new Map();
+            const moveEnds = [];
+            for (const move of moves) {
+                if (move.isRecordedNumerical && move.numericalRewrite) {
+                    const { from, to } = move.numericalRewrite;
+                    const original = textToExpression(from);
+                    const replacement = textToExpression(to);
+                    if (!exactRationalsAreEqual(evaluateNumericalRewriteNodeExactly(original), evaluateNumericalRewriteNodeExactly(replacement)) ||
+                        numericalRewriteNodesHaveSameStructure(original, replacement)) {
+                        throw new Error("The recording contains an invalid numerical replacement.");
+                    }
+                    if (!choices.has(from)) choices.set(from, new Set());
+                    choices.get(from).add(to);
+                    steps.push(move.demo[0], { type: "tool", tool: "numericalRewrite" },
+                        { type: "action", action: "chooseNumericalRewrite", value: to });
+                } else {
+                    steps.push(...move.demo);
+                }
+                moveEnds.push(steps.length);
+            }
+            return { steps, choices, moveEnds };
+        }
+
         function getCurrentDemoSteps() {
             const level = getCurrentLevel();
-            const steps = buildingStartingExpression ? level?.initialBuilderActions : level?.demo?.steps;
+            const steps = buildingStartingExpression ? level?.initialBuilderActions : (prescribedGuide?.steps || level?.demo?.steps);
             return Array.isArray(steps) ? steps.filter(step => step && step.type !== "view") : [];
         }
 
@@ -4292,7 +4311,7 @@ Promise.resolve().then(() => {
                 const matchedStepIndex = level.steps.findIndex((step, index) =>
                     index >= nextStepIndex &&
                     (!level.requireFullDemo || !isDemoModeActive() ||
-                        (index < level.steps.length - 1 && demoStepIndex >= (step.actionEndIndex || 0))) &&
+                        (index < level.steps.length - 1 && demoStepIndex >= (prescribedGuide?.moveEnds[step.recordedMoveIndex] ?? step.actionEndIndex ?? 0))) &&
                     expressionMatchesParenthesizedText(step.expression)
                 );
                 if (matchedStepIndex >= 0) {
@@ -4322,8 +4341,11 @@ Promise.resolve().then(() => {
         }
 
         function openEditorCopy(level, fileName = `${level.id}.json`, preview) {
-            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" },
-                { fileName, text: JSON.stringify(level) }, preview);
+            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" }, {
+                fileName,
+                text: JSON.stringify(level),
+                ...(prescribedRewritesEnabled && { rewriteMode: "prescribed" })
+            }, preview);
         }
 
         function downloadCurrentMoveHistory(destination) {
@@ -4619,6 +4641,7 @@ Promise.resolve().then(() => {
             }
 
             currentLevelIndex = levelIndex;
+            prescribedGuide = prescribedRewritesEnabled && !level.creative ? makePrescribedNumericalGuide(level) : null;
             buildingStartingExpression = buildFirst;
             document.body.classList.toggle("creative-workspace", level.creative === true);
             resetDemoStateForCurrentLevel();
@@ -8011,7 +8034,7 @@ ctx.font = SETTINGS.textFont;
                 ? `<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(problemExpression)}"></span></div>`
                 : "";
             const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
-            const numericalGuidance = level.numericalRewriteMode === "prescribed"
+            const numericalGuidance = prescribedRewritesEnabled
                 ? "Choose from the recorded equivalent replacements."
                 : "Build any equivalent numerical expression.";
             if (level.exerciseGuidanceIsComplete && authorGuidance.length) {
@@ -8143,12 +8166,8 @@ ctx.font = SETTINGS.textFont;
         function getPrescribedNumericalRewriteChoices(selectedNode = cloneSelectedRangeNode()) {
             const source = expressionToFullyParenthesizedText(selectedNode);
             const guide = getCurrentDemoStep();
-            if (getCurrentLevel()?.numericalRewriteMode !== "prescribed" && guide?.action === "chooseNumericalRewrite") {
-                return [guide.value];
-            }
-            return [...new Set((getCurrentLevel()?.prescribedNumericalRewrites || [])
-                .filter(rewrite => rewrite.from === source)
-                .map(rewrite => rewrite.to))];
+            return Array.from(prescribedGuide?.choices.get(source) ||
+                (guide?.action === "chooseNumericalRewrite" ? [guide.value] : []));
         }
 
         function exactRationalsAreEqual(first, second) {
@@ -10867,7 +10886,7 @@ ctx.font = SETTINGS.textFont;
         function canNumericalRewrite() {
             const selectedNode = cloneSelectedRangeNode();
             if (!selectedNode || !evaluateNumericalRewriteNodeExactly(selectedNode)) return false;
-            return getCurrentLevel()?.numericalRewriteMode !== "prescribed" ||
+            return !prescribedRewritesEnabled ||
                 getPrescribedNumericalRewriteChoices(selectedNode).length > 0;
         }
 
@@ -12573,7 +12592,7 @@ function renderToolArea() {
             uiState.previewColors = null;
 
             if (isNumericalRewriteTool(toolName) &&
-                (getCurrentLevel()?.numericalRewriteMode === "prescribed" || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
+                ((prescribedRewritesEnabled) || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
                 uiState.stage = "numericalChoices";
             } else if (
                 toolName === "commute" ||

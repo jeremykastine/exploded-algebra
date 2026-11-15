@@ -74,7 +74,8 @@ function checkImportAndExport() {
     "evaluateNumericalRewriteNodeExactly", "greatestCommonDivisorBigInt", "makeExactRational",
     "addExactRationals", "multiplyExactRationals", "exactRationalsAreEqual",
     "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
-    "canNumericalRewrite"
+    "canNumericalRewrite", "makePrescribedNumericalGuide", "numericalRewriteNodesHaveSameStructure",
+    "normalizeCloneForMatching"
   ];
   vm.runInContext(names.map(name => extract(player, name, "        ")).join("\n"), scope);
   scope.isNumericalRewriteTool = tool => tool === "numericalRewrite";
@@ -122,38 +123,33 @@ function checkImportAndExport() {
       { expression: final, katex: "x+1+5", beforeKatex: "", afterKatex: "x+1+5", moveIndex: 1 }
     ] }
   };
-  const prescribed = vm.runInContext("buildExportLevel()", scope);
-  assert.deepEqual(Array.from(prescribed.steps, step => step.expression), [initial, final]);
-  assert.equal(prescribed.steps[1].actionEndIndex, 6);
-  assert.deepEqual(Array.from(prescribed.demo.steps, step => step.action || step.type),
-    ["select", "tool", "chooseNumericalRewrite", "select", "tool", "chooseNumericalRewrite"]);
-  assert.equal(prescribed.prescribedNumericalRewrites.length, 2);
-  assert(!prescribed.prescribedNumericalRewrites.some(pair => pair.to === "(6)"));
-  scope.prescribed = prescribed;
-  const copy = vm.runInContext("inspectMoveHistory(prescribed)", scope);
-  assert.equal(copy.moves[0].demo.at(-1).action, "submit", "Editing a prescribed copy must recover the original builder steps");
+  const exported = vm.runInContext("buildExportLevel()", scope);
+  assert.deepEqual(Array.from(exported.steps, step => step.expression), [initial, final]);
+  assert.equal(exported.steps[1].actionEndIndex, 6);
+  assert.equal(exported.demo.steps[2].action, "submit");
+  assert.equal(exported.numericalRewriteMode, undefined);
+  assert.equal(exported.prescribedNumericalRewrites, undefined);
+  assert.equal(exported.moveHistory, undefined);
+  scope.exported = exported;
+  scope.draft.rewriteMode = "free";
+  assert.equal(JSON.stringify(vm.runInContext("buildExportLevel()", scope)), JSON.stringify(exported),
+    "The selected player rewrite mode must not change the exported JSON");
 
-  scope.getCurrentLevel = () => ({
-    numericalRewriteMode: "prescribed", prescribedNumericalRewrites: [
-      { from: "((2)+(4))", to: "((3)*(2))" },
-      { from: "((2)+(4))", to: "(6)" },
-      ...prescribed.prescribedNumericalRewrites
-    ]
-  });
+  scope.prescribedGuide = vm.runInContext("makePrescribedNumericalGuide(exported)", scope);
+  assert.deepEqual(Array.from(scope.prescribedGuide.steps, step => step.action || step.type),
+    ["select", "tool", "chooseNumericalRewrite", "select", "tool", "chooseNumericalRewrite"]);
+  assert.equal(scope.prescribedGuide.choices.size, 2);
+  assert.deepEqual(Array.from(scope.prescribedGuide.moveEnds), [3, 6]);
   scope.getCurrentDemoStep = () => null;
   assert.deepEqual(Array.from(vm.runInContext("getPrescribedNumericalRewriteChoices(textToExpression('((2)+(4))'))", scope)),
-    ["((3)*(2))", "(6)"]);
+    ["((3)*(2))"], "Only kept numerical moves may become choices");
   assert.deepEqual(Array.from(vm.runInContext("getPrescribedNumericalRewriteChoices(textToExpression('(9)'))", scope)), []);
 
+  scope.prescribedRewritesEnabled = true;
   scope.cloneSelectedRangeNode = () => vm.runInContext("textToExpression('((1)/((2)+(3)))')", scope);
   assert.equal(vm.runInContext("canNumericalRewrite()", scope), false);
-  scope.getCurrentLevel = () => ({});
+  scope.prescribedRewritesEnabled = false;
   assert.equal(vm.runInContext("canNumericalRewrite()", scope), true, "Free mode must allow nested exact numerical expressions");
-  scope.draft.rewriteMode = "free";
-  const free = vm.runInContext("buildExportLevel()", scope);
-  assert.equal(free.numericalRewriteMode, "free");
-  assert.equal(free.prescribedNumericalRewrites, undefined);
-  assert.equal(free.demo.steps[2].action, "submit");
 }
 
 checkImportAndExport();
