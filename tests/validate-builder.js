@@ -447,10 +447,4 @@ assert(dangling.layout.builderOperatorBoxes[0].groupable === false, "A dangling 
 const danglingOperator = dangling.layout.builderOperatorBoxes[0];
 assert(nearlyEqual(dangling.layout.x + dangling.layout.width, danglingOperator.x + danglingOperator.width + dangling.layout.builderOuterPadding), "A dangling operation must end immediately after its circle with no extra value space");
 
-for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
-  const level = JSON.parse(read(path.join("levels", file)));
-  assert(level.id && level.title && level.startExpression, `${file} is missing required metadata`);
-  assert(Array.isArray(level.steps) && level.steps.length > 0, `${file} has no steps`);
-}
-
 console.log("Exercise Builder static integration checks passed.");

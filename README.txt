@@ -4,23 +4,9 @@ Open index.html first. The launcher is designed to work both when index.html is
 opened directly from disk (file://) and when the folder is hosted by a web
 server such as GitHub Pages.
 
-BUILT-IN EXERCISES
+OPENING EXERCISES
 
-The built-in exercises are ordinary JSON files in the levels folder:
-
-- levels/level-1-distribute-and-combine.json
-- levels/level-1-distribute-and-combine-demo.json
-- levels/exercise-2-add-fractions.json
-- levels/exercise-3-multiply-binomials-demo.json
-- levels/exercise-3-multiply-binomials.json
-- levels/exercise-4-multiply-rational-expressions-demo.json
-- levels/exercise-4-multiply-rational-expressions.json
-
-Exercises.html links to these files. To make those links work under file://,
-where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
-carries a mirrored copy of each JSON payload for transfer into the app. The
-standalone JSON files remain in the levels folder for hosting, distribution, and
-editing. No exploded-algebra-levels.js file is used.
+Upload an exercise JSON file from Exercises.html.
 
 The conventional-notation panel uses three textbook-style sections separated by
 horizontal rules. `instruction` is the brief textbook direction available with
@@ -156,12 +142,8 @@ intermediate steps before export. Test Level passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 
-Built-in level URLs include the selected JSON file in the level query parameter.
 Every level accepts assistance=medium or assistance=low, and a level that contains
 guided steps also accepts assistance=high, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=high
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=medium
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&assistance=low
 High assistance follows the recorded guided moves. Medium assistance progressively
 reveals the conventional solution steps without controlling the learner's moves.
 Low assistance shows the original problem and final target while hiding all
@@ -170,6 +152,5 @@ expression, so the learner may use a different valid sequence of moves.
 If assistance is absent or invalid, the learner is asked to choose, with Medium
 highlighted by default. High is hidden for exercises without recorded guidance.
 Legacy mode=guided, mode=unguided, and mode=final-only URLs remain supported.
-The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
