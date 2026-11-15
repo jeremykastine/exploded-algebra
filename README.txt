@@ -4,34 +4,15 @@ Open index.html first. The launcher is designed to work both when index.html is
 opened directly from disk (file://) and when the folder is hosted by a web
 server such as GitHub Pages.
 
-BUILT-IN EXERCISES
+OPENING EXERCISES
 
-The built-in exercises are ordinary JSON files in the levels folder:
-
-- levels/rewrite-and-simplify-negative-6-plus-4.json
-- levels/multiply-binomials-and-combine-like-terms.json
-- levels/add-rational-expressions-with-unlike-denominators.json
-
-Exercises.html links to these files in learning order, from foundational to
-advanced. Insert each new exercise at its appropriate point in the list.
-To make those links work under file://,
-where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
-carries a mirrored copy of each JSON payload for transfer into the app. The
-standalone JSON files remain in the levels folder for hosting, distribution, and
-editing. No exploded-algebra-levels.js file is used.
+Upload an exercise JSON file from Exercises.html.
 
 INTRODUCTION AUDIENCE AND GUIDED EXAMPLES
 
 Introduction.html is currently written for mathematics teachers. Take familiar
 ideas slowly to explain the representation and its purpose; keep conventional
 notation out of the opening discussion until the explicit comparison section.
-The introduction-only examples are in intro-levels, separate from the student
-exercise list. Expanded sections on the negative unit, exponents as repeated
-multiplication, and the inverse operator each include a guided exercise, alongside
-the earlier guided examples of arithmetic, algebraic properties, and distribution.
-Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
-all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
-use mode=guided; the workspace menu offers a restart in either mode.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. A Transform heading introduces the current expression followed by
@@ -244,11 +225,8 @@ All Done passes
 the current draft to the ordinary player through a short-lived local-storage key
 with a window.name fallback, so no JSON file needs to be installed first.
 
-Built-in level URLs include the selected JSON file in the level query parameter.
 Every level accepts mode=unguided, and a level that contains recorded guided steps
-also accepts mode=guided, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
+also accepts mode=guided.
 Guided follows the recorded action sequence. Unguided updates the single
 conventional target without controlling the learner's moves. Unguided is the
 default when the URL lacks a supported mode. Older assistance=high and
@@ -257,7 +235,6 @@ available for exercises with recorded guidance. Restarting replaces the mode
 parameter and starts the exercise over in the same tab. Close Problem returns
 to the launcher by closing the exercise tab or by going back after a same-tab
 launch.
-The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
 

@@ -28,7 +28,6 @@ assert.deepEqual(indexChoices, [
     { href: "problem-builder.html", label: "Instructor" }
 ], "The landing page must link to Introduction, Student, and Instructor, in that order");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
-assert(exercisesHtml.includes("<strong>Restart Guided</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
 assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
@@ -100,16 +99,6 @@ assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: 
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
 
-for (const levelFile of [
-    "simplify-double-negative-unit.json",
-    "evaluate-repeated-factors.json",
-    "cancel-expression-with-inverse.json"
-]) {
-    const fullPath = path.resolve(__dirname, "..", "intro-levels", levelFile);
-    const level = JSON.parse(fs.readFileSync(fullPath, "utf8"));
-    assert(level.kind === "guidedCapable" && level.demo.steps.length >= 2, `${levelFile} must be an interactive guided Introduction exercise`);
-    assert(introductionHtml.includes(`intro-levels/${levelFile}`), `${levelFile} must be linked from the Introduction`);
-}
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "The upper-right hamburger menu must open Settings");
@@ -360,20 +349,6 @@ assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
 commuteContext.selection.node = { type: "sum" };
 commuteContext.canCommuteRotate = () => false;
 assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
-
-// Recorded problem actions keep their operation-specific tool IDs.
-for (const folder of ["intro-levels", "levels"]) {
-    for (const file of fs.readdirSync(path.resolve(__dirname, "..", folder)).filter(file => file.endsWith(".json"))) {
-        const level = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", folder, file), "utf8"));
-        let selectedType = null;
-        for (const action of level.recordedActions || []) {
-            if (action.type === "select") selectedType = action.selectedType;
-            if (action.type === "tool" && action.tool.startsWith("commute")) {
-                assert.equal(action.tool, selectedType === "sum" ? "commuteTerms" : "commuteFactors", `${file} must record the commute button matching its selection`);
-            }
-        }
-    }
-}
 
 const normalizeRulesMatch = playerJs.match(/function normalizeNumericalRewriteRules\(rules\) \{([\s\S]*?)\n        \}\n\n        function getNumericalRewriteProfile/);
 assert(normalizeRulesMatch, "Numerical permission normalization must remain testable");
