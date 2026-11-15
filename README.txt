@@ -228,22 +228,16 @@ ready, while retaining their geometry for rendering. Canceled or inactive
 animation runs cannot restore an older frame. The conventional target updates
 before the shared workspace is painted, so it remains aligned with the exploded
 expression as the target changes.
-It also links to problem-builder.html, an authoring application with four or five phases that
-uses the real Exploded Algebra player in an embedded authoring session. Completed
-levels export with formatVersion 1,
-the existing steps/demo/recordedActions structures, editable KaTeX checkpoints,
-and enough information for Guided and Unguided modes. During Phase 3,
-every completed expression-changing manipulation is automatically saved as a
-major step. Phase 4 first chooses which recorded steps to show, then edits only
-their pre- and post-completion notation. Phase 5 provides one field prefilled with
-the problem statement and numerical restrictions, with View and Edit modes for
-reviewing or changing the complete student-facing guidance. Phase 1 retains the
-legacy choice for exporting `showConventionalSteps` and may skip Phase 4, but the
-player always shows the live target-and-current notation stack rather than a
-conventional step-history panel. Recorded actions remain available for Guided mode.
-All Done passes
-the current draft to the ordinary player through a short-lived local-storage key
-with a window.name fallback, so no JSON file needs to be installed first.
+The home page links to Creative Mode and the Problem Editor. Build the starting
+expression in Creative Mode, transform it, and choose Download Moves. Open that
+JSON in the Problem Editor, name the problem, and choose a numerical rewrite
+mode. Free rewrites accept any equivalent numerical expression. Prescribed
+rewrites offer only the recorded replacements for the selected expression.
+
+The editor keeps the starting and final expressions and lets you choose
+intermediate checkpoints, edit their conventional notation, and edit student
+guidance. Showing fewer checkpoints still keeps the full guided solution path.
+All Done downloads the exercise JSON and opens a playable preview.
 
 Built-in level URLs include the selected JSON file in the level query parameter.
 Every level accepts mode=unguided, and a level that contains recorded guided steps

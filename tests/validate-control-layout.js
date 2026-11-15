@@ -26,8 +26,8 @@ assert.deepEqual(indexChoices, [
     { href: "Introduction.html", label: "Introduction to Exploded Algebra" },
     { href: "Exercises.html", label: "Student" },
     { href: "exploded-algebra.html?mode=creative", label: "Creative Mode" },
-    { href: "problem-builder.html", label: "Instructor" }
-], "The landing page must list Introduction, Student, Creative Mode, and Instructor in order");
+    { href: "problem-builder.html", label: "Problem Editor" }
+], "The landing page must list Introduction, Student, Creative Mode, and Problem Editor in order");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
 assert(exercisesHtml.includes("<strong>Restart Problem</strong>") && exercisesHtml.includes("<strong>Use guided steps</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
@@ -286,7 +286,7 @@ assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(playerHtml.includes('class="controls-grid-overlay workspace-toolbar-grid-overlay"'), "The permanent workspace row must draw the same continuous grid treatment as the action rows");
 assert(playerHtml.includes('class="controls-grid-overlay builder-grid-overlay"'), "Expression Builder must draw the same continuous grid treatment as post-selection");
 assert(playerHtml.includes('d="M0 100 H600 M100 0 V100') && playerHtml.includes('d="M100 0 V400 M200 0 V400'), "Only the toolbar draws the boundary between the two portions of the grid");
-assert(!/body\.authoring-session\s+\.quadrant-tools\s*\{[^}]*margin/.test(playerHtml), "The Instructor toolbar must fill the same six columns as the lower palette");
+assert(!/body\.authoring-session\s+\.quadrant-tools\s*\{[^}]*margin/.test(playerHtml), "The shared toolbar must fill the same six columns as the lower palette");
 assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?gap: 0;/.test(playerHtml), "The unified palette must use five gapless shared grid tracks");
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));

@@ -1,102 +1,159 @@
 (() => {
   "use strict";
 
-  const TEST_STORAGE_PREFIX = "explodedAlgebra.problemBuilderTest.";
   const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
-  const FORMAT_VERSION = 1;
-  const VARIABLES = ["x"];
-  const NUMERICAL_REWRITE_RULES = [
-    { id: "nonnegativeArithmetic", label: "Nonnegative addition and multiplication", example: "23 + 14 ↔ 37; 24 · 37 ↔ 888", forward: ["automatic", "manual"], reverse: ["manual"] },
-    { id: "signedArithmetic", label: "Signed number addition and multiplication", example: "8 + (−1) · 12 ↔ (−1) · 4; (−1) · 4 · 7 ↔ (−1) · 28", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
-    { id: "nonnegativeFractionSimplification", label: "Non-negative fraction simplification", example: "18 · inverse(24) ↔ 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
-    { id: "signedFractionSimplification", label: "Signed fraction simplification", example: "(−1) · 18 · inverse(24) ↔ (−1) · 3 · inverse(4)", forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"] },
-    { id: "inverseOne", label: "Inverse of one", example: "inverse(1) ↔ 1", forward: ["automatic", "manual"], reverse: ["manual"] },
-    { id: "inverseNegativeOne", label: "Inverse of negative one", example: "inverse(−1) ↔ −1", forward: ["automatic", "manual"], reverse: ["manual"] },
-    { id: "doubleNegative", label: "Negative one times negative one", example: "(−1) · (−1) ↔ 1", forward: ["automatic", "manual"], reverse: ["manual"] }
-  ];
-  const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;
-  const NUMERICAL_PERMISSION_LABELS = {
-    automatic: "Automatic",
-    manual: "Manual",
-    "not-allowed": "Not allowed"
-  };
-
+  const TEST_STORAGE_PREFIX = "explodedAlgebra.problemEditor.";
   const byId = id => document.getElementById(id);
-  const workspace = byId("eaWorkspace");
-  const workspaceShell = byId("workspaceShell");
   const phases = Array.from(document.querySelectorAll(".phase"));
-  let currentPhase = 1;
-  let loadedWorkspacePhase = 0;
-  let iframeReady = false;
-  let idWasEdited = false;
-  let initialCommitInProgress = false;
+
+  let draft;
   let currentCurationIndex = 0;
   let currentCurationMode = "view";
   let currentGuidanceMode = "view";
   let curationStage = "select";
-  let curationSelectionIndex = 0;
   let curationSelectionSource = [];
   let curationKeepDecisions = [];
-  let draft = makeFreshDraft();
 
-  function makeFreshDraft() {
-    return {
-      metadata: { title: "", id: "", exerciseGuidance: "" },
-      settings: {
-        numericalRewrite: {
-          rules: Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
-            rule.id,
-            { forward: "manual", reverse: "manual" }
-          ]))
-        },
-        includeUndoActions: false,
-        showConventionalSteps: true,
-        excludedDefaultTools: [],
-        allowedUnavailableTools: []
-      },
-      initial: {
-        expression: "",
-        katex: "",
-        eaLocked: false,
-        conventionalLocked: false,
-        workspaceSnapshot: null
-      },
-      recording: {
-        workspaceSnapshot: null,
-        candidates: [],
-        finalExpression: "",
-        finalKatex: "",
-        finished: false
-      }
-    };
+  async function waitForApi() {
+    const workspace = byId("eaWorkspace");
+    for (let attempt = 0; attempt < 120; attempt++) {
+      const api = workspace.contentWindow?.ExplodedAlgebraProblemEditor;
+      if (api) return api;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    throw new Error("The Problem Editor could not load. Reload the page and try again.");
   }
 
-  function getApi() {
+  function setPhase(number) {
+    phases.forEach(phase => { phase.hidden = Number(phase.dataset.phase) !== number; });
+    if (number === 2) renderCurationTable();
+    if (number === 3) renderGuidancePhase();
+    window.scrollTo(0, 0);
+  }
+
+  async function openMoves(event) {
+    event.preventDefault();
+    const button = byId("openMovesButton");
+    const status = byId("setupError");
+    status.textContent = "";
+    button.disabled = true;
     try {
-      return workspace.contentWindow && workspace.contentWindow.ExplodedAlgebraAuthoring;
+      const file = byId("moveFile").files[0];
+      const title = byId("problemTitle").value.trim();
+      const id = slugify(title);
+      if (!title) throw new Error("Enter a problem name.");
+      let history;
+      try {
+        history = JSON.parse(await file.text());
+      } catch (error) {
+        throw new Error("The move history file must contain valid JSON.");
+      }
+      const api = await waitForApi();
+      const imported = api.inspectMoveHistory(history);
+      const rewriteMode = new FormData(event.target).get("rewriteMode");
+      if (imported.moves.some(move => move.isRecordedNumerical &&
+          (rewriteMode === "prescribed" || move.demo[move.toolIndex].tool === "automaticNumericalRewrite") &&
+          !move.numericalRewrite)) {
+        throw new Error("A recorded numerical replacement could not be recovered. Recreate that rewrite in Creative Mode and download the moves again.");
+      }
+      draft = {
+        ...imported,
+        metadata: { title, id: id || `problem-${Date.now()}`, exerciseGuidance: "" },
+        rewriteMode,
+        recording: { candidates: [] }
+      };
+      curationSelectionSource = [
+        { key: "initial-expression", expression: draft.initial, katex: draft.initialKatex, isInitial: true },
+        ...draft.moves.map((move, index) => ({ ...move, key: index, moveIndex: index }))
+      ].map(candidate => ({
+        ...candidate,
+        beforeKatex: candidate.katex,
+        afterKatex: candidate.katex
+      }));
+      curationKeepDecisions = curationSelectionSource.map((_, index) =>
+        index === 0 || index === curationSelectionSource.length - 1);
+      curationStage = "select";
+      setPhase(2);
     } catch (error) {
-      return null;
+      status.textContent = error.message || "The moves could not be opened.";
+    } finally {
+      button.disabled = false;
     }
   }
 
-  function waitForApi(timeoutMs = 12000) {
-    const started = Date.now();
-    return new Promise((resolve, reject) => {
-      const check = () => {
-        const api = getApi();
-        if (api) {
-          iframeReady = true;
-          resolve(api);
-          return;
-        }
-        if (Date.now() - started > timeoutMs) {
-          reject(new Error("The Exploded Algebra workspace did not finish loading."));
-          return;
-        }
-        setTimeout(check, 80);
+  function finishCurationSelection() {
+    draft.recording.candidates = curationSelectionSource.filter((_, index) => curationKeepDecisions[index]);
+    curationStage = "edit";
+    currentCurationIndex = 0;
+    currentCurationMode = "view";
+    renderCurationTable();
+  }
+
+  function buildExportLevel() {
+    const demoSteps = [];
+    const recordedActions = [];
+    const moveEnds = [];
+    const rewritePairs = new Map();
+    for (const move of draft.moves) {
+      if (move.numericalRewrite) {
+        rewritePairs.set(JSON.stringify(move.numericalRewrite), move.numericalRewrite);
+      }
+      const useChoice = move.isRecordedNumerical &&
+        (draft.rewriteMode === "prescribed" || move.demo[move.toolIndex].tool === "automaticNumericalRewrite");
+      if (useChoice) {
+        const { to } = move.numericalRewrite;
+        const choice = { type: "action", action: "chooseNumericalRewrite", value: to };
+        const tool = { type: "tool", tool: "numericalRewrite" };
+        const beforeExpression = move.actions[0].beforeExpression;
+        demoSteps.push(move.demo[0], tool, choice);
+        recordedActions.push(move.actions[0], { ...tool, beforeExpression }, {
+          ...choice,
+          beforeExpression,
+          afterExpression: move.expression,
+          numericalRewrite: move.numericalRewrite
+        });
+      } else {
+        demoSteps.push(...move.demo);
+        recordedActions.push(...move.actions);
+      }
+      moveEnds.push(demoSteps.length);
+    }
+
+    let previousEnd = 0;
+    const steps = draft.recording.candidates.map(candidate => {
+      const afterKatex = candidate.afterKatex.trim() || candidate.katex;
+      const step = {
+        expression: candidate.expression,
+        explodedExpression: candidate.expression,
+        katex: afterKatex,
+        beforeKatex: candidate.beforeKatex.trim() || candidate.katex,
+        afterKatex
       };
-      check();
+      if (!candidate.isInitial) {
+        step.actionStartIndex = previousEnd;
+        step.actionEndIndex = moveEnds[candidate.moveIndex];
+        previousEnd = step.actionEndIndex;
+      }
+      return step;
     });
+    return {
+      format: "exploded-algebra-level",
+      formatVersion: 1,
+      kind: "guidedCapable",
+      id: draft.metadata.id,
+      title: draft.metadata.title,
+      startExpression: draft.initial,
+      initialKatex: steps[0].afterKatex,
+      finalExpression: steps.at(-1).expression,
+      finalKatex: steps.at(-1).afterKatex,
+      numericalRewriteMode: draft.rewriteMode,
+      ...(draft.rewriteMode === "prescribed" && { prescribedNumericalRewrites: [...rewritePairs.values()] }),
+      exerciseGuidance: draft.metadata.exerciseGuidance.trim(),
+      exerciseGuidanceIsComplete: true,
+      steps,
+      demo: { format: "exploded-algebra-guided-actions-v1", steps: demoSteps },
+      recordedActions: recordedActions.map((action, index) => ({ ...action, index }))
+    };
   }
 
   function escapeHtml(value) {
@@ -116,139 +173,6 @@
       .replace(/^-+|-+$/g, "");
   }
 
-  function initializeSetupDefaults() {
-    const timestamp = String(Date.now());
-    byId("problemTitle").value = timestamp;
-    byId("problemId").value = slugify(timestamp);
-  }
-
-  function renderNumericalPermissionTable() {
-    const target = byId("numericalPermissionsTable");
-    target.innerHTML = NUMERICAL_REWRITE_RULES.map((rule, index) => {
-        const forwardName = `numerical-${rule.id}-forward`;
-        const reverseName = `numerical-${rule.id}-reverse`;
-        const headingId = `numerical-${rule.id}-heading`;
-        const forwardId = `numerical-${rule.id}-forward-heading`;
-        const reverseId = `numerical-${rule.id}-reverse-heading`;
-        const inputs = (name, options) => options.map(value =>
-          `<label><input type="radio" name="${name}" value="${value}"${value === "manual" ? " checked" : ""}> ${NUMERICAL_PERMISSION_LABELS[value]}</label>`
-        ).join("");
-        return `
-          <section class="numerical-permission-rule" role="listitem" aria-labelledby="${headingId}">
-            <h3 id="${headingId}" class="numerical-rule-name"><span>${index + 1}.</span> ${escapeHtml(rule.label)}</h3>
-            <p class="numerical-rule-example">${escapeHtml(rule.example)}</p>
-            <div class="permission-direction" role="group" aria-labelledby="${forwardId}">
-              <h4 id="${forwardId}" class="permission-direction-title">Forward</h4>
-              <div class="permission-options">
-                ${inputs(forwardName, rule.forward)}
-              </div>
-            </div>
-            <div class="permission-direction" role="group" aria-labelledby="${reverseId}">
-              <h4 id="${reverseId}" class="permission-direction-title">Reverse</h4>
-              <div class="permission-options">
-                ${inputs(reverseName, rule.reverse)}
-              </div>
-            </div>
-          </section>`;
-      }).join("");
-  }
-
-  function readNumericalPermissionChoices() {
-    return Object.fromEntries(CONFIGURABLE_NUMERICAL_REWRITE_RULES.map(rule => [
-      rule.id,
-      {
-        forward: document.querySelector(`input[name="numerical-${rule.id}-forward"]:checked`).value,
-        reverse: document.querySelector(`input[name="numerical-${rule.id}-reverse"]:checked`).value
-      }
-    ]));
-  }
-
-  function sameExpressionText(first, second) {
-    return String(first || "").replace(/\s+/g, "") === String(second || "").replace(/\s+/g, "");
-  }
-
-  function collectSetup() {
-    draft.metadata = {
-      title: byId("problemTitle").value.trim(),
-      id: byId("problemId").value.trim(),
-      exerciseGuidance: draft.metadata.exerciseGuidance || ""
-    };
-    draft.settings.numericalRewrite = { rules: readNumericalPermissionChoices() };
-    draft.settings.includeUndoActions = document.querySelector('input[name="includeUndo"]:checked').value === "yes";
-    draft.settings.showConventionalSteps = document.querySelector('input[name="showConventionalSteps"]:checked').value !== "no";
-    draft.settings.excludedDefaultTools = [];
-  }
-
-  function validateSetup(showError = true) {
-    collectSetup();
-    let message = "";
-    if (!draft.metadata.title) message = "Enter a problem name.";
-    else if (!draft.metadata.id) message = "Enter an ID / slug.";
-    else if (!/^[A-Za-z0-9_-]+$/.test(draft.metadata.id)) message = "The ID may contain only letters, numbers, hyphens, and underscores.";
-    if (showError) byId("setupError").textContent = message;
-    return !message;
-  }
-
-  function inferVariables(expression) {
-    return /(^|[^A-Za-z])x([^A-Za-z]|$)/.test(String(expression || "")) ? ["x"] : [];
-  }
-
-  function getLevelBase() {
-    const level = {
-      format: "exploded-algebra-level",
-      formatVersion: FORMAT_VERSION,
-      kind: "guidedCapable",
-      id: draft.metadata.id,
-      title: draft.metadata.title,
-      startExpression: draft.initial.expression,
-      initialKatex: draft.initial.katex,
-      numericalRewrite: { ...draft.settings.numericalRewrite },
-      variables: inferVariables(draft.initial.expression),
-      excludedDefaultTools: [...draft.settings.excludedDefaultTools],
-      allowedUnavailableTools: [...draft.settings.allowedUnavailableTools],
-      showConventionalSteps: draft.settings.showConventionalSteps,
-      includeUndoActions: draft.settings.includeUndoActions
-    };
-    if (draft.metadata.exerciseGuidance.trim()) {
-      level.exerciseGuidance = draft.metadata.exerciseGuidance.trim();
-      level.exerciseGuidanceIsComplete = true;
-    }
-    return level;
-  }
-
-  function buildExportLevel() {
-    const snapshot = draft.recording.workspaceSnapshot;
-    const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [], demoSteps: [] };
-    const recordedCandidates = draft.recording.candidates || [];
-    const initialCandidate = recordedCandidates.find(candidate => candidate.isInitial);
-    const steps = recordedCandidates.map(candidate => {
-      const step = {
-        expression: candidate.expression,
-        explodedExpression: candidate.expression,
-        katex: candidate.afterKatex,
-        beforeKatex: candidate.beforeKatex,
-        afterKatex: candidate.afterKatex
-      };
-      if (!candidate.isInitial) {
-        step.actionStartIndex = candidate.actionStartIndex;
-        step.actionEndIndex = candidate.actionEndIndex;
-      }
-      return step;
-    });
-    const level = {
-      ...getLevelBase(),
-      initialKatex: initialCandidate && initialCandidate.afterKatex || draft.initial.katex,
-      steps,
-      demo: {
-        format: "exploded-algebra-guided-actions-v1",
-        steps: JSON.parse(JSON.stringify(recorder.demoSteps || []))
-      },
-      recordedActions: JSON.parse(JSON.stringify(recorder.actions || [])),
-      finalExpression: draft.recording.finalExpression || recordedCandidates.at(-1)?.expression || draft.initial.expression,
-      finalKatex: recordedCandidates.at(-1)?.afterKatex || draft.recording.finalKatex || draft.initial.katex
-    };
-    return level;
-  }
 
   function renderKatex(target, source) {
     if (!target) return;
@@ -261,171 +185,6 @@
     window.katex.render(source, target, { throwOnError: false, displayMode: true });
   }
 
-  function moveWorkspaceTo(slotId) {
-    const slot = byId(slotId);
-    if (slot && workspaceShell.parentElement !== slot) slot.appendChild(workspaceShell);
-    workspaceShell.style.display = "block";
-    requestAnimationFrame(() => {
-      const api = getApi();
-      if (api) api.refreshLayout();
-    });
-  }
-
-  async function preparePhase2() {
-    moveWorkspaceTo("phase2WorkspaceSlot");
-    const api = await waitForApi();
-    let snapshot;
-    if (loadedWorkspacePhase !== 2) {
-      const resume = draft.initial.workspaceSnapshot || (draft.initial.expression ? {
-        currentExpression: draft.initial.expression,
-        initialCommitted: true
-      } : null);
-      snapshot = api.loadInitialSession({
-        ...getLevelBase(),
-        initialKatex: draft.initial.katex || undefined,
-        variables: VARIABLES
-      }, resume);
-      loadedWorkspacePhase = 2;
-    } else {
-      snapshot = api.getSnapshot();
-    }
-    if (!snapshot.builderActive) {
-      api.startInitialExpressionBuilder(snapshot.builderDraft || null);
-      snapshot = api.getSnapshot();
-    }
-    draft.initial.workspaceSnapshot = snapshot;
-    document.body.classList.add("phase2-expression-building");
-    byId("initialExpressionStatus").textContent = "Enter values and operations, then tap each operation in the expression to resolve its grouping.";
-  }
-
-  async function preparePhase3() {
-    moveWorkspaceTo("phase3WorkspaceSlot");
-    const api = await waitForApi();
-    if (loadedWorkspacePhase !== 3) {
-      draft.recording.workspaceSnapshot = api.loadRecordingSession(getLevelBase(), draft.recording.workspaceSnapshot);
-      loadedWorkspacePhase = 3;
-    }
-    document.body.classList.add("phase3-recording");
-    syncFinishRecordingControl(api.getSnapshot());
-    api.refreshLayout();
-  }
-
-  function syncFinishRecordingControl(snapshot) {
-    const api = getApi();
-    const isAvailable = currentPhase === 3 && !!snapshot && snapshot.preselectionActive === true;
-    if (!api || typeof api.setFinishRecordingControlVisible !== "function") return;
-    api.setFinishRecordingControlVisible(isAvailable);
-  }
-
-  function makeInitialCurationCandidate(api) {
-    const prior = (draft.recording.candidates || []).find(candidate => candidate.isInitial);
-    const generatedKatex = draft.initial.katex || api.generateKatex(draft.initial.expression);
-    return {
-      key: "initial-expression",
-      expression: draft.initial.expression,
-      beforeExpression: draft.initial.expression,
-      beforeKatex: prior && prior.beforeKatex || generatedKatex,
-      afterKatex: prior && prior.afterKatex || generatedKatex,
-      isInitial: true
-    };
-  }
-
-  function getRecordedActions(snapshot) {
-    const recorder = snapshot && snapshot.recorder ? snapshot.recorder : { actions: [] };
-    return Array.isArray(recorder.actions) ? recorder.actions : [];
-  }
-
-  function getActionPrefix(actions, actionEndIndex) {
-    return JSON.stringify(actions.slice(0, actionEndIndex));
-  }
-
-  function reconcileRecordedSteps(snapshot) {
-    const actions = getRecordedActions(snapshot);
-    draft.recording.candidates = (draft.recording.candidates || []).filter(candidate => {
-      if (candidate.isInitial) return true;
-      return candidate.actionEndIndex <= actions.length &&
-        candidate.actionPrefix === getActionPrefix(actions, candidate.actionEndIndex);
-    });
-  }
-
-  function recordAutomaticMajorStep(snapshot, api) {
-    reconcileRecordedSteps(snapshot);
-    const actions = getRecordedActions(snapshot);
-    const previous = (draft.recording.candidates || []).at(-1);
-    const beforeExpression = previous && !previous.isInitial ? previous.expression : draft.initial.expression;
-    const actionStartIndex = previous && !previous.isInitial ? previous.actionEndIndex : 0;
-    const expression = String(snapshot && snapshot.currentExpression || "").trim();
-    if (!expression || actions.length <= actionStartIndex || sameExpressionText(expression, beforeExpression)) {
-      return false;
-    }
-    const generatedStepKatex = api.generateKatex(expression);
-    draft.recording.candidates.push({
-      key: `recorded-step-${draft.recording.candidates.length + 1}-${actions.length}`,
-      expression,
-      beforeExpression,
-      beforeKatex: generatedStepKatex,
-      afterKatex: generatedStepKatex,
-      actionStartIndex,
-      actionEndIndex: actions.length,
-      actionPrefix: getActionPrefix(actions, actions.length),
-      isInitial: false
-    });
-    draft.recording.workspaceSnapshot = snapshot;
-    return true;
-  }
-
-  async function finishRecordingFromControl() {
-    const api = await waitForApi();
-    const snapshot = api.getSnapshot();
-    await finishRecording(snapshot, api);
-  }
-
-  function startCurationSelection() {
-    curationStage = "select";
-    curationSelectionIndex = 0;
-    curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates || []));
-    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
-      index === 0 || index === curationSelectionSource.length - 1
-    );
-    renderCurationTable();
-  }
-
-  function restartCurationSelection() {
-    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
-      index === 0 || index === curationSelectionSource.length - 1
-    );
-    renderCurationTable();
-  }
-
-  function finishCurationSelection() {
-    const kept = curationSelectionSource.filter((candidate, index) => curationKeepDecisions[index] !== false);
-    if (!kept.length) {
-      window.alert("Show at least one recorded expression.");
-      return;
-    }
-    const originalFirst = curationSelectionSource[0];
-    if (originalFirst && originalFirst.isInitial && !kept.some(candidate => candidate.isInitial)) {
-      kept.unshift(originalFirst);
-    }
-    for (let index = 1; index < kept.length; index += 1) {
-      const previousKept = kept[index - 1];
-      const candidate = kept[index];
-      if (!candidate.isInitial) {
-        candidate.beforeExpression = previousKept.expression;
-        const sourceIndex = curationSelectionSource.findIndex(item => item.key === candidate.key);
-        const previousSourceIndex = curationSelectionSource.findIndex(item => item.key === previousKept.key);
-        const firstRemovedAfterPrevious = curationSelectionSource
-          .slice(Math.max(0, previousSourceIndex + 1), Math.max(0, sourceIndex))
-          .find(item => Number.isInteger(item.actionStartIndex));
-        if (firstRemovedAfterPrevious) candidate.actionStartIndex = firstRemovedAfterPrevious.actionStartIndex;
-      }
-    }
-    draft.recording.candidates = kept;
-    curationStage = "edit";
-    currentCurationIndex = 0;
-    currentCurationMode = "view";
-    renderCurationTable();
-  }
 
   function renderCurationSelection() {
     const container = byId("curationTable");
@@ -462,7 +221,7 @@
     candidates.forEach((candidate, index) => {
       renderKatex(
         container.querySelector(`[data-selection-expression="${index}"]`),
-        candidate.afterKatex || candidate.beforeKatex || candidate.expression
+        candidate.afterKatex || candidate.katex
       );
     });
     byId("continueToGuidanceButton").hidden = true;
@@ -533,63 +292,6 @@
     byId("continueToGuidanceButton").hidden = !isFinalSlide;
   }
 
-  function renderCuration() {
-    renderCurationTable();
-  }
-
-  async function finishRecording(providedSnapshot = null, providedApi = null) {
-    const api = providedApi || await waitForApi();
-    const snapshot = providedSnapshot || api.getSnapshot();
-    draft.recording.workspaceSnapshot = snapshot;
-    recordAutomaticMajorStep(snapshot, api);
-    reconcileRecordedSteps(snapshot);
-    if (!draft.recording.candidates.length) {
-      window.alert("Complete at least one expression-changing solution step before choosing All Done.");
-      return;
-    }
-    draft.recording.candidates = [makeInitialCurationCandidate(api), ...draft.recording.candidates];
-    draft.recording.finalExpression = snapshot.currentExpression;
-    draft.recording.finalKatex = api.generateKatex(snapshot.currentExpression);
-    draft.recording.finished = true;
-    if (!draft.settings.showConventionalSteps) {
-      await setPhase(5);
-      return;
-    }
-    currentCurationIndex = 0;
-    currentCurationMode = "view";
-    curationStage = "select";
-    curationSelectionIndex = 0;
-    curationSelectionSource = JSON.parse(JSON.stringify(draft.recording.candidates));
-    curationKeepDecisions = curationSelectionSource.map((candidate, index) =>
-      index === 0 || index === curationSelectionSource.length - 1
-    );
-    await setPhase(4);
-  }
-
-  async function validateExportLevel() {
-    const api = await waitForApi();
-    return api.validateLevel(buildExportLevel());
-  }
-
-  function buildPrefilledExerciseGuidance() {
-    const lines = [
-      "## Problem Statement",
-      "",
-      "\\[",
-      draft.initial.katex || draft.initial.expression,
-      "\\]",
-      "",
-      "## Numerical Manipulation Restrictions",
-      ""
-    ];
-    NUMERICAL_REWRITE_RULES.forEach(rule => {
-      const setting = draft.settings.numericalRewrite.rules[rule.id];
-      const forward = NUMERICAL_PERMISSION_LABELS[setting.forward] || setting.forward;
-      const reverse = NUMERICAL_PERMISSION_LABELS[setting.reverse] || setting.reverse;
-      lines.push(`- ${rule.label}`, `  - Forward — ${forward}`, `  - Reverse — ${reverse}`);
-    });
-    return lines.join("\n");
-  }
 
   function getGuidanceInlineHtml(source) {
     const text = String(source || "");
@@ -695,7 +397,13 @@
 
   function renderGuidancePhase() {
     if (!draft.metadata.exerciseGuidance.trim()) {
-      draft.metadata.exerciseGuidance = buildPrefilledExerciseGuidance();
+      const rewriteHelp = draft.rewriteMode === "free"
+        ? "Build any equivalent numerical expression."
+        : "Choose from the recorded equivalent replacements when Numerical Manipulation is available.";
+      draft.metadata.exerciseGuidance = [
+        "## Problem Statement", "", "\\[", draft.initialKatex, "\\]", "",
+        "## Numerical Rewrites", "", rewriteHelp
+      ].join("\n");
     }
     byId("exerciseGuidance").value = draft.metadata.exerciseGuidance;
     currentGuidanceMode = "view";
@@ -716,185 +424,82 @@
 
   async function finishProblem() {
     const status = byId("exportStatus");
-    draft.metadata.exerciseGuidance = byId("exerciseGuidance").value.trim();
-    const previewWindow = window.open("about:blank", "_blank");
+    const button = byId("completeProblemButton");
+    const preview = window.open("about:blank", "_blank");
+    button.disabled = true;
     try {
-      const level = await validateExportLevel();
+      const level = (await waitForApi()).validateLevel(buildExportLevel());
       downloadLevel(level);
-      const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const storageKey = TEST_STORAGE_PREFIX + token;
-      const payloadText = JSON.stringify({
-        version: 1,
-        fileName: `${level.id}.json`,
-        text: JSON.stringify(level)
-      });
-      try { localStorage.setItem(storageKey, payloadText); } catch (error) { /* window.name is the fallback */ }
-      if (!previewWindow) {
-        status.textContent = `Downloaded ${level.id}.json, but the browser blocked the preview tab.`;
-        return;
+      if (preview) {
+        const key = TEST_STORAGE_PREFIX + Date.now();
+        const fileName = `${level.id}.json`;
+        const payload = JSON.stringify({ version: 1, fileName, text: JSON.stringify(level) });
+        try { localStorage.setItem(key, payload); } catch (error) { /* The tab name is the fallback. */ }
+        preview.name = LEVEL_WINDOW_NAME_PREFIX + payload;
+        preview.location.href = `exploded-algebra.html?source=problem-editor&draftKey=${encodeURIComponent(key)}&level=${encodeURIComponent(fileName)}`;
       }
-      const previewUrl = `exploded-algebra.html?source=problem-builder&draftKey=${encodeURIComponent(storageKey)}&level=${encodeURIComponent(`${level.id}.json`)}`;
-      previewWindow.name = LEVEL_WINDOW_NAME_PREFIX + payloadText;
-      previewWindow.location.href = previewUrl;
-      status.textContent = `Downloaded ${level.id}.json and opened its preview.`;
+      status.textContent = `Downloaded ${level.id}.json.`;
     } catch (error) {
-      if (previewWindow) previewWindow.close();
+      if (preview) preview.close();
       status.textContent = error.message || "The problem could not be completed.";
-    }
-  }
-
-  async function setPhase(number) {
-    const target = Number(number);
-    if (currentPhase === 2 && loadedWorkspacePhase === 2) captureWorkspaceSnapshot();
-    if (currentPhase === 3 && loadedWorkspacePhase === 3) captureWorkspaceSnapshot();
-    currentPhase = target;
-    document.body.classList.remove("phase2-expression-building", "phase3-recording");
-    phases.forEach(section => { section.hidden = Number(section.dataset.phase) !== target; });
-    workspaceShell.style.display = "none";
-    window.scrollTo({ top: 0, behavior: target >= 3 ? "auto" : "smooth" });
-    if (target === 2) await preparePhase2();
-    else if (target === 3) await preparePhase3();
-    else if (target === 4) await renderCuration();
-    else if (target === 5) renderGuidancePhase();
-  }
-
-  function captureWorkspaceSnapshot() {
-    const api = getApi();
-    if (!api) return false;
-    const snapshot = api.getSnapshot();
-    if (loadedWorkspacePhase === 2) draft.initial.workspaceSnapshot = snapshot;
-    else if (loadedWorkspacePhase === 3) draft.recording.workspaceSnapshot = snapshot;
-    return true;
-  }
-
-  function resetDownstreamRecording() {
-    draft.recording = {
-      workspaceSnapshot: null,
-      candidates: [],
-      finalExpression: "",
-      finalKatex: "",
-      finished: false
-    };
-  }
-
-  async function acceptInitialExpressionAndSolve() {
-    if (initialCommitInProgress || currentPhase !== 2) return;
-    const api = await waitForApi();
-    const snapshot = api.getSnapshot();
-    if (!snapshot.initialCommitted || snapshot.builderActive || !snapshot.currentExpression) return;
-    initialCommitInProgress = true;
-    const changed = draft.initial.expression && !sameExpressionText(draft.initial.expression, snapshot.currentExpression);
-    if (changed || draft.recording.workspaceSnapshot) resetDownstreamRecording();
-    draft.initial.expression = snapshot.currentExpression;
-    draft.initial.katex = snapshot.currentKatex || api.generateKatex(snapshot.currentExpression);
-    draft.initial.eaLocked = true;
-    draft.initial.conventionalLocked = true;
-    draft.initial.workspaceSnapshot = snapshot;
-    loadedWorkspacePhase = 0;
-    try {
-      await setPhase(3);
     } finally {
-      initialCommitInProgress = false;
+      button.disabled = false;
     }
   }
 
-  function installEventHandlers() {
-    byId("problemTitle").addEventListener("input", event => {
-      if (!idWasEdited) byId("problemId").value = slugify(event.target.value);
-    });
-    byId("problemId").addEventListener("input", () => { idWasEdited = true; });
-    byId("setupForm").addEventListener("submit", event => {
-      event.preventDefault();
-      if (validateSetup(true)) setPhase(2);
-    });
-
-    byId("curationTable").addEventListener("input", event => {
-      const field = event.target.dataset.stepField;
-      if (!field) return;
-      const row = event.target.closest("[data-candidate-index]");
-      const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
-      if (!candidate) return;
-      candidate[field] = event.target.value;
-    });
-    byId("curationTable").addEventListener("click", event => {
-      const visibilityChoice = event.target.closest('input[type="radio"][name^="step-visibility-"]');
-      if (visibilityChoice && curationStage === "select") {
-        const row = visibilityChoice.closest("[data-selection-index]");
-        const index = Number(row && row.dataset.selectionIndex);
-        if (Number.isInteger(index) && index >= 0 && index < curationKeepDecisions.length) {
-          curationKeepDecisions[index] = visibilityChoice.value === "show";
-        }
-        return;
+  byId("setupForm").addEventListener("submit", openMoves);
+  byId("curationTable").addEventListener("input", event => {
+    const field = event.target.dataset.stepField;
+    if (!field) return;
+    const row = event.target.closest("[data-candidate-index]");
+    const candidate = draft.recording.candidates[Number(row.dataset.candidateIndex)];
+    if (!candidate) return;
+    candidate[field] = event.target.value;
+  });
+  byId("curationTable").addEventListener("click", event => {
+    const visibilityChoice = event.target.closest('input[type="radio"][name^="step-visibility-"]');
+    if (visibilityChoice && curationStage === "select") {
+      const row = visibilityChoice.closest("[data-selection-index]");
+      const index = Number(row && row.dataset.selectionIndex);
+      if (Number.isInteger(index) && index >= 0 && index < curationKeepDecisions.length) {
+        curationKeepDecisions[index] = visibilityChoice.value === "show";
       }
-      const finishSelectionButton = event.target.closest("[data-curation-finish-selection]");
-      if (finishSelectionButton && curationStage === "select") {
-        finishCurationSelection();
-        return;
-      }
-      const modeButton = event.target.closest("[data-curation-mode]");
-      if (modeButton) {
-        currentCurationMode = modeButton.dataset.curationMode;
-        renderCurationTable();
-        byId("curationTable").querySelector(`[data-curation-mode="${currentCurationMode}"]`)?.focus({ preventScroll: true });
-        return;
-      }
-      const button = event.target.closest("[data-carousel-direction]");
-      if (!button || button.disabled) return;
-      const offset = button.dataset.carouselDirection === "next" ? 1 : -1;
-      currentCurationIndex += offset;
+      return;
+    }
+    const finishSelectionButton = event.target.closest("[data-curation-finish-selection]");
+    if (finishSelectionButton && curationStage === "select") {
+      finishCurationSelection();
+      return;
+    }
+    const modeButton = event.target.closest("[data-curation-mode]");
+    if (modeButton) {
+      currentCurationMode = modeButton.dataset.curationMode;
       renderCurationTable();
-      byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
+      byId("curationTable").querySelector(`[data-curation-mode="${currentCurationMode}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+    const button = event.target.closest("[data-carousel-direction]");
+    if (!button || button.disabled) return;
+    const offset = button.dataset.carouselDirection === "next" ? 1 : -1;
+    currentCurationIndex += offset;
+    renderCurationTable();
+    byId("curationTable").querySelector(".step-carousel-slide")?.focus({ preventScroll: true });
+  });
+  byId("continueToGuidanceButton").addEventListener("click", () => setPhase(3));
+  document.querySelectorAll("[data-guidance-mode]").forEach(button => {
+    button.addEventListener("click", () => {
+      currentGuidanceMode = button.dataset.guidanceMode;
+      renderGuidanceMode();
+      if (currentGuidanceMode === "edit") {
+        byId("exerciseGuidance").focus({ preventScroll: true });
+      } else {
+        button.focus({ preventScroll: true });
+      }
     });
-    byId("continueToGuidanceButton").addEventListener("click", () => setPhase(5));
-    document.querySelectorAll("[data-guidance-mode]").forEach(button => {
-      button.addEventListener("click", () => {
-        currentGuidanceMode = button.dataset.guidanceMode;
-        renderGuidanceMode();
-        if (currentGuidanceMode === "edit") {
-          byId("exerciseGuidance").focus({ preventScroll: true });
-        } else {
-          button.focus({ preventScroll: true });
-        }
-      });
-    });
-    byId("exerciseGuidance").addEventListener("input", event => {
-      draft.metadata.exerciseGuidance = event.target.value;
-    });
-    byId("completeProblemButton").addEventListener("click", finishProblem);
+  });
+  byId("exerciseGuidance").addEventListener("input", event => {
+    draft.metadata.exerciseGuidance = event.target.value;
+  });
+  byId("completeProblemButton").addEventListener("click", finishProblem);
 
-    window.addEventListener("message", event => {
-      if (event.source !== workspace.contentWindow || !event.data || event.data.source !== "exploded-algebra-authoring") return;
-      if (event.data.type === "ready") {
-        iframeReady = true;
-      }
-      if (event.data.type === "interaction-state") {
-        const api = getApi();
-        const snapshot = api && api.getSnapshot();
-        if (currentPhase === 3 && event.data.detail && event.data.detail.preselectionActive && snapshot) {
-          recordAutomaticMajorStep(snapshot, api);
-        }
-        syncFinishRecordingControl(event.data.detail);
-      }
-      if (event.data.type === "finish-recording") {
-        finishRecordingFromControl();
-      }
-      if (event.data.type === "initial-expression-committed") {
-        acceptInitialExpressionAndSolve();
-      } else if (event.data.type === "state-change") {
-        captureWorkspaceSnapshot();
-        const api = getApi();
-        const snapshot = api && api.getSnapshot();
-        if (currentPhase === 3) syncFinishRecordingControl(snapshot);
-        if (currentPhase === 2 && snapshot && !snapshot.builderActive && !snapshot.initialCommitted) {
-          api.startInitialExpressionBuilder(null);
-        }
-      }
-    });
-  }
-
-  renderNumericalPermissionTable();
-  initializeSetupDefaults();
-  installEventHandlers();
-  waitForApi().catch(error => window.alert(error.message));
-  setPhase(1);
 })();

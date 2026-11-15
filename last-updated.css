@@ -15,7 +15,3 @@
   white-space: nowrap;
   pointer-events: none;
 }
-
-body.authoring-session > .page-last-updated {
-  display: none;
-}

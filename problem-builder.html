@@ -3,68 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Problem Builder — Exploded Algebra</title>
+  <title>Problem Editor — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261005-problem-builder">
+  <link rel="stylesheet" href="problem-builder.css?v=20261115-problem-editor">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="problem-builder.js?v=20261005-problem-builder"></script>
+  <script defer src="problem-builder.js?v=20261115-problem-editor"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T10:05:53-05:00">11/15/26, 10:05 AM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T10:48:02-05:00">11/15/26, 10:48 AM EST</time></p>
   <main>
     <section class="phase" data-phase="1">
-      <form id="setupForm" class="card form-card" aria-label="Problem setup" novalidate>
-        <div class="field-grid two-columns">
-          <label>Problem name
-            <input id="problemTitle" name="title" required autocomplete="off" placeholder="Add fractions with unlike denominators">
-          </label>
-          <label>ID / slug
-            <input id="problemId" name="id" required autocomplete="off" pattern="[A-Za-z0-9_-]+" placeholder="add-unlike-fractions">
-            <small>Letters, numbers, hyphens, and underscores only.</small>
-          </label>
-        </div>
+      <form id="setupForm" class="card form-card" aria-label="Problem setup">
+        <h1>Problem Editor</h1>
+        <p class="editor-intro">Transform an expression in <a href="exploded-algebra.html?mode=creative">Creative Mode</a>, then upload its <strong>Download Moves</strong> JSON file.</p>
+        <label>Move history file
+          <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
+        </label>
+        <label>Problem name
+          <input id="problemTitle" name="title" required autocomplete="off" placeholder="Add fractions with unlike denominators">
+        </label>
         <fieldset>
-          <legend>Numerical manipulation permissions</legend>
-          <p id="numericalPermissionHelp" class="field-help">Forward simplifies the selected expression. Reverse lets the learner manually construct an unsimplified equivalent expression. Addition and multiplication share one permission for nonnegative numbers and another for signed numbers. Nonnegative arithmetic applies without carrying or significant-figure restrictions.</p>
-          <div id="numericalPermissionsTable" class="numerical-permissions" role="list" aria-label="Numerical manipulation permissions" aria-describedby="numericalPermissionHelp"></div>
-        </fieldset>
-
-        <fieldset>
-          <legend>Conventional steps for the student</legend>
+          <legend>Numerical rewrites</legend>
           <div class="radio-row">
-            <label><input type="radio" name="showConventionalSteps" value="yes" checked> Show conventional steps</label>
-            <label><input type="radio" name="showConventionalSteps" value="no"> Hide conventional steps</label>
+            <label><input type="radio" name="rewriteMode" value="free" checked> Free numerical rewrites</label>
+            <label><input type="radio" name="rewriteMode" value="prescribed"> Only prescribed numerical rewrites</label>
           </div>
-          <p class="field-help">Hiding conventional steps removes panel one from the student interface and skips step selection and editing.</p>
+          <p class="field-help">Free rewrites accept any equivalent numerical form. Prescribed rewrites offer only recorded replacements for the selected expression.</p>
         </fieldset>
-
-        <fieldset>
-          <legend>Recorded undo actions</legend>
-          <p class="field-help">Choose whether Guided mode should replay failed approaches and their undos.</p>
-          <div class="radio-row undo-radio-options">
-            <label><input type="radio" name="includeUndo" value="no" checked> No — keep the surviving solution path</label>
-            <label><input type="radio" name="includeUndo" value="yes"> Yes — include undo actions</label>
-          </div>
-        </fieldset>
-
         <p id="setupError" class="form-error" role="alert"></p>
         <div class="phase-actions end">
-          <button class="primary-button" type="submit">Continue to Starting Expression</button>
+          <button id="openMovesButton" class="primary-button" type="submit">Choose Steps</button>
         </div>
       </form>
     </section>
 
     <section class="phase" data-phase="2" hidden>
-      <div id="phase2WorkspaceSlot"></div>
-      <p id="initialExpressionStatus" class="visually-hidden" aria-live="polite">Build and submit the starting expression.</p>
-    </section>
-
-    <section class="phase" data-phase="3" hidden>
-      <div id="phase3WorkspaceSlot"></div>
-    </section>
-
-    <section class="phase" data-phase="4" hidden>
       <section class="step-curation-section" aria-label="Exercise steps">
         <div id="curationTable" class="step-carousel" aria-roledescription="carousel" aria-label="Recorded solution steps"></div>
       </section>
@@ -74,7 +48,7 @@
       </section>
     </section>
 
-    <section class="phase" data-phase="5" hidden>
+    <section class="phase" data-phase="3" hidden>
       <section class="exercise-guidance-card card" aria-labelledby="exerciseGuidanceHeading">
         <header class="exercise-guidance-header">
           <h2 id="exerciseGuidanceHeading">Exercise Guidance</h2>
@@ -83,7 +57,7 @@
             <button type="button" data-guidance-mode="edit" aria-pressed="false">Edit</button>
           </div>
         </header>
-        <p class="field-help">This single field is prefilled with the problem statement and numerical manipulation restrictions. Edit it to add or change anything the student should see.</p>
+        <p class="field-help">Edit the guidance to tell students what to do with the starting expression.</p>
 
         <div id="exerciseGuidanceView" class="exercise-guidance-view" aria-label="Exercise guidance preview"></div>
         <label id="exerciseGuidanceEditor" class="exercise-guidance-editor" for="exerciseGuidance" hidden>Exercise guidance
@@ -98,8 +72,6 @@
     </section>
   </main>
 
-  <div id="workspaceShell" class="workspace-shell card">
-    <iframe id="eaWorkspace" title="Exploded Algebra authoring workspace" src="exploded-algebra.html?authoring=problem-builder&amp;v=20261115-palette-grid"></iframe>
-  </div>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-problem-editor" hidden></iframe>
 </body>
 </html>

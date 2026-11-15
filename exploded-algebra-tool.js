@@ -1341,7 +1341,6 @@ Promise.resolve().then(() => {
         const restartProblemDialog = document.getElementById("restartProblemDialog");
         const restartGuidedInput = document.getElementById("restartGuidedInput");
         const restartBuildInput = document.getElementById("restartBuildInput");
-        const authoringFinishRecordingButton = document.querySelector('[data-workspace-action="authoringFinishRecording"]');
         const settingsButton = document.getElementById("settingsButton");
         const settingsPanel = document.getElementById("settingsPanel");
         const mainActionPanel = document.getElementById("mainActionPanel");
@@ -1387,11 +1386,9 @@ Promise.resolve().then(() => {
             unguided: "unguided"
         };
 
-        const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "problem-builder";
-        const creativeSessionActive = !authoringSessionActive &&
-            new URLSearchParams(window.location.search).get("mode") === "creative";
-        let authoringPhase = "";
-        let authoringInitialExpressionCommitted = false;
+        const playerQuery = new URLSearchParams(window.location.search);
+        const creativeSessionActive = playerQuery.get("mode") === "creative";
+        const problemEditorApiRequested = playerQuery.get("editor") === "1";
         let assistanceMode = ASSISTANCE_MODES.unguided;
         let buildFirstEnabled = false;
         let buildingStartingExpression = false;
@@ -1821,7 +1818,7 @@ Promise.resolve().then(() => {
                 const liveKatex = insertionBuilder
                     ? ExplodedAlgebraRenderer.expressionToKatex(liveBuilderRoot)
                     : ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot);
-                const selectedKatex = activeBuilder.tool === "authorInitial" || !activeBuilder.originalSelectedNode
+                const selectedKatex = !activeBuilder.originalSelectedNode
                     ? ""
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
                 return selectedKatex
@@ -1832,18 +1829,6 @@ Promise.resolve().then(() => {
                         targetKatex: liveKatex || "\\square"
                     }
                     : { heading: "Build the starting expression", targetKatex: liveKatex || "\\square" };
-            }
-
-            if (authoringSessionActive) {
-                const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
-                return authoringPhase === "recording"
-                    ? {
-                        heading: "Recording the transformation",
-                        sourceKatex: getProblemStatementKatex(level),
-                        connector: "into",
-                        targetKatex: currentKatex
-                    }
-                    : { heading: "Starting expression", targetKatex: currentKatex };
             }
 
             if (level.creative === true) {
@@ -2891,6 +2876,11 @@ Promise.resolve().then(() => {
                 return false;
             }
             expressionUndoHistory.push(stableExpressionState);
+            const completedAction = solutionRecorder?.actions.at(-1);
+            // Builder submissions record their resulting expression after finishing.
+            if (completedAction && uiState.stage !== "builder") {
+                completedAction.completedExpression = getExpressionTextForTrace();
+            }
             return true;
         }
 
@@ -3022,7 +3012,7 @@ Promise.resolve().then(() => {
             }, step);
         }
 
-        function recordBuilderForSolution(action, value, beforeExpression, flowVersion = null) {
+        function recordBuilderForSolution(action, value, beforeExpression, flowVersion = null, numericalRewrite = null) {
             const step = { type: "builder", action };
             if (value !== undefined && value !== null && value !== "") {
                 step.value = String(value);
@@ -3033,7 +3023,8 @@ Promise.resolve().then(() => {
             recordSolutionAction({
                 ...step,
                 beforeExpression: beforeExpression || getExpressionTextForTrace(),
-                afterExpression: getExpressionTextForTrace()
+                afterExpression: getExpressionTextForTrace(),
+                ...(numericalRewrite && { numericalRewrite })
             }, step);
         }
 
@@ -3073,6 +3064,101 @@ Promise.resolve().then(() => {
             }, step);
         }
 
+        function inferRecordedNumericalReplacement(selected, afterExpression) {
+            if (!Array.isArray(selected.path)) return null;
+            const original = normalizeExpressionTree(textToExpression(selected.expression));
+            const before = normalizeExpressionTree(textToExpression(selected.beforeExpression));
+            const after = normalizeExpressionTree(textToExpression(afterExpression));
+            const value = evaluateNumericalRewriteNodeExactly(original);
+            if (!value) return null;
+            let replacement = null;
+            function tryReplacement(candidate) {
+                if (replacement || sameExpression(candidate, original) ||
+                    !exactRationalsAreEqual(evaluateNumericalRewriteNodeExactly(candidate), value)) return;
+                let root = cloneNode(before);
+                const node = getNodeAtPath(root, selected.path);
+                if (!node) return;
+                if (node.type === "sum" || node.type === "prod") {
+                    node.args.splice(selected.firstPart, selected.lastPart - selected.firstPart + 1, cloneNode(candidate));
+                } else if (!selected.path.length) {
+                    root = cloneNode(candidate);
+                } else {
+                    getNodeAtPath(root, selected.path.slice(0, -1)).args[selected.path.at(-1)] = cloneNode(candidate);
+                }
+                if (sameExpression(normalizeExpressionTree(root), after)) {
+                    replacement = expressionToFullyParenthesizedText(candidate);
+                }
+            }
+            traversePreOrder(after, node => {
+                tryReplacement(node);
+                if (node.type !== "sum" && node.type !== "prod") return;
+                for (let first = 0; first < node.args.length && !replacement; first++) {
+                    for (let last = first + 2; last <= node.args.length && !replacement; last++) {
+                        tryReplacement(new ExprNode(node.type, node.args.slice(first, last), null));
+                    }
+                }
+            });
+            return replacement;
+        }
+
+        function inspectMoveHistory(history) {
+            const actions = history?.recordedActions;
+            const demo = history?.demo?.steps;
+            if (!isDemoOnlyLevel(history) || !Array.isArray(actions) || !Array.isArray(demo) ||
+                actions.length !== demo.length || actions.some((action, index) => !action || action.type !== demo[index]?.type)) {
+                throw new Error("Choose a move history JSON file downloaded from Exploded Algebra.");
+            }
+
+            const initial = history.startExpression;
+            const initialKatex = ExplodedAlgebraRenderer.expressionToKatex(textToExpression(initial));
+            const moves = [];
+            let startIndex = 0;
+            let selectionIndex = -1;
+            actions.forEach((action, index) => {
+                if (action.type === "undo") {
+                    moves.pop();
+                    startIndex = index + 1;
+                    selectionIndex = -1;
+                    return;
+                }
+                if (action.type === "select") selectionIndex = index;
+                const previous = moves.at(-1)?.expression || initial;
+                const recordedAfter = action.afterExpression !== previous ? action.afterExpression : "";
+                const expression = action.completedExpression || recordedAfter ||
+                    actions[index + 1]?.beforeExpression || (index === actions.length - 1 ? history.finalExpression : "");
+                if (!expression || expression === previous || selectionIndex < startIndex) return;
+
+                const moveActions = actions.slice(selectionIndex, index + 1);
+                const moveDemo = demo.slice(selectionIndex, index + 1);
+                const toolIndex = moveActions.findIndex(entry => entry.type === "tool");
+                if (toolIndex < 0) return;
+                const toolName = moveActions[toolIndex].tool;
+                let numericalRewrite = action.numericalRewrite || null;
+                const isRecordedNumerical = isNumericalRewriteTool(toolName) || toolName === "automaticNumericalRewrite";
+                if (isRecordedNumerical && !numericalRewrite) {
+                    const selected = actions[selectionIndex];
+                    const to = inferRecordedNumericalReplacement(selected, expression);
+                    if (to) numericalRewrite = { from: selected.expression, to };
+                }
+
+                moves.push({
+                    expression,
+                    katex: ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expression)),
+                    actions: moveActions,
+                    demo: moveDemo,
+                    toolIndex,
+                    isRecordedNumerical,
+                    numericalRewrite
+                });
+                startIndex = index + 1;
+                selectionIndex = -1;
+            });
+            if (!moves.length || (history.finalExpression && history.finalExpression !== moves.at(-1).expression)) {
+                throw new Error("The file has no complete solution to edit. Finish transforming the expression in Creative Mode, then download its moves.");
+            }
+            return { initial, initialKatex, moves };
+        }
+
         function makeDemoOnlyLevelFromCurrentRun(completedAtDate) {
             const level = getCurrentLevel();
             const completedAt = completedAtDate.toISOString();
@@ -3090,6 +3176,7 @@ Promise.resolve().then(() => {
                 createdAt: solutionRecorder ? solutionRecorder.createdAt : completedAt,
                 completedAt,
                 startExpression: sourceLevel.startExpression || "",
+                finalExpression: solutionRecorder?.finalExpression,
                 evaluationLevel: sourceLevel.evaluationLevel,
                 numericalRewrite: clonePlainData(sourceLevel.numericalRewrite),
                 variables: clonePlainData(sourceLevel.variables || []),
@@ -3371,6 +3458,25 @@ Promise.resolve().then(() => {
             if (level.numericalRewrite !== undefined) {
                 validateNumericalRewriteProfileDefinition(level.numericalRewrite, sourceName);
             }
+            if (level.numericalRewriteMode !== undefined && !["free", "prescribed"].includes(level.numericalRewriteMode)) {
+                throw new Error(`${sourceName} has an invalid numerical rewrite mode.`);
+            }
+            if (level.numericalRewriteMode === "prescribed") {
+                if (!Array.isArray(level.prescribedNumericalRewrites)) {
+                    throw new Error(`${sourceName} is missing its prescribed numerical rewrites.`);
+                }
+                for (const rewrite of level.prescribedNumericalRewrites) {
+                    if (typeof rewrite?.from !== "string" || typeof rewrite.to !== "string") {
+                        throw new Error(`${sourceName} contains an invalid prescribed numerical rewrite.`);
+                    }
+                    const from = textToExpression(rewrite.from);
+                    const to = textToExpression(rewrite.to);
+                    if (!exactRationalsAreEqual(evaluateNumericalRewriteNodeExactly(from), evaluateNumericalRewriteNodeExactly(to)) ||
+                        numericalRewriteNodesHaveSameStructure(from, to)) {
+                        throw new Error(`${sourceName} contains an invalid prescribed numerical rewrite.`);
+                    }
+                }
+            }
 
             textToExpression(level.startExpression);
             level.steps.forEach((step, index) => {
@@ -3574,17 +3680,17 @@ Promise.resolve().then(() => {
             const requestedLevelFile = String(params.get("level") || "").trim();
             const navigationSource = String(params.get("source") || "").toLowerCase();
 
-            if (navigationSource === "problem-builder") {
+            if (navigationSource === "problem-editor" || navigationSource === "problem-builder") {
                 try {
                     const draftKey = String(params.get("draftKey") || "").trim();
                     const payload = readCustomLevelTransferPayload(draftKey || CUSTOM_LEVEL_STORAGE_KEY, !!draftKey);
                     const parsed = JSON.parse(payload.text);
-                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Builder draft");
+                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Editor preview");
                 } catch (error) {
-                    console.error("The Problem Builder test level could not be loaded.", error);
+                    console.error("The Problem Editor preview could not be loaded.", error);
                     showNoLevelSelectedState(error && error.message
                         ? error.message
-                        : "The Problem Builder test level could not be loaded. Return to the builder and try again.");
+                        : "The Problem Editor preview could not be loaded. Return to the editor and try again.");
                     return false;
                 }
             }
@@ -3770,7 +3876,7 @@ Promise.resolve().then(() => {
 
         function startLoadedLevel(mode, buildFirst = new URLSearchParams(window.location.search).get("build") === "1") {
             assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
-            buildFirstEnabled = buildFirst && isInteractiveLevel(getCurrentLevel()) && !authoringSessionActive;
+            buildFirstEnabled = buildFirst && isInteractiveLevel(getCurrentLevel());
             document.body.classList.remove("no-level-loaded");
             loadLevel(0, buildFirstEnabled);
         }
@@ -4342,7 +4448,7 @@ Promise.resolve().then(() => {
                     ? ExplodedAlgebraRenderer.expressionToKatex(liveBuilderRoot)
                     : ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot);
                 const displayedLiveKatex = liveKatex || "\\phantom{0}";
-                const selectedKatex = activeBuilder.tool === "authorInitial" || !activeBuilder.originalSelectedNode
+                const selectedKatex = !activeBuilder.originalSelectedNode
                     ? ""
                     : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
                 const selectedExpressionHtml = selectedKatex
@@ -4369,35 +4475,9 @@ Promise.resolve().then(() => {
                 return;
             }
 
-            if (authoringSessionActive && authoringPhase === "recording" && expressionRoot) {
-                const liveKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)
-                    || "\\phantom{0}";
-                levelContent.innerHTML = `
-                    <div class="textbook-solution authoring-recording-conventional">
-                        <section class="solution-section solution-column" aria-label="Current expression in conventional notation">
-                            <div class="solution-step current-step" aria-label="Current expression">
-                                <div class="math-block"><span class="katex-placeholder" data-expr="${escapeHtml(liveKatex)}"></span></div>
-                            </div>
-                        </section>
-                        <section class="solution-section running-solution" aria-label="Recording status">
-                            <div class="solution-column current-step-column">
-                                <div class="solution-step step-card current-step">
-                                    <div class="math-block"><span class="katex-placeholder" data-expr="\\text{Recording in progress}"></span></div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-                `;
-                updateExerciseMenu(level);
-                renderLeftPanelMath();
-                scheduleTopPanelHeightUpdate(level);
-                return;
-            }
-
             const completion = getStepCompletionStates(level);
             const completedCount = completion.filter(Boolean).length;
-            const shouldAnimateNewStep = !authoringSessionActive
-                && lastRenderedStepProgress?.levelIndex === levelIndex
+            const shouldAnimateNewStep = lastRenderedStepProgress?.levelIndex === levelIndex
                 && completedCount > lastRenderedStepProgress.completedCount;
             lastRenderedStepProgress = { levelIndex, completedCount };
             if (shouldAnimateNewStep) {
@@ -4569,58 +4649,6 @@ Promise.resolve().then(() => {
             updateWorkspaceToolbar();
         }
 
-        function notifyAuthoringHost(type, detail = {}) {
-            if (!authoringSessionActive) {
-                return;
-            }
-            const message = {
-                source: "exploded-algebra-authoring",
-                type,
-                detail: clonePlainData(detail)
-            };
-            window.dispatchEvent(new CustomEvent("exploded-algebra-authoring", { detail: message }));
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage(message, window.location.origin === "null" ? "*" : window.location.origin);
-            }
-        }
-
-        function makeAuthoringLevel(config, startExpression) {
-            const expression = String(startExpression || "(0)");
-            const initialKatex = config.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expression));
-            return {
-                format: "exploded-algebra-level",
-                formatVersion: 1,
-                kind: "interactive",
-                id: config.id || "problem-builder-draft",
-                title: config.title || "Problem Builder Draft",
-                startExpression: expression,
-                initialKatex,
-                evaluationLevel: Number.isInteger(config.evaluationLevel) ? config.evaluationLevel : 0,
-                numericalRewrite: clonePlainData(config.numericalRewrite || {
-                    addition: "flat",
-                    multiplication: "unrestricted",
-                    allowNegativeOne: false,
-                    allowInverses: false
-                }),
-                variables: ["x"],
-                excludedDefaultTools: clonePlainData(config.excludedDefaultTools || []),
-                allowedUnavailableTools: clonePlainData(config.allowedUnavailableTools || []),
-                includeUndoActions: config.includeUndoActions !== false,
-                showConventionalSteps: config.showConventionalSteps !== false,
-                steps: [{ expression, katex: initialKatex }]
-            };
-        }
-
-        function installAuthoringLevel(level) {
-            const validated = validateChosenLevel(level, "Problem Builder draft");
-            LEVELS.splice(0, LEVELS.length, validated);
-            currentLevelIndex = 0;
-            assistanceMode = ASSISTANCE_MODES.unguided;
-            document.body.classList.remove("no-level-loaded");
-            loadLevel(0);
-            return validated;
-        }
-
         function selectWholeExpression() {
             if (!expressionRoot) {
                 return false;
@@ -4634,290 +4662,6 @@ Promise.resolve().then(() => {
                 : 0;
             uiState.selectionRecorded = false;
             return true;
-        }
-
-        function serializeBuilderNode(node) {
-            if (!node) {
-                return null;
-            }
-            return {
-                type: node.type,
-                value: node.value,
-                args: (node.args || []).map(serializeBuilderNode),
-                isBuilderPlaceholder: !!node.isBuilderPlaceholder,
-                isBuilderOuter: !!node.isBuilderOuter,
-                isBuilderActive: !!node.isBuilderActive,
-                isBuilderSequence: !!node.isBuilderSequence,
-                isBuilderInverseOpen: !!node.isBuilderInverseOpen,
-                builderOperators: Array.isArray(node.builderOperators) ? node.builderOperators.slice() : []
-            };
-        }
-
-        function reviveBuilderNode(data) {
-            if (!data) {
-                return null;
-            }
-            const node = new ExprNode(
-                data.type,
-                Array.isArray(data.args) ? data.args.map(reviveBuilderNode) : [],
-                data.value
-            );
-            node.isBuilderPlaceholder = !!data.isBuilderPlaceholder;
-            node.isBuilderOuter = !!data.isBuilderOuter;
-            node.isBuilderActive = !!data.isBuilderActive;
-            node.isBuilderSequence = !!data.isBuilderSequence;
-            node.isBuilderInverseOpen = !!data.isBuilderInverseOpen;
-            node.builderOperators = Array.isArray(data.builderOperators) ? data.builderOperators.slice() : [];
-            return node;
-        }
-
-        function serializeBuilderMoveCycle(cycle) {
-            if (!cycle || !cycle.root || !cycle.operation) return null;
-            return {
-                root: serializeBuilderNode(cycle.root),
-                operation: {
-                    path: cycle.operation.path.slice(),
-                    index: cycle.operation.index
-                }
-            };
-        }
-
-        function reviveBuilderMoveCycle(cycle) {
-            if (!cycle || !cycle.root || !cycle.operation) return null;
-            return {
-                root: reviveBuilderNode(cycle.root),
-                operation: {
-                    path: Array.isArray(cycle.operation.path) ? cycle.operation.path.slice() : [],
-                    index: Number(cycle.operation.index)
-                }
-            };
-        }
-
-        function serializeExpressionState(snapshot) {
-            if (!snapshot || !snapshot.root) {
-                return null;
-            }
-            return {
-                expression: expressionToFullyParenthesizedText(snapshot.root),
-                completedSteps: clonePlainData(snapshot.completedSteps || []),
-                recorderActionCount: Number(snapshot.recorderActionCount) || 0,
-                recorderDemoStepCount: Number(snapshot.recorderDemoStepCount) || 0,
-                completionExportReadyForRun: !!snapshot.completionExportReadyForRun,
-                completionExportCompletedAt: snapshot.completionExportCompletedAt || null
-            };
-        }
-
-        function reviveExpressionState(snapshot) {
-            if (!snapshot || typeof snapshot.expression !== "string") {
-                return null;
-            }
-            return {
-                root: normalizeExpressionTree(textToExpression(snapshot.expression)),
-                completedSteps: clonePlainData(snapshot.completedSteps || []),
-                recorderActionCount: Number(snapshot.recorderActionCount) || 0,
-                recorderDemoStepCount: Number(snapshot.recorderDemoStepCount) || 0,
-                completionExportReadyForRun: !!snapshot.completionExportReadyForRun,
-                completionExportCompletedAt: snapshot.completionExportCompletedAt || null
-            };
-        }
-
-        function startInitialExpressionBuilder(builderDraft = null) {
-            if (!authoringSessionActive || authoringPhase !== "initial") {
-                return false;
-            }
-            clearInteraction();
-            if (!selectWholeExpression()) {
-                return false;
-            }
-            uiState.activeTool = "authorInitial";
-            uiState.stage = "builder";
-            if (!beginExpressionBuilder("authorInitial")) {
-                return false;
-            }
-            authoringInitialExpressionCommitted = false;
-            if (builderDraft && builderDraft.root) {
-                const builder = uiState.expressionBuilder;
-                if (builderDraft.flowVersion >= 5 && isDirectNotationExpressionBuilder(builder)) {
-                    builder.root = reviveBuilderNode(builderDraft.root);
-                    builder.currentPath = Array.isArray(builderDraft.currentPath) ? builderDraft.currentPath.slice() : [];
-                    builder.lastOperation = builderDraft.lastOperation ? {
-                        path: Array.isArray(builderDraft.lastOperation.path) ? builderDraft.lastOperation.path.slice() : [],
-                        index: Number(builderDraft.lastOperation.index)
-                    } : null;
-                    builder.moveCycle = reviveBuilderMoveCycle(builderDraft.moveCycle);
-                    builder.history = Array.isArray(builderDraft.history)
-                        ? builderDraft.history.map(snapshot => ({
-                            root: reviveBuilderNode(snapshot.root),
-                            currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : [],
-                            lastOperation: snapshot.lastOperation ? {
-                                path: Array.isArray(snapshot.lastOperation.path) ? snapshot.lastOperation.path.slice() : [],
-                                index: Number(snapshot.lastOperation.index)
-                            } : null,
-                            moveCycle: reviveBuilderMoveCycle(snapshot.moveCycle)
-                        }))
-                        : [];
-                    expressionRoot = builder.root;
-                }
-                refreshExpressionBuilderPreview();
-            }
-            notifyAuthoringHost("state-change");
-            return true;
-        }
-
-        function loadInitialAuthoringSession(config = {}, resume = null) {
-            authoringPhase = "initial";
-            document.body.classList.remove("authoring-recording-session");
-            document.body.classList.add("authoring-initial-session");
-            const startExpression = resume && resume.currentExpression
-                ? resume.currentExpression
-                : "(0)";
-            installAuthoringLevel(makeAuthoringLevel(config, startExpression));
-            authoringInitialExpressionCommitted = !!(resume && resume.initialCommitted);
-            if (!authoringInitialExpressionCommitted || resume && resume.builderDraft) {
-                startInitialExpressionBuilder(resume && resume.builderDraft);
-            }
-            notifyAuthoringHost("session-loaded", { phase: authoringPhase });
-            return getAuthoringSnapshot();
-        }
-
-        function restoreRecordingState(resume) {
-            if (!resume) {
-                return;
-            }
-            if (typeof resume.currentExpression === "string" && resume.currentExpression.trim()) {
-                expressionRoot = normalizeExpressionTree(textToExpression(resume.currentExpression));
-                currentExpressionRoot = expressionRoot;
-            }
-            if (solutionRecorder && resume.recorder) {
-                solutionRecorder = {
-                    ...solutionRecorder,
-                    ...clonePlainData(resume.recorder),
-                    includeUndoActions: getCurrentLevel().includeUndoActions !== false,
-                    actions: clonePlainData(resume.recorder.actions || []),
-                    demoSteps: clonePlainData(resume.recorder.demoSteps || [])
-                };
-            }
-            expressionUndoHistory = Array.isArray(resume.undoHistory)
-                ? resume.undoHistory.map(reviveExpressionState).filter(Boolean)
-                : [];
-            stableExpressionState = reviveExpressionState(resume.stableState) || captureExpressionUndoState();
-            clearSelection();
-            clearInteraction();
-            layoutExpression(expressionRoot);
-            renderLevelInfo(currentLevelIndex);
-            renderCurrentExpressionDisplay();
-            refreshStatus();
-            drawExpression();
-            updateWorkspaceToolbar();
-        }
-
-        function loadRecordingAuthoringSession(level, resume = null) {
-            authoringPhase = "recording";
-            document.body.classList.remove("authoring-initial-session");
-            document.body.classList.add("authoring-recording-session");
-            const recordingLevel = clonePlainData(level);
-            recordingLevel.kind = "interactive";
-            recordingLevel.includeUndoActions = level.includeUndoActions !== false;
-            recordingLevel.steps = [{
-                expression: recordingLevel.startExpression,
-                katex: recordingLevel.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(recordingLevel.startExpression))
-            }, {
-                expression: "(__ea_builder_unfinished__)",
-                katex: "\\text{Recording in progress}"
-            }];
-            installAuthoringLevel(recordingLevel);
-            restoreRecordingState(resume);
-            notifyAuthoringHost("session-loaded", { phase: authoringPhase });
-            return getAuthoringSnapshot();
-        }
-
-        function getAuthoringSnapshot() {
-            const builder = uiState.expressionBuilder;
-            return {
-                phase: authoringPhase,
-                currentExpression: getExpressionTextForTrace(),
-                currentKatex: builder && isIntegratedExpressionBuilder(builder) && builder.mainRoot
-                    ? ExplodedAlgebraRenderer.expressionToKatex(builder.mainRoot)
-                    : expressionRoot ? ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) : "",
-                initialCommitted: authoringInitialExpressionCommitted,
-                builderActive: !!builder,
-                preselectionActive: authoringPhase === "recording" && uiState.mode === "edit" &&
-                    uiState.stage === "idle" && !selection.node && !builder,
-                builderDraft: builder ? {
-                    flowVersion: builder.flowVersion || 1,
-                    root: serializeBuilderNode(builder.root),
-                    currentPath: Array.isArray(builder.currentPath) ? builder.currentPath.slice() : [],
-                    lastOperation: builder.lastOperation ? {
-                        path: builder.lastOperation.path.slice(),
-                        index: builder.lastOperation.index
-                    } : null,
-                    moveCycle: serializeBuilderMoveCycle(builder.moveCycle),
-                    history: (builder.history || []).map(snapshot => ({
-                        root: serializeBuilderNode(snapshot.root),
-                        currentPath: Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : [],
-                        lastOperation: snapshot.lastOperation ? {
-                            path: snapshot.lastOperation.path.slice(),
-                            index: snapshot.lastOperation.index
-                        } : null,
-                        moveCycle: serializeBuilderMoveCycle(snapshot.moveCycle)
-                    }))
-                } : null,
-                recorder: solutionRecorder ? clonePlainData(solutionRecorder) : null,
-                undoHistory: expressionUndoHistory.map(serializeExpressionState).filter(Boolean),
-                stableState: serializeExpressionState(stableExpressionState)
-            };
-        }
-
-        function renderAuthoringExpression(expressionText) {
-            const node = normalizeExpressionTree(textToExpression(expressionText));
-            return renderExpressionSvgMarkup(node, {
-                className: "authoring-expression-preview",
-                role: "img",
-                ariaLabel: "Exploded Algebra expression",
-                settings: {
-                    padding: 14,
-                    marginX: 14,
-                    marginY: 14,
-                    textFont: "20px Verdana, Arial, Helvetica, sans-serif"
-                }
-            });
-        }
-
-        function installAuthoringApi() {
-            if (!authoringSessionActive) {
-                return;
-            }
-            document.body.classList.add("authoring-session");
-            window.ExplodedAlgebraAuthoring = Object.freeze({
-                loadInitialSession: loadInitialAuthoringSession,
-                loadRecordingSession: loadRecordingAuthoringSession,
-                startInitialExpressionBuilder,
-                getSnapshot: getAuthoringSnapshot,
-                setFinishRecordingControlVisible(visible = true) {
-                    if (!authoringFinishRecordingButton) return;
-                    authoringFinishRecordingButton.hidden = !visible;
-                },
-                generateKatex(expressionText) {
-                    return ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expressionText));
-                },
-                renderExpression: renderAuthoringExpression,
-                validateLevel(level) {
-                    return clonePlainData(validateChosenLevel(clonePlainData(level), "Authored exercise"));
-                },
-                getToolCatalog() {
-                    return AVAILABLE_BY_DEFAULT_TOOLS.map(key => ({
-                        key,
-                        label: stripHtmlTags(TOOL_INFO[key] || key) || key
-                    }));
-                },
-                refreshLayout() {
-                    scheduleResponsiveLayoutRecalculation();
-                    if (expressionRoot) {
-                        drawExpression();
-                    }
-                }
-            });
-            notifyAuthoringHost("ready");
         }
 
         function setWorkspaceUtilityMenuOpen(open) {
@@ -5065,10 +4809,6 @@ Promise.resolve().then(() => {
                         openSettingsPanel();
                         return;
                     }
-                    if (button.dataset.workspaceAction === "authoringFinishRecording") {
-                        notifyAuthoringHost("finish-recording");
-                        return;
-                    }
                     const mode = button.dataset.workspaceMode;
                     if (!mode) {
                         return;
@@ -5097,8 +4837,6 @@ Promise.resolve().then(() => {
                         openSettingsPanel();
                     } else if (button.dataset.workspaceAction === "showExerciseGuidance") {
                         showExerciseGuidance();
-                    } else if (button.dataset.workspaceAction === "authoringFinishRecording") {
-                        notifyAuthoringHost("finish-recording");
                     } else if (button.dataset.workspaceAction === "restartExercise") {
                         openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
@@ -5229,9 +4967,11 @@ Promise.resolve().then(() => {
                 });
             }
             updateWorkspaceToolbar();
-            if (authoringSessionActive) {
-                showNoLevelSelectedState("Preparing the Problem Builder workspace…");
-                installAuthoringApi();
+            if (problemEditorApiRequested) {
+                window.ExplodedAlgebraProblemEditor = Object.freeze({
+                    inspectMoveHistory,
+                    validateLevel: level => validateChosenLevel(level, "Edited problem")
+                });
             } else {
                 loadInitialLevelFromNavigation();
             }
@@ -8712,12 +8452,14 @@ ctx.font = SETTINGS.textFont;
             const authorGuidanceHtml = authorGuidance.length
                 ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
                 : "";
-            const rulesHtml = getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile());
+            const numericalGuidance = level.numericalRewriteMode
+                ? `<p>${level.numericalRewriteMode === "free" ? "Build any equivalent numerical expression." : "Choose from the recorded equivalent replacements."}</p>`
+                : `<ul class="numerical-permission-summary numerical-permission-tree">${getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile())}</ul>`;
             guidancePopover.innerHTML = `
                 <div class="exercise-guidance-popover-content">
                     <span class="exercise-guidance-popover-title">Exercise Guidance</span>
                     <section class="exercise-guidance-section"><h3>Problem Statement</h3>${problemTextHtml}${problemExpressionHtml}</section>
-                    <section class="exercise-guidance-section"><h3>Numerical Manipulation Restrictions</h3><ul class="numerical-permission-summary numerical-permission-tree">${rulesHtml}</ul></section>
+                    <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3>${numericalGuidance}</section>
                     ${authorGuidanceHtml}
                 </div>`;
             guidancePopover.classList.remove("hidden");
@@ -9002,7 +8744,10 @@ ctx.font = SETTINGS.textFont;
             if (!selectedNode || !numericalRewriteNodeIsEntirelyNumerical(selectedNode)) {
                 return false;
             }
-            if (getCurrentLevel()?.creative === true) {
+            if (getCurrentLevel()?.numericalRewriteMode === "prescribed") {
+                return getPrescribedNumericalRewriteChoices(selectedNode).length > 0;
+            }
+            if (getCurrentLevel()?.creative === true || getCurrentLevel()?.numericalRewriteMode === "free") {
                 return true;
             }
             const ruleId = classifyNumericalRewriteCategory(selectedNode);
@@ -9021,13 +8766,24 @@ ctx.font = SETTINGS.textFont;
                 );
         }
 
+        function getPrescribedNumericalRewriteChoices(selectedNode = cloneSelectedRangeNode()) {
+            const source = expressionToFullyParenthesizedText(selectedNode);
+            const guide = getCurrentDemoStep();
+            if (getCurrentLevel()?.numericalRewriteMode === "free" && guide?.action === "chooseNumericalRewrite") {
+                return [guide.value];
+            }
+            return [...new Set((getCurrentLevel()?.prescribedNumericalRewrites || [])
+                .filter(rewrite => rewrite.from === source)
+                .map(rewrite => rewrite.to))];
+        }
+
         function validateManualNumericalRewriteExchange(originalNode, proposedNode) {
             const original = normalizeExpressionTree(cloneNode(originalNode));
             const proposed = normalizeExpressionTree(cloneNode(proposedNode));
             if (numericalRewriteNodesHaveSameStructure(original, proposed)) {
                 return { ok: false, error: "Build a different equivalent numerical expression." };
             }
-            if (getCurrentLevel()?.creative === true) {
+            if (getCurrentLevel()?.creative === true || getCurrentLevel()?.numericalRewriteMode === "free") {
                 return { ok: true };
             }
             const originalRuleId = classifyNumericalRewriteCategory(original);
@@ -9970,7 +9726,6 @@ ctx.font = SETTINGS.textFont;
 
         function isExpressionBuilderTool(toolName) {
             return [
-                "authorInitial",
                 "studentInitial",
                 "replaceOneWithInverseProduct",
                 "insertZeroProduct",
@@ -10057,7 +9812,7 @@ ctx.font = SETTINGS.textFont;
             if (toolName === "numExpressNumberAsDifference" || toolName === "numSumWithNegativeProducts") {
                 return ["sum", "prod"];
             }
-            if (["replaceOneWithInverseProduct", "authorInitial", "studentInitial"].includes(toolName)) {
+            if (["replaceOneWithInverseProduct", "studentInitial"].includes(toolName)) {
                 return ["sum", "prod", "inv"];
             }
             return ["sum", "prod"];
@@ -10233,18 +9988,6 @@ ctx.font = SETTINGS.textFont;
             }
 
             const proposal = makeBuilderInsertionRoot(builder);
-            const isInitialExpression = builder.tool === "authorInitial";
-            builderRewritePreview.classList.toggle("single-expression", isInitialExpression);
-            if (isInitialExpression) {
-                builderRewritePreview.innerHTML = `
-                    <div class="builder-rewrite-content">
-                        <div class="builder-rewrite-proposal" aria-label="Starting expression">${renderBuilderProposalSvg(proposal)}</div>
-                    </div>
-                `;
-                builderRewritePreview.classList.remove("hidden");
-                fitBuilderRewritePreview();
-                return;
-            }
             const originalDisplay = cloneBuilderRootForDisplay(builder.originalSelectedNode);
             const originalMarkup = renderBuilderProposalSvg(originalDisplay);
             builderRewritePreview.innerHTML = `
@@ -11190,16 +10933,12 @@ ctx.font = SETTINGS.textFont;
             if (buildingStartingExpression) {
                 return false;
             }
-            const cancelledInitialAuthoring = !!uiState.expressionBuilder && uiState.expressionBuilder.tool === "authorInitial";
             if (uiState.expressionBuilder && (uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot)) {
                 expressionRoot = uiState.expressionBuilder.mainRoot || uiState.expressionBuilder.originalRoot;
                 syncCurrentExpressionRoot();
             }
             uiState.expressionBuilder = null;
             finishOperation();
-            if (cancelledInitialAuthoring) {
-                notifyAuthoringHost("state-change");
-            }
         }
 
         function replaceBuilderCurrentNode(replacement, autoAdvance = false) {
@@ -11574,6 +11313,10 @@ ctx.font = SETTINGS.textFont;
                 if (!permissionCheck.ok) {
                     return builderValidationFailed(permissionCheck.error);
                 }
+                builder.completedNumericalRewrite = {
+                    from: expressionToFullyParenthesizedText(builder.originalSelectedNode),
+                    to: expressionToFullyParenthesizedText(completed)
+                };
                 replacement = completed;
             } else if (builder.tool === "numericalEquivalence") {
                 const target = getOriginalBuilderTargetValue(builder);
@@ -11648,10 +11391,6 @@ ctx.font = SETTINGS.textFont;
             syncCurrentExpressionRoot();
             uiState.expressionBuilder = null;
             finishOperation();
-            if (builder.tool === "authorInitial") {
-                authoringInitialExpressionCommitted = true;
-                notifyAuthoringHost("initial-expression-committed");
-            }
             return true;
         }
 
@@ -11862,7 +11601,8 @@ ctx.font = SETTINGS.textFont;
         }
 
         function canNumericalRewrite() {
-            return !!getAutomaticNumericalRewriteData() || canUseManualNumericalRewrite();
+            return canUseManualNumericalRewrite() ||
+                (!getCurrentLevel()?.numericalRewriteMode && !!getAutomaticNumericalRewriteData());
         }
 
         function applyAutomaticNumericalRewrite() {
@@ -12657,6 +12397,15 @@ ctx.font = SETTINGS.textFont;
                 return menuHtml;
             }
 
+            if (uiState.stage === "numericalChoices") {
+                const choices = getPrescribedNumericalRewriteChoices();
+                return `<div class="numerical-rewrite-choices" role="group" aria-label="Choose an equivalent expression">
+                    <p>Choose an equivalent expression</p>
+                    ${choices.map(choice => `<button type="button" data-action="chooseNumericalRewrite" data-value="${escapeHtml(choice)}" data-rewrite-katex="${escapeHtml(ExplodedAlgebraRenderer.expressionToKatex(textToExpression(choice)))}">${escapeHtml(choice)}</button>`).join("")}
+                    ${isDemoModeActive() ? "" : '<button type="button" data-action="done">Cancel</button>'}
+                </div>`;
+            }
+
             if (
                 getAutoExecuteFunctionForTool(uiState.activeTool) &&
                 uiState.stage === "preview"
@@ -12902,7 +12651,8 @@ ctx.font = SETTINGS.textFont;
 
         function resolveContextualNumericalRewriteAction() {
             // Keep the editor available even when the current number has a canonical form.
-            const automatic = getCurrentLevel()?.creative === true ? null : resolveAutomaticNumericalRewriteTool();
+            const level = getCurrentLevel();
+            const automatic = level?.creative || level?.numericalRewriteMode ? null : resolveAutomaticNumericalRewriteTool();
             if (automatic) {
                 return { ...automatic, mode: "automatic" };
             }
@@ -13012,7 +12762,7 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (result !== false && builderAtStart.tool !== "studentInitial") {
-                recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null);
+                recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null, builderAtStart.completedNumericalRewrite);
                 // Submit completes the mathematical rewrite before this input
                 // action is appended. Keep the stable state's recorder cursor
                 // aligned so a later undo-without-history preserves the Submit
@@ -13249,6 +12999,10 @@ ctx.font = SETTINGS.textFont;
                     if (!isDemoActionAllowed(action, value)) {
                         return;
                     }
+                    if (action === "chooseNumericalRewrite") {
+                        applyPrescribedNumericalRewrite(value);
+                        return;
+                    }
                     const beforeExpression = getExpressionTextForTrace();
                     recordActionForSolution(action, value, beforeExpression);
                     advanceDemoStep();
@@ -13330,12 +13084,6 @@ function renderToolArea() {
             const integratedBuilder = builderActive && isIntegratedExpressionBuilder(uiState.expressionBuilder);
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
             const exitingBuilder = !builderActive && builderWorkspaceViewActive;
-            if (authoringSessionActive && authoringPhase === "recording") {
-                notifyAuthoringHost("interaction-state", {
-                    preselectionActive: uiState.mode === "edit" && uiState.stage === "idle" &&
-                        !selection.node && !builderActive
-                });
-            }
             if (builderActive) {
                 // Save the main view before the builder layout changes the page.
                 syncBuilderWorkspaceView(true);
@@ -13429,6 +13177,11 @@ function renderToolArea() {
             }
             mainActionPanel.innerHTML = `<div class="panel-tool-menu">${html}</div>`;
             mainActionPanel.classList.remove("hidden");
+            if (window.katex) {
+                mainActionPanel.querySelectorAll("[data-rewrite-katex]").forEach(button =>
+                    katex.render(button.dataset.rewriteKatex, button, { throwOnError: false })
+                );
+            }
             attachToolListeners(mainActionPanel);
             applyDemoButtonHighlights(mainActionPanel);
             attachInputListeners(mainActionPanel);
@@ -13571,7 +13324,10 @@ function renderToolArea() {
             uiState.commuteOrder = [];
             uiState.previewColors = null;
 
-            if (
+            if (isNumericalRewriteTool(toolName) &&
+                (getCurrentLevel()?.numericalRewriteMode === "prescribed" || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
+                uiState.stage = "numericalChoices";
+            } else if (
                 toolName === "commute" ||
                 toolName === "commuteFirstToLast" ||
                 toolName === "commuteLastToFirst" ||
@@ -13692,6 +13448,17 @@ function renderToolArea() {
             }
 
             renderToolArea();
+        }
+
+        function applyPrescribedNumericalRewrite(value) {
+            if (uiState.stage !== "numericalChoices" || !getPrescribedNumericalRewriteChoices().includes(value)) return;
+            const from = expressionToFullyParenthesizedText(cloneSelectedRangeNode());
+            recordActionForSolution("chooseNumericalRewrite", value, getExpressionTextForTrace());
+            const completedAction = solutionRecorder?.actions.at(-1);
+            if (completedAction) completedAction.numericalRewrite = { from, to: value };
+            advanceDemoStep();
+            replaceSelectedRange(textToExpression(value));
+            finishOperation();
         }
 
         function handleToolAction(action, value) {

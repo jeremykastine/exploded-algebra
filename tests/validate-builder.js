@@ -20,129 +20,20 @@ const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/
 for (const id of requestedIds) {
   assert(htmlIds.has(id), `problem-builder.js references missing HTML id: ${id}`);
 }
-for (const phase of ["1", "2", "3", "4", "5"]) {
-  assert(builderHtml.includes(`data-phase="${phase}"`), `Missing builder phase ${phase}`);
+for (const phase of ["1", "2", "3"]) {
+  assert(builderHtml.includes(`data-phase="${phase}"`), `Missing editor phase ${phase}`);
 }
-
-assert(builderHtml.includes("exploded-algebra.html?authoring=problem-builder&amp;v="), "Builder must embed the versioned real player in authoring mode");
-assert(!builderHtml.includes("builder-header") && !builderHtml.includes("phase-nav") && !builderHtml.includes("phase-heading"), "The linear builder must not include title, phase-navigation, or explanatory header chrome");
-assert(!builderHtml.includes("data-go-phase") && !builderHtml.includes("Back to Solving") && !builderHtml.includes("Edit Starting Expression") && !builderHtml.includes("Edit Setup"), "The builder must not provide backward phase navigation");
-assert(!builderHtml.includes("resumeBackdrop") && !builderHtml.includes("Discard Draft") && !builderHtml.includes("saveStatus"), "The builder must not expose draft save, resume, or discard UI");
-assert(!builderJs.includes("DRAFT_STORAGE_KEY") && !builderJs.includes("saveDraftNow") && !builderJs.includes("scheduleSave") && !builderJs.includes("readSavedDraft"), "The streamlined builder must not save or resume drafts");
-for (const ruleId of [
-  "nonnegativeArithmetic",
-  "signedArithmetic",
-  "nonnegativeFractionSimplification",
-  "signedFractionSimplification",
-  "inverseOne",
-  "inverseNegativeOne",
-  "doubleNegative"
-]) {
-  assert(builderJs.includes(`id: "${ruleId}"`), `Setup must define numerical rule ${ruleId}`);
-}
-assert(builderJs.includes('{ forward: "manual", reverse: "manual" }'), "Setup must default every numerical rule direction to Manual");
-assert(builderJs.includes('value === "manual" ? " checked" : ""'), "Setup must visibly select Manual for every numerical permission by default");
-assert(builderJs.includes('automatic: "Automatic"') && builderJs.includes('manual: "Manual"') && builderJs.includes('"not-allowed": "Not allowed"'), "Setup must render the required forward and reverse radio choices");
-assert(builderHtml.includes('id="numericalPermissionsTable"') && builderHtml.includes('role="list"'), "Setup must render the numerical permission outline");
-assert(builderJs.includes('class="numerical-permission-rule" role="listitem"') && builderJs.includes('class="permission-direction-title">Forward') && builderJs.includes('class="permission-direction-title">Reverse'), "Every numerical rule and direction must be vertically outlined");
-assert(builderCss.includes(".numerical-permission-rule") && builderCss.includes(".permission-direction") && /\.permission-options \{[^}]*display: grid;/.test(builderCss) && !/\.numerical-permissions \{[^}]*grid-template-columns:/.test(builderCss), "The numerical permission outline must keep rules, directions, and choices vertically stacked without a wide table grid");
-assert(builderJs.includes('id: "nonnegativeArithmetic"') && builderJs.includes('label: "Nonnegative addition and multiplication"') && builderJs.includes('forward: ["automatic", "manual"], reverse: ["manual"]'), "Nonnegative addition and multiplication must share one always-available permission row");
-assert(builderJs.includes('id: "signedArithmetic"') && builderJs.includes('label: "Signed number addition and multiplication"') && builderJs.includes('forward: ["automatic", "manual", "not-allowed"], reverse: ["manual", "not-allowed"]'), "Signed addition and multiplication must share one permission row");
-assert(builderJs.includes('id: "nonnegativeFractionSimplification"') && builderJs.includes('id: "signedFractionSimplification"'), "Phase 1 must provide separate non-negative and signed fraction categories");
-for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
-  const rulePattern = new RegExp(`id: "${ruleId}"[^\\n]*forward: \\["automatic", "manual"\\][^\\n]*reverse: \\["manual"\\]`);
-  assert(rulePattern.test(builderJs), `${ruleId} must offer Automatic and Manual forward with Manual reverse`);
-}
-assert(builderJs.indexOf('id: "doubleNegative"') > builderJs.indexOf('id: "inverseNegativeOne"'), "Negative one times negative one must be item 7 after items 5 and 6");
-assert(!builderHtml.includes("fixed-numerical-note"), "The negative-one product must not appear as a separate note below the list");
-assert(builderJs.includes("const CONFIGURABLE_NUMERICAL_REWRITE_RULES = NUMERICAL_REWRITE_RULES;"), "All seven numerical rules must be exported with their selected permissions");
-assert(!builderJs.includes('id: "positiveAddition"') && !builderJs.includes('id: "positiveMultiplication"') && !builderJs.includes('id: "signedAddition"') && !builderJs.includes('id: "signedMultiplication"'), "Setup must not expose separate addition and multiplication permission rows");
-assert(!builderJs.includes("positiveAdditionNoCarry") && !builderJs.includes("positiveAdditionWithCarry") && !builderJs.includes("positiveMultiplicationOneSignificantFigure") && !builderJs.includes("positiveMultiplicationUnrestricted"), "Setup must not expose carrying or significant-figure permission categories");
-assert(!builderJs.includes("NUMERICAL_PERMISSION_HIERARCHIES") && !builderJs.includes("applyMonotonicNumericalPermissions"), "Setup must not retain hierarchy code for removed categories");
-assert(!builderHtml.includes('id="additionPermission"') && !builderHtml.includes('id="multiplicationPermission"') && !builderHtml.includes('id="allowNegativeOne"') && !builderHtml.includes('id="allowInverses"'), "Setup must not expose the obsolete broad numerical controls");
-assert(builderHtml.includes('name="includeUndo" value="no" checked') && !builderHtml.includes('name="includeUndo" value="yes" checked') && builderHtml.indexOf('name="includeUndo" value="no"') < builderHtml.indexOf('name="includeUndo" value="yes"'), "Undo recording must be off by default and listed before Yes in Setup");
-assert(builderHtml.includes("whether Guided mode should replay failed approaches") && !builderHtml.includes("High assistance"), "Undo recording guidance must use the Guided mode name");
-assert(builderHtml.includes('class="radio-row undo-radio-options"') && builderCss.includes(".undo-radio-options { display: grid;"), "Recorded undo choices must be vertically ordered with No on top");
-assert(builderJs.includes("includeUndoActions: false"), "The in-memory undo-recording default must match Setup");
-assert(builderJs.includes("function initializeSetupDefaults()") && builderJs.includes("const timestamp = String(Date.now())") && builderJs.includes('byId("problemTitle").value = timestamp'), "The exercise name must default to a timestamp");
-assert(!builderHtml.includes("Legacy evaluation level") && !builderHtml.includes('id="evaluationLevel"') && !builderJs.includes("evaluationLevel"), "The Problem Builder must not expose or export the legacy evaluation level");
-assert(!builderHtml.includes('id="exerciseInstruction"') && !builderHtml.includes('id="completionMessage"'), "Phase 1 must omit opening-instruction and completion-message fields");
-assert(!builderHtml.includes("Advanced tool permissions") && !builderHtml.includes('id="toolPermissionList"'), "Phase 1 must omit advanced tool permissions");
-assert(!builderHtml.includes('id="finishRecordingButton"') && !builderCss.includes(".record-step-button"), "Phase 3 must not use a detached checkpoint overlay");
-assert(playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('data-workspace-action="authoringFinishRecording"'), "All Done must remain available from the Phase 3 workspace menu");
-assert(playerJs.includes('authoringFinishRecordingButton.hidden = !visible'), "The authoring host must control All Done visibility in the workspace menu");
-for (const selector of [
-  '[data-workspace-action="zoomIn"]',
-  '[data-workspace-action="zoomOut"]',
-  '[data-workspace-action="resetZoom"]',
-  '[data-workspace-mode="pan"]',
-  '[data-workspace-mode="select"]',
-  '[data-workspace-action="undoExpression"]'
-]) {
-  assert(!playerHtml.includes(`body.authoring-recording-session .workspace-toolbar ${selector}`), `Instructor recording must not override the shared placement of ${selector}`);
-}
-assert(/src="exploded-algebra\.html\?authoring=problem-builder&amp;v=\d{8}-[a-z0-9-]+"/.test(builderHtml), "The Problem Builder must load the versioned player in authoring mode");
-assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
-assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
-assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");
-assert(!builderJs.includes('data-toggle-step') && !builderJs.includes('candidate.included') && !builderJs.includes('candidate.required'), "Phase 4 must not provide step-inclusion controls");
-assert(builderJs.includes('<fieldset class="step-editor-fields">'), "Every recorded step must remain editable in Phase 4");
-assert(builderJs.includes('let currentCurationMode = "view"') && builderJs.includes('data-curation-mode="view"') && builderJs.includes('data-curation-mode="edit"'), "Phase 4 must default to View and provide a View/Edit toggle");
-assert(builderJs.includes('data-step-view="beforeKatex"') && builderJs.includes('data-step-view="afterKatex"') && builderJs.includes("renderKatex(slide.querySelector"), "View mode must render pre/post fields with KaTeX");
-assert(builderJs.includes('aria-roledescription="slide"') && builderJs.includes('data-carousel-direction="previous"') && builderJs.includes('data-carousel-direction="next"'), "Phase 4 must render one navigable carousel slide per step");
-assert(/<header class="step-slide-header">[\s\S]*?<nav class="step-carousel-navigation"[\s\S]*?data-carousel-direction="previous"[\s\S]*?<span class="step-number"[\s\S]*?data-carousel-direction="next"[\s\S]*?<div class="step-mode-toggle"/.test(builderJs), "Phase 4 must place Previous, Step number, and Next at the upper left before the View/Edit toggle");
-assert(!builderJs.includes('step-carousel-position') && !builderCss.includes('.step-carousel-position'), "Phase 4 must not show a separate carousel position label");
-assert(builderJs.includes('key: "initial-expression"') && builderJs.includes('const stepNumber = candidate.isInitial ? 0 : index'), "Phase 4 must begin with a Step 0 slide for the original expression");
-assert(builderJs.includes('Pre-completion is not applicable for step 0') && builderJs.includes('>N/A</div>'), "Step 0 pre-completion must be marked N/A in Phase 4");
-assert(builderCss.includes(".step-carousel-slide") && builderCss.includes(".step-carousel-navigation") && builderCss.includes(".step-mode-toggle") && builderCss.includes(".step-math-view"), "Phase 4 must style the carousel and its View/Edit modes");
-assert(/data-step-field="beforeKatex"[\s\S]*?data-step-field="afterKatex"/.test(builderJs) && !builderJs.includes('data-step-field="instruction"'), "Edit mode must order only the pre-completion and post-completion fields");
-assert(/data-step-view="beforeKatex"[\s\S]*?data-step-view="afterKatex"/.test(builderJs) && !builderJs.includes("step-instruction-view"), "View mode must render only pre-completion and post-completion notation");
-assert(!builderJs.includes("renderMixedInstruction") && !builderJs.includes("candidate.instruction") && !builderCss.includes("step-instruction-view"), "The builder must fully remove individual step instructions");
-assert(!builderJs.includes("actionSummary") && !builderJs.includes("step-range"), "Phase 4 must omit recorded-action details");
-assert(!builderHtml.includes("initialKatexPreview") && !builderHtml.includes("initialKatexInput"), "Phase 4 must omit the separate starting-expression card");
-assert(builderJs.includes("const generatedStepKatex = api.generateKatex(expression)") && builderJs.includes("beforeKatex: generatedStepKatex") && builderJs.includes("afterKatex: generatedStepKatex"), "Each recorded step's pre/post fields must default to the same expression");
-assert(!builderJs.includes("candidate.beforeKatex = previousKept.afterKatex"), "Visibility curation must preserve identical default pre/post versions for each retained step");
-assert(builderCss.includes("body.phase2-expression-building > main") && builderCss.includes("body.phase3-recording > main"), "Expression entry and solving must fill the viewport");
-assert(builderJs.includes("acceptInitialExpressionAndSolve"), "Submitting the initial expression must advance directly to solving");
-assert(builderJs.includes("tap each operation in the expression"), "Initial-expression guidance must describe integrated grouping");
-assert(builderJs.includes("function recordAutomaticMajorStep(snapshot, api)") && builderJs.includes("actionStartIndex") && builderJs.includes("actionEndIndex: actions.length"), "Every completed expression-changing manipulation must be saved automatically with its action boundary");
-assert(builderJs.includes('event.data.detail.preselectionActive') && builderJs.includes("recordAutomaticMajorStep(snapshot, api)"), "Returning to preselection must automatically capture the completed major step");
-assert(playerJs.includes("setFinishRecordingControlVisible(visible = true)") && playerJs.includes('notifyAuthoringHost("finish-recording")'), "The embedded All Done control must finish Phase 3 without manually marking a step");
-assert(/\.workspace-toolbar \[data-workspace-action="authoringFinishRecording"\] \{[\s\S]*?color: #000;[\s\S]*?\}/.test(playerHtml), "The embedded All Done control must use black text");
-assert(!builderJs.includes("recordStepOrFinish") && !builderJs.includes("currentStepIsRecorded") && !builderJs.includes("recordCurrentStep"), "Phase 3 must not retain the manual Record Step workflow");
-assert(builderJs.includes("reconcileRecordedSteps(snapshot)") && builderJs.includes("candidate.actionPrefix === getActionPrefix"), "Automatically saved steps discarded by an unrecorded undo must be removed from the saved path");
-assert(builderJs.includes("const recordedCandidates = draft.recording.candidates || []") && !builderJs.includes("includedCandidates"), "Export must contain all steps retained by the visibility curation pass");
-assert(builderHtml.includes('id="continueToGuidanceButton"') && builderHtml.includes('>Continue to Exercise Guidance</button>') && builderJs.includes('byId("continueToGuidanceButton").hidden = !isFinalSlide'), "The final Step carousel slide must continue to the Exercise Guidance phase");
-assert(builderHtml.includes('data-phase="5"') && builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"') && builderHtml.includes('id="exerciseGuidanceEditor"'), "Phase 5 must provide one Exercise Guidance field with view and edit surfaces");
-assert(builderHtml.includes('data-guidance-mode="view"') && builderHtml.includes('data-guidance-mode="edit"') && builderJs.includes('let currentGuidanceMode = "view"'), "Phase 5 must default to View and provide the same View/Edit toggle pattern as Phase 4");
-assert(/\.exercise-guidance-view\[hidden\],[\s\S]*?\.exercise-guidance-editor\[hidden\] \{ display: none !important; \}/.test(builderCss), "Phase 5 must display exactly one of its View and Edit surfaces at a time");
-assert(!builderHtml.includes('id="guidanceProblemExpression"') && !builderHtml.includes('id="guidanceNumericalRestrictions"') && !builderHtml.includes('automatic-guidance-section'), "Phase 5 must not split guidance across separate automatic sections");
-assert(builderJs.includes('function buildPrefilledExerciseGuidance()') && builderJs.includes('"## Problem Statement"') && builderJs.includes('"## Numerical Manipulation Restrictions"') && builderJs.includes('draft.settings.numericalRewrite.rules[rule.id]'), "The single Phase 5 field must be prefilled with the problem statement and numerical restrictions");
-assert(builderJs.includes('function renderGuidanceMode()') && builderJs.includes('function renderGuidancePreview()') && builderJs.includes('data-guidance-math'), "Phase 5 View mode must format and render the combined field with KaTeX");
-assert(builderJs.includes('level.exerciseGuidance = draft.metadata.exerciseGuidance.trim()') && builderJs.includes('level.exerciseGuidanceIsComplete = true') && !builderJs.includes('step.guidance ='), "Export must store the complete exercise-level guidance field and no per-step guidance");
-assert(builderHtml.includes('id="completeProblemButton"') && builderHtml.includes('>All Done</button>') && !builderHtml.includes("testAssistanceLevel") && !builderHtml.includes("testLevelButton") && !builderHtml.includes("downloadJsonButton"), "Phase 5 must finish with one All Done button");
-assert(/\.complete-problem-button \{ color: #000; \}/.test(builderCss), "The Phase 5 All Done control must use black text");
-assert(!builderHtml.includes('id="deleteStepButton"') && !builderHtml.includes('>Delete Step</button>'), "Final step editing must not offer deletion after visibility curation is complete");
-assert(!builderJs.includes("deleteCurrentCurationStep") && !builderJs.includes("deleteCurationCandidateAt") && !builderCss.includes("delete-step-button"), "Final step editing must not retain obsolete deletion behavior or styling");
-assert(builderJs.includes("function syncFinishRecordingControl(snapshot)") && builderJs.includes("snapshot.preselectionActive === true") && builderJs.includes("api.setFinishRecordingControlVisible(isAvailable)") && playerJs.includes('notifyAuthoringHost("interaction-state"'), "The Phase 3 All Done control must appear only while the workspace is in preselection");
-assert(builderJs.includes("syncFinishRecordingControl(event.data.detail)"), "Phase 3 must read preselection state from the authoring message detail payload");
-assert(builderJs.includes('byId("completeProblemButton").addEventListener("click", finishProblem)') && builderJs.includes("downloadLevel(level)"), "Phase 5 All Done must download the completed JSON");
-assert(builderJs.includes('window.open("about:blank", "_blank")') && builderJs.includes("previewWindow.location.href = previewUrl"), "Phase 5 All Done must automatically open a preview tab");
-assert(/const previewUrl = `exploded-algebra\.html\?source=problem-builder&draftKey=\$\{[^`]+&level=\$\{[^`]+`/.test(builderJs) && !/const previewUrl[^\n]+(?:assistance|mode)=/.test(builderJs), "The automatic preview URL must omit assistance and legacy mode parameters");
+assert(builderHtml.includes('id="moveFile"') && builderJs.includes('api.inspectMoveHistory(history)'), "The editor must start from a downloaded move file");
+assert(builderHtml.includes('name="rewriteMode" value="free"') && builderHtml.includes('name="rewriteMode" value="prescribed"'), "The editor must expose both numerical rewrite modes");
+assert(!builderHtml.includes("numericalPermissionsTable") && !playerJs.includes("installAuthoringApi"), "The former instructor workflow must be removed");
+assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Retained steps must be reviewed in the carousel");
+assert(builderJs.includes('name="step-visibility-') && builderJs.includes("curationKeepDecisions"), "Intermediate steps must be selectable");
+assert(builderJs.includes('data-step-field="beforeKatex"') && builderJs.includes('data-step-field="afterKatex"'), "Retained steps must remain editable");
+assert(builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"'), "Exercise guidance must remain editable");
+assert(builderJs.includes("downloadLevel(level)") && builderJs.includes("source=problem-editor") && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");
-assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode)") && playerJs.includes('heading: "Replace"'), "The workspace line must show the selected expression and its live replacement");
-assert(playerJs.includes('activeBuilder.tool === "authorInitial"') && playerJs.includes('heading: "Build the starting expression"'), "Initial-expression authoring must show the single expression being built");
-assert(playerJs.includes("if (builderActive) {\n                renderLevelInfo(currentLevelIndex);"), "The live conventional Builder expression must refresh after every entry or grouping change");
-assert(playerHtml.includes('id="workspaceConventionalLine"') && !playerHtml.includes('id="topPanelResizeHandle"'), "Problem Builder authoring must use the same box-free conventional workspace line");
-assert(playerJs.includes('authoringPhase === "recording"') && playerJs.includes("ExplodedAlgebraRenderer.expressionToKatex(expressionRoot)"), "Solution recording must show its current conventional target on the workspace line");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
-assert(playerHtml.includes("authoring-initial-session .quadrant-menu"), "Initial authoring must hide settings throughout expression building");
-assert(builderJs.includes('formatVersion: FORMAT_VERSION'), "Export must include a format version");
-assert(playerJs.includes('navigationSource === "problem-builder"'), "Player must accept temporary builder test levels");
-assert(/function isExpressionBuilderTool[\s\S]*?"authorInitial"/.test(playerJs), "Authoring mode must pass the shared Expression Builder tool gate");
-assert(playerJs.includes('builder.tool === "authorInitial"'), "Initial authoring must have a single-expression preview path");
-assert(playerJs.includes('builderRewritePreview.classList.toggle("single-expression", isInitialExpression)'), "Initial authoring must not use the rewrite comparison layout");
 assert(playerJs.includes('flowVersion: 5'), "Shared Expression Builder must use the direct-notation level-navigation flow");
 assert(playerJs.includes('data-builder-action="pendingOperation"'), "Integrated entry must provide pending Sum and Product operations");
 assert(playerJs.includes('data-builder-action="enterInverse"'), "Integrated entry must provide Inverse");
@@ -155,7 +46,7 @@ assert(!playerJs.includes('data-builder-review') && !playerHtml.includes('builde
 assert(playerHtml.includes('data-workspace-action="showExerciseGuidance"') && playerHtml.includes('aria-label="Exercise guidance"'), "Student pre-selection must provide an Exercise Guidance button");
 assert(playerJs.includes('function showExerciseGuidance()') && playerJs.includes('<span class="exercise-guidance-popover-title">Exercise Guidance</span>'), "The Exercise Guidance button must open the combined guidance view");
 assert(playerJs.includes('function getProblemStatementKatex(level)') && playerJs.includes('<h3>Problem Statement</h3>'), "Exercise Guidance must automatically include the problem statement expression");
-assert(playerJs.includes('function getNumericalRestrictionsTreeHtml(profile)') && playerJs.includes('<h3>Numerical Manipulation Restrictions</h3>'), "Exercise Guidance must automatically include the two-level numerical restrictions");
+assert(playerJs.includes('function getNumericalRestrictionsTreeHtml(profile)') && playerJs.includes('<h3>Numerical Rewrites</h3>'), "Exercise Guidance must automatically include the two-level numerical restrictions");
 assert(playerJs.includes('normalizeTextBlocks(level.exerciseGuidance)') && playerJs.includes('<h3>Additional Guidance</h3>'), "Exercise Guidance must include the author-provided exercise-level guidance");
 assert(playerJs.includes('function getCompleteExerciseGuidanceHtml(source)') && playerJs.includes('level.exerciseGuidanceIsComplete && authorGuidance.length'), "The player must render a combined author-edited guidance field without duplicating its prefilled sections");
 assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Author guidance must recognize mixed plain text and KaTeX");
@@ -186,7 +77,7 @@ assert(/function placeDirectBuilderOperationAtLowestLevel[\s\S]*?parent\.type ==
 assert(/function moveDirectBuilderOperationUp[\s\S]*?getDirectBuilderLastOperation[\s\S]*?directBuilderOperationPrefix[\s\S]*?combineDirectBuilderContext[\s\S]*?rememberIntegratedBuilderOperation/.test(playerJs), "Move Up must relocate the most recently entered exploded operation one level at a time");
 assert(/function installLiftedDirectBuilderOperation[\s\S]*?parent\.type === lifted\.type[\s\S]*?parent\.args\.splice\(childIndex, 1, \.\.\.lifted\.args\)/.test(playerJs), "Level cycling must flatten adjacent nested sums and products after lifting");
 assert(playerJs.includes("function cycleDirectBuilderOperationToLowestLevel") && playerJs.includes("cloneBuilderMoveCycle(builder.moveCycle)"), "Repeated operation presses must cycle from the highest level back to the lowest placement");
-assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation[\s\S]*?moveCycle/.test(playerJs) && /builderDraft: builder \? \{[\s\S]*?lastOperation[\s\S]*?moveCycle/.test(playerJs), "Undo and authoring drafts must preserve the operation target and movement cycle");
+assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation[\s\S]*?moveCycle/.test(playerJs), "Undo snapshots must preserve the operation target and movement cycle");
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode') && playerJs.includes('if (isBuilderPlaceholder(node)) return null;'), "Submit must reject an unfinished direct-notation operand");
 assert(/function enterDirectBuilderValue[\s\S]*?implicitOperation = String\(value\) === "x" \? "prod" : null/.test(playerJs), "Expression Builder must insert multiplication before x without inserting addition before negative one");
 assert(/function enterDirectBuilderInverse[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication before an inverse");
@@ -262,7 +153,6 @@ assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The sha
 assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activeTool);') && playerJs.includes('${disabled ? " disabled" : ""}'), "The x button must remain visible and become disabled only when variables are unavailable");
 assert(!/if \(disabled\) \{\s*builderVariableRail\.replaceChildren\(\);\s*return;\s*\}/.test(playerJs), "A disallowed x must be disabled rather than removed from the keypad");
 assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
-assert(builderJs.includes('const VARIABLES = ["x"]'), "The Problem Builder must expose only x");
 assert(playerJs.includes('flowVersion: 5') && playerJs.includes('root: makePlaceholderNode()'), "New Expression Builder sessions must begin directly in exploded notation rather than a diagonal sequence");
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");

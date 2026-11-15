@@ -2803,14 +2803,6 @@
             white-space: normal;
             pointer-events: none;
         }
-        .workspace-toolbar [data-workspace-action="authoringFinishRecording"] {
-            border-color: #7040a0;
-            background: #7040a0;
-            color: #000;
-        }
-        body:not(.authoring-recording-session) .workspace-toolbar [data-workspace-action="authoringFinishRecording"] {
-            display: none;
-        }
 
         .quadrant-menu{
             position: relative;
@@ -3702,11 +3694,6 @@
             font-weight: 600;
         }
 
-        /* Problem Builder authoring retains panel one so the current
-           expression remains visible in conventional notation. */
-        body.authoring-session.authoring-initial-session .quadrant-menu {
-            display: none !important;
-        }
         body.expression-builder-active .builder-rewrite-preview.single-expression .builder-rewrite-content {
             display: block;
         }
@@ -3800,10 +3787,6 @@
             grid-row: 4;
         }
 
-        body.authoring-recording-session .quadrant-menu {
-            grid-template-columns: repeat(6, var(--main-key-size));
-        }
-        body.authoring-recording-session:not(.selection-active) .quadrant-menu .settings-button { grid-column: 6; }
         .main-action-panel {
             width: var(--workspace-keypad-width);
             height: var(--post-keypad-height);
@@ -3815,9 +3798,6 @@
             bottom: calc((var(--bottom-panel-height) - var(--builder-keypad-height)) / 2);
         }
 
-        body.authoring-session.expression-builder-active.builder-entry-mode .bottom-panel-resize-handle {
-            display: block !important;
-        }
 
         body.settings-active .bottom-controls-panel,
         body.settings-active .bottom-panel-resize-handle,
@@ -3840,10 +3820,8 @@
         }
         .quadrant-tools .workspace-toolbar,
         .quadrant-tools.two-column-tools .workspace-toolbar,
-        body.authoring-recording-session .workspace-toolbar,
         .quadrant-menu,
-        body.selection-active:not(.expression-builder-active) .quadrant-menu,
-        body.authoring-recording-session .quadrant-menu {
+        body.selection-active:not(.expression-builder-active) .quadrant-menu {
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             grid-template-rows: minmax(0, 1fr);
@@ -4064,8 +4042,6 @@
         @media (orientation: landscape) {
             .app-container,
             body.expression-builder-active .app-container,
-            body.authoring-session:not(.expression-builder-active) .app-container,
-            body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
             body.expression-builder-active.builder-entry-mode .app-container{
                 --landscape-sidebar-width: 33.333vw;
                 grid-template-columns:
@@ -4092,8 +4068,7 @@
                 background: #fafafa;
             }
 
-            .top-panel-resize-handle,
-            body.authoring-session .top-panel-resize-handle {
+            .top-panel-resize-handle {
                 grid-column: 2;
                 grid-row: 1 / -1;
                 display: block !important;
@@ -4120,7 +4095,6 @@
             }
 
             .bottom-controls-panel,
-            body.authoring-session:not(.expression-builder-active) .bottom-controls-panel,
             body.expression-builder-active .bottom-controls-panel {
                 grid-column: 1;
                 grid-row: 3;
@@ -4134,9 +4108,7 @@
             }
 
             .main,
-            body.authoring-session:not(.expression-builder-active) .main,
             body.expression-builder-active .main,
-            body.authoring-session.authoring-initial-session.expression-builder-active .main,
             body.expression-builder-active.builder-entry-mode .main {
                 grid-column: 3;
                 grid-row: 1 / -1;
@@ -4187,16 +4159,12 @@
            fixed, lower-right foreground palette. */
         .app-container,
         body.expression-builder-active .app-container,
-        body.authoring-session:not(.expression-builder-active) .app-container,
-        body.authoring-session.authoring-initial-session.expression-builder-active .app-container,
         body.expression-builder-active.builder-entry-mode .app-container {
             grid-template-columns: minmax(0, 1fr) !important;
             grid-template-rows: minmax(0, 1fr) !important;
         }
         .main,
-        body.authoring-session:not(.expression-builder-active) .main,
         body.expression-builder-active .main,
-        body.authoring-session.authoring-initial-session.expression-builder-active .main,
         body.expression-builder-active.builder-entry-mode .main {
             position: relative;
             grid-column: 1 !important;
@@ -4359,6 +4327,26 @@
         }
         .palette-content > .main-action-panel.hidden,
         .palette-content > .builder-keypad-panel.hidden { display: none; }
+        .numerical-rewrite-choices {
+            grid-area: 1 / 1 / -1 / -1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            min-width: 0;
+            min-height: 0;
+            padding: 0.5rem;
+            overflow: auto;
+        }
+        .numerical-rewrite-choices p { margin: 0; }
+        .bottom-controls-panel .numerical-rewrite-choices button {
+            flex: 0 0 auto;
+            height: auto;
+            min-height: 2.4rem;
+            padding: 0.25rem;
+            border: 1px solid #999;
+            border-radius: 0.25rem;
+            overflow-wrap: anywhere;
+        }
         .palette-content .workspace-undo-label,
         .palette-content .workspace-setting-name,
         .palette-content .workspace-setting-value,
@@ -4482,7 +4470,6 @@
             margin-top: 1rem;
         }
         .restart-problem-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
-        body.authoring-session .exercise-menu-action { display: none; }
         body.settings-active .workspace-utility-menu,
         body.exercise-guidance-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
@@ -4529,7 +4516,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-15T10:05:53-05:00">11/15/26, 10:05 AM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-15T10:48:02-05:00">11/15/26, 10:48 AM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4544,7 +4531,6 @@
                 <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Problem</button>
                 <button type="button" class="exercise-menu-action" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
                 <button type="button" class="exercise-menu-action" data-workspace-action="closeExercise" role="menuitem">Close Problem</button>
-                <button type="button" data-workspace-action="authoringFinishRecording" role="menuitem" hidden>All Done</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
@@ -4669,7 +4655,7 @@
     </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261115-palette-grid"></script>
+    <script src="exploded-algebra-tool.js?v=20261115-problem-editor"></script>
 
 </body>
 </html>
