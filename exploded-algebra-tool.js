@@ -7142,6 +7142,7 @@ ctx.font = SETTINGS.textFont;
             uiState.commuteSelectedIndex = -1;
             uiState.commuteOrder = [];
             uiState.previewColors = null;
+            dismissNumericalRewriteError();
             hideBuilderRewritePreview();
             renderToolArea();
         }
