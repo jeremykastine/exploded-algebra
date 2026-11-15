@@ -4,23 +4,9 @@ Open index.html first. The launcher is designed to work both when index.html is
 opened directly from disk (file://) and when the folder is hosted by a web
 server such as GitHub Pages.
 
-BUILT-IN EXERCISES
+OPENING EXERCISES
 
-The built-in exercises are ordinary JSON files in the levels folder:
-
-- levels/level-1-distribute-and-combine.json
-- levels/level-1-distribute-and-combine-demo.json
-- levels/exercise-2-add-fractions.json
-- levels/exercise-3-multiply-binomials-demo.json
-- levels/exercise-3-multiply-binomials.json
-- levels/exercise-4-multiply-rational-expressions-demo.json
-- levels/exercise-4-multiply-rational-expressions.json
-
-Exercises.html links to these files. To make those links work under file://,
-where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
-carries a mirrored copy of each JSON payload for transfer into the app. The
-standalone JSON files remain in the levels folder for hosting, distribution, and
-editing. No exploded-algebra-levels.js file is used.
+Upload an exercise JSON file from Exercises.html.
 
 Each exercise may include an `introduction` and a `conclusion`. Either field may
 be one string or an array of strings. The introduction stays above the move cards,
@@ -49,9 +35,5 @@ file that can later be chosen from the home page.
 
 The home page links to Introduction.html and Exercises.html.
 
-Built-in level URLs now include the selected JSON file in the level query parameter, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine.json&source=builtin
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin
-The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
 User-selected JSON files likewise include their filename in the level query parameter, for example:
   exploded-algebra.html?level=my-level.json&source=custom
