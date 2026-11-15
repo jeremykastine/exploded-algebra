@@ -4479,6 +4479,7 @@
         .restart-problem-dialog h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
         .restart-problem-dialog label { display: block; padding: 0.45rem 0; }
         .restart-problem-dialog small { color: #515151; }
+        body.creative-workspace .exercise-guidance-button { display: none; }
         .restart-problem-actions {
             display: flex;
             flex-wrap: wrap;
@@ -4534,7 +4535,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-10T15:06:03-05:00">11/10/26, 3:06 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-15T09:50:39-05:00">11/15/26, 9:50 AM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4635,10 +4636,13 @@
     <dialog id="restartProblemDialog" class="restart-problem-dialog" aria-labelledby="restartProblemTitle">
         <form method="dialog">
             <h2 id="restartProblemTitle">Restart Problem</h2>
-            <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
-            <small id="restartGuidedUnavailable" hidden>This problem has no recorded guide.</small>
-            <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
-            <small id="restartBuildUnavailable" hidden>Build-first mode is available for interactive exercises.</small>
+            <div id="restartProblemOptions">
+                <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
+                <small id="restartGuidedUnavailable" hidden>This problem has no recorded guide.</small>
+                <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
+                <small id="restartBuildUnavailable" hidden>Build-first mode is available for interactive exercises.</small>
+            </div>
+            <p id="restartCreativeMessage" hidden>Start over with a blank expression?</p>
             <div class="restart-problem-actions">
                 <button value="cancel" autofocus>Cancel</button>
                 <button value="restart">Restart</button>
@@ -4671,7 +4675,7 @@
     </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="exploded-algebra-tool.js?v=20261110-build-enter"></script>
+    <script src="exploded-algebra-tool.js?v=20261115-creative-mode"></script>
 
 </body>
 </html>

@@ -1388,6 +1388,8 @@ Promise.resolve().then(() => {
         };
 
         const authoringSessionActive = new URLSearchParams(window.location.search).get("authoring") === "problem-builder";
+        const creativeSessionActive = !authoringSessionActive &&
+            new URLSearchParams(window.location.search).get("mode") === "creative";
         let authoringPhase = "";
         let authoringInitialExpressionCommitted = false;
         let assistanceMode = ASSISTANCE_MODES.unguided;
@@ -1800,6 +1802,12 @@ Promise.resolve().then(() => {
                 : null;
             if (activeBuilder) {
                 if (activeBuilder.tool === "studentInitial") {
+                    if (creativeSessionActive) {
+                        return {
+                            heading: "Build your starting expression",
+                            targetKatex: ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root) || "\\square"
+                        };
+                    }
                     return {
                         heading: "Build the expression:",
                         targetKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.mainRoot)
@@ -1836,6 +1844,13 @@ Promise.resolve().then(() => {
                         targetKatex: currentKatex
                     }
                     : { heading: "Starting expression", targetKatex: currentKatex };
+            }
+
+            if (level.creative === true) {
+                return {
+                    heading: "Creative Mode",
+                    targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
+                };
             }
 
             const completion = getStepCompletionStates(level);
@@ -3324,7 +3339,7 @@ Promise.resolve().then(() => {
             if (typeof level.startExpression !== "string" || !level.startExpression.trim()) {
                 throw new Error(`${sourceName} is missing a valid startExpression.`);
             }
-            if (!Array.isArray(level.steps) || level.steps.length === 0) {
+            if (!Array.isArray(level.steps) || (level.steps.length === 0 && level.creative !== true)) {
                 throw new Error(`${sourceName} must contain at least one step.`);
             }
             [
@@ -3531,7 +3546,30 @@ Promise.resolve().then(() => {
                 });
         }
 
+        function startCreativeSession() {
+            LEVELS.splice(0, LEVELS.length, {
+                id: "creative-mode",
+                title: "Creative Mode",
+                creative: true,
+                startExpression: "(0)",
+                evaluationLevel: 3,
+                steps: []
+            });
+            currentLevelIndex = 0;
+            startLoadedLevel(ASSISTANCE_MODES.unguided, true);
+        }
+
         function loadInitialLevelFromNavigation() {
+            if (creativeSessionActive) {
+                document.title = "Creative Mode | Exploded Algebra";
+                restartProblemButton.textContent = "Restart Creative Mode";
+                document.getElementById("restartProblemTitle").textContent = "Restart Creative Mode";
+                document.getElementById("restartProblemOptions").hidden = true;
+                document.getElementById("restartCreativeMessage").hidden = false;
+                document.querySelector('[data-workspace-action="closeExercise"]').textContent = "Close Creative Mode";
+                startCreativeSession();
+                return true;
+            }
             const params = new URLSearchParams(window.location.search);
             const requestedLevelFile = String(params.get("level") || "").trim();
             const navigationSource = String(params.get("source") || "").toLowerCase();
@@ -4482,6 +4520,7 @@ Promise.resolve().then(() => {
 
             currentLevelIndex = levelIndex;
             buildingStartingExpression = buildFirst;
+            document.body.classList.toggle("creative-workspace", level.creative === true);
             resetDemoStateForCurrentLevel();
             hideExerciseGuidance();
             resetSolutionRecorderForCurrentLevel();
@@ -4923,22 +4962,32 @@ Promise.resolve().then(() => {
 
         function openRestartProblemDialog() {
             const level = getCurrentLevel();
-            restartGuidedInput.disabled = !hasGuidedMode(level);
-            restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
-            restartBuildInput.disabled = !isInteractiveLevel(level);
-            restartBuildInput.checked = buildFirstEnabled;
-            document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
-            document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
+            if (!creativeSessionActive) {
+                restartGuidedInput.disabled = !hasGuidedMode(level);
+                restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
+                restartBuildInput.disabled = !isInteractiveLevel(level);
+                restartBuildInput.checked = buildFirstEnabled;
+                document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
+                document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
+            }
             restartProblemDialog.returnValue = "";
             restartProblemDialog.showModal();
         }
 
         function restartCurrentExercise(mode, buildFirst) {
+            if (creativeSessionActive) {
+                startCreativeSession();
+                return;
+            }
             startLoadedLevel(mode, buildFirst);
             updateModeQueryString(assistanceMode, buildFirstEnabled);
         }
 
         function closeCurrentExercise() {
+            if (creativeSessionActive) {
+                window.location.assign("index.html");
+                return;
+            }
             window.close();
             // Same-tab launches can return through browser history if closing is blocked.
             setTimeout(() => {
@@ -8952,6 +9001,9 @@ ctx.font = SETTINGS.textFont;
             if (!selectedNode || !numericalRewriteNodeIsEntirelyNumerical(selectedNode)) {
                 return false;
             }
+            if (getCurrentLevel()?.creative === true) {
+                return true;
+            }
             const ruleId = classifyNumericalRewriteCategory(selectedNode);
             if (ruleId && getNumericalRewriteRuleSetting(ruleId).forward === "manual") {
                 return true;
@@ -8973,6 +9025,9 @@ ctx.font = SETTINGS.textFont;
             const proposed = normalizeExpressionTree(cloneNode(proposedNode));
             if (numericalRewriteNodesHaveSameStructure(original, proposed)) {
                 return { ok: false, error: "Build a different equivalent numerical expression." };
+            }
+            if (getCurrentLevel()?.creative === true) {
+                return { ok: true };
             }
             const originalRuleId = classifyNumericalRewriteCategory(original);
             const proposedRuleId = classifyNumericalRewriteCategory(proposed);
@@ -11447,13 +11502,20 @@ ctx.font = SETTINGS.textFont;
                 ? getIntegratedBuilderCompletedRoot(builder)
                 : builder.root;
             if (!proposedRoot) {
-                return builderValidationFailed(builder.tool === "studentInitial"
+                return builderValidationFailed(builder.tool === "studentInitial" && !creativeSessionActive
                     ? "Keep trying. Complete the missing entry."
                     : "Complete the missing entry before submitting.");
             }
             const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
             if (builder.tool === "studentInitial") {
-                if (!sameExpressionForMatching(completed, builder.mainRoot)) {
+                if (creativeSessionActive) {
+                    const level = getCurrentLevel();
+                    level.startExpression = expressionToFullyParenthesizedText(completed);
+                    level.initialKatex = ExplodedAlgebraRenderer.expressionToKatex(completed);
+                    level.variables = inferVariablesFromExpressionTextForLevel(level.startExpression);
+                    expressionRoot = completed;
+                    resetSolutionRecorderForCurrentLevel();
+                } else if (!sameExpressionForMatching(completed, builder.mainRoot)) {
                     const feedback = "Keep trying. Match the starting expression’s terms, factors, and grouping.";
                     const hint = assistanceMode === ASSISTANCE_MODES.guided
                         ? " " + getStartingExpressionHint(
@@ -11462,9 +11524,10 @@ ctx.font = SETTINGS.textFont;
                         )
                         : "";
                     return builderValidationFailed(feedback + hint);
+                } else {
+                    // Keep the authored tree so recorded selection paths still apply.
+                    expressionRoot = builder.mainRoot;
                 }
-                // Keep the authored tree so recorded selection paths still apply.
-                expressionRoot = builder.mainRoot;
                 buildingStartingExpression = false;
                 refreshDemoBodyClass();
                 finishOperation();
@@ -12837,7 +12900,8 @@ ctx.font = SETTINGS.textFont;
         }
 
         function resolveContextualNumericalRewriteAction() {
-            const automatic = resolveAutomaticNumericalRewriteTool();
+            // Keep the editor available even when the current number has a canonical form.
+            const automatic = getCurrentLevel()?.creative === true ? null : resolveAutomaticNumericalRewriteTool();
             if (automatic) {
                 return { ...automatic, mode: "automatic" };
             }
