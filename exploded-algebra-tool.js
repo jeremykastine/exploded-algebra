@@ -12119,7 +12119,7 @@ ctx.font = SETTINGS.textFont;
                 return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
             }
 
-            let note = "Press Sum or Product once for its lowest available level, then press that same button again before entering the next value to cycle through higher levels. Multiplication is inserted automatically before x or an inverse, and between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
+            let note = "Multiplication is inserted automatically before x or an inverse, and between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
             if (toolName === "replaceOneWithInverseProduct") {
                 note += " For inverse products, the completed expression may not be always equal to 0.";
             }
@@ -12215,10 +12215,7 @@ ctx.font = SETTINGS.textFont;
                     const label = cyclesLevel
                         ? `Cycle the most recent ${operationName} to its next level`
                         : `Insert ${operationName}`;
-                    const title = cyclesLevel
-                        ? `Press again to cycle the most recent ${operationName} through its available levels. Keyboard shortcut: ${shortcut}`
-                        : `Keyboard shortcut: ${shortcut}`;
-                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="${title}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
+                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="Keyboard shortcut: ${shortcut}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
                 };
                 const inverseDisabled = !operationTypes.includes("inv");
                 const isStudentInitial = builder.tool === "studentInitial";
@@ -13098,16 +13095,14 @@ function renderToolArea() {
             }
             applyResponsiveMainButtonSize();
             const showStartingStatus = builderActive && buildingStartingExpression;
-            startingExpressionStatus.hidden = !showStartingStatus;
-            if (showStartingStatus) {
-                const entryTip = "Press Plus or Times again before the next value to change the operation’s grouping.";
-                const tip = assistanceMode === ASSISTANCE_MODES.guided
-                    ? getStartingExpressionHint(uiState.expressionBuilder.mainRoot) + " " + entryTip
-                    : entryTip;
-                const message = uiState.message || tip;
-                if (startingExpressionStatus.textContent !== message) {
-                    startingExpressionStatus.textContent = message;
-                }
+            const startingMessage = showStartingStatus
+                ? uiState.message || (assistanceMode === ASSISTANCE_MODES.guided
+                    ? getStartingExpressionHint(uiState.expressionBuilder.mainRoot)
+                    : "")
+                : "";
+            startingExpressionStatus.hidden = !startingMessage;
+            if (startingExpressionStatus.textContent !== startingMessage) {
+                startingExpressionStatus.textContent = startingMessage;
             }
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
