@@ -81,7 +81,7 @@ for (const selector of [
 ]) {
   assert(!playerHtml.includes(`body.authoring-recording-session .workspace-toolbar ${selector}`), `Instructor recording must not override the shared placement of ${selector}`);
 }
-assert(builderHtml.includes('exploded-algebra.html?authoring=problem-builder&amp;v=20260923-guided-unguided'), "The Problem Builder must load the current Guided/Unguided player");
+assert(/src="exploded-algebra\.html\?authoring=problem-builder&amp;v=\d{8}-[a-z0-9-]+"/.test(builderHtml), "The Problem Builder must load the versioned player in authoring mode");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Review phase must include the recorded-step carousel");
 assert(builderJs.includes("if (validateSetup(true)) setPhase(2)") && builderJs.includes("await setPhase(3)") && builderJs.includes("setPhase(4)") && builderJs.includes('setPhase(5)'), "The builder must advance directly through setup, expression entry, solving, step review, and exercise guidance");
 assert(builderJs.includes('<span>Pre-completion</span>') && builderJs.includes('<span>Post-completion</span>') && !builderJs.includes('<span>Instructions</span>'), "Each candidate step must contain only pre-completion and post-completion editing fields");
@@ -167,7 +167,7 @@ assert(playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-co
 assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 1; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-negative-one-button { grid-column: 1; grid-row: 3 / span 2; }'), "Inverse and negative one must each occupy two rows in column one");
 assert(playerHtml.includes('[data-builder-action="digit"][data-value="0"] { grid-column: 3 / span 3; grid-row: 4; }'), "A single zero key must span the width of the number pad");
 assert(playerHtml.includes('[data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 1; }') && playerHtml.includes('[data-builder-action="digit"][data-value="9"] { grid-column: 5; grid-row: 1; }'), "The number pad must occupy columns three through five");
-assert(playerHtml.includes('M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V399 M300 1 V300 M400 1 V300 M500 1 V399 M200 100 H500 M1 200 H599 M200 300 H500'), "The Builder grid overlay must leave the tall controls and the wide zero key undivided");
+assert(playerHtml.includes('M100 0 V400 M200 0 V400 M300 0 V300 M400 0 V300 M500 0 V400 M200 100 H500 M0 200 H600 M200 300 H500'), "The Builder grid overlay must leave the tall controls and the wide zero key undivided");
 assert(/button\.builder-submit-button,\s*\.builder-keypad-panel \.builder-action-row button\.builder-next-submit-button \{\s*grid-column: 6;\s*grid-row: 3 \/ span 2;/.test(playerHtml), "Submit must occupy the lower two cells on the right");
 assert(!playerJs.includes('data-builder-view-action') && playerHtml.includes('data-workspace-action="resetZoom"'), "The Builder must use the permanent workspace view controls");
 assert(playerHtml.includes('grid-template-rows: repeat(4, var(--main-key-size));'), "The Builder keypad must contain exactly four button rows without empty rows above");

@@ -707,7 +707,7 @@ Promise.resolve().then(() => {
 
         function buildPostSelectionGridOverlayHtml() {
             return `<svg class="post-selection-grid-overlay" viewBox="0 0 600 400" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                <path class="post-selection-grid-lines" d="M1 1 H599 V399 H1 Z M100 1 V399 M200 1 V200 M300 1 V399 M400 1 V200 M500 1 V399 M1 200 H599 M100 300 H500"/>
+                <path class="post-selection-grid-lines" d="M100 0 V400 M200 0 V200 M300 0 V400 M400 0 V200 M500 0 V400 M0 200 H600 M100 300 H500"/>
             </svg>`;
         }
 

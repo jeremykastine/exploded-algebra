@@ -134,7 +134,7 @@ for (const [selector, column] of [["zoomIn", 1], ["zoomOut", 2], ["resetZoom", 3
 }
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 !important; }'));
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 !important; }'));
-assert(playerHtml.includes('M100 1 V99 M200 1 V99 M300 1 V99 M400 1 V99 M500 1 V99'), "The permanent top row must have six equal cells");
+assert(playerHtml.includes('M100 0 V100 M200 0 V100 M300 0 V100 M400 0 V100 M500 0 V100'), "The permanent top row must have six equal cells");
 assert(/\.palette-content > \.quadrant-tools \{[\s\S]*?grid-row: 1 !important;[\s\S]*?display: grid !important;/.test(playerHtml), "The workspace toolbar must remain visible above post-selection and builder controls");
 assert(
     /if \(builderActive\) \{\s*renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
@@ -278,13 +278,15 @@ assert(playerJs.includes('mode: "automatic"') && playerJs.includes('mode: "manua
 assert(playerJs.includes('resolveContextualCommuteTool(button.dataset.contextualCommute)'));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
-assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('M1 1 H599 V399 H1 Z'));
-assert(playerJs.includes('M200 1 V200') && playerJs.includes('M400 1 V200') && playerJs.includes('M100 300 H500'));
+assert(playerJs.includes('class="post-selection-grid-overlay"') && playerJs.includes('d="M100 0 V400'));
+assert(playerJs.includes('M200 0 V200') && playerJs.includes('M400 0 V200') && playerJs.includes('M100 300 H500'));
 assert(/\.main-action-panel \.post-selection-grid-overlay \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1 \/ -1;[\s\S]*?pointer-events: none;/.test(playerHtml));
 assert(/body\.selection-active:not\(\.expression-builder-active\) \.bottom-controls-panel,[\s\S]*?gap: 0;/.test(playerHtml));
 assert(!playerHtml.includes('button.intent-category-button::before'));
 assert(playerHtml.includes('class="controls-grid-overlay workspace-toolbar-grid-overlay"'), "The permanent workspace row must draw the same continuous grid treatment as the action rows");
 assert(playerHtml.includes('class="controls-grid-overlay builder-grid-overlay"'), "Expression Builder must draw the same continuous grid treatment as post-selection");
+assert(playerHtml.includes('d="M0 100 H600 M100 0 V100') && playerHtml.includes('d="M100 0 V400 M200 0 V400'), "Only the toolbar draws the boundary between the two portions of the grid");
+assert(!/body\.authoring-session\s+\.quadrant-tools\s*\{[^}]*margin/.test(playerHtml), "The Instructor toolbar must fill the same six columns as the lower palette");
 assert(/\.palette-content \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?gap: 0;/.test(playerHtml), "The unified palette must use five gapless shared grid tracks");
 assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-keypad-panel button,[\s\S]*?\.main-action-panel button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml), "All bottom-panel buttons must share the post-selection square-cell appearance");
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
