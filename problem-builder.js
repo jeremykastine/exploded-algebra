@@ -144,6 +144,7 @@
       title: draft.metadata.title,
       startExpression: draft.initial,
       initialKatex: steps[0].afterKatex,
+      ...(draft.initialBuilderActions && { initialBuilderActions: draft.initialBuilderActions }),
       finalExpression: steps.at(-1).expression,
       finalKatex: steps.at(-1).afterKatex,
       numericalRewriteMode: draft.rewriteMode,

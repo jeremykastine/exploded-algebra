@@ -1841,11 +1841,16 @@ Promise.resolve().then(() => {
             const completion = getStepCompletionStates(level);
             const lastStep = level.steps?.at(-1);
             if (lastStep && uiState.mode === "edit" && completion.at(-1) === true) {
+                const targetKatex = lastStep.afterKatex || lastStep.katex ||
+                    ExplodedAlgebraRenderer.expressionToKatex(textToExpression(lastStep.expression));
+                if (level.requireFullDemo && !level.demo?.steps?.length) {
+                    return { heading: "You built", targetKatex };
+                }
                 return {
                     heading: "You transformed",
                     sourceKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(level.startExpression)),
                     connector: "into",
-                    targetKatex: lastStep.afterKatex || lastStep.katex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(lastStep.expression))
+                    targetKatex
                 };
             }
 
@@ -2767,12 +2772,10 @@ Promise.resolve().then(() => {
         }
 
         function hasGuidedMode(level) {
-            return !!(
-                level
-                && level.demo
-                && Array.isArray(level.demo.steps)
-                && level.demo.steps.some(step => step && step.type !== "view")
-            );
+            const initialActions = level?.initialBuilderActions;
+            const steps = level?.demo?.steps;
+            return (Array.isArray(initialActions) && initialActions.length > 0) ||
+                (Array.isArray(steps) && steps.some(step => step && step.type !== "view"));
         }
 
         function isInteractiveLevel(level) {
@@ -3101,7 +3104,7 @@ Promise.resolve().then(() => {
             return replacement;
         }
 
-        function inspectMoveHistory(history) {
+        function inspectMoveHistory(history, allowEmpty = false) {
             const actions = history?.recordedActions;
             const demo = history?.demo?.steps;
             if (!isDemoOnlyLevel(history) || !Array.isArray(actions) || !Array.isArray(demo) ||
@@ -3153,10 +3156,31 @@ Promise.resolve().then(() => {
                 startIndex = index + 1;
                 selectionIndex = -1;
             });
-            if (!moves.length || (history.finalExpression && history.finalExpression !== moves.at(-1).expression)) {
+            const final = moves.at(-1)?.expression || initial;
+            if ((!allowEmpty && !moves.length) || (history.finalExpression && history.finalExpression !== final)) {
                 throw new Error("The file has no complete solution to edit. Finish transforming the expression in Creative Mode, then download its moves.");
             }
-            return { initial, initialKatex, moves };
+            return { initial, initialKatex, moves, initialBuilderActions: history.initialBuilderActions };
+        }
+
+        function makeGuidedCreativeLevel(history) {
+            const { initial, initialKatex, moves, initialBuilderActions } = inspectMoveHistory(history, true);
+            const final = moves.at(-1);
+            return {
+                format: history.format,
+                formatVersion: history.formatVersion,
+                kind: "guidedCapable",
+                id: history.id,
+                title: "Creative Mode Replay",
+                startExpression: initial,
+                initialKatex,
+                initialBuilderActions,
+                finalExpression: final?.expression || initial,
+                steps: [{ expression: final?.expression || initial, katex: final?.katex || initialKatex }],
+                numericalRewriteMode: "free",
+                requireFullDemo: true,
+                demo: { steps: moves.flatMap(move => move.demo) }
+            };
         }
 
         function makeDemoOnlyLevelFromCurrentRun(completedAtDate) {
@@ -3513,6 +3537,11 @@ Promise.resolve().then(() => {
                 delete copy.sourceLevel.instructions;
             }
             copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
+            if (isDemoOnlyLevel(copy) && copy.sourceLevel?.creative === true && Array.isArray(copy.initialBuilderActions)) {
+                copy = makeGuidedCreativeLevel(copy);
+                copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
+                return copy;
+            }
             upgradeLegacyCommuteDemoSteps(copy);
             if (isDemoOnlyLevel(copy) && copy.sourceLevel && typeof copy.sourceLevel === "object") {
                 copy = {
@@ -3773,14 +3802,12 @@ Promise.resolve().then(() => {
 
         function getCurrentDemoSteps() {
             const level = getCurrentLevel();
-            return level && level.demo && Array.isArray(level.demo.steps)
-                ? level.demo.steps.filter(step => step && step.type !== "view")
-                : [];
+            const steps = buildingStartingExpression ? level?.initialBuilderActions : level?.demo?.steps;
+            return Array.isArray(steps) ? steps.filter(step => step && step.type !== "view") : [];
         }
 
         function isDemoModeActive() {
-            return !buildingStartingExpression && assistanceMode === ASSISTANCE_MODES.guided &&
-                demoStepIndex < getCurrentDemoSteps().length;
+            return assistanceMode === ASSISTANCE_MODES.guided && demoStepIndex < getCurrentDemoSteps().length;
         }
 
         function getCurrentDemoStep() {
@@ -4284,6 +4311,9 @@ Promise.resolve().then(() => {
             if (buildingStartingExpression || !level || !Array.isArray(level.steps)) {
                 return;
             }
+            if (level.requireFullDemo && isDemoModeActive()) {
+                return;
+            }
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
@@ -4319,7 +4349,22 @@ Promise.resolve().then(() => {
             }
             const historyDate = completionExportCompletedAtDate || new Date();
             solutionRecorder.finalExpression = getExpressionTextForTrace();
-            downloadMoveHistoryJson(makeDemoOnlyLevelFromCurrentRun(historyDate));
+            const history = makeDemoOnlyLevelFromCurrentRun(historyDate);
+            const preview = creativeSessionActive ? window.open("about:blank", "_blank") || window : null;
+            downloadMoveHistoryJson(history);
+            if (preview) {
+                const fileName = `${history.id}.json`;
+                const payload = JSON.stringify({ version: 1, fileName, text: JSON.stringify(history) });
+                try {
+                    preview.sessionStorage.setItem(CUSTOM_LEVEL_STORAGE_KEY, payload);
+                } catch (error) {
+                    // Use the tab name when storage is unavailable.
+                }
+                preview.name = CUSTOM_LEVEL_WINDOW_NAME_PREFIX + payload;
+                const url = new URL("exploded-algebra.html", window.location.href);
+                url.search = new URLSearchParams({ source: "custom", level: fileName, mode: "guided", build: "1" });
+                preview.location.assign(url.href);
+            }
         }
 
         function updateExerciseMenu(level) {
@@ -10123,7 +10168,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function shouldUseLegacyBuilderFlow() {
-            if (!isDemoModeActive()) {
+            if (buildingStartingExpression || !isDemoModeActive()) {
                 return false;
             }
             const steps = getCurrentDemoSteps();
@@ -10899,6 +10944,9 @@ ctx.font = SETTINGS.textFont;
                 history: []
             };
             if (toolName === "studentInitial") {
+                if (creativeSessionActive) {
+                    common.initialActions = [];
+                }
                 const extraValues = new Set();
                 traversePreOrder(selectedNode, node => {
                     if (node.type === "value" && !/^(?:[0-9]+|x|-1)$/.test(node.value)) {
@@ -11252,6 +11300,7 @@ ctx.font = SETTINGS.textFont;
                     const level = getCurrentLevel();
                     level.startExpression = expressionToFullyParenthesizedText(completed);
                     level.initialKatex = ExplodedAlgebraRenderer.expressionToKatex(completed);
+                    level.initialBuilderActions = [...builder.initialActions, { type: "builder", action: "submit" }];
                     level.variables = inferVariablesFromExpressionTextForLevel(level.startExpression);
                     expressionRoot = completed;
                     resetSolutionRecorderForCurrentLevel();
@@ -11269,7 +11318,7 @@ ctx.font = SETTINGS.textFont;
                     expressionRoot = builder.mainRoot;
                 }
                 buildingStartingExpression = false;
-                refreshDemoBodyClass();
+                resetDemoStateForCurrentLevel();
                 finishOperation();
                 resetWorkspacePanToDefault();
                 return true;
@@ -12758,7 +12807,21 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            if (result !== false && builderAtStart.tool !== "studentInitial") {
+            if (result === false) {
+                return false;
+            }
+            if (builderAtStart.tool === "studentInitial") {
+                if (action !== "submit") {
+                    if (builderAtStart.initialActions) {
+                        if (action === "undo") {
+                            builderAtStart.initialActions.pop();
+                        } else {
+                            builderAtStart.initialActions.push({ type: "builder", action, ...(value && { value }) });
+                        }
+                    }
+                    advanceDemoStep();
+                }
+            } else {
                 recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null, builderAtStart.completedNumericalRewrite);
                 // Submit completes the mathematical rewrite before this input
                 // action is appended. Keep the stable state's recorder cursor
@@ -12771,7 +12834,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 advanceDemoStep();
             }
-            return result !== false;
+            return true;
         }
 
         function handleExpressionBuilderKeydown(event) {
