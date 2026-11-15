@@ -73,7 +73,7 @@ function checkImportAndExport() {
     "traversePreOrder", "sameExpression", "cloneNode", "getNodeAtPath", "getWholeNumberBigIntFromNode",
     "evaluateNumericalRewriteNodeExactly", "greatestCommonDivisorBigInt", "makeExactRational",
     "addExactRationals", "multiplyExactRationals", "exactRationalsAreEqual",
-    "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
+    "inferRecordedNumericalReplacement", "formatFunctionalExpression", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
     "canNumericalRewrite", "makePrescribedNumericalGuide", "numericalRewriteNodesHaveSameStructure",
     "normalizeCloneForMatching"
   ];
@@ -118,21 +118,26 @@ function checkImportAndExport() {
     ...scope.imported,
     metadata: { id: "edited", title: "Edited", exerciseGuidance: "Solve the problem." },
     rewriteMode: "prescribed",
-    recording: { candidates: [
-      { expression: initial, katex: "x+2+4", beforeKatex: "", afterKatex: "x+2+4", isInitial: true },
-      { expression: final, katex: "x+1+5", beforeKatex: "", afterKatex: "x+1+5", moveIndex: 1 }
-    ] }
+    rows: [
+      { expression: initial, katex: "x+2+4", beforeKatex: "", afterKatex: "x+2+4", isInitial: true, major: true },
+      { expression: intermediate, katex: "x+6", beforeKatex: "", afterKatex: "6+x", moveIndex: 0, major: false },
+      { expression: final, katex: "x+1+5", beforeKatex: "", afterKatex: "x+1+5", moveIndex: 1, major: false }
+    ]
   };
-  const exported = vm.runInContext("buildExportLevel()", scope);
+  const exported = vm.runInContext("buildExportLevel('Edited', 'edited')", scope);
   assert.deepEqual(Array.from(exported.steps, step => step.expression), [initial, final]);
   assert.equal(exported.steps[1].actionEndIndex, 6);
+  assert.equal(exported.steps[1].majorStep, false);
+  assert.equal(exported.minorSteps[0].expression, intermediate);
+  assert.equal(exported.minorSteps[0].afterKatex, "6+x");
+  assert.equal(scope.imported.initialFunctional, "sum(x, 2, 4)");
   assert.equal(exported.demo.steps[2].action, "submit");
   assert.equal(exported.numericalRewriteMode, undefined);
   assert.equal(exported.prescribedNumericalRewrites, undefined);
   assert.equal(exported.moveHistory, undefined);
   scope.exported = exported;
   scope.draft.rewriteMode = "free";
-  assert.equal(JSON.stringify(vm.runInContext("buildExportLevel()", scope)), JSON.stringify(exported),
+  assert.equal(JSON.stringify(vm.runInContext("buildExportLevel('Edited', 'edited')", scope)), JSON.stringify(exported),
     "The selected player rewrite mode must not change the exported JSON");
 
   scope.prescribedGuide = vm.runInContext("makePrescribedNumericalGuide(exported)", scope);
@@ -154,3 +159,27 @@ function checkImportAndExport() {
 
 checkImportAndExport();
 console.log("Move import, step selection, numerical choices, and both export modes passed.");
+
+const notationScope = vm.createContext({});
+vm.runInContext(fs.readFileSync(path.join(root, "conventional-notation.js"), "utf8") +
+  "\nthis.notation = ExplodedAlgebraNotation;", notationScope);
+const { verify } = notationScope.notation;
+assert.equal(verify("((2)*(3))", "2 x 3"), "2\\times 3");
+assert.equal(verify("((2)*(3))", "2x3"), "2\\times 3");
+assert.equal(verify("((2)*(3))", "2⋅3"), "2\\cdot 3");
+assert.equal(verify("((2)*(x))", "2x"), "2x");
+assert.equal(verify("((1)/(x))", "x^-1"), "x^{-1}");
+assert.equal(verify("((x)*(x))", "x²"), "x^{2}");
+assert.equal(verify("((x)*(x))", "x^{1+1}"), "x^{1+1}");
+assert.equal(verify("((x)*(x))", "x(x)"), "x(x)");
+assert.equal(verify("(((1)/(2))*(x))", "\\frac{x}{2}"), "\\frac{x}{2}");
+assert.equal(verify("(((1)/(2))*(x))", "x÷2"), "x\\div 2");
+assert.equal(verify("((x)*(x))", "\\frac{x^3}{x}"), "\\frac{x^{3}}{x}");
+assert.equal(verify("((x)*(x))", "\\left(x\\right)^2"), "\\left(x\\right)^{2}");
+assert.equal(verify("((x)*(x))", "(x+1)(x-1)+1"), "(x+1)(x-1)+1");
+assert.throws(() => verify("((x)*(x))", "x^3"), /not equivalent/);
+assert.throws(() => verify("((x)*(x))", "x++"), /complete expression/);
+assert.throws(() => verify("((x)*(x))", "x^2/(x-x)"), /zero/);
+assert.throws(() => verify("((x)*(x))", "\\left(x)^2"), /Expected/);
+assert.throws(() => verify("((x)*(x))", "x^{1/2}"), /integer exponent/);
+console.log("Conventional notation syntax and exact equivalence checks passed.");

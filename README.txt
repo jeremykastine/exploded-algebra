@@ -152,8 +152,10 @@ state. The player’s Edit a Copy opens the authored level in a separate editor 
 
 Move histories keep the inputs used to build the starting expression and the
 completed transformations. Undo discards the undone actions from the recording.
-The editor keeps the starting and final expressions and lets you choose
-intermediate checkpoints, edit conventional notation, and add student guidance.
+The editor lists the recorded steps in one column. Mark a row as major to
+make it a player checkpoint. Switch to Functional for a read-only view of its
+structure. Conventional notation edits must render and have the same exact
+rational expression value before you can save them.
 Open in Player starts a guided build-first replay. Download Level saves the edited
 exercise JSON.
 

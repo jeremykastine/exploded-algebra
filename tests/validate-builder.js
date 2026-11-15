@@ -20,15 +20,13 @@ const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/
 for (const id of requestedIds) {
   assert(htmlIds.has(id), `problem-builder.js references missing HTML id: ${id}`);
 }
-for (const phase of ["1", "2", "3"]) {
-  assert(builderHtml.includes(`data-phase="${phase}"`), `Missing editor phase ${phase}`);
-}
-assert(builderHtml.includes('id="moveFile"') && builderJs.includes('api.inspectMoveHistory(history, true)'), "The editor must start from a downloaded move file");
-assert(builderHtml.includes('name="rewriteMode" value="free"') && builderHtml.includes('name="rewriteMode" value="prescribed"'), "The editor must expose both numerical rewrite modes");
+assert(builderHtml.includes('id="setupForm"') && builderHtml.includes('id="editorWorkspace"'), "The editor must offer file upload and a loaded editor");
+assert(builderHtml.includes('id="moveFile"') && builderJs.includes("api.inspectMoveHistory(history, true)"), "The editor must accept move recordings");
+assert(builderHtml.includes('id="rewriteMode"') && builderJs.includes('params.rewrites = "prescribed"'), "The editor must expose a player rewrite option through the URL");
 assert(!builderHtml.includes("numericalPermissionsTable") && !playerJs.includes("installAuthoringApi"), "The former instructor workflow must be removed");
-assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Retained steps must be reviewed in the carousel");
-assert(builderJs.includes('name="step-visibility-') && builderJs.includes("curationKeepDecisions"), "Intermediate steps must be selectable");
-assert(builderJs.includes('data-step-field="beforeKatex"') && builderJs.includes('data-step-field="afterKatex"'), "Retained steps must remain editable");
+assert(builderHtml.includes('<tbody id="curationTable"></tbody>') && builderJs.includes('data-functional-notation'), "The editor must show a single step table with a functional mode");
+assert(builderJs.includes("data-major-step") && builderJs.includes("minor-step"), "Major steps must be toggleable");
+assert(builderJs.includes("data-conventional-notation") && builderJs.includes('ExplodedAlgebraNotation.verify(row.expression, entry.value)'), "Edited notation must be verified against the recorded expression");
 assert(builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"'), "Exercise guidance must remain editable");
 assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");

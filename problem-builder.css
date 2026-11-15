@@ -62,83 +62,53 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #8bb9dd; outline-offset: 2px; }
 .form-error { min-height: 1.2em; margin: 0; color: var(--danger); font-weight: 700; }
 
-.step-curation-section { margin: 0; }
-.step-selection-slide { width: min(100%, 780px); margin: 0 auto; padding: clamp(16px, 3vw, 28px); }
-.step-selection-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.restart-selection-button { min-height: 38px; padding: 7px 12px; }
-.step-selection-expression {
-  min-width: 0;
-  margin: 22px 0;
-  padding: 14px;
-  border-radius: 7px;
-  background: var(--soft);
-  font-size: 20px;
-  line-height: 1.5;
-  overflow: visible;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.step-selection-expression .katex-display { margin: 0; text-align: left; white-space: normal; }
-.step-selection-expression .katex-display > .katex { white-space: normal; }
-.step-selection-expression .katex-html { white-space: normal; }
-.step-selection-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.step-selection-actions button { width: 100%; }
-.selection-decision-status { margin: 10px 0 0; color: var(--muted); text-align: center; font-weight: 700; }
-.step-selection-list { width: min(100%, 900px); margin: 0 auto; padding: clamp(16px, 3vw, 28px); }
-.step-selection-header h2 { margin: 0; font-size: 20px; }
-.step-selection-rows { display: grid; gap: 10px; margin-top: 18px; }
-.step-selection-row {
+.editor-controls {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #ddd;
 }
-.step-selection-row-label { font-weight: 800; white-space: nowrap; }
-.step-selection-row .step-selection-expression { margin: 0; }
-.step-visibility-choice { display: flex; gap: 10px; align-items: center; white-space: nowrap; }
-.step-visibility-choice label { display: inline-flex; gap: 5px; align-items: center; font-weight: 700; cursor: pointer; }
-.step-selection-finish { display: flex; justify-content: center; margin-top: 20px; }
-.step-selection-finish button { width: min(100%, 320px); }
-@media (max-width: 650px) {
-  .step-selection-row { grid-template-columns: 1fr; gap: 7px; }
-  .step-visibility-choice { justify-content: flex-start; }
+.editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#setupForm[hidden] { display: none; }
+#exportStatus:not(:empty) { margin-top: 8px; }
+
+.step-table-wrap { margin-top: 20px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
+.step-table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+.step-table th, .step-table td { padding: 12px 14px; text-align: left; vertical-align: top; }
+.step-table th { background: var(--soft); border-bottom: 1px solid var(--line); }
+.step-table td { border-bottom: 1px solid var(--line); }
+.step-table tr:last-child td { border-bottom: 0; }
+.step-table th .step-mode-toggle { display: flex; width: fit-content; max-width: 100%; margin-top: 6px; }
+.step-label-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; font-size: 12px; }
+.step-label-row label { display: inline-flex; align-items: center; gap: 4px; font-size: inherit; font-weight: 500; cursor: pointer; }
+.functional-notation, .step-table textarea {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
 }
-.step-carousel { display: grid; gap: 14px; width: min(100%, 780px); margin: 0 auto; }
-.step-carousel-slide { min-width: 0; min-height: 430px; padding: clamp(16px, 3vw, 28px); }
-.step-slide-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
-.step-number { font-size: 16px; font-weight: 800; }
+.functional-notation { margin: 8px 0 0; overflow-wrap: anywhere; }
+.step-conventional { margin-top: 8px; }
+.notation-entry { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; }
+.notation-entry textarea { flex: 1 1 18rem; min-width: 0; display: block; }
+.notation-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.notation-actions[hidden] { display: none; }
+.notation-status { margin: 0; font-size: 13px; }
+.notation-status:not(:empty) { margin-top: 5px; }
+textarea[aria-invalid="true"] { border-color: var(--danger); }
+.step-conventional:has(textarea[aria-invalid="true"]) .notation-status { color: var(--danger); }
+.minor-step { background: #f5f6f8; color: #686d75; }
+.minor-step textarea { background: #f5f6f8; color: #686d75; border-color: #c4c7cc; }
 .step-mode-toggle { display: inline-flex; overflow: hidden; border: 1px solid #999da2; border-radius: 7px; }
-.step-mode-toggle button { min-height: 38px; padding: 7px 14px; border: 0; border-right: 1px solid #999da2; background: #fff; color: var(--ink); font-weight: 700; }
+.step-mode-toggle button { min-height: 38px; padding: 7px 12px; border: 0; border-right: 1px solid #999da2; background: #fff; color: var(--ink); font-weight: 700; }
 .step-mode-toggle button:last-child { border-right: 0; }
 .step-mode-toggle button[aria-pressed="true"] { background: var(--accent); color: #fff; }
-.step-view-fields, .step-editor-fields { display: grid; gap: 16px; min-width: 0; margin: 18px 0 0; padding: 0; border: 0; }
-.step-view-field, .step-edit-field { display: grid; gap: 7px; min-width: 0; }
-.step-view-field h3, .step-edit-field > span { margin: 0; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.step-editor-fields textarea { min-height: 70px; }
-.step-math-view { display: flex; min-width: 0; min-height: 72px; align-items: center; justify-content: center; padding: 10px 12px; overflow: auto; border-radius: 7px; background: var(--soft); font-size: 20px; }
-.step-na-value { display: flex; min-height: 70px; align-items: center; justify-content: center; padding: 10px 12px; border-radius: 7px; background: var(--soft); color: var(--muted); font-size: 18px; font-weight: 800; }
-.step-math-view .katex-display { margin: 0; }
-.step-carousel-navigation { display: inline-flex; align-items: center; gap: 8px; }
-.step-carousel-navigation .secondary-button { min-height: 38px; padding: 7px 10px; font-size: 13px; }
-.step-carousel-navigation .step-number { min-width: 52px; text-align: center; }
-.empty-curation { margin: 0; padding: 20px 0; color: var(--muted); }
-.phase4-controls { display: grid; justify-items: center; gap: 10px; padding-top: 20px; }
-.continue-to-guidance-button,
-.phase4-controls .status-line { min-height: 1.45em; text-align: center; }
 
 .exercise-guidance-card {
-  display: grid;
-  gap: 20px;
-  width: min(100%, 820px);
-  margin: 0 auto;
+  width: 100%;
+  margin: 20px 0 0;
   padding: clamp(16px, 3vw, 28px);
 }
-.exercise-guidance-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; }
-.exercise-guidance-card h2,
-.exercise-guidance-card h3 { margin: 0; }
-.exercise-guidance-card h2 { font-size: 22px; }
+.exercise-guidance-card summary { cursor: pointer; font-weight: 700; }
+.exercise-guidance-card > .step-mode-toggle { margin: 14px 0 8px; }
 .exercise-guidance-view {
   min-height: 420px;
   padding: clamp(14px, 2.5vw, 24px);
@@ -160,11 +130,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 @media (max-width: 760px) {
   main { padding: 10px 10px 32px; }
-  .step-carousel-slide { min-height: 400px; padding: 14px; }
-  .step-slide-header { gap: 8px; }
-  .step-carousel-navigation { gap: 5px; }
-  .step-carousel-navigation .secondary-button { min-width: 0; padding: 7px 8px; }
-  .step-math-view { font-size: 18px; }
+  .editor-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .editor-actions { grid-column: 1 / -1; }
+  .step-table th, .step-table td { padding: 8px; }
+  .step-table .step-mode-toggle button { min-width: 0; padding: 6px; font-size: 12px; }
   .form-card { padding: 12px; }
-  fieldset { padding: 12px; }
 }

@@ -3102,6 +3102,12 @@ Promise.resolve().then(() => {
             return replacement;
         }
 
+        function formatFunctionalExpression(node) {
+            if (node.type === "value") return String(node.value);
+            const operation = { sum: "sum", prod: "product", inv: "inverse" }[node.type];
+            return `${operation}(${node.args.map(formatFunctionalExpression).join(", ")})`;
+        }
+
         function inspectMoveHistory(history, allowEmpty = false) {
             const source = history?.moveHistory || history;
             const actions = source?.recordedActions;
@@ -3112,7 +3118,8 @@ Promise.resolve().then(() => {
             }
 
             const initial = source.startExpression;
-            const initialKatex = ExplodedAlgebraRenderer.expressionToKatex(textToExpression(initial));
+            const initialNode = textToExpression(initial);
+            const initialKatex = ExplodedAlgebraRenderer.expressionToKatex(initialNode);
             const moves = [];
             let startIndex = 0;
             let selectionIndex = -1;
@@ -3155,9 +3162,11 @@ Promise.resolve().then(() => {
                     if (to) numericalRewrite = { from: selected.expression, to };
                 }
 
+                const node = textToExpression(expression);
                 moves.push({
                     expression,
-                    katex: ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expression)),
+                    functional: formatFunctionalExpression(node),
+                    katex: ExplodedAlgebraRenderer.expressionToKatex(node),
                     actions: moveActions,
                     demo: moveDemo,
                     toolIndex,
@@ -3171,7 +3180,13 @@ Promise.resolve().then(() => {
             if ((!allowEmpty && !moves.length) || (source.finalExpression && source.finalExpression !== final)) {
                 throw new Error("The file has no complete solution to edit. Finish transforming the expression in Creative Mode, then download its moves.");
             }
-            return { initial, initialKatex, moves, initialBuilderActions: source.initialBuilderActions };
+            return {
+                initial,
+                initialFunctional: formatFunctionalExpression(initialNode),
+                initialKatex,
+                moves,
+                initialBuilderActions: source.initialBuilderActions
+            };
         }
 
         function makeGuidedCreativeLevel(history) {
@@ -3187,7 +3202,11 @@ Promise.resolve().then(() => {
                 initialKatex,
                 initialBuilderActions,
                 finalExpression: final?.expression || initial,
-                steps: [{ expression: final?.expression || initial, katex: final?.katex || initialKatex }],
+                steps: [{
+                    expression: final?.expression || initial,
+                    katex: final?.katex || initialKatex,
+                    ...(final && { recordedMoveIndex: moves.length - 1 })
+                }],
                 requireFullDemo: true,
                 demo: { steps: moves.flatMap(move => move.demo) },
                 recordedActions: moves.flatMap(move => move.actions)

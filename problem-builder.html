@@ -6,76 +6,74 @@
   <title>Problem Editor — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261115-rewrite-query">
+  <link rel="stylesheet" href="problem-builder.css?v=20261115-step-table">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="level-transfer.js"></script>
-  <script defer src="problem-builder.js?v=20261115-rewrite-query"></script>
+  <script defer src="conventional-notation.js"></script>
+  <script defer src="problem-builder.js?v=20261115-step-table"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T11:49:28-05:00">11/15/26, 11:49 AM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T12:07:14-05:00">11/15/26, 12:07 PM EST</time></p>
   <main>
-    <section class="phase" data-phase="1">
-      <form id="setupForm" class="card form-card" aria-label="Problem setup">
-        <h1>Problem Editor</h1>
-        <p class="editor-intro">Open moves from <a href="exploded-algebra.html?mode=creative">Creative Mode</a> or upload a move history or edited level.</p>
-        <label id="moveFileLabel">Move history or level JSON
-          <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
-        </label>
-        <p id="transferredFile" hidden></p>
+    <h1>Problem Editor</h1>
+    <p id="setupError" class="form-error" role="alert"></p>
+    <form id="setupForm" class="card form-card" aria-label="Open a recording">
+      <p class="editor-intro">Open moves from <a href="exploded-algebra.html?mode=creative">Creative Mode</a> or upload a move history or edited level.</p>
+      <label>Move history or level JSON
+        <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
+      </label>
+      <button id="openMovesButton" class="primary-button" type="submit">Open Recording</button>
+    </form>
+
+    <section id="editorWorkspace" aria-label="Edit problem" hidden>
+      <div class="editor-controls">
         <label>Problem name
-          <input id="problemTitle" name="title" required autocomplete="off" placeholder="Add fractions with unlike denominators">
+          <input id="problemTitle" autocomplete="off">
         </label>
-        <fieldset>
-          <legend>Numerical rewrites in the player</legend>
-          <div class="radio-row">
-            <label><input type="radio" name="rewriteMode" value="free" checked> Free numerical rewrites</label>
-            <label><input type="radio" name="rewriteMode" value="prescribed"> Only prescribed numerical rewrites</label>
-          </div>
-          <p class="field-help">Free rewrites accept any equivalent numerical form. Prescribed rewrites show choices from the recording. This setting applies when you open the player.</p>
-        </fieldset>
-        <p id="setupError" class="form-error" role="alert"></p>
-        <div class="phase-actions end">
-          <button id="openMovesButton" class="primary-button" type="submit">Choose Steps</button>
+        <label>Numerical rewrites in the player
+          <select id="rewriteMode">
+            <option value="free">Free numerical rewrites</option>
+            <option value="prescribed">Only prescribed numerical rewrites</option>
+          </select>
+        </label>
+        <div class="editor-actions">
+          <button id="openInPlayerButton" class="primary-button" type="button">Open in Player</button>
+          <button id="downloadLevelButton" class="secondary-button" type="button">Download Level</button>
         </div>
-      </form>
-    </section>
-
-    <div id="editorActions" class="phase-actions end" hidden>
-      <button id="openInPlayerButton" class="primary-button" type="button">Open in Player</button>
-      <button id="downloadLevelButton" class="primary-button" type="button">Download Level</button>
+      </div>
       <p id="exportStatus" class="status-line" aria-live="polite"></p>
-    </div>
 
-    <section class="phase" data-phase="2" hidden>
-      <section class="step-curation-section" aria-label="Exercise steps">
-        <div id="curationTable" class="step-carousel" aria-roledescription="carousel" aria-label="Recorded solution steps"></div>
-      </section>
+      <div class="step-table-wrap">
+        <table class="step-table" aria-label="Recorded solution steps">
+          <thead>
+            <tr>
+              <th scope="col">
+                Step notation
+                <div class="step-mode-toggle" role="group" aria-label="Expression notation">
+                  <button type="button" data-notation="functional" aria-pressed="false">Functional</button>
+                  <button type="button" data-notation="conventional" aria-pressed="true">Conventional</button>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="curationTable"></tbody>
+        </table>
+      </div>
 
-      <section class="phase4-controls">
-        <button id="continueToGuidanceButton" type="button" class="primary-button continue-to-guidance-button" hidden>Continue to Exercise Guidance</button>
-      </section>
-    </section>
-
-    <section class="phase" data-phase="3" hidden>
-      <section class="exercise-guidance-card card" aria-labelledby="exerciseGuidanceHeading">
-        <header class="exercise-guidance-header">
-          <h2 id="exerciseGuidanceHeading">Exercise Guidance</h2>
-          <div class="step-mode-toggle" role="group" aria-label="Exercise guidance display mode">
-            <button type="button" data-guidance-mode="view" aria-pressed="true">View</button>
-            <button type="button" data-guidance-mode="edit" aria-pressed="false">Edit</button>
-          </div>
-        </header>
-        <p class="field-help">Edit the guidance to tell students what to do with the starting expression.</p>
-
+      <details class="exercise-guidance-card card">
+        <summary>Exercise Guidance</summary>
+        <div class="step-mode-toggle" role="group" aria-label="Exercise guidance display mode">
+          <button type="button" data-guidance-mode="view" aria-pressed="true">View</button>
+          <button type="button" data-guidance-mode="edit" aria-pressed="false">Edit</button>
+        </div>
         <div id="exerciseGuidanceView" class="exercise-guidance-view" aria-label="Exercise guidance preview"></div>
         <label id="exerciseGuidanceEditor" class="exercise-guidance-editor" for="exerciseGuidance" hidden>Exercise guidance
-          <textarea id="exerciseGuidance" rows="18" spellcheck="false"></textarea>
+          <textarea id="exerciseGuidance" rows="12" spellcheck="false"></textarea>
         </label>
-
-      </section>
+      </details>
     </section>
   </main>
 
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-rewrite-query" hidden></iframe>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-step-table" hidden></iframe>
 </body>
 </html>
