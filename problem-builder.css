@@ -64,7 +64,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .editor-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 12px;
 }
@@ -73,30 +73,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 #exportStatus:not(:empty) { margin-top: 8px; }
 
 .step-table-wrap { margin-top: 20px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; }
-.step-table { table-layout: fixed; width: 100%; border-collapse: collapse; }
+.step-table { --step-label-space: 24px; table-layout: fixed; width: 100%; border-collapse: collapse; }
 .step-table th, .step-table td { padding: 12px 14px; text-align: left; vertical-align: top; }
 .step-table th { background: var(--soft); border-bottom: 1px solid var(--line); }
 .step-table td { border-bottom: 1px solid var(--line); }
 .step-table tr:last-child td { border-bottom: 0; }
-.step-table th .step-mode-toggle { display: flex; width: fit-content; max-width: 100%; margin-top: 6px; }
-.step-label-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; font-size: 12px; }
-.step-label-row label { display: inline-flex; align-items: center; gap: 4px; font-size: inherit; font-weight: 500; cursor: pointer; }
-.functional-notation, .step-table textarea {
+.step-table .major-step-column, .step-table .major-step-cell { width: 72px; text-align: center; padding-inline: 8px; }
+.major-step-column { font-size: 12px; }
+.major-step-check { place-items: center; min-height: 44px; margin-top: var(--step-label-space); cursor: pointer; }
+.major-step-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.step-label { display: block; min-height: var(--step-label-space); font-size: 12px; }
+.step-table textarea {
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 14px;
 }
-.functional-notation { margin: 8px 0 0; overflow-wrap: anywhere; }
-.step-conventional { margin-top: 8px; }
 .notation-entry { display: flex; flex-wrap: wrap; align-items: start; gap: 8px; }
 .notation-entry textarea { flex: 1 1 18rem; min-width: 0; display: block; }
 .notation-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .notation-actions[hidden] { display: none; }
 .notation-status { margin: 0; font-size: 13px; }
 .notation-status:not(:empty) { margin-top: 5px; }
-textarea[aria-invalid="true"] { border-color: var(--danger); }
-.step-conventional:has(textarea[aria-invalid="true"]) .notation-status { color: var(--danger); }
-.minor-step { background: #f5f6f8; color: #686d75; }
-.minor-step textarea { background: #f5f6f8; color: #686d75; border-color: #c4c7cc; }
+.minor-step { background: #f0f1f3; color: #595e65; }
+.minor-step textarea { background: #e5e7ea; color: #595e65; border-color: #a8adb4; }
+.step-table textarea[aria-invalid="true"] { border-color: var(--danger); }
+.step-table td:has(textarea[aria-invalid="true"]) .notation-status { color: var(--danger); }
 .step-mode-toggle { display: inline-flex; overflow: hidden; border: 1px solid #999da2; border-radius: 7px; }
 .step-mode-toggle button { min-height: 38px; padding: 7px 12px; border: 0; border-right: 1px solid #999da2; background: #fff; color: var(--ink); font-weight: 700; }
 .step-mode-toggle button:last-child { border-right: 0; }
@@ -130,9 +130,8 @@ textarea[aria-invalid="true"] { border-color: var(--danger); }
 
 @media (max-width: 760px) {
   main { padding: 10px 10px 32px; }
-  .editor-controls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .editor-actions { grid-column: 1 / -1; }
+  .editor-controls { grid-template-columns: minmax(0, 1fr); }
   .step-table th, .step-table td { padding: 8px; }
-  .step-table .step-mode-toggle button { min-width: 0; padding: 6px; font-size: 12px; }
+  .step-table .major-step-column, .step-table .major-step-cell { width: 56px; }
   .form-card { padding: 12px; }
 }

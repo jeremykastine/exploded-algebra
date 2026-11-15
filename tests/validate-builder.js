@@ -22,10 +22,13 @@ for (const id of requestedIds) {
 }
 assert(builderHtml.includes('id="setupForm"') && builderHtml.includes('id="editorWorkspace"'), "The editor must offer file upload and a loaded editor");
 assert(builderHtml.includes('id="moveFile"') && builderJs.includes("api.inspectMoveHistory(history, true)"), "The editor must accept move recordings");
-assert(builderHtml.includes('id="rewriteMode"') && builderJs.includes('params.rewrites = "prescribed"'), "The editor must expose a player rewrite option through the URL");
+assert(!builderHtml.includes('id="rewriteMode"') && !builderJs.includes("rewriteMode"), "The editor must omit numerical rewrite settings");
 assert(!builderHtml.includes("numericalPermissionsTable") && !playerJs.includes("installAuthoringApi"), "The former instructor workflow must be removed");
-assert(builderHtml.includes('<tbody id="curationTable"></tbody>') && builderJs.includes('data-functional-notation'), "The editor must show a single step table with a functional mode");
-assert(builderJs.includes("data-major-step") && builderJs.includes("minor-step"), "Major steps must be toggleable");
+assert(builderHtml.includes('<tbody id="curationTable"></tbody>') && !builderHtml.includes("data-notation") &&
+  !builderJs.includes("data-functional-notation"), "The editor must show conventional notation only");
+assert(/class="major-step-cell"[\s\S]*?data-major-step[\s\S]*?<\/td>\s*<td>[\s\S]*?data-conventional-notation/.test(builderJs) &&
+  builderJs.includes('classList.toggle("minor-step", !event.target.checked)') && builderCss.includes(".minor-step textarea"),
+  "The major-step checkbox must appear before the editable notation and gray out unchecked rows");
 assert(builderJs.includes("data-conventional-notation") && builderJs.includes('ExplodedAlgebraNotation.verify(row.expression, entry.value)'), "Edited notation must be verified against the recorded expression");
 assert(builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"'), "Exercise guidance must remain editable");
 assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");

@@ -2,8 +2,8 @@
   "use strict";
 
   const byId = id => document.getElementById(id);
+  const editorQuery = new URLSearchParams(window.location.search);
   let draft;
-  let displayNotation = "conventional";
   let currentGuidanceMode = "view";
 
   async function waitForApi() {
@@ -16,15 +16,14 @@
     throw new Error("The Problem Editor could not load. Reload the page and try again.");
   }
 
-  async function openRecording(history, rewriteMode = "free") {
+  async function openRecording(history) {
     const api = await waitForApi();
     const imported = api.inspectMoveHistory(history, true);
     const authored = history.kind === "demoOnly" ? null : history;
     const title = authored?.title || history.sourceLevelTitle || "New problem";
     const rows = [
       {
-        expression: imported.initial, functional: imported.initialFunctional,
-        katex: imported.initialKatex, isInitial: true
+        expression: imported.initial, katex: imported.initialKatex, isInitial: true
       },
       ...imported.moves.map((move, moveIndex) => ({ ...move, moveIndex }))
     ].map((row, index) => ({
@@ -58,7 +57,6 @@
       }
     };
     byId("problemTitle").value = title;
-    byId("rewriteMode").value = rewriteMode === "prescribed" ? rewriteMode : "free";
     byId("setupForm").hidden = true;
     byId("editorWorkspace").hidden = false;
     renderCurationTable();
@@ -163,41 +161,30 @@
       .replace(/^-+|-+$/g, "");
   }
 
-
   function renderCurationTable() {
     const container = byId("curationTable");
     container.innerHTML = draft.rows.map((row, index) => {
       const label = row.isInitial ? "Starting expression" : `Step ${index}`;
       return `
         <tr data-step-index="${index}" class="${row.major ? "" : "minor-step"}">
+          <td class="major-step-cell">
+            <label class="major-step-check">
+              <input type="checkbox" data-major-step aria-label="Major step for ${label}"${row.major ? " checked" : ""}>
+            </label>
+          </td>
           <td>
-            <div class="step-label-row">
-              <span>${label}</span>
-              <label><input type="checkbox" data-major-step aria-label="Major step for ${label}"${row.major ? " checked" : ""}> Major step</label>
-            </div>
-            <p class="functional-notation" data-functional-notation hidden>${escapeHtml(row.functional)}</p>
-            <div class="step-conventional" data-conventional-editor>
-              <div class="notation-entry">
-                <textarea rows="2" spellcheck="false" data-conventional-notation aria-label="Conventional notation for ${label}" aria-describedby="notation-status-${index}">${escapeHtml(row.afterKatex)}</textarea>
-                <div class="notation-actions" data-notation-actions hidden>
-                  <button type="button" class="primary-button" data-verify-notation>Verify and Save</button>
-                  <button type="button" class="secondary-button" data-revert-notation>Revert</button>
-                </div>
+            <label class="step-label" for="step-notation-${index}">${label}</label>
+            <div class="notation-entry">
+              <textarea id="step-notation-${index}" rows="2" spellcheck="false" data-conventional-notation aria-describedby="notation-status-${index}">${escapeHtml(row.afterKatex)}</textarea>
+              <div class="notation-actions" data-notation-actions hidden>
+                <button type="button" class="primary-button" data-verify-notation>Verify and Save</button>
+                <button type="button" class="secondary-button" data-revert-notation>Revert</button>
               </div>
-              <p class="notation-status" role="status" id="notation-status-${index}"></p>
             </div>
+            <p class="notation-status" role="status" id="notation-status-${index}"></p>
           </td>
         </tr>`;
     }).join("");
-    renderExpressionColumn();
-  }
-
-  function renderExpressionColumn() {
-    const functional = displayNotation === "functional";
-    byId("curationTable").querySelectorAll("[data-step-index]").forEach(row => {
-      row.querySelector("[data-functional-notation]").hidden = !functional;
-      row.querySelector("[data-conventional-editor]").hidden = functional;
-    });
   }
 
   function updateExportButtons(busy = false) {
@@ -377,7 +364,7 @@
       if (preview) {
         const fileName = `${level.id}.json`;
         const params = { source: "problem-editor", level: fileName, mode: "guided", build: "1" };
-        if (byId("rewriteMode").value === "prescribed") params.rewrites = "prescribed";
+        if (editorQuery.has("rewrites")) params.rewrites = editorQuery.get("rewrites");
         ExplodedAlgebraTransfer.open("exploded-algebra.html", params,
           { fileName, text: JSON.stringify(level) }, preview);
         status.textContent = "Opened in Player.";
@@ -394,12 +381,12 @@
   }
 
   async function loadTransferredLevel() {
-    if (new URLSearchParams(window.location.search).get("source") !== "transfer") return;
+    if (editorQuery.get("source") !== "transfer") return;
     const setup = byId("setupForm");
     setup.hidden = true;
     try {
       const payload = ExplodedAlgebraTransfer.read();
-      await openRecording(JSON.parse(payload.text), payload.rewriteMode);
+      await openRecording(JSON.parse(payload.text));
     } catch (error) {
       setup.hidden = false;
       byId("setupError").textContent = error.message || "The level could not be transferred.";
@@ -429,15 +416,6 @@
     const tableRow = event.target.closest("[data-step-index]");
     draft.rows[Number(tableRow.dataset.stepIndex)].major = event.target.checked;
     tableRow.classList.toggle("minor-step", !event.target.checked);
-  });
-  document.querySelectorAll("[data-notation]").forEach(button => {
-    button.addEventListener("click", () => {
-      displayNotation = button.dataset.notation;
-      document.querySelectorAll("[data-notation]").forEach(option => {
-        option.setAttribute("aria-pressed", String(option === button));
-      });
-      renderExpressionColumn();
-    });
   });
   document.querySelectorAll("[data-guidance-mode]").forEach(button => {
     button.addEventListener("click", () => {

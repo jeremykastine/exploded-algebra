@@ -3102,12 +3102,6 @@ Promise.resolve().then(() => {
             return replacement;
         }
 
-        function formatFunctionalExpression(node) {
-            if (node.type === "value") return String(node.value);
-            const operation = { sum: "sum", prod: "product", inv: "inverse" }[node.type];
-            return `${operation}(${node.args.map(formatFunctionalExpression).join(", ")})`;
-        }
-
         function inspectMoveHistory(history, allowEmpty = false) {
             const source = history?.moveHistory || history;
             const actions = source?.recordedActions;
@@ -3165,7 +3159,6 @@ Promise.resolve().then(() => {
                 const node = textToExpression(expression);
                 moves.push({
                     expression,
-                    functional: formatFunctionalExpression(node),
                     katex: ExplodedAlgebraRenderer.expressionToKatex(node),
                     actions: moveActions,
                     demo: moveDemo,
@@ -3182,7 +3175,6 @@ Promise.resolve().then(() => {
             }
             return {
                 initial,
-                initialFunctional: formatFunctionalExpression(initialNode),
                 initialKatex,
                 moves,
                 initialBuilderActions: source.initialBuilderActions
@@ -4360,10 +4352,11 @@ Promise.resolve().then(() => {
         }
 
         function openEditorCopy(level, fileName = `${level.id}.json`, preview) {
-            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" }, {
+            const params = { source: "transfer" };
+            if (prescribedRewritesEnabled) params.rewrites = "prescribed";
+            ExplodedAlgebraTransfer.open("problem-builder.html", params, {
                 fileName,
-                text: JSON.stringify(level),
-                ...(prescribedRewritesEnabled && { rewriteMode: "prescribed" })
+                text: JSON.stringify(level)
             }, preview);
         }
 

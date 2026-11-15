@@ -6,14 +6,14 @@
   <title>Problem Editor — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261115-step-table">
+  <link rel="stylesheet" href="problem-builder.css?v=20261115-major-steps">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="level-transfer.js"></script>
   <script defer src="conventional-notation.js"></script>
-  <script defer src="problem-builder.js?v=20261115-step-table"></script>
+  <script defer src="problem-builder.js?v=20261115-major-steps"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T12:07:14-05:00">11/15/26, 12:07 PM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T15:54:38-05:00">11/15/26, 3:54 PM EST</time></p>
   <main>
     <h1>Problem Editor</h1>
     <p id="setupError" class="form-error" role="alert"></p>
@@ -30,12 +30,6 @@
         <label>Problem name
           <input id="problemTitle" autocomplete="off">
         </label>
-        <label>Numerical rewrites in the player
-          <select id="rewriteMode">
-            <option value="free">Free numerical rewrites</option>
-            <option value="prescribed">Only prescribed numerical rewrites</option>
-          </select>
-        </label>
         <div class="editor-actions">
           <button id="openInPlayerButton" class="primary-button" type="button">Open in Player</button>
           <button id="downloadLevelButton" class="secondary-button" type="button">Download Level</button>
@@ -47,13 +41,8 @@
         <table class="step-table" aria-label="Recorded solution steps">
           <thead>
             <tr>
-              <th scope="col">
-                Step notation
-                <div class="step-mode-toggle" role="group" aria-label="Expression notation">
-                  <button type="button" data-notation="functional" aria-pressed="false">Functional</button>
-                  <button type="button" data-notation="conventional" aria-pressed="true">Conventional</button>
-                </div>
-              </th>
+              <th scope="col" class="major-step-column">Major step</th>
+              <th scope="col">Step notation</th>
             </tr>
           </thead>
           <tbody id="curationTable"></tbody>
@@ -74,6 +63,6 @@
     </section>
   </main>
 
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-step-table" hidden></iframe>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-major-steps" hidden></iframe>
 </body>
 </html>

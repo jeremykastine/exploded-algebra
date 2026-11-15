@@ -73,7 +73,7 @@ function checkImportAndExport() {
     "traversePreOrder", "sameExpression", "cloneNode", "getNodeAtPath", "getWholeNumberBigIntFromNode",
     "evaluateNumericalRewriteNodeExactly", "greatestCommonDivisorBigInt", "makeExactRational",
     "addExactRationals", "multiplyExactRationals", "exactRationalsAreEqual",
-    "inferRecordedNumericalReplacement", "formatFunctionalExpression", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
+    "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
     "canNumericalRewrite", "makePrescribedNumericalGuide", "numericalRewriteNodesHaveSameStructure",
     "normalizeCloneForMatching"
   ];
@@ -117,7 +117,6 @@ function checkImportAndExport() {
   scope.draft = {
     ...scope.imported,
     metadata: { id: "edited", title: "Edited", exerciseGuidance: "Solve the problem." },
-    rewriteMode: "prescribed",
     rows: [
       { expression: initial, katex: "x+2+4", beforeKatex: "", afterKatex: "x+2+4", isInitial: true, major: true },
       { expression: intermediate, katex: "x+6", beforeKatex: "", afterKatex: "6+x", moveIndex: 0, major: false },
@@ -130,15 +129,11 @@ function checkImportAndExport() {
   assert.equal(exported.steps[1].majorStep, false);
   assert.equal(exported.minorSteps[0].expression, intermediate);
   assert.equal(exported.minorSteps[0].afterKatex, "6+x");
-  assert.equal(scope.imported.initialFunctional, "sum(x, 2, 4)");
   assert.equal(exported.demo.steps[2].action, "submit");
   assert.equal(exported.numericalRewriteMode, undefined);
   assert.equal(exported.prescribedNumericalRewrites, undefined);
   assert.equal(exported.moveHistory, undefined);
   scope.exported = exported;
-  scope.draft.rewriteMode = "free";
-  assert.equal(JSON.stringify(vm.runInContext("buildExportLevel('Edited', 'edited')", scope)), JSON.stringify(exported),
-    "The selected player rewrite mode must not change the exported JSON");
 
   scope.prescribedGuide = vm.runInContext("makePrescribedNumericalGuide(exported)", scope);
   assert.deepEqual(Array.from(scope.prescribedGuide.steps, step => step.action || step.type),
@@ -158,7 +153,7 @@ function checkImportAndExport() {
 }
 
 checkImportAndExport();
-console.log("Move import, step selection, numerical choices, and both export modes passed.");
+console.log("Move import, step selection, numerical choices, and level export passed.");
 
 const notationScope = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(root, "conventional-notation.js"), "utf8") +
