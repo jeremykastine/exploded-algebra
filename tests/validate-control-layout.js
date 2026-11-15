@@ -29,7 +29,8 @@ assert.deepEqual(indexChoices, [
     { href: "problem-builder.html", label: "Problem Editor" }
 ], "The landing page must list Introduction, Student, Creative Mode, and Problem Editor in order");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
-assert(exercisesHtml.includes("<strong>Restart Problem</strong>") && exercisesHtml.includes("<strong>Use guided steps</strong>") && exercisesHtml.includes("dotted yellow outline") && exercisesHtml.includes("Unguided mode"), "The exercise list must tell new students how to follow Guided mode and what to try next");
+assert(exercisesHtml.includes('id="customLevelFileInput"') && !exercisesHtml.includes("builtInLevelData"),
+    "The exercise launcher must provide file uploads without the old bundled moves");
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
 assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
@@ -106,16 +107,8 @@ assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: 
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
 
-for (const levelFile of [
-    "simplify-double-negative-unit.json",
-    "evaluate-repeated-factors.json",
-    "cancel-expression-with-inverse.json"
-]) {
-    const fullPath = path.resolve(__dirname, "..", "intro-levels", levelFile);
-    const level = JSON.parse(fs.readFileSync(fullPath, "utf8"));
-    assert(level.kind === "guidedCapable" && level.demo.steps.length >= 2, `${levelFile} must be an interactive guided Introduction exercise`);
-    assert(introductionHtml.includes(`intro-levels/${levelFile}`), `${levelFile} must be linked from the Introduction`);
-}
+assert(!introductionHtml.includes("intro-levels/") && introductionHtml.includes("Open Creative Mode"),
+    "The introduction must link to Creative Mode after the bundled exercises are removed");
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "The upper-right hamburger menu must open Settings");
@@ -225,7 +218,6 @@ assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-first
 assert(playerJs.includes('class="contextual-rule-side contextual-rule-side-second"'));
 assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bwidth:/.test(playerHtml));
 assert(!/\.main-action-panel \.intent-category-actions > button\.direct-branch-rule-button,[^}]*\bheight:/.test(playerHtml));
-assert(!playerJs.includes('isAlwaysAllowedNumericalRewrite'), "The three formerly fixed rules must no longer bypass the exercise permission profile");
 assert(playerJs.includes('data-branch-pair="left"') && playerJs.includes('data-branch-pair="right"') && playerJs.includes('data-branch-pair="inverse"'));
 assert(playerJs.includes('M200 50 H250 C300 50 300 25 350 25 H400 M200 50 H250 C300 50 300 75 350 75 H400'));
 assert(playerJs.includes('M200 25 H250 C300 25 300 50 350 50 H400 M200 75 H250 C300 75 300 50 350 50 H400'));
@@ -248,33 +240,12 @@ assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includ
 assert(playerJs.includes('function resolveContextualCommuteTool(toolName = "")'));
 assert(playerJs.includes('selection.node.type === "sum"') && playerJs.includes('toolName: "commuteTerms"'));
 assert(playerJs.includes('selection.node.type === "prod"') && playerJs.includes('toolName: "commuteFactors"'));
-assert(playerJs.includes('function resolveAutomaticNumericalRewriteTool()'));
-assert(/function resolveAutomaticNumericalRewriteTool\(\) \{[\s\S]*?getAutomaticNumericalRewriteData\(\)/.test(playerJs), "Automatic numerical manipulation must use the configured rule profile for every numerical category");
-assert(/function classifyNumericalRewriteCategory\(node\) \{[\s\S]*?return "inverseOne";[\s\S]*?return "inverseNegativeOne";[\s\S]*?return "doubleNegative";/.test(playerJs), "Inverse-one and double-negative expressions must be classified through their configurable numerical rules");
-assert(playerJs.includes('function classifyNumericalRewriteCategory(node)'));
-assert(playerJs.includes('"nonnegativeArithmetic"') && playerJs.includes('"signedArithmetic"'));
-assert(playerJs.includes('return "nonnegativeArithmetic";') && playerJs.includes('return "signedArithmetic";'));
-assert(!playerJs.includes('return isNoCarryWholeNumberNodeAddition(normalized.args)') && !playerJs.includes('factors.every(isOneSignificantFigureBigInt)'));
-assert(playerJs.includes('LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('function normalizeNumericalRewriteRules(rules)'));
-assert(playerJs.includes('SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('"signedAddition"') && playerJs.includes('"signedMultiplication"'), "Profiles with the former four arithmetic rows must remain loadable");
-assert(playerJs.includes('const mergeRestrictiveRules = sourceRules =>') && playerJs.includes('forwardPriority') && playerJs.includes('reversePriority'), "Separate legacy arithmetic permissions must merge conservatively");
-assert(playerJs.includes('normalized.nonnegativeArithmetic.forward === "automatic" ? "automatic" : "manual"') && playerJs.includes('reverse: "manual"'), "Nonnegative arithmetic must normalize to Automatic or Manual forward and Manual reverse");
-assert(playerJs.includes('function getNumericalRewriteIntegerData(node)') && playerJs.includes('function getInverseIntegerData(node)') && playerJs.includes('function getFractionSimplificationCategory(node)'), "Fraction simplification must distinguish non-negative and signed integer-over-integer forms");
-assert(playerJs.includes('const fractionCategory = getFractionSimplificationCategory(normalized)') && !playerJs.includes('numericalRewriteNodeContainsInverse'), "Fraction simplification must classify only supported numerator and denominator structures");
-assert(playerJs.includes('PREVIOUS_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('? "nonnegativeFractionSimplification"') && playerJs.includes('? "signedFractionSimplification"'), "Previous single-fraction-rule profiles must migrate into both current fraction categories");
-assert(playerJs.includes('numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)') && playerJs.includes('numericalRewriteNodesHaveSameStructure(original, canonicalProposed)'), "Manual fraction rewrites must use canonical forward and equivalent reverse validation");
-assert(/function makeCanonicalNumericalRewriteNode\(value\)[\s\S]*?value\.denominator === 1n[\s\S]*?return valueNode\(absoluteNumerator\.toString\(\)\)/.test(playerJs), "Canonical fraction simplification must remove the inverse when the result is a whole number");
-assert(playerJs.includes('inverseOne: "Inverse of one"') && playerJs.includes('inverseNegativeOne: "Inverse of negative one"') && playerJs.includes('doubleNegative: "Negative one times negative one"'), "Exercise Guidance must label all three newly configurable numerical rules");
-assert(playerJs.includes('nonnegativeArithmetic: "Nonnegative addition and multiplication"') && playerJs.includes('signedArithmetic: "Signed number addition and multiplication"'), "The Numerical Manipulation summary must use the two combined arithmetic labels");
-assert(playerJs.includes('const PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS') && playerJs.includes('applyLegacyFixedNumericalRewriteDefaults'), "Profiles created before the three fixed rules became configurable must preserve their former behavior");
+assert(!playerJs.includes("getNumericalRewriteProfile") &&
+    !playerJs.includes("getNumericalRestrictionsTreeHtml"), "The player must omit the former permission matrix");
+assert(playerJs.includes('function resolveContextualNumericalRewriteAction()') &&
+    playerJs.includes("getPrescribedNumericalRewriteChoices"),
+    "Numerical Manipulation must surface recorded choices in prescribed mode");
 assert(!playerJs.includes('installPressHoldDescriptions') && !playerJs.includes('getPressHoldDescriptionHtml') && !playerHtml.includes('data-hold-description='), "Long-hold information handlers and attributes must be removed");
-assert(playerJs.includes('getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile())') && playerHtml.includes('.exercise-guidance-popover .numerical-permission-summary'), "Exercise Guidance must show numerical permissions on phone screens");
-assert(playerJs.includes('function getAutomaticNumericalRewriteData()') && playerJs.includes('function applyAutomaticNumericalRewrite()'));
-assert(playerJs.includes('function validateManualNumericalRewriteExchange(originalNode, proposedNode)'));
-assert(playerJs.includes('getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual"'));
-assert(playerJs.includes('getNumericalRewriteRuleSetting(originalRuleId).forward === "manual"'), "Manual forward rewrites must respect each configured rule");
-assert(playerJs.includes('function resolveContextualNumericalRewriteAction()'));
-assert(playerJs.includes('mode: "automatic"') && playerJs.includes('mode: "manual"'));
 assert(playerJs.includes('resolveContextualCommuteTool(button.dataset.contextualCommute)'));
 assert(playerJs.includes('ruleName === "rewriteInvOneToOne"') && playerJs.includes('isInvNode(node) && isValueNode(node.args[0], "1") ? valueNode("1") : null'));
 assert(playerHtml.includes('.main-action-panel .branch-rule-symbol-2') && playerHtml.includes('.main-action-panel .direct-commute-icon'));
@@ -368,114 +339,5 @@ assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
 commuteContext.selection.node = { type: "sum" };
 commuteContext.canCommuteRotate = () => false;
 assert.equal(commuteContext.resolveContextualCommuteTool("commuteTerms"), null);
-
-// Recorded problem actions keep their operation-specific tool IDs.
-for (const folder of ["intro-levels", "levels"]) {
-    for (const file of fs.readdirSync(path.resolve(__dirname, "..", folder)).filter(file => file.endsWith(".json"))) {
-        const level = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", folder, file), "utf8"));
-        let selectedType = null;
-        for (const action of level.recordedActions || []) {
-            if (action.type === "select") selectedType = action.selectedType;
-            if (action.type === "tool" && action.tool.startsWith("commute")) {
-                assert.equal(action.tool, selectedType === "sum" ? "commuteTerms" : "commuteFactors", `${file} must record the commute button matching its selection`);
-            }
-        }
-    }
-}
-
-const normalizeRulesMatch = playerJs.match(/function normalizeNumericalRewriteRules\(rules\) \{([\s\S]*?)\n        \}\n\n        function getNumericalRewriteProfile/);
-assert(normalizeRulesMatch, "Numerical permission normalization must remain testable");
-const normalizationContext = {
-    clonePlainData(value) { return JSON.parse(JSON.stringify(value)); },
-    NUMERICAL_REWRITE_RULE_IDS: [
-        "nonnegativeArithmetic",
-        "signedArithmetic",
-        "nonnegativeFractionSimplification",
-        "signedFractionSimplification",
-        "inverseOne",
-        "inverseNegativeOne",
-        "doubleNegative"
-    ]
-};
-vm.createContext(normalizationContext);
-vm.runInContext(`
-function makeNumericalRewriteRules(forwardMode = "not-allowed", reverseMode = "not-allowed") {
-    return Object.fromEntries(NUMERICAL_REWRITE_RULE_IDS.map(ruleId => [ruleId, { forward: forwardMode, reverse: reverseMode }]));
-}
-function applyLegacyFixedNumericalRewriteDefaults(rules) {
-    for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
-        rules[ruleId] = { forward: "automatic", reverse: "manual" };
-    }
-    return rules;
-}
-function normalizeNumericalRewriteRules(rules) {${normalizeRulesMatch[1]}
-}
-this.normalizeNumericalRewriteRules = normalizeNumericalRewriteRules;
-`, normalizationContext);
-const migratedSeparateRules = normalizationContext.normalizeNumericalRewriteRules({
-    positiveAddition: { forward: "automatic", reverse: "manual" },
-    positiveMultiplication: { forward: "manual", reverse: "manual" },
-    signedAddition: { forward: "automatic", reverse: "manual" },
-    signedMultiplication: { forward: "not-allowed", reverse: "not-allowed" },
-    nonnegativeFractionSimplification: { forward: "manual", reverse: "manual" },
-    signedFractionSimplification: { forward: "manual", reverse: "manual" },
-    inverseOne: { forward: "manual", reverse: "manual" },
-    inverseNegativeOne: { forward: "automatic", reverse: "manual" },
-    doubleNegative: { forward: "manual", reverse: "manual" }
-});
-assert.deepEqual(
-    JSON.parse(JSON.stringify(migratedSeparateRules.nonnegativeArithmetic)),
-    { forward: "manual", reverse: "manual" },
-    "Differing nonnegative addition/multiplication settings must migrate to the more restrictive combined setting"
-);
-assert.deepEqual(
-    JSON.parse(JSON.stringify(migratedSeparateRules.signedArithmetic)),
-    { forward: "not-allowed", reverse: "not-allowed" },
-    "Differing signed addition/multiplication settings must migrate to the more restrictive combined setting"
-);
-
-const integerFormMatch = playerJs.match(/function getNumericalRewriteIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getInverseIntegerData/);
-const inverseIntegerFormMatch = playerJs.match(/function getInverseIntegerData\(node\) \{([\s\S]*?)\n        \}\n\n        function getFractionSimplificationCategory/);
-const fractionFormMatch = playerJs.match(/function getFractionSimplificationCategory\(node\) \{([\s\S]*?)\n        \}\n\n        function isFlatSignedIntegerProduct/);
-const signedProductMatch = playerJs.match(/function isFlatSignedIntegerProduct\(node\) \{([\s\S]*?)\n        \}\n\n        function isFlatSignedIntegerTerm/);
-const signedTermMatch = playerJs.match(/function isFlatSignedIntegerTerm\(node\) \{([\s\S]*?)\n        \}\n\n        function classifyNumericalRewriteCategory/);
-assert(integerFormMatch && inverseIntegerFormMatch && fractionFormMatch && signedProductMatch && signedTermMatch, "Numerical category form validators must remain testable");
-const fractionContext = {
-    getWholeNumberBigIntFromNode(node) {
-        return node && node.type === "value" && /^\d+$/.test(String(node.value)) ? BigInt(node.value) : null;
-    },
-    isExactNumericalRewriteValue(node, value) {
-        return !!node && node.type === "value" && String(node.value) === value;
-    }
-};
-vm.createContext(fractionContext);
-vm.runInContext(`
-function getNumericalRewriteIntegerData(node) {${integerFormMatch[1]}\n}
-function getInverseIntegerData(node) {${inverseIntegerFormMatch[1]}\n}
-function getFractionSimplificationCategory(node) {${fractionFormMatch[1]}\n}
-function isFlatSignedIntegerProduct(node) {${signedProductMatch[1]}\n}
-function isFlatSignedIntegerTerm(node) {${signedTermMatch[1]}\n}
-this.getFractionSimplificationCategory = getFractionSimplificationCategory;
-this.isFlatSignedIntegerProduct = isFlatSignedIntegerProduct;
-this.isFlatSignedIntegerTerm = isFlatSignedIntegerTerm;
-`, fractionContext);
-const valueNode = value => ({ type: "value", value: String(value), args: [] });
-const productNode = (...args) => ({ type: "prod", args });
-const inverseNode = child => ({ type: "inv", args: [child] });
-const sumNode = (...args) => ({ type: "sum", args });
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(18), inverseNode(valueNode(24)))), "nonnegativeFractionSimplification", "A non-negative value times an inverse non-negative value must use the non-negative fraction category");
-assert.equal(fractionContext.getFractionSimplificationCategory(inverseNode(valueNode(9))), "nonnegativeFractionSimplification", "A reduced unit fraction must remain in the non-negative fraction category");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(-1), valueNode(18), inverseNode(valueNode(24)))), "signedFractionSimplification", "A negative numerator must use the signed fraction category");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(18), inverseNode(productNode(valueNode(-1), valueNode(24))))), "signedFractionSimplification", "A negative denominator must use the signed fraction category");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(-1), valueNode(18), inverseNode(productNode(valueNode(-1), valueNode(24))))), "signedFractionSimplification", "Two explicit negative integer components must still use the signed structural category");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(2), valueNode(3), inverseNode(valueNode(5)))), null, "A fraction category must not accept multiple unconsolidated numerator values");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(2), inverseNode(valueNode(3)), inverseNode(valueNode(5)))), null, "A fraction category must contain exactly one inverse denominator factor");
-assert.equal(fractionContext.getFractionSimplificationCategory(inverseNode(sumNode(valueNode(1), valueNode(2)))), null, "Fraction simplification must reject inverses of sums");
-assert.equal(fractionContext.getFractionSimplificationCategory(inverseNode(valueNode(0))), null, "Fraction simplification must reject a zero denominator");
-assert.equal(fractionContext.getFractionSimplificationCategory(productNode(valueNode(2), valueNode(3))), null, "The fraction categories must require an inverse denominator");
-assert.equal(fractionContext.isFlatSignedIntegerTerm(productNode(valueNode(-1), valueNode(7))), true, "A signed-sum term may be negative one times one non-negative value");
-assert.equal(fractionContext.isFlatSignedIntegerTerm(productNode(valueNode(-1), valueNode(2), valueNode(3))), false, "A signed-sum term must not contain multiple non-negative factors");
-assert.equal(fractionContext.isFlatSignedIntegerProduct(productNode(valueNode(-1), valueNode(2), valueNode(3))), true, "A signed product may contain any number of non-negative and negative-one factors");
-assert.equal(fractionContext.isFlatSignedIntegerProduct(productNode(valueNode(-1), valueNode(-1))), true, "A product containing only negative-one factors remains structurally signed");
 
 console.log("Control layout checks passed.");

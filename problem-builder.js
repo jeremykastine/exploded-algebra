@@ -1,12 +1,11 @@
 (() => {
   "use strict";
 
-  const LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
-  const TEST_STORAGE_PREFIX = "explodedAlgebra.problemEditor.";
   const byId = id => document.getElementById(id);
   const phases = Array.from(document.querySelectorAll(".phase"));
 
   let draft;
+  let transferredLevel;
   let currentCurationIndex = 0;
   let currentCurationMode = "view";
   let currentGuidanceMode = "view";
@@ -26,6 +25,7 @@
 
   function setPhase(number) {
     phases.forEach(phase => { phase.hidden = Number(phase.dataset.phase) !== number; });
+    byId("editorActions").hidden = number === 1;
     if (number === 2) renderCurationTable();
     if (number === 3) renderGuidancePhase();
     window.scrollTo(0, 0);
@@ -44,21 +44,29 @@
       if (!title) throw new Error("Enter a problem name.");
       let history;
       try {
-        history = JSON.parse(await file.text());
+        history = transferredLevel || JSON.parse(await file.text());
       } catch (error) {
         throw new Error("The move history file must contain valid JSON.");
       }
       const api = await waitForApi();
-      const imported = api.inspectMoveHistory(history);
+      const imported = api.inspectMoveHistory(history, true);
       const rewriteMode = new FormData(event.target).get("rewriteMode");
       if (imported.moves.some(move => move.isRecordedNumerical &&
           (rewriteMode === "prescribed" || move.demo[move.toolIndex].tool === "automaticNumericalRewrite") &&
           !move.numericalRewrite)) {
         throw new Error("A recorded numerical replacement could not be recovered. Recreate that rewrite in Creative Mode and download the moves again.");
       }
+      const authored = history.kind !== "demoOnly" ? history : null;
       draft = {
         ...imported,
-        metadata: { title, id: id || `problem-${Date.now()}`, exerciseGuidance: "" },
+        metadata: {
+          title,
+          id: id || `problem-${Date.now()}`,
+          exerciseGuidance: Array.isArray(authored?.exerciseGuidance)
+            ? authored.exerciseGuidance.join("\n\n") : (authored?.exerciseGuidance || "").replace(
+                /\n\n## Numerical Rewrites\n\n(?:Build any equivalent numerical expression\.|Choose from the recorded equivalent replacements when Numerical Manipulation is available\.)$/, ""
+              )
+        },
         rewriteMode,
         recording: { candidates: [] }
       };
@@ -72,6 +80,18 @@
       }));
       curationKeepDecisions = curationSelectionSource.map((_, index) =>
         index === 0 || index === curationSelectionSource.length - 1);
+      let nextIndex = 0;
+      for (const saved of authored?.steps || []) {
+        const index = Number.isInteger(saved.recordedMoveIndex)
+          ? saved.recordedMoveIndex + 1
+          : curationSelectionSource.findIndex((step, index) => index >= nextIndex && step.expression === saved.expression);
+        const candidate = curationSelectionSource[index];
+        if (candidate?.expression !== saved.expression) continue;
+        curationKeepDecisions[index] = true;
+        candidate.beforeKatex = saved.beforeKatex || saved.katex || candidate.beforeKatex;
+        candidate.afterKatex = saved.afterKatex || saved.katex || candidate.afterKatex;
+        nextIndex = index + 1;
+      }
       curationStage = "select";
       setPhase(2);
     } catch (error) {
@@ -89,7 +109,7 @@
     renderCurationTable();
   }
 
-  function buildExportLevel() {
+  function buildExportLevel(candidates = draft.recording.candidates) {
     const demoSteps = [];
     const recordedActions = [];
     const moveEnds = [];
@@ -120,7 +140,7 @@
     }
 
     let previousEnd = 0;
-    const steps = draft.recording.candidates.map(candidate => {
+    const steps = candidates.map(candidate => {
       const afterKatex = candidate.afterKatex.trim() || candidate.katex;
       const step = {
         expression: candidate.expression,
@@ -130,6 +150,7 @@
         afterKatex
       };
       if (!candidate.isInitial) {
+        step.recordedMoveIndex = candidate.moveIndex;
         step.actionStartIndex = previousEnd;
         step.actionEndIndex = moveEnds[candidate.moveIndex];
         previousEnd = step.actionEndIndex;
@@ -148,9 +169,20 @@
       finalExpression: steps.at(-1).expression,
       finalKatex: steps.at(-1).afterKatex,
       numericalRewriteMode: draft.rewriteMode,
-      ...(draft.rewriteMode === "prescribed" && { prescribedNumericalRewrites: [...rewritePairs.values()] }),
-      exerciseGuidance: draft.metadata.exerciseGuidance.trim(),
+      ...(draft.rewriteMode === "prescribed" && {
+        prescribedNumericalRewrites: [...rewritePairs.values()],
+        moveHistory: {
+          startExpression: draft.initial,
+          finalExpression: steps.at(-1).expression,
+          initialBuilderActions: draft.initialBuilderActions,
+          recordedActions: draft.moves.flatMap(move => move.actions)
+            .map((action, index) => ({ ...action, index })),
+          demo: { steps: draft.moves.flatMap(move => move.demo) }
+        }
+      }),
+      exerciseGuidance: draft.metadata.exerciseGuidance.trim() || defaultExerciseGuidance(),
       exerciseGuidanceIsComplete: true,
+      requireFullDemo: true,
       steps,
       demo: { format: "exploded-algebra-guided-actions-v1", steps: demoSteps },
       recordedActions: recordedActions.map((action, index) => ({ ...action, index }))
@@ -396,15 +428,13 @@
     if (!editing) renderGuidancePreview();
   }
 
+  function defaultExerciseGuidance() {
+    return ["## Problem Statement", "", "\\[", draft.initialKatex, "\\]"].join("\n");
+  }
+
   function renderGuidancePhase() {
     if (!draft.metadata.exerciseGuidance.trim()) {
-      const rewriteHelp = draft.rewriteMode === "free"
-        ? "Build any equivalent numerical expression."
-        : "Choose from the recorded equivalent replacements when Numerical Manipulation is available.";
-      draft.metadata.exerciseGuidance = [
-        "## Problem Statement", "", "\\[", draft.initialKatex, "\\]", "",
-        "## Numerical Rewrites", "", rewriteHelp
-      ].join("\n");
+      draft.metadata.exerciseGuidance = defaultExerciseGuidance();
     }
     byId("exerciseGuidance").value = draft.metadata.exerciseGuidance;
     currentGuidanceMode = "view";
@@ -423,28 +453,50 @@
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
   }
 
-  async function finishProblem() {
+  async function exportProblem(openPlayer) {
     const status = byId("exportStatus");
-    const button = byId("completeProblemButton");
-    const preview = window.open("about:blank", "_blank");
-    button.disabled = true;
+    const preview = openPlayer ? window.open("about:blank", "_blank") || window : null;
+    const buttons = [byId("openInPlayerButton"), byId("downloadLevelButton")];
+    buttons.forEach(button => { button.disabled = true; });
     try {
-      const level = (await waitForApi()).validateLevel(buildExportLevel());
-      downloadLevel(level);
+      const candidates = curationStage === "select"
+        ? curationSelectionSource.filter((_, index) => curationKeepDecisions[index])
+        : draft.recording.candidates;
+      const level = (await waitForApi()).validateLevel(buildExportLevel(candidates));
       if (preview) {
-        const key = TEST_STORAGE_PREFIX + Date.now();
         const fileName = `${level.id}.json`;
-        const payload = JSON.stringify({ version: 1, fileName, text: JSON.stringify(level) });
-        try { localStorage.setItem(key, payload); } catch (error) { /* The tab name is the fallback. */ }
-        preview.name = LEVEL_WINDOW_NAME_PREFIX + payload;
-        preview.location.href = `exploded-algebra.html?source=problem-editor&draftKey=${encodeURIComponent(key)}&level=${encodeURIComponent(fileName)}`;
+        const params = { source: "problem-editor", level: fileName, mode: "guided", build: "1" };
+        ExplodedAlgebraTransfer.open("exploded-algebra.html", params,
+          { fileName, text: JSON.stringify(level) }, preview);
+        status.textContent = "Opened in Player.";
+      } else {
+        downloadLevel(level);
+        status.textContent = `Downloaded ${level.id}.json.`;
       }
-      status.textContent = `Downloaded ${level.id}.json.`;
     } catch (error) {
-      if (preview) preview.close();
-      status.textContent = error.message || "The problem could not be completed.";
+      if (preview && preview !== window) preview.close();
+      status.textContent = error.message || "The problem could not be opened or downloaded.";
     } finally {
-      button.disabled = false;
+      buttons.forEach(button => { button.disabled = false; });
+    }
+  }
+
+  function loadTransferredLevel() {
+    if (new URLSearchParams(window.location.search).get("source") !== "transfer") return;
+    try {
+      const payload = ExplodedAlgebraTransfer.read();
+      transferredLevel = JSON.parse(payload.text);
+      byId("moveFile").required = false;
+      byId("moveFileLabel").hidden = true;
+      byId("transferredFile").hidden = false;
+      byId("transferredFile").textContent = `Editing a copy of ${payload.fileName}.`;
+      byId("problemTitle").value = transferredLevel.kind === "demoOnly"
+        ? (transferredLevel.sourceLevelTitle || "New problem")
+        : (transferredLevel.title || "New problem");
+      const prescribed = transferredLevel.kind !== "demoOnly" && transferredLevel.numericalRewriteMode === "prescribed";
+      byId("setupForm").elements.rewriteMode.value = prescribed ? "prescribed" : "free";
+    } catch (error) {
+      byId("setupError").textContent = error.message || "The level could not be transferred.";
     }
   }
 
@@ -501,6 +553,8 @@
   byId("exerciseGuidance").addEventListener("input", event => {
     draft.metadata.exerciseGuidance = event.target.value;
   });
-  byId("completeProblemButton").addEventListener("click", finishProblem);
+  byId("openInPlayerButton").addEventListener("click", () => exportProblem(true));
+  byId("downloadLevelButton").addEventListener("click", () => exportProblem(false));
+  loadTransferredLevel();
 
 })();

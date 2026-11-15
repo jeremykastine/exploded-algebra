@@ -73,7 +73,8 @@ function checkImportAndExport() {
     "traversePreOrder", "sameExpression", "cloneNode", "getNodeAtPath", "getWholeNumberBigIntFromNode",
     "evaluateNumericalRewriteNodeExactly", "greatestCommonDivisorBigInt", "makeExactRational",
     "addExactRationals", "multiplyExactRationals", "exactRationalsAreEqual",
-    "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices"
+    "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
+    "canNumericalRewrite"
   ];
   vm.runInContext(names.map(name => extract(player, name, "        ")).join("\n"), scope);
   scope.isNumericalRewriteTool = tool => tool === "numericalRewrite";
@@ -85,6 +86,8 @@ function checkImportAndExport() {
   const makeMove = (before, source, firstPart, lastPart, expression) => [
     { type: "select", expression: source, path: [], firstPart, lastPart, beforeExpression: before },
     { type: "tool", tool: "numericalRewrite", beforeExpression: before, afterExpression: before },
+    { type: "builder", action: "digit", value: "9", beforeExpression: before, afterExpression: before },
+    { type: "builder", action: "undo", beforeExpression: before, afterExpression: before },
     { type: "builder", action: "submit", beforeExpression: before, afterExpression: expression }
   ];
   scope.history = {
@@ -101,10 +104,11 @@ function checkImportAndExport() {
   scope.history.demo = { steps: scope.history.recordedActions.map(({ type, tool, action, expression, path, firstPart, lastPart }) =>
     ({ type, tool, action, expression, path, firstPart, lastPart })) };
   // Existing downloads sometimes recorded only the starting side of a tool action.
-  scope.history.recordedActions[6].afterExpression = initial;
+  scope.history.recordedActions[10].afterExpression = initial;
   scope.imported = vm.runInContext("inspectMoveHistory(history)", scope);
   assert.deepEqual(Array.from(scope.imported.moves, move => move.expression), [intermediate, final]);
   assert.equal(scope.imported.moves[0].numericalRewrite.to, "((3)*(2))");
+  assert(!scope.imported.moves.some(move => move.actions.some(action => action.action === "undo" || action.value === "9")));
   assert.equal(scope.imported.moves[1].numericalRewrite.to, "((1)+(5))",
     "Recover a legacy replacement that has flattened into its surrounding sum");
 
@@ -125,6 +129,9 @@ function checkImportAndExport() {
     ["select", "tool", "chooseNumericalRewrite", "select", "tool", "chooseNumericalRewrite"]);
   assert.equal(prescribed.prescribedNumericalRewrites.length, 2);
   assert(!prescribed.prescribedNumericalRewrites.some(pair => pair.to === "(6)"));
+  scope.prescribed = prescribed;
+  const copy = vm.runInContext("inspectMoveHistory(prescribed)", scope);
+  assert.equal(copy.moves[0].demo.at(-1).action, "submit", "Editing a prescribed copy must recover the original builder steps");
 
   scope.getCurrentLevel = () => ({
     numericalRewriteMode: "prescribed", prescribedNumericalRewrites: [
@@ -138,6 +145,10 @@ function checkImportAndExport() {
     ["((3)*(2))", "(6)"]);
   assert.deepEqual(Array.from(vm.runInContext("getPrescribedNumericalRewriteChoices(textToExpression('(9)'))", scope)), []);
 
+  scope.cloneSelectedRangeNode = () => vm.runInContext("textToExpression('((1)/((2)+(3)))')", scope);
+  assert.equal(vm.runInContext("canNumericalRewrite()", scope), false);
+  scope.getCurrentLevel = () => ({});
+  assert.equal(vm.runInContext("canNumericalRewrite()", scope), true, "Free mode must allow nested exact numerical expressions");
   scope.draft.rewriteMode = "free";
   const free = vm.runInContext("buildExportLevel()", scope);
   assert.equal(free.numericalRewriteMode, "free");

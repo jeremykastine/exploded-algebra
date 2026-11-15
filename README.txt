@@ -4,35 +4,13 @@ Open index.html first. The launcher is designed to work both when index.html is
 opened directly from disk (file://) and when the folder is hosted by a web
 server such as GitHub Pages.
 
-BUILT-IN EXERCISES
+CREATING AND PLAYING LEVELS
 
-The built-in exercises are ordinary JSON files in the levels folder:
-
-- levels/rewrite-and-simplify-negative-6-plus-4.json
-- levels/multiply-binomials-and-combine-like-terms.json
-- levels/add-rational-expressions-with-unlike-denominators.json
-
-Exercises.html links to these files in learning order, from foundational to
-advanced. Insert each new exercise at its appropriate point in the list.
-To make those links work under file://,
-where browsers block JavaScript fetch() of neighboring JSON files, Exercises.html
-carries a mirrored copy of each JSON payload for transfer into the app. The
-standalone JSON files remain in the levels folder for hosting, distribution, and
-editing. No exploded-algebra-levels.js file is used.
-
-INTRODUCTION AUDIENCE AND GUIDED EXAMPLES
-
-Introduction.html is currently written for mathematics teachers. Take familiar
-ideas slowly to explain the representation and its purpose; keep conventional
-notation out of the opening discussion until the explicit comparison section.
-The introduction-only examples are in intro-levels, separate from the student
-exercise list. Expanded sections on the negative unit, exponents as repeated
-multiplication, and the inverse operator each include a guided exercise, alongside
-the earlier guided examples of arithmetic, algebraic properties, and distribution.
-Preserve showConventionalSteps: false, includeUndoActions: false, and the complete
-all-manual numericalRewrite rules from evaluate-sum-then-product.json. Links must
-use mode=guided. Restart Problem in the workspace menu lets learners choose the
-guide and the starting-expression builder independently.
+In Creative Mode, build a starting expression and transform it. The workspace
+menu downloads the moves and opens either a guided player or the Problem Editor.
+The player menu opens a copy in the editor. The editor can open the edited copy
+in the player and download it as a level JSON file. Exercises.html also opens
+a downloaded file.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. A Transform heading introduces the current expression followed by
@@ -43,8 +21,7 @@ layout. The expression stays editable after completion. The stack shares the
 workspace pan and zoom.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
-The pre-selection Exercise Guidance view includes the problem statement and the
-exercise's numerical-manipulation restrictions. New Problem Builder exports
+Exercise Guidance includes the problem statement and numerical rewrite mode. New Problem Builder exports
 store the complete, author-editable view in the top-level `exerciseGuidance`
 field and set `exerciseGuidanceIsComplete` so the player does not duplicate its
 prefilled sections. Older files still receive the automatic sections and may use
@@ -148,51 +125,9 @@ acts as Backspace during entry. Level cycling flattens a lifted sum into an
 immediately surrounding sum, and likewise for products, while retaining
 meaningful grouping across unlike operations.
 
-Each exercise specifies Numerical Rewrite permissions with this structure:
-
-  "numericalRewrite": {
-    "rules": {
-      "nonnegativeArithmetic": { "forward": "automatic" | "manual", "reverse": "manual" },
-      "signedArithmetic": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "nonnegativeFractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "signedFractionSimplification": { "forward": "automatic" | "manual" | "not-allowed", "reverse": "manual" | "not-allowed" },
-      "inverseOne": { "forward": "automatic" | "manual", "reverse": "manual" },
-      "inverseNegativeOne": { "forward": "automatic" | "manual", "reverse": "manual" },
-      "doubleNegative": { "forward": "automatic" | "manual", "reverse": "manual" }
-    }
-  }
-
-Nonnegative whole-number addition and multiplication share one permission and
-have no carrying or
-significant-figure restrictions. Any narrower expectations belong in the
-exercise's recorded steps rather than its numerical-manipulation permissions.
-They are always available: their forward direction may be Automatic or Manual,
-and their reverse direction is always Manual.
-Signed number addition and multiplication share one permission. Signed
-arithmetic is flat and represents negative numbers with negative-one factors.
-The four arithmetic and fraction categories are mutually exclusive:
-nonnegative addition or multiplication, signed addition or multiplication,
-nonnegative integer-over-integer fractions, and signed integer-over-integer
-fractions containing a negative-one factor in the numerator or denominator.
-Fraction simplification produces the
-canonical reduced integer or fraction, removing the inverse when the result is
-an integer. Reverse Manual may expand an integer or reduced fraction into an
-equivalent structure in its enabled fraction category. Forward Automatic
-evaluates to a canonical exact integer or fraction; Forward Manual opens the
-Expression Builder; Not allowed disables that direction. Reverse is never
-automatic. Manual rewrites must be exactly equivalent and match the enabled
-category and direction.
-
-`(-1)(-1) ↔ 1`, `inverse(1) ↔ 1`, and `inverse(-1) ↔ -1` also appear as full
-permission entries in Problem Builder Phase 1. Exercise Guidance in the player
-displays all current direction settings.
-
-Older custom files that contain separate addition and multiplication rules,
-`arithmeticLevel`, a previous broad `numericalRewrite` profile, the seven-rule
-granular profile, or the five-rule profile are mapped to the current combined
-rules when loaded. If an older file assigns different permissions to addition
-and multiplication, migration keeps the more restrictive choice. New
-move-history downloads retain the explicit rule matrix.
+Free Numerical Rewrites accepts any different expression of the same exact
+numerical value. Only Prescribed Numerical Rewrites offers the replacements
+recorded for the selected expression.
 
 Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
 Selecting a literal 1 adds a Product of Inverses choice
@@ -209,60 +144,20 @@ representation. See `EXPONENT_IMPLEMENTATION_ARCHIVE.md` for the archived design
 
 CUSTOM LEVELS
 
-Choose any compatible JSON file from Exercises.html. The selected JSON is carried
-into exploded-algebra.html in the same tab using sessionStorage, with window.name
-as a file:// fallback. Refreshing that app tab keeps the selected level. Separate
-tabs keep separate level state.
+Choose a compatible JSON file from Exercises.html, or move between Creative Mode,
+the player and the Problem Editor using their menus. Each tab keeps its own level
+state. The player’s Edit a Copy opens the authored level in a separate editor tab.
 
-For an interactive level, Download Move History saves the current run as a JSON
-file that can later be chosen from the home page. Undo is retained as an explicit
-move: the attempted forward steps remain in the history, and guided playback
-requires the learner to undo at the same point before continuing along the
-recorded path. Problem Builder authors can instead exclude undos, which removes
-the abandoned branch from the saved path. Zoom in, zoom out, and zoom reset are
-view-only controls and are never retained as solution moves.
-
-The home page links to Introduction.html and Exercises.html.
-The introduction keeps its source examples invisible until the narrative is
-ready, while retaining their geometry for rendering. Canceled or inactive
-animation runs cannot restore an older frame. The conventional target updates
-before the shared workspace is painted, so it remains aligned with the exploded
-expression as the target changes.
-The home page links to Creative Mode and the Problem Editor. Build the starting
-expression in Creative Mode, transform it, and choose Download Moves. Open that
-JSON in the Problem Editor, name the problem, and choose a numerical rewrite
-mode. Free rewrites accept any equivalent numerical expression. Prescribed
-rewrites offer only the recorded replacements for the selected expression.
-
+Move histories keep the inputs used to build the starting expression and the
+completed transformations. Undo discards the undone actions from the recording.
 The editor keeps the starting and final expressions and lets you choose
-intermediate checkpoints, edit their conventional notation, and edit student
-guidance. Showing fewer checkpoints still keeps the full guided solution path.
-All Done downloads the exercise JSON and opens a playable preview.
+intermediate checkpoints, edit conventional notation, and add student guidance.
+Open in Player starts a guided build-first replay. Download Level saves the edited
+exercise JSON.
 
-Built-in level URLs include the selected JSON file in the level query parameter.
-Every level accepts mode=unguided, and a level that contains recorded guided steps
-also accepts mode=guided, for example:
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=guided
-  exploded-algebra.html?level=levels%2Flevel-1-distribute-and-combine-demo.json&source=builtin&mode=unguided
-Guided follows the recorded action sequence. Unguided updates the single
-conventional target without controlling the learner's moves. Unguided is the
-default when the URL lacks a supported mode. Older assistance=high and
-assistance=medium URLs still map to Guided and Unguided. Add build=1 to either
-mode on an interactive exercise link to require the learner to build the
-starting expression from its conventional notation. Without build=1, the
-starting expression opens already built. This link starts a guided exercise in
-build-first mode.
-  exploded-algebra.html?level=intro-levels%2Fevaluate-sum-then-product.json&mode=guided&build=1
-Guided construction hints come from the starting expression tree. The recorded
-guide begins after the builder accepts the original structure. Move downloads
-record the transformations starting from that expression.
-Restart Problem sets both options and starts the exercise over in the same tab.
-The Guided option is available for exercises with recorded guidance. Close
-Problem returns to the launcher by closing the exercise tab or by going back after a same-tab
-launch.
-The source=builtin flag only enables the local file:// transfer fallback; the level parameter identifies the actual bundled level.
-User-selected JSON files likewise include their filename in the level query parameter, for example:
-  exploded-algebra.html?level=my-level.json&source=custom
+Guided mode highlights the recorded steps. Unguided mode accepts the learner’s
+own steps and is the default for uploaded levels. Restart Problem in the player
+lets the learner choose Guided mode and build-first independently.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication

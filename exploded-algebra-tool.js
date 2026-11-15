@@ -978,7 +978,7 @@ Promise.resolve().then(() => {
             // Legacy arithmetic-level buttons remain filtered for old files;
             // current files expose only the profile-based Numerical Manipulation.
             if (isArithmeticEquivalenceTool(side.tool)) {
-                return !!TOOL_INFO[side.tool] && isArithmeticToolAllowedInCurrentLevel(side.tool);
+                return !!TOOL_INFO[side.tool] && isToolAllowedInCurrentLevel(side.tool);
             }
             return !!TOOL_INFO[side.tool];
         }
@@ -1346,6 +1346,8 @@ Promise.resolve().then(() => {
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
+        const movesForEditorButton = document.querySelector('[data-workspace-action="downloadMovesForEditor"]');
+        const editLevelCopyButton = document.querySelector('[data-workspace-action="editLevelCopy"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const guidancePopover = document.getElementById("guidancePopover");
         const leftPanel = document.getElementById("leftPanel");
@@ -1692,12 +1694,16 @@ Promise.resolve().then(() => {
                         path: builder.lastOperation.path.slice(),
                         index: builder.lastOperation.index
                     } : null,
-                    moveCycle: cloneBuilderMoveCycle(builder.moveCycle)
+                    moveCycle: cloneBuilderMoveCycle(builder.moveCycle),
+                    recorderActionCount: solutionRecorder?.actions.length,
+                    recorderDemoStepCount: solutionRecorder?.demoSteps.length
                 };
             }
             return {
                 root: cloneBuilderNodeForHistory(builder.root),
-                currentPath: builder.currentPath.slice()
+                currentPath: builder.currentPath.slice(),
+                recorderActionCount: solutionRecorder?.actions.length,
+                recorderDemoStepCount: solutionRecorder?.demoSteps.length
             };
         }
 
@@ -1743,6 +1749,10 @@ Promise.resolve().then(() => {
                 return false;
             }
             const snapshot = builder.history.pop();
+            if (!buildingStartingExpression && solutionRecorder) {
+                solutionRecorder.actions.length = Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount);
+                solutionRecorder.demoSteps.length = Math.min(solutionRecorder.demoSteps.length, snapshot.recorderDemoStepCount);
+            }
             if (isIntegratedExpressionBuilder(builder)) {
                 builder.root = cloneBuilderNodeForHistory(snapshot.root);
                 builder.currentPath = Array.isArray(snapshot.currentPath) ? snapshot.currentPath.slice() : [];
@@ -2802,6 +2812,13 @@ Promise.resolve().then(() => {
             delete copy.createdAt;
             delete copy.description;
             delete copy.instructions;
+            delete copy.numericalRewrite;
+            delete copy.evaluationLevel;
+            delete copy.arithmeticLevel;
+            delete copy.arithmeticInputLevel;
+            delete copy.arithmeticOutputLevel;
+            delete copy.includeUndoActions;
+            delete copy.moveHistory;
             copy.format = copy.format || "exploded-algebra-level";
             copy.formatVersion = copy.formatVersion || 1;
             copy.kind = "interactive";
@@ -2838,7 +2855,6 @@ Promise.resolve().then(() => {
                 levelId: level.id || "",
                 levelTitle: level.title || "",
                 startExpression: level.startExpression || "",
-                includeUndoActions: level.includeUndoActions !== false,
                 actions: [],
                 demoSteps: []
             };
@@ -2901,7 +2917,6 @@ Promise.resolve().then(() => {
             }
             const replayingGuidedUndo = isDemoModeActive();
             const guidedUndoStepIndex = demoStepIndex;
-            const beforeExpression = getExpressionTextForTrace();
             const snapshot = expressionUndoHistory.pop();
             expressionRoot = cloneExpressionTree(snapshot.root);
             currentExpressionRoot = expressionRoot;
@@ -2924,20 +2939,9 @@ Promise.resolve().then(() => {
             }
             clearSelection();
             clearInteraction();
-            if (solutionRecorder && solutionRecorder.includeUndoActions === false) {
-                solutionRecorder.actions.length = Math.min(
-                    solutionRecorder.actions.length,
-                    Number.isInteger(snapshot.recorderActionCount) ? snapshot.recorderActionCount : 0
-                );
-                solutionRecorder.demoSteps.length = Math.min(
-                    solutionRecorder.demoSteps.length,
-                    Number.isInteger(snapshot.recorderDemoStepCount) ? snapshot.recorderDemoStepCount : 0
-                );
-            } else {
-                recordUndoForSolution(
-                    beforeExpression,
-                    getExpressionTextForTrace()
-                );
+            if (solutionRecorder) {
+                solutionRecorder.actions.length = Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount);
+                solutionRecorder.demoSteps.length = Math.min(solutionRecorder.demoSteps.length, snapshot.recorderDemoStepCount);
             }
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
@@ -3031,16 +3035,6 @@ Promise.resolve().then(() => {
             }, step);
         }
 
-        function recordUndoForSolution(beforeExpression, afterExpression) {
-            recordSolutionAction({
-                type: "undo",
-                beforeExpression,
-                afterExpression
-            }, {
-                type: "undo"
-            });
-        }
-
         function isDemoUndoAllowed() {
             if (!isDemoModeActive()) {
                 return true;
@@ -3105,14 +3099,15 @@ Promise.resolve().then(() => {
         }
 
         function inspectMoveHistory(history, allowEmpty = false) {
-            const actions = history?.recordedActions;
-            const demo = history?.demo?.steps;
-            if (!isDemoOnlyLevel(history) || !Array.isArray(actions) || !Array.isArray(demo) ||
+            const source = history?.moveHistory || history;
+            const actions = source?.recordedActions;
+            const demo = source?.demo?.steps;
+            if (typeof source?.startExpression !== "string" || !Array.isArray(actions) || !Array.isArray(demo) ||
                 actions.length !== demo.length || actions.some((action, index) => !action || action.type !== demo[index]?.type)) {
                 throw new Error("Choose a move history JSON file downloaded from Exploded Algebra.");
             }
 
-            const initial = history.startExpression;
+            const initial = source.startExpression;
             const initialKatex = ExplodedAlgebraRenderer.expressionToKatex(textToExpression(initial));
             const moves = [];
             let startIndex = 0;
@@ -3128,11 +3123,23 @@ Promise.resolve().then(() => {
                 const previous = moves.at(-1)?.expression || initial;
                 const recordedAfter = action.afterExpression !== previous ? action.afterExpression : "";
                 const expression = action.completedExpression || recordedAfter ||
-                    actions[index + 1]?.beforeExpression || (index === actions.length - 1 ? history.finalExpression : "");
+                    actions[index + 1]?.beforeExpression || (index === actions.length - 1 ? source.finalExpression : "");
                 if (!expression || expression === previous || selectionIndex < startIndex) return;
 
-                const moveActions = actions.slice(selectionIndex, index + 1);
-                const moveDemo = demo.slice(selectionIndex, index + 1);
+                const moveActions = [];
+                const moveDemo = [];
+                for (let cursor = selectionIndex; cursor <= index; cursor++) {
+                    const entry = actions[cursor];
+                    if (entry.type === "builder" && ["undo", "undoBackspace"].includes(entry.action)) {
+                        if (moveActions.at(-1)?.type === "builder") {
+                            moveActions.pop();
+                            moveDemo.pop();
+                        }
+                    } else {
+                        moveActions.push(entry);
+                        moveDemo.push(demo[cursor]);
+                    }
+                }
                 const toolIndex = moveActions.findIndex(entry => entry.type === "tool");
                 if (toolIndex < 0) return;
                 const toolName = moveActions[toolIndex].tool;
@@ -3157,10 +3164,10 @@ Promise.resolve().then(() => {
                 selectionIndex = -1;
             });
             const final = moves.at(-1)?.expression || initial;
-            if ((!allowEmpty && !moves.length) || (history.finalExpression && history.finalExpression !== final)) {
+            if ((!allowEmpty && !moves.length) || (source.finalExpression && source.finalExpression !== final)) {
                 throw new Error("The file has no complete solution to edit. Finish transforming the expression in Creative Mode, then download its moves.");
             }
-            return { initial, initialKatex, moves, initialBuilderActions: history.initialBuilderActions };
+            return { initial, initialKatex, moves, initialBuilderActions: source.initialBuilderActions };
         }
 
         function makeGuidedCreativeLevel(history) {
@@ -3179,7 +3186,8 @@ Promise.resolve().then(() => {
                 steps: [{ expression: final?.expression || initial, katex: final?.katex || initialKatex }],
                 numericalRewriteMode: "free",
                 requireFullDemo: true,
-                demo: { steps: moves.flatMap(move => move.demo) }
+                demo: { steps: moves.flatMap(move => move.demo) },
+                recordedActions: moves.flatMap(move => move.actions)
             };
         }
 
@@ -3190,7 +3198,7 @@ Promise.resolve().then(() => {
             const idBase = String(level && level.id ? level.id : "level").replace(/[^0-9A-Za-z_-]+/g, "-");
             const id = `${idBase}-demo-${formatCompletionIdStamp(completedAtDate)}`;
             const title = `Demo: ${level && level.title ? level.title : "Untitled Level"} (${formatCompletionTitleStamp(completedAtDate)})`;
-            return {
+            const history = {
                 ...clonePlainData(sourceLevel),
                 kind: "demoOnly",
                 id,
@@ -3201,16 +3209,19 @@ Promise.resolve().then(() => {
                 completedAt,
                 startExpression: sourceLevel.startExpression || "",
                 finalExpression: solutionRecorder?.finalExpression,
-                evaluationLevel: sourceLevel.evaluationLevel,
-                numericalRewrite: clonePlainData(sourceLevel.numericalRewrite),
                 variables: clonePlainData(sourceLevel.variables || []),
                 steps: clonePlainData(sourceLevel.steps || []),
                 sourceLevel,
                 demo: {
                     steps: clonePlainData(solutionRecorder ? solutionRecorder.demoSteps : [])
                 },
-                recordedActions: clonePlainData(solutionRecorder ? solutionRecorder.actions : [])
+                recordedActions: clonePlainData(solutionRecorder.actions)
             };
+            const { moves } = inspectMoveHistory(history, true);
+            history.demo.steps = moves.flatMap(move => move.demo);
+            history.recordedActions = moves.flatMap(move => move.actions)
+                .map((action, index) => ({ ...action, index }));
+            return history;
         }
 
         function downloadMoveHistoryJson(demoOnlyLevel) {
@@ -3479,9 +3490,6 @@ Promise.resolve().then(() => {
             if (level.initialKatex !== undefined && (typeof level.initialKatex !== "string" || !level.initialKatex.trim())) {
                 throw new Error(`${sourceName} has an invalid initialKatex.`);
             }
-            if (level.numericalRewrite !== undefined) {
-                validateNumericalRewriteProfileDefinition(level.numericalRewrite, sourceName);
-            }
             if (level.numericalRewriteMode !== undefined && !["free", "prescribed"].includes(level.numericalRewriteMode)) {
                 throw new Error(`${sourceName} has an invalid numerical rewrite mode.`);
             }
@@ -3537,7 +3545,7 @@ Promise.resolve().then(() => {
                 delete copy.sourceLevel.instructions;
             }
             copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
-            if (isDemoOnlyLevel(copy) && copy.sourceLevel?.creative === true && Array.isArray(copy.initialBuilderActions)) {
+            if (isDemoOnlyLevel(copy) && copy.sourceLevel?.creative === true) {
                 copy = makeGuidedCreativeLevel(copy);
                 copy.variables = inferVariablesFromExpressionTextForLevel(copy.startExpression);
                 return copy;
@@ -3605,42 +3613,6 @@ Promise.resolve().then(() => {
         }
 
 
-        const CUSTOM_LEVEL_STORAGE_KEY = "explodedAlgebra.currentCustomLevel";
-        const CUSTOM_LEVEL_WINDOW_NAME_PREFIX = "__EXPLODED_ALGEBRA_LEVEL__:";
-
-        function readCustomLevelTransferPayload(storageKey = CUSTOM_LEVEL_STORAGE_KEY, useLocalStorage = false) {
-            let payloadText = null;
-
-            try {
-                payloadText = useLocalStorage
-                    ? window.localStorage.getItem(storageKey)
-                    : window.sessionStorage.getItem(storageKey);
-            } catch (error) {
-                // file:// pages can have browser-specific storage behavior.
-            }
-
-            if (!payloadText && typeof window.name === "string" && window.name.startsWith(CUSTOM_LEVEL_WINDOW_NAME_PREFIX)) {
-                payloadText = window.name.slice(CUSTOM_LEVEL_WINDOW_NAME_PREFIX.length);
-            }
-
-            if (!payloadText) {
-                throw new Error("The custom level data is no longer available in this tab. Return to the home page and choose the file again.");
-            }
-
-            let payload;
-            try {
-                payload = JSON.parse(payloadText);
-            } catch (error) {
-                throw new Error("The saved custom level transfer data could not be read.");
-            }
-
-            if (!payload || typeof payload.text !== "string") {
-                throw new Error("The saved custom level transfer data is incomplete.");
-            }
-
-            return payload;
-        }
-
         function installLevelFromParsedJson(parsed, sourceName) {
             const level = validateChosenLevel(parsed, sourceName);
             LEVELS.splice(0, LEVELS.length, level);
@@ -3687,7 +3659,6 @@ Promise.resolve().then(() => {
                 title: "Creative Mode",
                 creative: true,
                 startExpression: "(0)",
-                evaluationLevel: 3,
                 steps: []
             });
             currentLevelIndex = 0;
@@ -3702,6 +3673,9 @@ Promise.resolve().then(() => {
                 document.getElementById("restartProblemOptions").hidden = true;
                 document.getElementById("restartCreativeMessage").hidden = false;
                 document.querySelector('[data-workspace-action="closeExercise"]').textContent = "Close Creative Mode";
+                moveHistoryButton.textContent = "Download Moves and Open in Player";
+                movesForEditorButton.hidden = false;
+                editLevelCopyButton.hidden = true;
                 startCreativeSession();
                 return true;
             }
@@ -3712,7 +3686,7 @@ Promise.resolve().then(() => {
             if (navigationSource === "problem-editor" || navigationSource === "problem-builder") {
                 try {
                     const draftKey = String(params.get("draftKey") || "").trim();
-                    const payload = readCustomLevelTransferPayload(draftKey || CUSTOM_LEVEL_STORAGE_KEY, !!draftKey);
+                    const payload = ExplodedAlgebraTransfer.read(draftKey || undefined, !!draftKey);
                     const parsed = JSON.parse(payload.text);
                     return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Editor preview");
                 } catch (error) {
@@ -3729,7 +3703,7 @@ Promise.resolve().then(() => {
                 // file:// works, while the URL still identifies the selected file.
                 if (navigationSource === "builtin" || navigationSource === "custom") {
                     try {
-                        const payload = readCustomLevelTransferPayload();
+                        const payload = ExplodedAlgebraTransfer.read();
                         if (payload.fileName && payload.fileName !== requestedLevelFile) {
                             if (navigationSource === "custom") {
                                 throw new Error("The saved custom level does not match the level named in this URL. Return to the home page and choose the file again.");
@@ -3759,7 +3733,7 @@ Promise.resolve().then(() => {
 
             if (navigationSource === "custom" || navigationSource === "builtin") {
                 try {
-                    const payload = readCustomLevelTransferPayload();
+                    const payload = ExplodedAlgebraTransfer.read();
                     const parsed = JSON.parse(payload.text);
                     const sourceName = payload.fileName || (navigationSource === "builtin"
                         ? "The selected built-in level"
@@ -3774,7 +3748,7 @@ Promise.resolve().then(() => {
                 }
             }
 
-            showNoLevelSelectedState("Choose a built-in level or a custom level file from the home page to begin.");
+            showNoLevelSelectedState("Open a level from Creative Mode, the Problem Editor, or the Exercises page.");
             return false;
         }
 
@@ -4066,8 +4040,7 @@ Promise.resolve().then(() => {
                     "numericalRewrite",
                     "doubleNegative",
                     "rewriteInvOneToOne",
-                    "rewriteInvNegOneToNegOne",
-                    `arithmeticLevel${getArithmeticLevelForCurrentLevel()}`
+                    "rewriteInvNegOneToNegOne"
                 ]);
             }
             if (toolName === "commute") {
@@ -4311,16 +4284,16 @@ Promise.resolve().then(() => {
             if (buildingStartingExpression || !level || !Array.isArray(level.steps)) {
                 return;
             }
-            if (level.requireFullDemo && isDemoModeActive()) {
-                return;
-            }
             if (!Array.isArray(completedSteps) || completedSteps.length !== level.steps.length) {
                 completedSteps = new Array(level.steps.length).fill(false);
             }
             const nextStepIndex = completedSteps.findIndex(isComplete => !isComplete);
             if (nextStepIndex >= 0) {
                 const matchedStepIndex = level.steps.findIndex((step, index) =>
-                    index >= nextStepIndex && expressionMatchesParenthesizedText(step.expression)
+                    index >= nextStepIndex &&
+                    (!level.requireFullDemo || !isDemoModeActive() ||
+                        (index < level.steps.length - 1 && demoStepIndex >= (step.actionEndIndex || 0))) &&
+                    expressionMatchesParenthesizedText(step.expression)
                 );
                 if (matchedStepIndex >= 0) {
                     for (let index = nextStepIndex; index < matchedStepIndex; index++) {
@@ -4343,33 +4316,35 @@ Promise.resolve().then(() => {
             return completedSteps.slice();
         }
 
-        function downloadCurrentMoveHistory() {
-            if (!solutionRecorder) {
-                return;
-            }
-            const historyDate = completionExportCompletedAtDate || new Date();
+        function getCurrentMoveHistory() {
             solutionRecorder.finalExpression = getExpressionTextForTrace();
-            const history = makeDemoOnlyLevelFromCurrentRun(historyDate);
-            const preview = creativeSessionActive ? window.open("about:blank", "_blank") || window : null;
+            return makeDemoOnlyLevelFromCurrentRun(completionExportCompletedAtDate || new Date());
+        }
+
+        function openEditorCopy(level, fileName = `${level.id}.json`, preview) {
+            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" },
+                { fileName, text: JSON.stringify(level) }, preview);
+        }
+
+        function downloadCurrentMoveHistory(destination) {
+            const history = getCurrentMoveHistory();
+            const preview = destination ? window.open("about:blank", "_blank") || window : null;
             downloadMoveHistoryJson(history);
-            if (preview) {
+            if (destination === "player") {
                 const fileName = `${history.id}.json`;
-                const payload = JSON.stringify({ version: 1, fileName, text: JSON.stringify(history) });
-                try {
-                    preview.sessionStorage.setItem(CUSTOM_LEVEL_STORAGE_KEY, payload);
-                } catch (error) {
-                    // Use the tab name when storage is unavailable.
-                }
-                preview.name = CUSTOM_LEVEL_WINDOW_NAME_PREFIX + payload;
-                const url = new URL("exploded-algebra.html", window.location.href);
-                url.search = new URLSearchParams({ source: "custom", level: fileName, mode: "guided", build: "1" });
-                preview.location.assign(url.href);
+                ExplodedAlgebraTransfer.open("exploded-algebra.html",
+                    { source: "custom", level: fileName, mode: "guided", build: "1" },
+                    { fileName, text: JSON.stringify(history) }, preview);
+            } else if (destination === "editor") {
+                openEditorCopy(history, undefined, preview);
             }
         }
 
         function updateExerciseMenu(level) {
             restartProblemButton.disabled = !level;
             moveHistoryButton.disabled = !level || !solutionRecorder || buildingStartingExpression;
+            movesForEditorButton.disabled = moveHistoryButton.disabled;
+            editLevelCopyButton.disabled = !level || (!Array.isArray(level.recordedActions) && moveHistoryButton.disabled);
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4885,8 +4860,13 @@ Promise.resolve().then(() => {
                     } else if (button.dataset.workspaceAction === "restartExercise") {
                         openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
-                        downloadCurrentMoveHistory();
+                        downloadCurrentMoveHistory(creativeSessionActive ? "player" : null);
                         workspaceUtilityMenuToggle.focus();
+                    } else if (button.dataset.workspaceAction === "downloadMovesForEditor") {
+                        downloadCurrentMoveHistory("editor");
+                    } else if (button.dataset.workspaceAction === "editLevelCopy") {
+                        const level = getCurrentLevel();
+                        openEditorCopy(Array.isArray(level.recordedActions) ? level : getCurrentMoveHistory());
                     } else if (button.dataset.workspaceAction === "closeExercise") {
                         closeCurrentExercise();
                     }
@@ -7903,45 +7883,6 @@ ctx.font = SETTINGS.textFont;
             return evaluateSumContainingProductsNode(node) !== null;
         }
 
-        function clampArithmeticLevel(value, fallback = 0) {
-            const numeric = Number(value);
-            if (!Number.isFinite(numeric)) {
-                return fallback;
-            }
-            return Math.max(0, Math.min(3, Math.floor(numeric)));
-        }
-
-        function getArithmeticLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticLevel, 0);
-            }
-            if (level && typeof level.evaluationLevel === "number") {
-                return clampArithmeticLevel(level.evaluationLevel, 0);
-            }
-            return 0;
-        }
-
-        function getArithmeticInputLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticInputLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticInputLevel, getArithmeticLevelForCurrentLevel());
-            }
-            return getArithmeticLevelForCurrentLevel();
-        }
-
-        function getArithmeticOutputLevelForCurrentLevel() {
-            const level = getCurrentLevel();
-            if (level && typeof level.arithmeticOutputLevel === "number") {
-                return clampArithmeticLevel(level.arithmeticOutputLevel, getArithmeticLevelForCurrentLevel());
-            }
-            return getArithmeticLevelForCurrentLevel();
-        }
-
-        function getEvaluationLevelForCurrentLevel() {
-            return getArithmeticLevelForCurrentLevel();
-        }
-
         const ARITHMETIC_TOOL_LEVELS = {
             arithmeticLevel0: 0,
             arithmeticLevel1: 1,
@@ -7957,39 +7898,6 @@ ctx.font = SETTINGS.textFont;
             return toolName === "numericalRewrite" || isArithmeticEquivalenceTool(toolName);
         }
 
-        function getArithmeticLevelFromToolName(toolName) {
-            return isArithmeticEquivalenceTool(toolName)
-                ? ARITHMETIC_TOOL_LEVELS[toolName]
-                : null;
-        }
-
-        function isArithmeticToolLevelAllowedInCurrentLevel(level) {
-            return clampArithmeticLevel(level, 0) === getArithmeticLevelForCurrentLevel();
-        }
-
-        function isArithmeticToolAllowedInCurrentLevel(toolName) {
-            if (isArithmeticEquivalenceTool(toolName) && getCurrentLevel() && getCurrentLevel().numericalRewrite) {
-                return true;
-            }
-            const level = getArithmeticLevelFromToolName(toolName);
-            return level === null || isArithmeticToolLevelAllowedInCurrentLevel(level);
-        }
-
-        function isToolAllowedInCurrentLevel(toolName) {
-            return isArithmeticToolAllowedInCurrentLevel(toolName);
-        }
-
-        function getArithmeticAllowedLevelsForTool(toolName) {
-            const forcedLevel = getArithmeticLevelFromToolName(toolName);
-            if (forcedLevel !== null) {
-                return { inputLevel: forcedLevel, outputLevel: forcedLevel };
-            }
-            return {
-                inputLevel: getArithmeticInputLevelForCurrentLevel(),
-                outputLevel: getArithmeticOutputLevelForCurrentLevel()
-            };
-        }
-
         function getNumericLeafValue(node) {
             if (!node || node.type !== "value") {
                 return null;
@@ -7998,27 +7906,6 @@ ctx.font = SETTINGS.textFont;
             return parsed === null || Number.isNaN(parsed) || !Number.isFinite(parsed)
                 ? null
                 : parsed;
-        }
-
-        function getWholeNumberLeafValue(node) {
-            if (!node || node.type !== "value") {
-                return null;
-            }
-            return parseNonNegativeInteger(node.value);
-        }
-
-        function isWholeNumberLeafNode(node) {
-            return getWholeNumberLeafValue(node) !== null;
-        }
-
-        function isEntirelyNumericalNode(node) {
-            if (!node) {
-                return false;
-            }
-            if (node.type === "value") {
-                return getNumericLeafValue(node) !== null;
-            }
-            return Array.isArray(node.args) && node.args.length > 0 && node.args.every(isEntirelyNumericalNode);
         }
 
         function evaluateArithmeticNode(node) {
@@ -8044,365 +7931,6 @@ ctx.font = SETTINGS.textFont;
                 return null;
             }
             return Number.isFinite(result) && !Number.isNaN(result) ? result : null;
-        }
-
-        function isOneSignificantFigureWholeNumber(value) {
-            if (!Number.isInteger(value) || value < 0) {
-                return false;
-            }
-            if (value === 0) {
-                return true;
-            }
-            return /^[1-9]0*$/.test(String(value));
-        }
-
-        function isNoCarryWholeNumberAddition(values) {
-            if (!Array.isArray(values) || values.length < 2) {
-                return false;
-            }
-            if (!values.every(value => Number.isInteger(value) && value >= 0)) {
-                return false;
-            }
-            const texts = values.map(value => String(value));
-            const maxLength = Math.max(...texts.map(text => text.length));
-            for (let offset = 0; offset < maxLength; offset++) {
-                let columnSum = 0;
-                for (const text of texts) {
-                    const index = text.length - 1 - offset;
-                    columnSum += index >= 0 ? Number(text[index]) : 0;
-                }
-                if (columnSum >= 10) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function classifyArithmeticExpressionLevel(node) {
-            if (!isEntirelyNumericalNode(node)) {
-                return null;
-            }
-            const normalized = normalizeExpressionTree(cloneNode(node));
-            return classifyArithmeticExpressionLevelNormalized(normalized);
-        }
-
-        function classifyArithmeticExpressionLevelNormalized(node) {
-            if (!node) {
-                return null;
-            }
-
-            if (node.type === "value") {
-                if (parseNonNegativeInteger(node.value) !== null) {
-                    return 0;
-                }
-                if (node.value === "-1") {
-                    return 2;
-                }
-                return getNumericLeafValue(node) !== null ? 3 : null;
-            }
-
-            if (!Array.isArray(node.args) || node.args.length === 0) {
-                return null;
-            }
-
-            const childLevels = node.args.map(classifyArithmeticExpressionLevelNormalized);
-            if (childLevels.some(level => level === null)) {
-                return null;
-            }
-
-            if (node.type === "sum") {
-                const nonNegativeIntegerTerms = node.args.map(getWholeNumberLeafValue);
-                if (nonNegativeIntegerTerms.every(value => value !== null)) {
-                    return isNoCarryWholeNumberAddition(nonNegativeIntegerTerms) ? 0 : 1;
-                }
-                return childLevels.every(level => level <= 2) ? 2 : 3;
-            }
-
-            if (node.type === "prod") {
-                const nonNegativeIntegerFactors = node.args.map(getWholeNumberLeafValue);
-                if (nonNegativeIntegerFactors.every(value => value !== null)) {
-                    const isLevelZeroProduct = nonNegativeIntegerFactors.length === 2 &&
-                        nonNegativeIntegerFactors.every(isOneSignificantFigureWholeNumber);
-                    return isLevelZeroProduct ? 0 : 1;
-                }
-                return childLevels.every(level => level <= 2) ? 2 : 3;
-            }
-
-            return null;
-        }
-
-        function isArithmeticExpressionAtOrBelowLevel(node, allowedLevel) {
-            const level = classifyArithmeticExpressionLevel(node);
-            return level !== null && level <= clampArithmeticLevel(allowedLevel, 0);
-        }
-
-        function getArithmeticLevelDescription(level) {
-            const clamped = clampArithmeticLevel(level, 0);
-            if (clamped === 0) {
-                return "Level 0 allows no-carry addition of two or more nonnegative whole numbers, or multiplication of exactly two one-significant-figure whole numbers.";
-            }
-            if (clamped === 1) {
-                return "Level 1 allows flat nonnegative sums or flat nonnegative products, with no nesting.";
-            }
-            if (clamped === 2) {
-                return "Level 2 allows nested sums and products and the negative unit.";
-            }
-            return "Level 3 allows any expression made entirely of numbers.";
-        }
-
-        const NUMERICAL_REWRITE_RULE_IDS = [
-            "nonnegativeArithmetic",
-            "signedArithmetic",
-            "nonnegativeFractionSimplification",
-            "signedFractionSimplification",
-            "inverseOne",
-            "inverseNegativeOne",
-            "doubleNegative"
-        ];
-        const SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS = [
-            "positiveAddition",
-            "signedAddition",
-            "positiveMultiplication",
-            "signedMultiplication",
-            "nonnegativeFractionSimplification",
-            "signedFractionSimplification",
-            "inverseOne",
-            "inverseNegativeOne",
-            "doubleNegative"
-        ];
-        const PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS = [
-            "positiveAddition",
-            "signedAddition",
-            "positiveMultiplication",
-            "signedMultiplication",
-            "nonnegativeFractionSimplification",
-            "signedFractionSimplification"
-        ];
-        const PREVIOUS_NUMERICAL_REWRITE_RULE_IDS = [
-            "positiveAddition",
-            "positiveMultiplication",
-            "signedAddition",
-            "signedMultiplication",
-            "fractionSimplification"
-        ];
-        const LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS = [
-            "positiveAdditionNoCarry",
-            "positiveAdditionWithCarry",
-            "positiveMultiplicationOneSignificantFigure",
-            "positiveMultiplicationUnrestricted",
-            "signedAddition",
-            "signedMultiplication",
-            "fractionSimplification"
-        ];
-        const NUMERICAL_REWRITE_FORWARD_MODES = ["automatic", "manual", "not-allowed"];
-        const NUMERICAL_REWRITE_REVERSE_MODES = ["manual", "not-allowed"];
-
-        function makeNumericalRewriteRules(forwardMode = "not-allowed", reverseMode = "not-allowed") {
-            return Object.fromEntries(NUMERICAL_REWRITE_RULE_IDS.map(ruleId => [
-                ruleId,
-                { forward: forwardMode, reverse: reverseMode }
-            ]));
-        }
-
-        function applyLegacyFixedNumericalRewriteDefaults(rules) {
-            for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
-                rules[ruleId] = { forward: "automatic", reverse: "manual" };
-            }
-            return rules;
-        }
-
-        function numericalRewriteProfileFromLegacyLevel(level) {
-            const legacyLevel = clampArithmeticLevel(level, 0);
-            const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
-            rules.nonnegativeArithmetic = { forward: "manual", reverse: "manual" };
-            if (legacyLevel >= 2) {
-                rules.signedArithmetic = { forward: "manual", reverse: "manual" };
-            }
-            if (legacyLevel >= 3) {
-                rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
-                rules.signedFractionSimplification = { forward: "manual", reverse: "manual" };
-            }
-            return { rules };
-        }
-
-        function numericalRewriteProfileFromLegacyDefinition(profile) {
-            const rules = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
-            rules.nonnegativeArithmetic = { forward: "manual", reverse: "manual" };
-            if (
-                profile.allowNegativeOne === true &&
-                profile.addition !== "none" &&
-                profile.multiplication !== "none"
-            ) {
-                rules.signedArithmetic = { forward: "manual", reverse: "manual" };
-            }
-            if (profile.allowInverses === true) {
-                rules.nonnegativeFractionSimplification = { forward: "manual", reverse: "manual" };
-                rules.signedFractionSimplification = { forward: "manual", reverse: "manual" };
-            }
-            return { rules };
-        }
-
-        function normalizeNumericalRewriteRules(rules) {
-            const normalized = applyLegacyFixedNumericalRewriteDefaults(makeNumericalRewriteRules());
-            const copyRule = (targetRuleId, sourceRuleId) => {
-                if (rules[sourceRuleId]) {
-                    normalized[targetRuleId] = clonePlainData(rules[sourceRuleId]);
-                }
-            };
-            const mergeRestrictiveRules = sourceRules => {
-                const presentRules = sourceRules.filter(Boolean);
-                if (!presentRules.length) {
-                    return null;
-                }
-                const forwardPriority = { automatic: 0, manual: 1, "not-allowed": 2 };
-                const reversePriority = { manual: 0, "not-allowed": 1 };
-                return {
-                    forward: presentRules.reduce((mostRestrictive, rule) => (
-                        forwardPriority[rule.forward] > forwardPriority[mostRestrictive]
-                            ? rule.forward
-                            : mostRestrictive
-                    ), "automatic"),
-                    reverse: presentRules.reduce((mostRestrictive, rule) => (
-                        reversePriority[rule.reverse] > reversePriority[mostRestrictive]
-                            ? rule.reverse
-                            : mostRestrictive
-                    ), "manual")
-                };
-            };
-            if (rules.nonnegativeArithmetic) {
-                copyRule("nonnegativeArithmetic", "nonnegativeArithmetic");
-            } else {
-                const additionRule = rules.positiveAddition || rules.positiveAdditionWithCarry || rules.positiveAdditionNoCarry;
-                const multiplicationRule = rules.positiveMultiplication || rules.positiveMultiplicationUnrestricted || rules.positiveMultiplicationOneSignificantFigure;
-                normalized.nonnegativeArithmetic = mergeRestrictiveRules([additionRule, multiplicationRule]) || normalized.nonnegativeArithmetic;
-            }
-            if (rules.signedArithmetic) {
-                copyRule("signedArithmetic", "signedArithmetic");
-            } else {
-                normalized.signedArithmetic = mergeRestrictiveRules([
-                    rules.signedAddition,
-                    rules.signedMultiplication
-                ]) || normalized.signedArithmetic;
-            }
-            copyRule("nonnegativeFractionSimplification", rules.nonnegativeFractionSimplification
-                ? "nonnegativeFractionSimplification"
-                : "fractionSimplification");
-            copyRule("signedFractionSimplification", rules.signedFractionSimplification
-                ? "signedFractionSimplification"
-                : "fractionSimplification");
-            copyRule("inverseOne", "inverseOne");
-            copyRule("inverseNegativeOne", "inverseNegativeOne");
-            copyRule("doubleNegative", "doubleNegative");
-            normalized.nonnegativeArithmetic = {
-                forward: normalized.nonnegativeArithmetic.forward === "automatic" ? "automatic" : "manual",
-                reverse: "manual"
-            };
-            for (const ruleId of ["inverseOne", "inverseNegativeOne", "doubleNegative"]) {
-                normalized[ruleId] = {
-                    forward: normalized[ruleId].forward === "manual" ? "manual" : "automatic",
-                    reverse: "manual"
-                };
-            }
-            return normalized;
-        }
-
-        function getNumericalRewriteProfile(level = getCurrentLevel()) {
-            if (level && level.numericalRewrite && typeof level.numericalRewrite === "object") {
-                if (level.numericalRewrite.rules) {
-                    return { rules: normalizeNumericalRewriteRules(level.numericalRewrite.rules) };
-                }
-                return numericalRewriteProfileFromLegacyDefinition(level.numericalRewrite);
-            }
-            return numericalRewriteProfileFromLegacyLevel(getArithmeticLevelForCurrentLevel());
-        }
-
-        function validateNumericalRewriteProfileDefinition(profile, sourceName) {
-            if (!profile || typeof profile !== "object" || Array.isArray(profile)) {
-                throw new Error(`${sourceName} has an invalid numericalRewrite profile.`);
-            }
-            if (profile.rules !== undefined) {
-                if (!profile.rules || typeof profile.rules !== "object" || Array.isArray(profile.rules)) {
-                    throw new Error(`${sourceName} has an invalid numericalRewrite.rules setting.`);
-                }
-                const hasCurrentRules = NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
-                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
-                );
-                const hasSeparateArithmeticRules = SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
-                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
-                );
-                const hasPreFixedRules = PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
-                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
-                );
-                const hasLegacyGranularRules = LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
-                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
-                );
-                const hasPreviousRules = PREVIOUS_NUMERICAL_REWRITE_RULE_IDS.every(ruleId =>
-                    Object.prototype.hasOwnProperty.call(profile.rules, ruleId)
-                );
-                const ruleIds = hasCurrentRules
-                    ? NUMERICAL_REWRITE_RULE_IDS
-                    : (hasSeparateArithmeticRules
-                        ? SEPARATE_ARITHMETIC_NUMERICAL_REWRITE_RULE_IDS
-                        : (hasPreFixedRules
-                            ? PRE_FIXED_NUMERICAL_REWRITE_RULE_IDS
-                            : (hasPreviousRules
-                                ? PREVIOUS_NUMERICAL_REWRITE_RULE_IDS
-                                : (hasLegacyGranularRules ? LEGACY_GRANULAR_NUMERICAL_REWRITE_RULE_IDS : null))));
-                if (!ruleIds) {
-                    throw new Error(`${sourceName} has an incomplete numericalRewrite.rules setting.`);
-                }
-                ruleIds.forEach(ruleId => {
-                    const rule = profile.rules[ruleId];
-                    if (!rule || !NUMERICAL_REWRITE_FORWARD_MODES.includes(rule.forward) ||
-                        !NUMERICAL_REWRITE_REVERSE_MODES.includes(rule.reverse)) {
-                        throw new Error(`${sourceName} has an invalid numericalRewrite.rules.${ruleId} setting.`);
-                    }
-                });
-                return;
-            }
-            const legacyAdditionModes = ["none", "no-carry", "flat", "expression-terms"];
-            const legacyMultiplicationModes = ["none", "one-significant-figure", "unrestricted"];
-            if (!legacyAdditionModes.includes(profile.addition) ||
-                !legacyMultiplicationModes.includes(profile.multiplication) ||
-                typeof profile.allowNegativeOne !== "boolean" ||
-                typeof profile.allowInverses !== "boolean") {
-                throw new Error(`${sourceName} has an invalid legacy numericalRewrite profile.`);
-            }
-        }
-
-        function getNumericalRewriteRuleSetting(ruleId, profile = getNumericalRewriteProfile()) {
-            return profile.rules[ruleId] || { forward: "not-allowed", reverse: "not-allowed" };
-        }
-
-        function isFractionSimplificationRuleId(ruleId) {
-            return ruleId === "nonnegativeFractionSimplification" ||
-                ruleId === "signedFractionSimplification";
-        }
-
-        function getNumericalRestrictionsTreeHtml(profile) {
-            const labels = {
-                nonnegativeArithmetic: "Nonnegative addition and multiplication",
-                signedArithmetic: "Signed number addition and multiplication",
-                nonnegativeFractionSimplification: "Non-negative fraction simplification",
-                signedFractionSimplification: "Signed fraction simplification",
-                inverseOne: "Inverse of one",
-                inverseNegativeOne: "Inverse of negative one",
-                doubleNegative: "Negative one times negative one"
-            };
-            const modeLabel = mode => ({
-                automatic: "Automatic",
-                manual: "Manual",
-                "not-allowed": "Not allowed"
-            })[mode] || mode;
-            return NUMERICAL_REWRITE_RULE_IDS.map(ruleId => {
-                const rule = getNumericalRewriteRuleSetting(ruleId, profile);
-                return `<li><span>${escapeHtml(labels[ruleId] || ruleId)}</span>
-                    <ul>
-                        <li>Forward — ${escapeHtml(modeLabel(rule.forward))}</li>
-                        <li>Reverse — ${escapeHtml(modeLabel(rule.reverse))}</li>
-                    </ul>
-                </li>`;
-            }).join("");
         }
 
         function getProblemStatementKatex(level) {
@@ -8459,7 +7987,7 @@ ctx.font = SETTINGS.textFont;
                         }
                         items.push(`<li><span>${getMixedInstructionHtml(itemMatch[1])}</span>${nested.length ? `<ul>${nested.join("")}</ul>` : ""}</li>`);
                     }
-                    html.push(`<ul class="numerical-permission-summary numerical-permission-tree">${items.join("")}</ul>`);
+                    html.push(`<ul class="exercise-guidance-list">${items.join("")}</ul>`);
                     continue;
                 }
                 html.push(`<div class="exercise-guidance-instruction">${getMixedInstructionHtml(trimmed)}</div>`);
@@ -8483,11 +8011,15 @@ ctx.font = SETTINGS.textFont;
                 ? `<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(problemExpression)}"></span></div>`
                 : "";
             const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
+            const numericalGuidance = level.numericalRewriteMode === "prescribed"
+                ? "Choose from the recorded equivalent replacements."
+                : "Build any equivalent numerical expression.";
             if (level.exerciseGuidanceIsComplete && authorGuidance.length) {
                 guidancePopover.innerHTML = `
                     <div class="exercise-guidance-popover-content">
                         <span class="exercise-guidance-popover-title">Exercise Guidance</span>
                         <div class="exercise-guidance-complete">${getCompleteExerciseGuidanceHtml(level.exerciseGuidance)}</div>
+                        <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3><p>${numericalGuidance}</p></section>
                     </div>`;
                 guidancePopover.classList.remove("hidden");
                 document.body.classList.add("exercise-guidance-active");
@@ -8497,14 +8029,11 @@ ctx.font = SETTINGS.textFont;
             const authorGuidanceHtml = authorGuidance.length
                 ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
                 : "";
-            const numericalGuidance = level.numericalRewriteMode
-                ? `<p>${level.numericalRewriteMode === "free" ? "Build any equivalent numerical expression." : "Choose from the recorded equivalent replacements."}</p>`
-                : `<ul class="numerical-permission-summary numerical-permission-tree">${getNumericalRestrictionsTreeHtml(getNumericalRewriteProfile())}</ul>`;
             guidancePopover.innerHTML = `
                 <div class="exercise-guidance-popover-content">
                     <span class="exercise-guidance-popover-title">Exercise Guidance</span>
                     <section class="exercise-guidance-section"><h3>Problem Statement</h3>${problemTextHtml}${problemExpressionHtml}</section>
-                    <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3>${numericalGuidance}</section>
+                    <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3><p>${numericalGuidance}</p></section>
                     ${authorGuidanceHtml}
                 </div>`;
             guidancePopover.classList.remove("hidden");
@@ -8607,263 +8136,19 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function numericalRewriteNodeIsEntirelyNumerical(node) {
-            return !!evaluateNumericalRewriteNodeExactly(node);
-        }
-
-        function getNumericalRewriteIntegerData(node) {
-            const wholeNumber = getWholeNumberBigIntFromNode(node);
-            if (wholeNumber !== null) {
-                return { negative: false, zero: wholeNumber === 0n };
-            }
-            if (isExactNumericalRewriteValue(node, "-1")) {
-                return { negative: true, zero: false };
-            }
-            if (!node || node.type !== "prod" || node.args.length !== 2) {
-                return null;
-            }
-            const negativeOneIndex = node.args.findIndex(child => isExactNumericalRewriteValue(child, "-1"));
-            if (negativeOneIndex < 0) {
-                return null;
-            }
-            const magnitude = getWholeNumberBigIntFromNode(node.args[1 - negativeOneIndex]);
-            return magnitude === null ? null : { negative: true, zero: magnitude === 0n };
-        }
-
-        function getInverseIntegerData(node) {
-            if (!node || node.type !== "inv" || node.args.length !== 1) {
-                return null;
-            }
-            const integer = getNumericalRewriteIntegerData(node.args[0]);
-            return !integer || integer.zero ? null : integer;
-        }
-
-        function getFractionSimplificationCategory(node) {
-            const standaloneDenominator = getInverseIntegerData(node);
-            if (standaloneDenominator) {
-                return standaloneDenominator.negative
-                    ? "signedFractionSimplification"
-                    : "nonnegativeFractionSimplification";
-            }
-            if (!node || node.type !== "prod") {
-                return null;
-            }
-            const inverseFactors = node.args.filter(factor => getInverseIntegerData(factor));
-            if (inverseFactors.length !== 1) {
-                return null;
-            }
-            const numeratorFactors = node.args.filter(factor => factor !== inverseFactors[0]);
-            const numeratorNode = numeratorFactors.length === 1
-                ? numeratorFactors[0]
-                : (numeratorFactors.length === 2 ? { type: "prod", args: numeratorFactors } : null);
-            const numerator = getNumericalRewriteIntegerData(numeratorNode);
-            const denominator = getInverseIntegerData(inverseFactors[0]);
-            if (!numerator || !denominator) {
-                return null;
-            }
-            return numerator.negative || denominator.negative
-                ? "signedFractionSimplification"
-                : "nonnegativeFractionSimplification";
-        }
-
-        function isFlatSignedIntegerProduct(node) {
-            if (!node || node.type !== "prod" || node.args.length < 2) {
-                return false;
-            }
-            let hasNegativeOne = false;
-            for (const factor of node.args) {
-                if (isExactNumericalRewriteValue(factor, "-1")) {
-                    hasNegativeOne = true;
-                } else if (getWholeNumberBigIntFromNode(factor) === null) {
-                    return false;
-                }
-            }
-            return hasNegativeOne;
-        }
-
-        function isFlatSignedIntegerTerm(node) {
-            if (getWholeNumberBigIntFromNode(node) !== null || isExactNumericalRewriteValue(node, "-1")) {
-                return true;
-            }
-            if (!node || node.type !== "prod" || node.args.length !== 2) {
-                return false;
-            }
-            const negativeOneIndex = node.args.findIndex(child => isExactNumericalRewriteValue(child, "-1"));
-            return negativeOneIndex >= 0 && getWholeNumberBigIntFromNode(node.args[1 - negativeOneIndex]) !== null;
-        }
-
-        function classifyNumericalRewriteCategory(node) {
-            if (!node) {
-                return null;
-            }
-            const normalized = normalizeExpressionTree(cloneNode(node));
-            if (!numericalRewriteNodeIsEntirelyNumerical(normalized)) {
-                return null;
-            }
-            if (isExactInverseOfOne(normalized)) {
-                return "inverseOne";
-            }
-            if (isExactInverseOfNegativeOne(normalized)) {
-                return "inverseNegativeOne";
-            }
-            if (isExactDoubleNegativeProduct(normalized)) {
-                return "doubleNegative";
-            }
-            const fractionCategory = getFractionSimplificationCategory(normalized);
-            if (fractionCategory) {
-                return fractionCategory;
-            }
-            if (normalized.type === "sum" && normalized.args.length >= 2) {
-                if (normalized.args.every(child => getWholeNumberBigIntFromNode(child) !== null)) {
-                    return "nonnegativeArithmetic";
-                }
-                if (normalized.args.every(isFlatSignedIntegerTerm) &&
-                    normalized.args.some(term => isExactNumericalRewriteValue(term, "-1") || isFlatSignedIntegerProduct(term))) {
-                    return "signedArithmetic";
-                }
-                return null;
-            }
-            if (normalized.type === "prod" && normalized.args.length >= 2) {
-                if (isFlatSignedIntegerProduct(normalized)) {
-                    return "signedArithmetic";
-                }
-                const factors = normalized.args.map(getWholeNumberBigIntFromNode);
-                if (factors.every(value => value !== null)) {
-                    return "nonnegativeArithmetic";
-                }
-            }
-            return null;
-        }
-
-        function makeCanonicalNumericalRewriteNode(value) {
-            if (!value) {
-                return null;
-            }
-            const negative = value.numerator < 0n;
-            const absoluteNumerator = negative ? -value.numerator : value.numerator;
-            if (value.denominator === 1n) {
-                if (!negative) {
-                    return valueNode(absoluteNumerator.toString());
-                }
-                if (absoluteNumerator === 1n) {
-                    return valueNode("-1");
-                }
-                return makeProductFromFactors([valueNode("-1"), valueNode(absoluteNumerator.toString())]);
-            }
-            const factors = [];
-            if (negative) {
-                factors.push(valueNode("-1"));
-            }
-            if (absoluteNumerator !== 1n) {
-                factors.push(valueNode(absoluteNumerator.toString()));
-            }
-            factors.push(makeInverseNode(valueNode(value.denominator.toString())));
-            return makeProductFromFactors(factors);
-        }
-
-        function getCanonicalNumericalRewriteNode(node) {
-            return makeCanonicalNumericalRewriteNode(
-                evaluateNumericalRewriteNodeExactly(normalizeExpressionTree(cloneNode(node)))
-            );
-        }
-
         function numericalRewriteNodesHaveSameStructure(first, second) {
             return sameExpression(normalizeCloneForMatching(first), normalizeCloneForMatching(second));
-        }
-
-        function getAutomaticNumericalRewriteData() {
-            const selectedNode = cloneSelectedRangeNode();
-            const ruleId = classifyNumericalRewriteCategory(selectedNode);
-            if (!ruleId || getNumericalRewriteRuleSetting(ruleId).forward !== "automatic") {
-                return null;
-            }
-            const replacement = getCanonicalNumericalRewriteNode(selectedNode);
-            if (!replacement || numericalRewriteNodesHaveSameStructure(selectedNode, replacement)) {
-                return null;
-            }
-            return { ruleId, replacement };
-        }
-
-        function canUseManualNumericalRewrite() {
-            const selectedNode = cloneSelectedRangeNode();
-            if (!selectedNode || !numericalRewriteNodeIsEntirelyNumerical(selectedNode)) {
-                return false;
-            }
-            if (getCurrentLevel()?.numericalRewriteMode === "prescribed") {
-                return getPrescribedNumericalRewriteChoices(selectedNode).length > 0;
-            }
-            if (getCurrentLevel()?.creative === true || getCurrentLevel()?.numericalRewriteMode === "free") {
-                return true;
-            }
-            const ruleId = classifyNumericalRewriteCategory(selectedNode);
-            if (ruleId && getNumericalRewriteRuleSetting(ruleId).forward === "manual") {
-                return true;
-            }
-            if (isFractionSimplificationRuleId(ruleId) &&
-                getNumericalRewriteRuleSetting(ruleId).reverse === "manual") {
-                return true;
-            }
-            const canonical = getCanonicalNumericalRewriteNode(selectedNode);
-            return numericalRewriteNodesHaveSameStructure(selectedNode, canonical) &&
-                NUMERICAL_REWRITE_RULE_IDS.some(candidateRuleId =>
-                    !isFractionSimplificationRuleId(candidateRuleId) &&
-                    getNumericalRewriteRuleSetting(candidateRuleId).reverse === "manual"
-                );
         }
 
         function getPrescribedNumericalRewriteChoices(selectedNode = cloneSelectedRangeNode()) {
             const source = expressionToFullyParenthesizedText(selectedNode);
             const guide = getCurrentDemoStep();
-            if (getCurrentLevel()?.numericalRewriteMode === "free" && guide?.action === "chooseNumericalRewrite") {
+            if (getCurrentLevel()?.numericalRewriteMode !== "prescribed" && guide?.action === "chooseNumericalRewrite") {
                 return [guide.value];
             }
             return [...new Set((getCurrentLevel()?.prescribedNumericalRewrites || [])
                 .filter(rewrite => rewrite.from === source)
                 .map(rewrite => rewrite.to))];
-        }
-
-        function validateManualNumericalRewriteExchange(originalNode, proposedNode) {
-            const original = normalizeExpressionTree(cloneNode(originalNode));
-            const proposed = normalizeExpressionTree(cloneNode(proposedNode));
-            if (numericalRewriteNodesHaveSameStructure(original, proposed)) {
-                return { ok: false, error: "Build a different equivalent numerical expression." };
-            }
-            if (getCurrentLevel()?.creative === true || getCurrentLevel()?.numericalRewriteMode === "free") {
-                return { ok: true };
-            }
-            const originalRuleId = classifyNumericalRewriteCategory(original);
-            const proposedRuleId = classifyNumericalRewriteCategory(proposed);
-
-            if (isFractionSimplificationRuleId(originalRuleId)) {
-                const canonicalOriginal = getCanonicalNumericalRewriteNode(original);
-                const forwardAllowed = getNumericalRewriteRuleSetting(originalRuleId).forward === "manual";
-                if (forwardAllowed && numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)) {
-                    return { ok: true };
-                }
-                const originalIsCanonical = numericalRewriteNodesHaveSameStructure(original, canonicalOriginal);
-                const reverseAllowed = isFractionSimplificationRuleId(proposedRuleId) &&
-                    getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual";
-                if (originalIsCanonical && reverseAllowed) {
-                    const canonicalProposed = getCanonicalNumericalRewriteNode(proposed);
-                    if (numericalRewriteNodesHaveSameStructure(original, canonicalProposed)) {
-                        return { ok: true };
-                    }
-                }
-            } else {
-                if (originalRuleId && getNumericalRewriteRuleSetting(originalRuleId).forward === "manual") {
-                    const canonicalOriginal = getCanonicalNumericalRewriteNode(original);
-                    if (numericalRewriteNodesHaveSameStructure(proposed, canonicalOriginal)) {
-                        return { ok: true };
-                    }
-                }
-                if (proposedRuleId && getNumericalRewriteRuleSetting(proposedRuleId).reverse === "manual") {
-                    const canonicalProposed = getCanonicalNumericalRewriteNode(proposed);
-                    if (numericalRewriteNodesHaveSameStructure(original, canonicalProposed)) {
-                        return { ok: true };
-                    }
-                }
-            }
-            return { ok: false, error: "That equivalent rewrite is not permitted by this exercise's forward and reverse numerical-manipulation settings." };
         }
 
         function exactRationalsAreEqual(first, second) {
@@ -8872,28 +8157,12 @@ ctx.font = SETTINGS.textFont;
                 first.denominator === second.denominator;
         }
 
-        function evaluateLevelOneNode(node) {
-            if (!node) {
+        function evaluateWholeNumberBuilderNode(node) {
+            if (node?.type !== "value" &&
+                (!["sum", "prod"].includes(node?.type) || node.args.some(child => child.type !== "value"))) {
                 return null;
             }
-            if (node.type === "value") {
-                const parsed = parseNonNegativeInteger(node.value);
-                return parsed === null ? null : parsed;
-            }
-            if (node.type === "sum" || node.type === "prod") {
-                const level = classifyArithmeticExpressionLevel(node);
-                if (level === null || level > 1) {
-                    return null;
-                }
-                const result = evaluateArithmeticNode(node);
-                return result !== null && result >= 0 && Number.isInteger(result) ? result : null;
-            }
-            return null;
-        }
-
-        function evaluateNodeForCurrentLevel(node) {
-            const evaluationLevel = getEvaluationLevelForCurrentLevel();
-            if (!isArithmeticExpressionAtOrBelowLevel(node, evaluationLevel)) {
+            if ((node.type === "value" ? [node] : node.args).some(child => parseNonNegativeInteger(child.value) === null)) {
                 return null;
             }
             return evaluateArithmeticNode(node);
@@ -9180,7 +8449,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function canEvaluate() {
-            return evaluateNodeForCurrentLevel(cloneSelectedRangeNode()) !== null;
+            return evaluateArithmeticNode(cloneSelectedRangeNode()) !== null;
         }
 
         function getDoubleNegativeData() {
@@ -9493,7 +8762,6 @@ ctx.font = SETTINGS.textFont;
                 evaluate: canEvaluate(),
                 numericalEquivalence: canNumericalEquivalence(),
                 numericalRewrite: canNumericalRewrite(),
-                automaticNumericalRewrite: !!getAutomaticNumericalRewriteData(),
                 arithmeticLevel0: canNumericalRewrite(),
                 arithmeticLevel1: canNumericalRewrite(),
                 arithmeticLevel2: canNumericalRewrite(),
@@ -11148,7 +10416,7 @@ ctx.font = SETTINGS.textFont;
             if (normalized.type === "value") {
                 return parseNonNegativeInteger(normalized.value);
             }
-            return evaluateLevelOneNode(normalized);
+            return evaluateWholeNumberBuilderNode(normalized);
         }
 
         function builderValidationFailed(message) {
@@ -11355,12 +10623,8 @@ ctx.font = SETTINGS.textFont;
                     return builderValidationFailed("The proposed entry does not have the same numerical value.");
                 }
 
-                const permissionCheck = validateManualNumericalRewriteExchange(
-                    builder.originalSelectedNode,
-                    completed
-                );
-                if (!permissionCheck.ok) {
-                    return builderValidationFailed(permissionCheck.error);
+                if (numericalRewriteNodesHaveSameStructure(builder.originalSelectedNode, completed)) {
+                    return builderValidationFailed("Build a different equivalent numerical expression.");
                 }
                 builder.completedNumericalRewrite = {
                     from: expressionToFullyParenthesizedText(builder.originalSelectedNode),
@@ -11414,7 +10678,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 replacement = completed;
             } else if (builder.tool === "evaluate") {
-                const target = evaluateNodeForCurrentLevel(builder.originalSelectedNode);
+                const target = evaluateArithmeticNode(builder.originalSelectedNode);
                 const computed = evaluateBuilderWholeNumberExpression(completed);
                 if (target === null || computed === null || completed.type !== "value") {
                     return builderValidationFailed("Enter the evaluated whole number.");
@@ -11590,7 +10854,7 @@ ctx.font = SETTINGS.textFont;
             if (selectedNode.type === "value" && parseNonNegativeInteger(selectedNode.value) !== null) {
                 return "expand";
             }
-            if (evaluateLevelOneNode(selectedNode) !== null) {
+            if (evaluateWholeNumberBuilderNode(selectedNode) !== null) {
                 return "collapse";
             }
             return null;
@@ -11600,68 +10864,11 @@ ctx.font = SETTINGS.textFont;
             return getNumericalEquivalenceModeForSelection() !== null;
         }
 
-        function validateArithmeticExpressionForLevel(node, allowedLevel, roleLabel) {
-            if (!node) {
-                return { ok: false, error: `There is no ${roleLabel} expression to check.` };
-            }
-            if (!isEntirelyNumericalNode(node)) {
-                return { ok: false, error: `The ${roleLabel} expression must be entirely numerical.` };
-            }
-            const actualLevel = classifyArithmeticExpressionLevel(node);
-            const clampedAllowedLevel = clampArithmeticLevel(allowedLevel, 0);
-            if (actualLevel === null) {
-                return { ok: false, error: `The ${roleLabel} expression could not be classified as arithmetic.` };
-            }
-            if (actualLevel > clampedAllowedLevel) {
-                return {
-                    ok: false,
-                    error: `The ${roleLabel} expression is arithmetic level ${actualLevel}, but this button allows only level ${clampedAllowedLevel}. ${getArithmeticLevelDescription(clampedAllowedLevel)}`
-                };
-            }
-            const value = evaluateArithmeticNode(node);
-            if (value === null) {
-                return { ok: false, error: `The ${roleLabel} expression could not be evaluated as a finite number.` };
-            }
-            return { ok: true, level: actualLevel, value };
-        }
-
-        function canArithmeticEquivalence(allowedLevel) {
-            const selectedNode = cloneSelectedRangeNode();
-            return validateArithmeticExpressionForLevel(selectedNode, allowedLevel, "selected").ok;
-        }
-
-        function isExactNumericalRewriteValue(node, value) {
-            return !!node && node.type === "value" && String(node.value) === value;
-        }
-
-        function isExactDoubleNegativeProduct(node) {
-            return !!node && node.type === "prod" && node.args.length === 2 &&
-                node.args.every(factor => isExactNumericalRewriteValue(factor, "-1"));
-        }
-
-        function isExactInverseOfNegativeOne(node) {
-            return !!node && node.type === "inv" && node.args.length === 1 &&
-                isExactNumericalRewriteValue(node.args[0], "-1");
-        }
-
-        function isExactInverseOfOne(node) {
-            return !!node && node.type === "inv" && node.args.length === 1 &&
-                isExactNumericalRewriteValue(node.args[0], "1");
-        }
-
         function canNumericalRewrite() {
-            return canUseManualNumericalRewrite() ||
-                (!getCurrentLevel()?.numericalRewriteMode && !!getAutomaticNumericalRewriteData());
-        }
-
-        function applyAutomaticNumericalRewrite() {
-            const data = getAutomaticNumericalRewriteData();
-            if (!data) {
-                return false;
-            }
-            replaceSelectedRange(data.replacement);
-            finishOperation();
-            return true;
+            const selectedNode = cloneSelectedRangeNode();
+            if (!selectedNode || !evaluateNumericalRewriteNodeExactly(selectedNode)) return false;
+            return getCurrentLevel()?.numericalRewriteMode !== "prescribed" ||
+                getPrescribedNumericalRewriteChoices(selectedNode).length > 0;
         }
 
         function applyFactorNumber() {
@@ -11730,7 +10937,7 @@ ctx.font = SETTINGS.textFont;
 
         function applyEvaluate() {
             const selectedNode = cloneSelectedRangeNode();
-            const target = evaluateNodeForCurrentLevel(selectedNode);
+            const target = evaluateArithmeticNode(selectedNode);
             if (target === null) {
                 return false;
             }
@@ -11796,7 +11003,7 @@ ctx.font = SETTINGS.textFont;
                 return true;
             }
 
-            const target = evaluateLevelOneNode(selectedNode);
+            const target = evaluateWholeNumberBuilderNode(selectedNode);
             if (target === null) {
                 return false;
             }
@@ -12150,10 +11357,10 @@ ctx.font = SETTINGS.textFont;
         function getExpressionBuilderNote() {
             const toolName = uiState.activeTool;
             if (toolName === "numericalEquivalence") {
-                return "Build an equivalent whole-number expression using the buttons. Level 1 allows a whole number, a sum of whole numbers, or a product of whole numbers.";
+                return "Build an equivalent whole-number expression using the buttons.";
             }
             if (isNumericalRewriteTool(toolName)) {
-                return "Build the proposed replacement shown beside the selected expression. Submit first checks its value, then this exercise's restrictions.";
+                return "Build the proposed replacement shown beside the selected expression. Submit checks that the two expressions have the same value.";
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct") {
                 return "Build the proposed product shown beside the selected number.";
@@ -12687,23 +11894,9 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function resolveAutomaticNumericalRewriteTool() {
-            const configuredRewrite = getAutomaticNumericalRewriteData();
-            if (configuredRewrite) {
-                return { toolName: "automaticNumericalRewrite", label: "Automatically simplify numerical expression" };
-            }
-            return null;
-        }
-
         function resolveContextualNumericalRewriteAction() {
-            // Keep the editor available even when the current number has a canonical form.
-            const level = getCurrentLevel();
-            const automatic = level?.creative || level?.numericalRewriteMode ? null : resolveAutomaticNumericalRewriteTool();
-            if (automatic) {
-                return { ...automatic, mode: "automatic" };
-            }
-            return canUseManualNumericalRewrite()
-                ? { toolName: "numericalRewrite", label: "Open Manual Numerical Manipulation", mode: "manual" }
+            return canNumericalRewrite()
+                ? { toolName: "numericalRewrite", label: "Numerical Manipulation" }
                 : null;
         }
 
@@ -12743,10 +11936,8 @@ ctx.font = SETTINGS.textFont;
                 numericalButton.setAttribute("title", resolved ? resolved.label : "Numerical Manipulation — not applicable to this selection");
                 if (resolved) {
                     numericalButton.dataset.resolvedTool = resolved.toolName;
-                    numericalButton.dataset.rewriteMode = resolved.mode;
                 } else {
                     delete numericalButton.dataset.resolvedTool;
-                    delete numericalButton.dataset.rewriteMode;
                 }
             }
         }
@@ -12822,7 +12013,9 @@ ctx.font = SETTINGS.textFont;
                     advanceDemoStep();
                 }
             } else {
-                recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null, builderAtStart.completedNumericalRewrite);
+                if (action !== "undo" && action !== "undoBackspace") {
+                    recordBuilderForSolution(action, value, beforeExpression, builderAtStart.flowVersion || null, builderAtStart.completedNumericalRewrite);
+                }
                 // Submit completes the mathematical rewrite before this input
                 // action is appended. Keep the stable state's recorder cursor
                 // aligned so a later undo-without-history preserves the Submit
@@ -13298,9 +12491,6 @@ function renderToolArea() {
             }
             if (toolName === "zeroProduct") {
                 return applyZeroProduct;
-            }
-            if (toolName === "automaticNumericalRewrite") {
-                return applyAutomaticNumericalRewrite;
             }
             if (isInverseRewriteTool(toolName)) {
                 return () => applyInverseRewrite(toolName);

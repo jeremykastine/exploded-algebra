@@ -6,20 +6,22 @@
   <title>Problem Editor — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261115-problem-editor">
+  <link rel="stylesheet" href="problem-builder.css?v=20261115-move-workflow">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="problem-builder.js?v=20261115-guided-creative-replay"></script>
+  <script defer src="level-transfer.js"></script>
+  <script defer src="problem-builder.js?v=20261115-move-workflow"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T11:21:33-05:00">11/15/26, 11:21 AM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T11:42:40-05:00">11/15/26, 11:42 AM EST</time></p>
   <main>
     <section class="phase" data-phase="1">
       <form id="setupForm" class="card form-card" aria-label="Problem setup">
         <h1>Problem Editor</h1>
-        <p class="editor-intro">Transform an expression in <a href="exploded-algebra.html?mode=creative">Creative Mode</a>, then upload its <strong>Download Moves</strong> JSON file.</p>
-        <label>Move history file
+        <p class="editor-intro">Open moves from <a href="exploded-algebra.html?mode=creative">Creative Mode</a> or upload a move history or edited level.</p>
+        <label id="moveFileLabel">Move history or level JSON
           <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
         </label>
+        <p id="transferredFile" hidden></p>
         <label>Problem name
           <input id="problemTitle" name="title" required autocomplete="off" placeholder="Add fractions with unlike denominators">
         </label>
@@ -29,7 +31,7 @@
             <label><input type="radio" name="rewriteMode" value="free" checked> Free numerical rewrites</label>
             <label><input type="radio" name="rewriteMode" value="prescribed"> Only prescribed numerical rewrites</label>
           </div>
-          <p class="field-help">Free rewrites accept any equivalent numerical form. Prescribed rewrites offer only recorded replacements for the selected expression.</p>
+          <p class="field-help">Free rewrites accept any equivalent numerical form. Prescribed rewrites show multiple-choice options drawn from the recorded replacements for that expression.</p>
         </fieldset>
         <p id="setupError" class="form-error" role="alert"></p>
         <div class="phase-actions end">
@@ -37,6 +39,12 @@
         </div>
       </form>
     </section>
+
+    <div id="editorActions" class="phase-actions end" hidden>
+      <button id="openInPlayerButton" class="primary-button" type="button">Open in Player</button>
+      <button id="downloadLevelButton" class="primary-button" type="button">Download Level</button>
+      <p id="exportStatus" class="status-line" aria-live="polite"></p>
+    </div>
 
     <section class="phase" data-phase="2" hidden>
       <section class="step-curation-section" aria-label="Exercise steps">
@@ -64,14 +72,10 @@
           <textarea id="exerciseGuidance" rows="18" spellcheck="false"></textarea>
         </label>
 
-        <div class="phase5-controls">
-          <button id="completeProblemButton" type="button" class="primary-button complete-problem-button">All Done</button>
-          <p id="exportStatus" class="status-line" aria-live="polite"></p>
-        </div>
       </section>
     </section>
   </main>
 
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-guided-creative-replay" hidden></iframe>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-move-workflow" hidden></iframe>
 </body>
 </html>

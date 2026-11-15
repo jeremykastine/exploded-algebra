@@ -23,14 +23,14 @@ for (const id of requestedIds) {
 for (const phase of ["1", "2", "3"]) {
   assert(builderHtml.includes(`data-phase="${phase}"`), `Missing editor phase ${phase}`);
 }
-assert(builderHtml.includes('id="moveFile"') && builderJs.includes('api.inspectMoveHistory(history)'), "The editor must start from a downloaded move file");
+assert(builderHtml.includes('id="moveFile"') && builderJs.includes('api.inspectMoveHistory(history, true)'), "The editor must start from a downloaded move file");
 assert(builderHtml.includes('name="rewriteMode" value="free"') && builderHtml.includes('name="rewriteMode" value="prescribed"'), "The editor must expose both numerical rewrite modes");
 assert(!builderHtml.includes("numericalPermissionsTable") && !playerJs.includes("installAuthoringApi"), "The former instructor workflow must be removed");
 assert(builderHtml.includes('id="curationTable"') && builderHtml.includes('aria-roledescription="carousel"'), "Retained steps must be reviewed in the carousel");
 assert(builderJs.includes('name="step-visibility-') && builderJs.includes("curationKeepDecisions"), "Intermediate steps must be selectable");
 assert(builderJs.includes('data-step-field="beforeKatex"') && builderJs.includes('data-step-field="afterKatex"'), "Retained steps must remain editable");
 assert(builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"'), "Exercise guidance must remain editable");
-assert(builderJs.includes("downloadLevel(level)") && builderJs.includes("source=problem-editor") && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
+assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
@@ -46,7 +46,7 @@ assert(!playerJs.includes('data-builder-review') && !playerHtml.includes('builde
 assert(playerHtml.includes('data-workspace-action="showExerciseGuidance"') && playerHtml.includes('aria-label="Exercise guidance"'), "Student pre-selection must provide an Exercise Guidance button");
 assert(playerJs.includes('function showExerciseGuidance()') && playerJs.includes('<span class="exercise-guidance-popover-title">Exercise Guidance</span>'), "The Exercise Guidance button must open the combined guidance view");
 assert(playerJs.includes('function getProblemStatementKatex(level)') && playerJs.includes('<h3>Problem Statement</h3>'), "Exercise Guidance must automatically include the problem statement expression");
-assert(playerJs.includes('function getNumericalRestrictionsTreeHtml(profile)') && playerJs.includes('<h3>Numerical Rewrites</h3>'), "Exercise Guidance must automatically include the two-level numerical restrictions");
+assert(playerJs.includes('level.numericalRewriteMode === "prescribed"') && playerJs.includes('<h3>Numerical Rewrites</h3>'), "Exercise Guidance must automatically include the numerical rewrite mode");
 assert(playerJs.includes('normalizeTextBlocks(level.exerciseGuidance)') && playerJs.includes('<h3>Additional Guidance</h3>'), "Exercise Guidance must include the author-provided exercise-level guidance");
 assert(playerJs.includes('function getCompleteExerciseGuidanceHtml(source)') && playerJs.includes('level.exerciseGuidanceIsComplete && authorGuidance.length'), "The player must render a combined author-edited guidance field without duplicating its prefilled sections");
 assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Author guidance must recognize mixed plain text and KaTeX");
@@ -159,7 +159,13 @@ assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unres
 assert(rendererJs.includes('drawingContext.arc(') && rendererJs.includes('box.width / 2'), "Unresolved Builder operations must be shown in circular highlights");
 assert(!rendererJs.includes('builderRecentFill') && !rendererJs.includes('drawBuilderRecentHighlightsToContext') && !playerJs.includes('drawBuilderRecentHighlightsToContext'), "Expression Builder must not render purple entry highlighting");
 assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('builderPlaceholderBox'), "Builder layout must not retain future-entry placeholder boxes");
-assert(playerJs.includes("solutionRecorder.includeUndoActions === false"), "Undo-exclusion recording path is missing");
+assert(!playerJs.includes("recordUndoForSolution") &&
+  playerJs.includes("Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount)"),
+  "Undo must prune the recorded actions");
+assert(playerHtml.includes('data-workspace-action="downloadMovesForEditor"') &&
+  playerHtml.includes('data-workspace-action="editLevelCopy"') &&
+  builderHtml.includes('id="openInPlayerButton"'),
+  "Creative Mode, the player, and the editor must expose their navigation actions");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
 const rendererContext = { window: {}, console };
@@ -315,11 +321,5 @@ renderer.layoutExpressionWithSettings(dangling, fakeContext, renderer.SETTINGS, 
 assert(dangling.layout.builderOperatorBoxes[0].groupable === false, "A dangling operation must not group before its next value exists");
 const danglingOperator = dangling.layout.builderOperatorBoxes[0];
 assert(nearlyEqual(dangling.layout.x + dangling.layout.width, danglingOperator.x + danglingOperator.width + dangling.layout.builderOuterPadding), "A dangling operation must end immediately after its circle with no extra value space");
-
-for (const file of fs.readdirSync(path.join(root, "levels")).filter(name => name.endsWith(".json"))) {
-  const level = JSON.parse(read(path.join("levels", file)));
-  assert(level.id && level.title && level.startExpression, `${file} is missing required metadata`);
-  assert(Array.isArray(level.steps) && level.steps.length > 0, `${file} has no steps`);
-}
 
 console.log("Problem Builder static integration checks passed.");
