@@ -244,6 +244,8 @@
           build: "1",
           rewrites: "prescribed"
         };
+        const playerVersion = new URL(byId("eaWorkspace").src).searchParams.get("v");
+        if (playerVersion) params.v = playerVersion;
         ExplodedAlgebraTransfer.open("exploded-algebra.html", params,
           { fileName, text: JSON.stringify(level) }, preview);
         status.textContent = "Opened in Player.";
