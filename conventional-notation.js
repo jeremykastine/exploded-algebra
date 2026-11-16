@@ -220,7 +220,7 @@ const ExplodedAlgebraNotation = (() => {
         if (explicit) next();
         const right = factor();
         const isDivision = divide.has(token);
-        const operator = !explicit ? "" : token === "/" ? "/" : isDivision ? "\\div " :
+        const operator = !explicit ? "" : isDivision ? "\\div " :
           ["x", "×", "\\times"].includes(token) ? "\\times " : "\\cdot ";
         if (!explicit && /[\d.]$/.test(left.tex) && /^[\d.]/.test(right.tex)) {
           throw new Error("Put a multiplication sign between consecutive numbers.");

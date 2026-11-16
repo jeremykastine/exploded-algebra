@@ -13,7 +13,8 @@ vm.runInContext(renderer, context);
 // geometry and helpers, including dependencies between these two scripts.
 for (const name of ["getSelectionBufferWidth", "distanceFromPointToRect",
     "distanceFromPointToSegment", "getSelectionTargetArea",
-    "collectVisibleObjectCandidates", "findNearestVisibleObject"]) {
+    "getInverseHeaderBottom", "collectVisibleObjectCandidates", "findNearestVisibleObject",
+    "getCommonPath", "selectionTargetContainingPaths", "selectionRectangle", "findWorkspaceRectangleTarget"]) {
     const start = player.indexOf(`        function ${name}(`);
     assert(start >= 0, `Missing selection function ${name}`);
     const end = player.indexOf("\n        function ", start + 1);
@@ -48,5 +49,29 @@ for (const type of ["sum", "prod"]) {
         assert.equal(leafTarget.node, leaf, `${type}: values must remain individually selectable`);
     }
 }
+
+const row = new ExprNode("prod", [value("12"), value("34"), value("56")]);
+context.layoutExpressionWithSettings(row, measuring, settings, 20, 20);
+context.expressionRoot = row;
+const [first, second, third] = row.args;
+const backwards = context.selectionRectangle(third.right() + 20, row.bottom() + 20,
+    second.left(), row.top() - 20);
+const range = context.findWorkspaceRectangleTarget(backwards);
+assert.equal(range.node, row);
+assert.equal(range.firstPart, 1);
+assert.equal(range.lastPart, 2);
+const single = context.findWorkspaceRectangleTarget(context.selectionRectangle(
+    first.left() - 20, first.top() - 20, first.right(), first.bottom()));
+assert.equal(single.node, first);
+assert.equal(context.findWorkspaceRectangleTarget(context.selectionRectangle(0, 0, 10, 10)), null);
+
+const inverse = new ExprNode("inv", [value("24")]);
+context.layoutExpressionWithSettings(inverse, measuring, settings, 20, 20);
+context.expressionRoot = inverse;
+assert.equal(context.findWorkspaceRectangleTarget(context.selectionRectangle(
+    inverse.left(), inverse.top(), inverse.right(), inverse.top() + 1)).node, inverse);
+const [denominator] = inverse.args;
+assert.equal(context.findWorkspaceRectangleTarget(context.selectionRectangle(
+    denominator.left(), denominator.top(), denominator.right(), denominator.bottom())).node, denominator);
 
 console.log("Selection hit-testing checks passed.");

@@ -203,6 +203,7 @@ assert.equal(verify("((x)*(x))", "x^{1+1}"), "x^{1+1}");
 assert.equal(verify("((x)*(x))", "x(x)"), "x(x)");
 assert.equal(verify("(((1)/(2))*(x))", "\\frac{x}{2}"), "\\frac{x}{2}");
 assert.equal(verify("(((1)/(2))*(x))", "x÷2"), "x\\div 2");
+assert.equal(verify("(((1)/(2))*(x))", "x/2"), "x\\div 2");
 assert.equal(verify("((x)*(x))", "\\frac{x^3}{x}"), "\\frac{x^{3}}{x}");
 assert.equal(verify("((x)*(x))", "\\left(x\\right)^2"), "\\left(x\\right)^{2}");
 assert.equal(verify("((x)*(x))", "(x+1)(x-1)+1"), "(x+1)(x-1)+1");

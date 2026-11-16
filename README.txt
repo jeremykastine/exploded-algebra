@@ -6,12 +6,11 @@ server such as GitHub Pages.
 
 CREATING AND PLAYING LEVELS
 
-In Creative Mode, build a starting expression and transform it. The workspace
-menu downloads the moves and opens either a guided player or the Problem Editor.
-The player menu opens a copy in the editor. The editor can open the edited copy
-in the player or download it as a level JSON file. Open in Player starts
-unguided and limits numerical rewrites to recorded choices. Exercises.html
-also opens a downloaded file.
+Use Exploded Algebra opens the player in Free Play. Build a starting
+expression and transform it. The workspace menu can start a new expression,
+open an exercise file, send the current work to the Problem Editor, or download
+the moves. The editor can download a level JSON file or open it in the player
+with an unguided build and recorded numerical rewrites.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. A Transform heading introduces the current expression followed by
@@ -21,7 +20,10 @@ line. You transformed uses the original and completed expressions in the same
 layout. The stack reserves four lines. The fourth is always blank, and the
 third is also blank when only a heading and one expression are shown. The
 expression stays editable after completion. The stack shares the workspace
-pan and zoom.
+pan and zoom. In Select mode, dragging from one corner to the opposite corner
+shows a blue rectangle. Releasing the drag selects the expression parts it covers.
+Generated conventional expressions use ÷ for division and preserve parentheses
+around non-leading negative-one factors.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
 
@@ -139,22 +141,23 @@ representation. See `EXPONENT_IMPLEMENTATION_ARCHIVE.md` for the archived design
 
 CUSTOM LEVELS
 
-Choose a compatible JSON file from Exercises.html, or move between Creative Mode,
-the player and the Problem Editor using their menus. Each tab keeps its own level
-state. The player’s Edit a Copy opens the authored level in a separate editor tab.
+Choose a compatible JSON file with Open Exercise in the workspace menu.
+Each tab keeps its own level state. Open Current Work in Editor sends the run so
+far. Edit a Copy opens the original authored exercise when available.
 
 Move histories keep the inputs used to build the starting expression and the
 completed transformations. Undo discards the undone actions from the recording.
 The editor lists the recorded steps in one column. Mark a row as major to
-make it a player checkpoint. Switch to Functional for a read-only view of its
-structure. Conventional notation edits must render and have the same exact
-rational expression value before you can save them.
-Open in Player starts a guided build-first replay. Download Level saves the edited
-exercise JSON.
+make it a player checkpoint. Conventional notation edits must render and have
+the same exact rational expression value before you can save them. Download
+Level saves the edited exercise JSON.
 
-Guided mode highlights the recorded steps. Unguided mode accepts the learner’s
-own steps and is the default for uploaded levels. Restart Problem in the player
-lets the learner choose Guided mode and build-first independently.
+For a hosted exercise, use exploded-algebra.html?level=path/to/exercise.json.
+Add mode=guided to highlight recorded steps, build=1 to require building the
+starting expression, or rewrites=prescribed to allow only recorded numerical
+rewrites. Restart Exercise in the workspace menu reloads the current exercise
+with the selected settings. A player URL without an exercise opens Free Play.
+Existing links with mode=creative also open Free Play.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication

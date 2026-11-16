@@ -136,7 +136,7 @@ body.player-ready>#exploded-examples{display:none;}
 <noscript><style>body{visibility:visible;}</style></noscript>
 </head>
 <body>
-<p class="page-last-updated">Last updated: <time datetime="2026-11-16T06:07:38-05:00">11/16/26, 6:07 AM EST</time></p>
+<p class="page-last-updated">Last updated: <time datetime="2026-11-16T14:47:01-05:00">11/16/26, 2:47 PM EST</time></p>
 
 <main class="narrative">
     <header class="intro-header">
@@ -287,7 +287,7 @@ body.player-ready>#exploded-examples{display:none;}
 </div>
 </template>
 
-<script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
+<script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
 <script>
 (() => {
     const Renderer = window.ExplodedAlgebraRenderer;
@@ -1158,12 +1158,12 @@ body.player-ready>#exploded-examples{display:none;}
 
     const interfaceSection = addSection("Try the Exploded Algebra interface", [
         "Exploded Algebra goes a step beyond an exploded-view diagram: its expressions can be manipulated in real time through an interactive interface. We can select parts of an expression and perform operations on them, watching the representation change as we work.",
-        "In Creative Mode, build either expression from Section 3. Select the innermost sum or product and use Numerical Manipulation to replace it with its value. Repeat for the remaining operation."
+        "In the player, build either expression from Section 3. Select the innermost sum or product and use Numerical Manipulation to replace it with its value. Repeat for the remaining operation."
     ], null, "try-the-interface");
     const creativeLink = document.createElement("a");
     creativeLink.className = "practice-link";
-    creativeLink.href = "exploded-algebra.html?mode=creative";
-    creativeLink.textContent = "Open Creative Mode";
+    creativeLink.href = "exploded-algebra.html";
+    creativeLink.textContent = "Use Exploded Algebra";
     interfaceSection.appendChild(creativeLink);
     function appendParagraph(section, copy) {
         const paragraph = document.createElement("p");

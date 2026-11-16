@@ -23,11 +23,9 @@ assert(new Set(lastUpdatedValues).size === 1, "Every HTML page must carry the sa
 assert(/\.page-last-updated \{[\s\S]*?position: fixed;[\s\S]*?top: max\(3px,[\s\S]*?right: max\(5px,[\s\S]*?font-size: 9px;[\s\S]*?pointer-events: none;/.test(lastUpdatedCss), "The shared Last updated marker must remain tiny, fixed in the top-right, and noninteractive");
 const indexChoices = Array.from(indexHtml.matchAll(/<a class="choice" href="([^"]+)">([^<]+)<\/a>/g), match => ({ href: match[1], label: match[2] }));
 assert.deepEqual(indexChoices, [
-    { href: "Introduction.html", label: "Introduction to Exploded Algebra" },
-    { href: "Exercises.html", label: "Student" },
-    { href: "exploded-algebra.html?mode=creative", label: "Creative Mode" },
-    { href: "problem-builder.html", label: "Problem Editor" }
-], "The landing page must list Introduction, Student, Creative Mode, and Problem Editor in order");
+    { href: "exploded-algebra.html", label: "Use Exploded Algebra" },
+    { href: "Introduction.html", label: "Learn About Exploded Algebra" }
+], "The landing page must offer only the player and introduction");
 assert(indexHtml.includes("Welcome to Exploded Algebra") && indexHtml.includes("Introduction.html"), "The landing page must welcome users and provide the introduction");
 assert(exercisesHtml.includes('id="customLevelFileInput"') && !exercisesHtml.includes("builtInLevelData"),
     "The exercise launcher must provide file uploads without the old bundled moves");
@@ -40,13 +38,16 @@ assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MOD
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["Restart Problem", "Download Moves", "Close Problem"]) {
+for (const label of ["New Expression", "Open Exercise…", "Restart Exercise…", "Open Problem Editor", "Download Moves"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
 assert.equal((workspaceMenu.match(/data-workspace-action="restartExercise"/g) || []).length, 1);
 const restartDialog = playerHtml.match(/<dialog id="restartProblemDialog"[^>]*>([\s\S]*?)<\/dialog>/)[1];
 assert(restartDialog.includes('id="restartGuidedInput" type="checkbox"'));
 assert(restartDialog.includes('id="restartBuildInput" type="checkbox"'));
+assert(restartDialog.includes('id="restartPrescribedInput" type="checkbox"'));
+assert(playerJs.includes('url.searchParams.set("rewrites", "prescribed")') &&
+    playerJs.includes('url.searchParams.delete("rewrites")') && playerJs.includes('window.location.replace(url.href)'));
 assert(playerJs.includes('url.searchParams.set("build", "1")') && playerJs.includes('url.searchParams.delete("build")'));
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
 assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
@@ -109,8 +110,8 @@ assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: 
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
 
-assert(!introductionHtml.includes("intro-levels/") && introductionHtml.includes("Open Creative Mode"),
-    "The introduction must link to Creative Mode after the bundled exercises are removed");
+assert(!introductionHtml.includes("intro-levels/") && introductionHtml.includes('creativeLink.href = "exploded-algebra.html"'),
+    "The introduction must link to the default player");
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "The upper-right hamburger menu must open Settings");
@@ -161,9 +162,10 @@ assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-co
 
 assert(playerJs.includes("function isPointInsideCurrentSelection(x, y)"), "Selection presses must use the highlighted selection bounds");
 assert(playerJs.includes("function isPointInsideExpression(x, y)"), "Selection presses must distinguish the expression from surrounding workspace");
-assert(/function selectFromWorkspaceTap\(x, y, pointerType, allowSelectionCancel = true\) \{[\s\S]*?isPointInsideCurrentSelection\(x, y\) \|\| !isPointInsideExpression\(x, y\)[\s\S]*?cancelCurrentWorkspaceSelection\(\)/.test(playerJs), "Pressing inside the current selection or outside the expression must clear it");
-assert(playerJs.includes("selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);") && playerJs.includes("selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);"), "Dragging from the selection must remain a two-endpoint selection gesture rather than a cancel press");
-assert(playerJs.includes(': "cancelSelection"') && playerJs.includes('pointerStart.mode === "cancelSelection"'), "Blank workspace taps must clear an existing selection");
+assert(/function selectFromWorkspaceTap\(x, y, pointerType\) \{[\s\S]*?isPointInsideCurrentSelection\(x, y\) \|\| !isPointInsideExpression\(x, y\)[\s\S]*?cancelCurrentWorkspaceSelection\(\)/.test(playerJs), "Pressing inside the current selection or outside the expression must clear it");
+assert(playerHtml.includes('<rect id="workspaceSelectionDragRect"') &&
+    playerJs.includes("selectWorkspaceTarget(findWorkspaceRectangleTarget(rect));"),
+    "Selection drags must show a rectangle and use it to select expression parts");
 assert(!playerJs.includes('action === "cancelSelection"'), "The old Cancel Selection action must be removed");
 const expectedDirectRules = [
     ['distributeLeftToRight', 'Distribute left'],

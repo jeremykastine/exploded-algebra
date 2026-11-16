@@ -181,16 +181,6 @@
             font-size: 13px;
         }
 
-        .loaded-level-file-name {
-            font-size: 12px;
-            color: #666;
-            overflow-wrap: anywhere;
-        }
-
-        .loaded-level-file-name.file-error {
-            color: #a00000;
-        }
-
         body.no-level-loaded #expressionWorkspaceSvg {
             pointer-events: none;
         }
@@ -1183,7 +1173,7 @@
             border: none;
         }
 
-        #expressionWorkspaceSvg {
+        #svgContainer, #expressionWorkspaceSvg {
             /* Workspace gestures belong to the active Select or Pan tool. */
             touch-action: none;
             user-select: none;
@@ -4078,11 +4068,19 @@
             height: 100%;
             pointer-events: none;
         }
-        .workspace-selection-feedback line {
+        .workspace-selection-feedback rect {
+            fill: none;
             stroke: #2563eb;
-            stroke-width: 3;
-            stroke-linecap: round;
+            stroke-width: 2;
         }
+        .exercise-load-status {
+            position: absolute;
+            top: 2rem;
+            left: 1rem;
+            max-width: min(34rem, calc(100% - 5rem));
+            z-index: 6;
+        }
+        #openExerciseError { color: #a00000; overflow-wrap: anywhere; }
         .workspace-conventional-line {
             position: absolute;
             display: grid;
@@ -4327,7 +4325,7 @@
         .workspace-utility-menu-items button:not(:disabled):hover,
         .workspace-utility-menu-items button:focus-visible { background: #e8f1ff; }
         .workspace-utility-menu-items button:disabled { color: #666; cursor: default; }
-        .restart-problem-dialog {
+        .workspace-dialog {
             width: min(23rem, calc(100% - 2rem));
             box-sizing: border-box;
             padding: 1.2rem;
@@ -4337,18 +4335,18 @@
             background: #fff;
             font: 1rem/1.4 Verdana, Arial, Helvetica, sans-serif;
         }
-        .restart-problem-dialog::backdrop { background: rgba(25, 35, 50, 0.45); }
-        .restart-problem-dialog h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
-        .restart-problem-dialog label { display: block; padding: 0.45rem 0; }
-        .restart-problem-dialog small { color: #515151; }
-        .restart-problem-actions {
+        .workspace-dialog::backdrop { background: rgba(25, 35, 50, 0.45); }
+        .workspace-dialog h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
+        .workspace-dialog label { display: block; padding: 0.45rem 0; }
+        .workspace-dialog small { color: #515151; }
+        .workspace-dialog-actions {
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-end;
             gap: 0.5rem;
             margin-top: 1rem;
         }
-        .restart-problem-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
+        .workspace-dialog-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
         body.settings-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
             position: absolute;
@@ -4394,7 +4392,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T06:07:38-05:00">11/16/26, 6:07 AM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T14:47:01-05:00">11/16/26, 2:47 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4404,12 +4402,13 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <div id="workspaceUtilityMenuItems" class="workspace-utility-menu-items hidden" role="menu" aria-label="Workspace menu">
+                <button type="button" data-workspace-action="newExpression" role="menuitem">New Expression</button>
+                <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Open Exercise…</button>
+                <button type="button" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Exercise…</button>
+                <button type="button" data-workspace-action="openProblemEditor" role="menuitem">Open Problem Editor</button>
+                <button type="button" data-workspace-action="editLevelCopy" role="menuitem" hidden>Edit a Copy</button>
+                <button type="button" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
                 <button id="settingsButton" type="button" data-workspace-action="openSettings" role="menuitem">Settings</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Problem</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="downloadMovesForEditor" role="menuitem" hidden disabled>Download Moves and Open in Editor</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="editLevelCopy" role="menuitem" disabled>Edit a Copy</button>
-                <button type="button" class="exercise-menu-action" data-workspace-action="closeExercise" role="menuitem">Close Problem</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
@@ -4488,25 +4487,37 @@
                 </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <svg class="workspace-selection-feedback" aria-hidden="true" focusable="false">
-                    <line id="workspaceSelectionDragLine" visibility="hidden"/>
+                    <rect id="workspaceSelectionDragRect" visibility="hidden"/>
                 </svg>
+                <p id="exerciseLoadStatus" class="exercise-load-status" role="status" hidden></p>
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
                 <div id="builderRewritePreview" class="builder-rewrite-preview hidden" aria-live="polite" aria-label="Proposed replacement"></div>
             </div>
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
         </div>
     </div>
-    <dialog id="restartProblemDialog" class="restart-problem-dialog" aria-labelledby="restartProblemTitle">
-        <form method="dialog">
-            <h2 id="restartProblemTitle">Restart Problem</h2>
-            <div id="restartProblemOptions">
-                <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
-                <small id="restartGuidedUnavailable" hidden>This problem has no recorded guide.</small>
-                <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
-                <small id="restartBuildUnavailable" hidden>Build-first mode is available for interactive exercises.</small>
+    <dialog id="openExerciseDialog" class="workspace-dialog" aria-labelledby="openExerciseTitle">
+        <form id="openExerciseForm">
+            <h2 id="openExerciseTitle">Open Exercise</h2>
+            <label for="levelFileInput">Exercise or move history JSON file</label>
+            <input id="levelFileInput" class="level-file-input" type="file" accept=".json,application/json" required>
+            <p id="openExerciseError" role="alert" hidden></p>
+            <div class="workspace-dialog-actions">
+                <button type="submit" formmethod="dialog" formnovalidate value="cancel">Cancel</button>
+                <button id="openExerciseSubmit" type="submit">Open</button>
             </div>
-            <p id="restartCreativeMessage" hidden>Start over with a blank expression?</p>
-            <div class="restart-problem-actions">
+        </form>
+    </dialog>
+    <dialog id="restartProblemDialog" class="workspace-dialog" aria-labelledby="restartProblemTitle">
+        <form method="dialog">
+            <h2 id="restartProblemTitle">Restart Exercise</h2>
+            <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
+            <small id="restartGuidedUnavailable" hidden>This exercise has no recorded guide.</small>
+            <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
+            <small id="restartBuildUnavailable" hidden>Building the starting expression is available for interactive exercises.</small>
+            <label><input id="restartPrescribedInput" type="checkbox"> Restrict numerical rewrites to recorded choices</label>
+            <small id="restartPrescribedUnavailable" hidden>This exercise has no recorded numerical rewrites.</small>
+            <div class="workspace-dialog-actions">
                 <button value="cancel" autofocus>Cancel</button>
                 <button value="restart">Restart</button>
             </div>
@@ -4537,9 +4548,9 @@
         <button type="button" class="exit-settings-button" data-settings-action="close">Done</button>
     </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
-    <script src="level-transfer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20261116-four-rows"></script>
+    <script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
+    <script src="level-transfer.js?v=20261116-player-menu"></script>
+    <script src="exploded-algebra-tool.js?v=20261116-free-play"></script>
 
 </body>
 </html>

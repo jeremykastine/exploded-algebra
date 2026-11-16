@@ -1,11 +1,13 @@
 const ExplodedAlgebraTransfer = (() => {
   const storageKey = "explodedAlgebra.currentCustomLevel";
   const namePrefix = "__EXPLODED_ALGEBRA_LEVEL__:";
+  const fileStorageKey = key => `${storageKey}.${key}`;
 
   function open(page, params, payload, target = window.open("about:blank", "_blank") || window) {
-    const text = JSON.stringify(payload);
+    const key = params.fileKey ? fileStorageKey(params.fileKey) : storageKey;
+    const text = JSON.stringify(params.fileKey ? { ...payload, transferKey: key } : payload);
     try {
-      target.sessionStorage.setItem(storageKey, text);
+      target.sessionStorage.setItem(key, text);
     } catch {
       // The tab name also carries the data for browsers with restricted storage.
     }
@@ -27,9 +29,12 @@ const ExplodedAlgebraTransfer = (() => {
     }
     if (!text) throw new Error("The level data is no longer available. Open the level again.");
     const payload = JSON.parse(text);
+    if (!useLocalStorage && key !== storageKey && payload?.transferKey !== key) {
+      throw new Error("The level data is no longer available. Open the level again.");
+    }
     if (typeof payload?.text !== "string") throw new Error("The transferred level data is incomplete.");
     return payload;
   }
 
-  return { open, read };
+  return { open, read, fileStorageKey };
 })();

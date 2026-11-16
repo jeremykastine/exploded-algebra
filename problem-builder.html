@@ -8,17 +8,17 @@
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
   <link rel="stylesheet" href="problem-builder.css?v=20261115-menu">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="level-transfer.js"></script>
-  <script defer src="conventional-notation.js"></script>
+  <script defer src="level-transfer.js?v=20261116-player-menu"></script>
+  <script defer src="conventional-notation.js?v=20261116-linear-notation"></script>
   <script defer src="problem-builder.js?v=20261115-preview-version"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-16T06:07:38-05:00">11/16/26, 6:07 AM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-16T14:47:01-05:00">11/16/26, 2:47 PM EST</time></p>
   <main>
     <h1>Problem Editor</h1>
     <p id="setupError" class="form-error" role="alert"></p>
     <form id="setupForm" class="card form-card" aria-label="Open a recording">
-      <p class="editor-intro">Open moves from <a href="exploded-algebra.html?mode=creative">Creative Mode</a> or upload a move history or edited level.</p>
+      <p class="editor-intro">Open moves from <a href="exploded-algebra.html">the player</a> or upload a move history or edited level.</p>
       <label>Move history or level JSON
         <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
       </label>
@@ -51,6 +51,6 @@
     </section>
   </main>
 
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261116-four-rows" hidden></iframe>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261116-free-play" hidden></iframe>
 </body>
 </html>

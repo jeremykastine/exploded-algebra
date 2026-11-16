@@ -61,8 +61,8 @@ assert(/\.palette-content > \.builder-keypad-panel \{[\s\S]*?grid-template-colum
 assert(!playerHtml.includes('left-handed') && !playerHtml.includes('handedness'), "Expression Builder must not retain an obsolete left-handed variant");
 assert(playerJs.includes('const panningView = !integratedBuilder && uiState.workspaceMode === "pan"'), "Integrated Expression Builder gestures must not depend on the main workspace Pan mode");
 assert(playerJs.includes('["pan", "builderPan"]') && !playerJs.includes('["pan", "builderOperator", "builderPan"]'), "The integrated Expression Builder canvas must be dedicated to drag-panning rather than operation grouping");
-const whitespacePanHandler = playerJs.match(/svgContainer\.addEventListener\("pointerdown", e => \{([\s\S]*?)\n        \}\);\n\n        workspaceSvg\.addEventListener\("pointerdown"/);
-assert(whitespacePanHandler && whitespacePanHandler[1].includes('isIntegratedExpressionBuilder(uiState.expressionBuilder)') && whitespacePanHandler[1].includes('? "builderPan"') && whitespacePanHandler[1].includes('? "pan"'), "Expression Builder panning must begin on workspace whitespace");
+const whitespacePanHandler = playerJs.match(/svgContainer\.addEventListener\("pointerdown", e => \{([\s\S]*?)\n        \}\);\n\n        svgContainer\.addEventListener\("pointermove"/);
+assert(whitespacePanHandler && whitespacePanHandler[1].includes('isIntegratedExpressionBuilder(activeBuilder)') && whitespacePanHandler[1].includes('? "builderPan"') && whitespacePanHandler[1].includes('? "pan"'), "Expression Builder panning must begin on workspace whitespace");
 assert(/\.builder-keypad-panel\s*\{[\s\S]*?pointer-events:\s*none;[\s\S]*?\}/.test(playerHtml), "The transparent Expression Builder keypad grid must not block workspace whitespace");
 assert(/\.builder-keypad-panel button,[\s\S]*?\.builder-keypad-panel \.builder-action-row button\s*\{[\s\S]*?pointer-events:\s*auto;[\s\S]*?\}/.test(playerHtml), "Expression Builder buttons must remain interactive inside the click-through keypad grid");
 assert(playerJs.includes('builder ? "Backspace Delete" : "Control+Z Meta+Z"'), "Undo must support the Backspace and Delete shortcuts during Builder entry");
@@ -157,10 +157,10 @@ assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('bu
 assert(!playerJs.includes("recordUndoForSolution") &&
   playerJs.includes("Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount)"),
   "Undo must prune the recorded actions");
-assert(playerHtml.includes('data-workspace-action="downloadMovesForEditor"') &&
+assert(playerHtml.includes('data-workspace-action="openProblemEditor"') &&
   playerHtml.includes('data-workspace-action="editLevelCopy"') &&
   builderHtml.includes('id="openInPlayerButton"'),
-  "Creative Mode, the player, and the editor must expose their navigation actions");
+  "The workspace and editor must expose their navigation actions");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
 const rendererContext = { window: {}, console };
@@ -213,21 +213,32 @@ assert(guidedSelectionContext.result, "Guided selection must accept a nested pro
 guidedSelectionContext.selection = { node: guidedRoot.args[1], firstPart: 0, lastPart: 0 };
 vm.runInContext("result = currentSelectionMatchesDemoStep();", guidedSelectionContext);
 assert(!guidedSelectionContext.result, "Guided selection must not accept a different term outside the outlined target");
+const productOf = (...factors) => new renderer.ExprNode("prod", factors.map(factor =>
+  typeof factor === "string" ? value(factor) : factor));
+const inverseOf = factor => new renderer.ExprNode("inv", [typeof factor === "string" ? value(factor) : factor]);
 const cases = [
   [new renderer.ExprNode("sum", [value("x"), value("1")]), "x + 1"],
   [new renderer.ExprNode("prod", [value("3"), value("x")]), "3x"],
   [new renderer.ExprNode("prod", [value("x"), value("x")]), "x^{2}"],
   [new renderer.ExprNode("prod", [value("2"), value("x"), value("x"), value("x")]), "2x^{3}"],
-  [new renderer.ExprNode("inv", [new renderer.ExprNode("sum", [value("x"), value("4")])]), "\\frac{1}{x + 4}"],
+  [new renderer.ExprNode("inv", [new renderer.ExprNode("sum", [value("x"), value("4")])]), "1 \\div \\left(x + 4\\right)"],
   [new renderer.ExprNode("sum", [value("x"), new renderer.ExprNode("prod", [value("-1"), value("3")])]), "x - 3"],
   [new renderer.ExprNode("sum", [value("x"), value("-1")]), "x - 1"],
-  [new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])]), "\\frac{2x}{3}"],
-  [new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])]), "-\\frac{2}{3}"],
-  [new renderer.ExprNode("prod", [value("2"), new renderer.ExprNode("inv", [value("3")]), value("x")]), "\\frac{2}{3} \\cdot x"],
+  [new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])]), "2 \\times x \\div 3"],
+  [new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])]), "-2 \\div 3"],
+  [new renderer.ExprNode("prod", [value("2"), new renderer.ExprNode("inv", [value("3")]), value("x")]), "2 \\div 3 \\times x"],
+  [productOf("a", inverseOf("b"), inverseOf("c")), "a \\div b \\div c"],
+  [productOf("a", inverseOf(productOf("b", "c"))), "a \\div \\left(b \\cdot c\\right)"],
+  [inverseOf(inverseOf("x")), "1 \\div \\left(1 \\div x\\right)"],
+  [productOf("5", "-1", "3", "-1"), "5 \\cdot \\left(-1\\right) \\cdot 3 \\cdot \\left(-1\\right)"],
+  [productOf("-1", "-1", "5"), "-\\left(-1\\right) \\cdot 5"],
+  [productOf("5", inverseOf("3"), "-1"), "5 \\div 3 \\times \\left(-1\\right)"],
+  [new renderer.ExprNode("sum", [value("a"), productOf("-1", new renderer.ExprNode("sum", [value("b"), value("c")]))]), "a - \\left(b + c\\right)"],
   [new renderer.ExprNode("prod", [new renderer.ExprNode("sum", [value("a"), value("b")]), new renderer.ExprNode("sum", [value("c"), value("d")])]), "\\left(a + b\\right)\\left(c + d\\right)"]
 ];
 for (const [expression, expected] of cases) {
   assert(renderer.expressionToKatex(expression) === expected, `Unexpected KaTeX generation for ${expected}`);
+  assert(renderer.expressionBuilderToKatex(expression) === expected, `Unexpected builder KaTeX generation for ${expected}`);
 }
 
 const builderSequence = (args, operators) => {
@@ -251,10 +262,10 @@ assert(renderer.expressionBuilderToKatex(necessaryParenthesesBuilder) === "\\lef
 const danglingBuilder = builderSequence([value("2")], ["sum"]);
 assert(renderer.expressionBuilderToKatex(danglingBuilder) === "2 + ", "A pending Builder operation must remain visible before its next value is entered");
 const inverseBuilder = new renderer.ExprNode("inv", [flatBuilder]);
-assert(renderer.expressionBuilderToKatex(inverseBuilder) === "\\frac{1}{2 + 3 \\cdot 4}", "Unresolved operations inside an inverse must remain flat in its conventional denominator");
+assert(renderer.expressionBuilderToKatex(inverseBuilder) === "1 \\div \\left(2 + 3 \\cdot 4\\right)", "Unresolved operations inside an inverse must remain flat in its conventional denominator");
 assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("sum", [value("x"), value("-1")])) === "x - 1", "Builder conventional notation must show addition of negative one as subtraction");
-assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])])) === "\\frac{2x}{3}", "Builder conventional notation must collect factors preceding an inverse into the numerator");
-assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])])) === "-\\frac{2}{3}", "Builder conventional notation must place a fraction's negative sign in front");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("2"), value("x"), new renderer.ExprNode("inv", [value("3")])])) === "2 \\times x \\div 3", "Builder conventional notation must display division inline after the preceding factors");
+assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [value("-1"), value("2"), new renderer.ExprNode("inv", [value("3")])])) === "-2 \\div 3", "Builder conventional notation must place the negative sign in front");
 assert(renderer.expressionBuilderToKatex(new renderer.ExprNode("prod", [new renderer.ExprNode("sum", [value("a"), value("b")]), new renderer.ExprNode("sum", [value("c"), value("d")])])) === "\\left(a + b\\right)\\left(c + d\\right)", "Builder conventional notation must juxtapose multiplied sums without a multiplication dot");
 
 const pending = new renderer.ExprNode("sum", [value("2"), value("x")]);

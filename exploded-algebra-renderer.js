@@ -2059,219 +2059,109 @@ function escapeKatexValue(value) {
         .replace(/([{}_#$%&])/g, "\\$1");
 }
 
-function expressionToKatex(rootOrData) {
-    const root = exprFromData(rootOrData);
-
-    const isNegativeOne = node => node && node.type === "value" && node.value === "-1";
-    const isNegativeProduct = node => node && node.type === "prod" &&
+function renderConventionalKatex(rootOrData, builder = false) {
+    const isNegativeOne = node => node?.type === "value" && node.value === "-1";
+    const isNegativeProduct = node => node?.type === "prod" &&
         node.args.length > 1 && isNegativeOne(node.args[0]);
+    const group = text => `\\left(${text}\\right)`;
 
-    const render = (node, parentType = null) => {
-        if (!node) {
-            return "";
+    function renderSequence(sequence, parent) {
+        const operators = sequence.builderOperators || [];
+        const terms = [];
+        let factors = [];
+        sequence.args.forEach((arg, index) => {
+            factors.push(arg);
+            if (operators[index] !== "prod" || index === sequence.args.length - 1) {
+                terms.push(factors.length === 1 ? factors[0] : new ExprNode("prod", factors, null));
+                factors = [];
+            }
+        });
+
+        const tree = terms.length > 1 ? new ExprNode("sum", terms, null) : terms[0];
+        const trailingOperator = operators[sequence.args.length - 1];
+        const trailing = trailingOperator === "sum" ? " + " : trailingOperator === "prod" ? " \\cdot " : "";
+        if (trailing && parent) {
+            return group(render(tree) + trailing);
         }
+        return render(tree, parent) + trailing;
+    }
+
+    function renderProduct(factors, hasLeadingMinus = false) {
+        const hasDivision = factors.some(factor => factor.type === "inv");
+        const compact = [];
+        for (const factor of factors) {
+            const variable = factor.type === "value" && /^[A-Za-z]$/.test(String(factor.value))
+                ? String(factor.value) : null;
+            const previous = compact.at(-1);
+            if (variable && previous?.variable === variable) {
+                previous.count++;
+            } else {
+                compact.push({ factor, variable, count: 1 });
+            }
+        }
+
+        return compact.map(({ factor, variable, count }, index) => {
+            if (factor.type === "inv" && index > 0) {
+                return ` \\div ${render(factor.args[0], "divisor")}`;
+            }
+            const body = count > 1
+                ? `${escapeKatexValue(variable)}^{${count}}`
+                : isNegativeOne(factor) && (index > 0 || hasLeadingMinus)
+                    ? group("-1")
+                    : render(factor, "factor");
+            if (index === 0) return body;
+            if (hasDivision) return ` \\times ${body}`;
+
+            const previous = compact[index - 1].factor;
+            const previousIsNumber = previous.type === "value" && /^-?\d/.test(String(previous.value));
+            const previousIsVariable = previous.type === "value" && /^[A-Za-z]/.test(String(previous.value));
+            const currentIsVariable = factor.type === "value" && /^[A-Za-z]/.test(String(factor.value));
+            const canJuxtapose = previousIsNumber && currentIsVariable ||
+                factor.type === "sum" && (previousIsNumber || previousIsVariable || previous.type === "sum");
+            return canJuxtapose ? body : ` \\cdot ${body}`;
+        }).join("");
+    }
+
+    function render(node, parent = null) {
+        if (!node) return builder ? "\\phantom{0}" : "";
+        if (builder && node.isBuilderPlaceholder) return "\\square";
+        if (builder && node.isBuilderSequence) return renderSequence(node, parent);
         if (node.type === "value") {
-            return escapeKatexValue(node.value);
+            const value = escapeKatexValue(node.value);
+            return parent === "divisor" && value.startsWith("-") ? group(value) : value;
         }
         if (node.type === "inv") {
-            return `\\frac{1}{${render(node.args[0])}}`;
+            const body = `1 \\div ${render(node.args[0], "divisor")}`;
+            return parent === "divisor" ? group(body) : body;
         }
         if (node.type === "sum") {
             const body = node.args.map((term, index) => {
-                if (isNegativeOne(term)) {
-                    return `${index === 0 ? "-" : " - "}1`;
+                if (isNegativeOne(term) || isNegativeProduct(term)) {
+                    const rest = isNegativeOne(term) ? "1" : renderProduct(term.args.slice(1), true);
+                    return (index === 0 ? "-" : " - ") + rest;
                 }
-                if (isNegativeProduct(term)) {
-                    const negativeBody = render(new ExprNode("prod", term.args.slice(1).map(exprFromData), null), "sum");
-                    return `${index === 0 ? "-" : " - "}${negativeBody}`;
-                }
-                return `${index === 0 ? "" : " + "}${render(term, "sum")}`;
+                return (index === 0 ? "" : " + ") + render(term, "term");
             }).join("");
-            return parentType === "prod" || parentType === "inv"
-                ? `\\left(${body}\\right)`
-                : body;
+            return parent && parent !== "term" ? group(body) : body;
         }
         if (node.type === "prod") {
-            if (isNegativeProduct(node)) {
-                const positive = new ExprNode("prod", node.args.slice(1).map(exprFromData), null);
-                return `-${render(positive, parentType)}`;
-            }
-            const inverseIndex = node.args.findIndex(factor => factor.type === "inv");
-            if (inverseIndex > 0) {
-                const numeratorFactors = node.args.slice(0, inverseIndex).map(exprFromData);
-                const numerator = numeratorFactors.length === 1
-                    ? render(numeratorFactors[0])
-                    : render(new ExprNode("prod", numeratorFactors, null));
-                const denominator = render(node.args[inverseIndex].args[0]);
-                const fraction = `\\frac{${numerator}}{${denominator}}`;
-                const trailingFactors = node.args.slice(inverseIndex + 1).map(exprFromData);
-                return trailingFactors.length
-                    ? `${fraction} \\cdot ${render(new ExprNode("prod", trailingFactors, null), "prod")}`
-                    : fraction;
-            }
-            const compactFactors = [];
-            for (const factor of node.args) {
-                const variable = factor.type === "value" && /^[A-Za-z]$/.test(String(factor.value))
-                    ? String(factor.value)
-                    : null;
-                const previous = compactFactors[compactFactors.length - 1];
-                if (variable && previous && previous.variable === variable) {
-                    previous.count += 1;
-                } else {
-                    compactFactors.push({ node: factor, variable, count: 1 });
-                }
-            }
-            const factors = compactFactors.map(item => item.variable && item.count > 1
-                ? `${escapeKatexValue(item.variable)}^{${item.count}}`
-                : render(item.node, "prod"));
-            return factors.map((factor, index) => {
-                if (index === 0) {
-                    return factor;
-                }
-                const previousNode = compactFactors[index - 1].node;
-                const currentNode = compactFactors[index].node;
-                const canJuxtapose = (
-                    previousNode.type === "value" && /^-?\d/.test(String(previousNode.value)) &&
-                    (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
-                ) || (
-                    previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
-                ) || (
-                    previousNode.type === "sum" && currentNode.type === "sum"
-                );
-                return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
-            }).join("");
+            const leadingMinus = isNegativeProduct(node);
+            const factors = leadingMinus ? node.args.slice(1) : node.args;
+            const body = (leadingMinus ? "-" : "") + renderProduct(factors, leadingMinus);
+            return parent === "divisor" || parent === "factor" ? group(body) : body;
         }
         return "?";
-    };
+    }
 
-    return render(root);
+    return render(exprFromData(rootOrData));
+}
+
+function expressionToKatex(rootOrData) {
+    return renderConventionalKatex(rootOrData);
 }
 
 function expressionBuilderToKatex(rootOrData) {
-    const root = exprFromData(rootOrData);
-    const isNegativeOne = node => node && node.type === "value" && node.value === "-1";
-    const isNegativeProduct = node => node && node.type === "prod" &&
-        node.args.length > 1 && isNegativeOne(node.args[0]);
-
-    const buildSequenceTree = sequence => {
-        if (!sequence || !sequence.args.length) {
-            return null;
-        }
-        const operators = Array.isArray(sequence.builderOperators) ? sequence.builderOperators : [];
-        const sumTerms = [];
-        let currentProduct = sequence.args[0];
-        for (let index = 0; index < sequence.args.length - 1; index++) {
-            const next = sequence.args[index + 1];
-            if (operators[index] === "prod") {
-                currentProduct = new ExprNode("prod", [currentProduct, next], null);
-            } else {
-                sumTerms.push(currentProduct);
-                currentProduct = next;
-            }
-        }
-        sumTerms.push(currentProduct);
-        return sumTerms.length === 1 ? sumTerms[0] : new ExprNode("sum", sumTerms, null);
-    };
-
-    const renderBuilderNode = (node, parentType = null) => {
-        if (!node) {
-            return "";
-        }
-        if (node.isBuilderPlaceholder) {
-            return "\\square";
-        }
-        if (node.isBuilderSequence) {
-            const operators = Array.isArray(node.builderOperators) ? node.builderOperators : [];
-            const resolvedByPrecedence = buildSequenceTree(node);
-            const body = resolvedByPrecedence ? renderBuilderNode(resolvedByPrecedence, parentType) : "";
-            const trailingOperator = operators.length >= node.args.length
-                ? operators[node.args.length - 1]
-                : null;
-            if (trailingOperator === "sum") {
-                return `${body} + `;
-            }
-            if (trailingOperator === "prod") {
-                return `${body} \\cdot `;
-            }
-            return body;
-        }
-        if (node.type === "inv") {
-            const denominator = renderBuilderNode(node.args[0], "inv") || "\\phantom{0}";
-            return `\\frac{1}{${denominator}}`;
-        }
-        if (node.type === "value") {
-            return escapeKatexValue(node.value);
-        }
-        if (node.type === "sum") {
-            const body = node.args.map((term, index) => {
-                if (isNegativeOne(term)) {
-                    return `${index === 0 ? "-" : " - "}1`;
-                }
-                if (isNegativeProduct(term)) {
-                    const positive = new ExprNode("prod", term.args.slice(1), null);
-                    return `${index === 0 ? "-" : " - "}${renderBuilderNode(positive, "sum")}`;
-                }
-                return `${index === 0 ? "" : " + "}${renderBuilderNode(term, "sum")}`;
-            }).join("");
-            return parentType === "prod"
-                ? `\\left(${body}\\right)`
-                : body;
-        }
-        if (node.type === "prod") {
-            if (isNegativeProduct(node)) {
-                const positive = new ExprNode("prod", node.args.slice(1), null);
-                return `-${renderBuilderNode(positive, parentType)}`;
-            }
-            const inverseIndex = node.args.findIndex(factor => factor.type === "inv");
-            if (inverseIndex > 0) {
-                const numeratorFactors = node.args.slice(0, inverseIndex);
-                const numerator = numeratorFactors.length === 1
-                    ? renderBuilderNode(numeratorFactors[0])
-                    : renderBuilderNode(new ExprNode("prod", numeratorFactors, null));
-                const denominator = renderBuilderNode(node.args[inverseIndex].args[0]);
-                const fraction = `\\frac{${numerator}}{${denominator}}`;
-                const trailingFactors = node.args.slice(inverseIndex + 1);
-                return trailingFactors.length
-                    ? `${fraction} \\cdot ${renderBuilderNode(new ExprNode("prod", trailingFactors, null), "prod")}`
-                    : fraction;
-            }
-            const compactFactors = [];
-            for (const factor of node.args) {
-                const variable = factor.type === "value" && /^[A-Za-z]$/.test(String(factor.value))
-                    ? String(factor.value)
-                    : null;
-                const previous = compactFactors[compactFactors.length - 1];
-                if (variable && previous && previous.variable === variable) {
-                    previous.count += 1;
-                } else {
-                    compactFactors.push({ node: factor, variable, count: 1 });
-                }
-            }
-            const factors = compactFactors.map(item => item.variable && item.count > 1
-                ? `${escapeKatexValue(item.variable)}^{${item.count}}`
-                : renderBuilderNode(item.node, "prod"));
-            return factors.map((factor, index) => {
-                if (index === 0) {
-                    return factor;
-                }
-                const previousNode = compactFactors[index - 1].node;
-                const currentNode = compactFactors[index].node;
-                const canJuxtapose = (
-                    previousNode.type === "value" && /^-?\d/.test(String(previousNode.value)) &&
-                    (currentNode.type === "value" && /^[A-Za-z]/.test(String(currentNode.value)) || currentNode.type === "sum")
-                ) || (
-                    previousNode.type === "value" && /^[A-Za-z]/.test(String(previousNode.value)) && currentNode.type === "sum"
-                ) || (
-                    previousNode.type === "sum" && currentNode.type === "sum"
-                );
-                return `${canJuxtapose ? "" : " \\cdot "}${factor}`;
-            }).join("");
-        }
-
-        return "?";
-    };
-
-    return renderBuilderNode(root);
+    return renderConventionalKatex(rootOrData, true);
 }
 
 function renderExpressionInto(target, rootOrData, options = {}) {

@@ -1344,12 +1344,18 @@ Promise.resolve().then(() => {
         const restartProblemDialog = document.getElementById("restartProblemDialog");
         const restartGuidedInput = document.getElementById("restartGuidedInput");
         const restartBuildInput = document.getElementById("restartBuildInput");
+        const restartPrescribedInput = document.getElementById("restartPrescribedInput");
+        const openExerciseDialog = document.getElementById("openExerciseDialog");
+        const openExerciseForm = document.getElementById("openExerciseForm");
+        const openExerciseError = document.getElementById("openExerciseError");
+        const openExerciseSubmit = document.getElementById("openExerciseSubmit");
+        const exerciseLoadStatus = document.getElementById("exerciseLoadStatus");
         const settingsButton = document.getElementById("settingsButton");
         const settingsPanel = document.getElementById("settingsPanel");
         const mainActionPanel = document.getElementById("mainActionPanel");
         const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
-        const movesForEditorButton = document.querySelector('[data-workspace-action="downloadMovesForEditor"]');
+        const openEditorButton = document.querySelector('[data-workspace-action="openProblemEditor"]');
         const editLevelCopyButton = document.querySelector('[data-workspace-action="editLevelCopy"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const leftPanel = document.getElementById("leftPanel");
@@ -1358,7 +1364,7 @@ Promise.resolve().then(() => {
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
-        const workspaceSelectionDragLine = document.getElementById("workspaceSelectionDragLine");
+        const workspaceSelectionDragRect = document.getElementById("workspaceSelectionDragRect");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceConventionalLine = document.getElementById("workspaceConventionalLine");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
@@ -1382,7 +1388,6 @@ Promise.resolve().then(() => {
 
 
         const levelFileInput = document.getElementById("levelFileInput");
-        const loadedLevelFileName = document.getElementById("loadedLevelFileName");
         const levelContent = document.getElementById("levelContent");
 
         const ASSISTANCE_MODES = {
@@ -1391,7 +1396,11 @@ Promise.resolve().then(() => {
         };
 
         const playerQuery = new URLSearchParams(window.location.search);
-        const creativeSessionActive = playerQuery.get("mode") === "creative";
+        const requestedLevelFile = String(playerQuery.get("level") || "").trim();
+        const navigationSource = String(playerQuery.get("source") || "").toLowerCase();
+        const exerciseSources = ["problem-editor", "problem-builder", "custom", "builtin"];
+        const creativeSessionActive = playerQuery.get("mode") === "creative" ||
+            (!requestedLevelFile && !exerciseSources.includes(navigationSource));
         const prescribedRewritesEnabled = !creativeSessionActive && playerQuery.get("rewrites") === "prescribed";
         let prescribedGuide = null;
         const problemEditorApiRequested = playerQuery.get("editor") === "1";
@@ -1815,7 +1824,7 @@ Promise.resolve().then(() => {
                 if (activeBuilder.tool === "studentInitial") {
                     if (creativeSessionActive) {
                         return {
-                            heading: "Build your starting expression",
+                            heading: "Build an expression",
                             targetKatex: ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root) || "\\square"
                         };
                     }
@@ -1847,7 +1856,7 @@ Promise.resolve().then(() => {
 
             if (level.creative === true) {
                 return {
-                    heading: "Creative Mode",
+                    heading: "Free Play",
                     targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
                 };
             }
@@ -3115,7 +3124,7 @@ Promise.resolve().then(() => {
             });
             const final = moves.at(-1)?.expression || initial;
             if ((!allowEmpty && !moves.length) || (source.finalExpression && source.finalExpression !== final)) {
-                throw new Error("The file has no complete solution to edit. Finish transforming the expression in Creative Mode, then download its moves.");
+                throw new Error("The file has no complete solution to edit. Finish transforming the expression in the player, then download its moves.");
             }
             return {
                 initial,
@@ -3133,7 +3142,7 @@ Promise.resolve().then(() => {
                 formatVersion: history.formatVersion,
                 kind: "guidedCapable",
                 id: history.id,
-                title: "Creative Mode Replay",
+                title: "Free Play Replay",
                 startExpression: initial,
                 initialKatex,
                 initialBuilderActions,
@@ -3505,23 +3514,11 @@ Promise.resolve().then(() => {
             return copy;
         }
 
-        function setLevelFileStatus(message, isError = false) {
-            if (!loadedLevelFileName) {
-                return;
-            }
-            loadedLevelFileName.textContent = message;
-            loadedLevelFileName.classList.toggle("file-error", isError);
-        }
-
-        function showNoLevelSelectedState(message = "Choose a JSON level file to begin.") {
+        function showNoLevelSelectedState(message) {
             document.body.classList.add("no-level-loaded");
+            exerciseLoadStatus.textContent = message;
+            exerciseLoadStatus.hidden = false;
             syncConventionalStepsVisibility(null);
-            levelContent.innerHTML = `
-                <div class="level-intro">
-                    <div class="level-title">No level selected</div>
-                    <p>${escapeHtml(message)}</p>
-                </div>
-            `;
             updateExerciseMenu(null);
             clearParenthesizedExpressionSvg(targetExpressionSvg, targetExpressionCtx);
             clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
@@ -3530,31 +3527,32 @@ Promise.resolve().then(() => {
         }
 
         async function loadChosenLevelFile(file) {
-            if (!file) {
-                return;
-            }
-            let loadSucceeded = false;
+            if (!file) return;
+            openExerciseSubmit.disabled = true;
+            openExerciseError.hidden = true;
             try {
-                const parsed = JSON.parse(await file.text());
-                const level = validateChosenLevel(parsed, file.name);
-                LEVELS.splice(0, LEVELS.length, level);
-                currentLevelIndex = 0;
-                setLevelFileStatus(`${file.name} — ${level.title}`);
-                startLoadedLevel(assistanceModeFromQueryString());
-                loadSucceeded = true;
+                const text = await file.text();
+                let level;
+                try {
+                    level = JSON.parse(text);
+                } catch {
+                    throw new Error("The exercise file must contain valid JSON.");
+                }
+                validateChosenLevel(level, file.name);
+                if (!openExerciseDialog.open || levelFileInput.files[0] !== file) return;
+                const params = { source: "custom", level: file.name, fileKey: crypto.getRandomValues(new Uint32Array(4)).join("-") };
+                if (isDemoOnlyLevel(level)) {
+                    params.mode = "guided";
+                    params.build = "1";
+                }
+                ExplodedAlgebraTransfer.open("exploded-algebra.html", params, { fileName: file.name, text }, window);
             } catch (error) {
-                console.error("The selected level file could not be loaded.", error);
-                setLevelFileStatus(error && error.message ? error.message : "The selected file could not be loaded.", true);
-                if (!getCurrentLevel()) {
-                    showNoLevelSelectedState("That file could not be loaded. Choose a valid Exploded Algebra level JSON file.");
-                }
+                openExerciseError.textContent = error.message || "The exercise file could not be opened.";
+                openExerciseError.hidden = false;
             } finally {
-                if (!loadSucceeded && levelFileInput) {
-                    levelFileInput.value = "";
-                }
+                openExerciseSubmit.disabled = false;
             }
         }
-
 
         function installLevelFromParsedJson(parsed, sourceName) {
             const level = validateChosenLevel(parsed, sourceName);
@@ -3587,7 +3585,7 @@ Promise.resolve().then(() => {
                 .catch(error => {
                     console.error("The bundled level could not be loaded.", error);
                     const localFileNote = window.location.protocol === "file:"
-                        ? " Browsers normally block JavaScript from fetching neighboring JSON files when a site is opened with file://. Use the custom file chooser on the home page, or serve this folder with a local web server / GitHub Pages."
+                        ? " Browsers normally block JavaScript from fetching neighboring JSON files when a site is opened with file://. Use Open Exercise in the workspace menu, or serve this folder with a local web server / GitHub Pages."
                         : "";
                     showNoLevelSelectedState((error && error.message
                         ? error.message
@@ -3599,7 +3597,7 @@ Promise.resolve().then(() => {
         function startCreativeSession() {
             LEVELS.splice(0, LEVELS.length, {
                 id: "creative-mode",
-                title: "Creative Mode",
+                title: "Free Play",
                 creative: true,
                 startExpression: "(0)",
                 steps: []
@@ -3610,25 +3608,15 @@ Promise.resolve().then(() => {
 
         function loadInitialLevelFromNavigation() {
             if (creativeSessionActive) {
-                document.title = "Creative Mode | Exploded Algebra";
-                restartProblemButton.textContent = "Restart Creative Mode";
-                document.getElementById("restartProblemTitle").textContent = "Restart Creative Mode";
-                document.getElementById("restartProblemOptions").hidden = true;
-                document.getElementById("restartCreativeMessage").hidden = false;
-                document.querySelector('[data-workspace-action="closeExercise"]').textContent = "Close Creative Mode";
-                moveHistoryButton.textContent = "Download Moves and Open in Player";
-                movesForEditorButton.hidden = false;
-                editLevelCopyButton.hidden = true;
                 startCreativeSession();
                 return true;
             }
-            const params = new URLSearchParams(window.location.search);
-            const requestedLevelFile = String(params.get("level") || "").trim();
-            const navigationSource = String(params.get("source") || "").toLowerCase();
 
+            const fileKey = playerQuery.get("fileKey");
+            const transferKey = fileKey ? ExplodedAlgebraTransfer.fileStorageKey(fileKey) : undefined;
             if (navigationSource === "problem-editor" || navigationSource === "problem-builder") {
                 try {
-                    const draftKey = String(params.get("draftKey") || "").trim();
+                    const draftKey = String(playerQuery.get("draftKey") || "").trim();
                     const payload = ExplodedAlgebraTransfer.read(draftKey || undefined, !!draftKey);
                     const parsed = JSON.parse(payload.text);
                     return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Editor preview");
@@ -3642,14 +3630,14 @@ Promise.resolve().then(() => {
             }
 
             if (requestedLevelFile) {
-                // Levels launched from the home page carry their JSON in this tab so
+                // Uploaded levels carry their JSON in this tab so
                 // file:// works, while the URL still identifies the selected file.
                 if (navigationSource === "builtin" || navigationSource === "custom") {
                     try {
-                        const payload = ExplodedAlgebraTransfer.read();
+                        const payload = ExplodedAlgebraTransfer.read(transferKey);
                         if (payload.fileName && payload.fileName !== requestedLevelFile) {
                             if (navigationSource === "custom") {
-                                throw new Error("The saved custom level does not match the level named in this URL. Return to the home page and choose the file again.");
+                                throw new Error("The saved custom level does not match the level named in this URL. Use Open Exercise in the workspace menu to choose the file again.");
                             }
                         } else {
                             const parsed = JSON.parse(payload.text);
@@ -3660,7 +3648,7 @@ Promise.resolve().then(() => {
                             console.error("The selected custom level could not be loaded.", error);
                             showNoLevelSelectedState(error && error.message
                                 ? error.message
-                                : "The selected custom level could not be loaded. Return to the home page and choose it again.");
+                                : "The selected custom level could not be loaded. Use Open Exercise in the workspace menu to choose it again.");
                             return false;
                         }
                         // A direct hosted built-in link may have no transfer payload.
@@ -3676,7 +3664,7 @@ Promise.resolve().then(() => {
 
             if (navigationSource === "custom" || navigationSource === "builtin") {
                 try {
-                    const payload = ExplodedAlgebraTransfer.read();
+                    const payload = ExplodedAlgebraTransfer.read(transferKey);
                     const parsed = JSON.parse(payload.text);
                     const sourceName = payload.fileName || (navigationSource === "builtin"
                         ? "The selected built-in level"
@@ -3686,13 +3674,11 @@ Promise.resolve().then(() => {
                     console.error("The selected level could not be loaded.", error);
                     showNoLevelSelectedState(error && error.message
                         ? error.message
-                        : "The selected level could not be loaded. Return to the home page and choose it again.");
+                        : "The selected level could not be loaded. Use Open Exercise in the workspace menu to choose it again.");
                     return false;
                 }
             }
 
-            showNoLevelSelectedState("Open a level from Creative Mode, the Problem Editor, or the Exercises page.");
-            return false;
         }
 
         function getCurrentLevel() {
@@ -3806,21 +3792,6 @@ Promise.resolve().then(() => {
             updateModeControls();
         }
 
-        function updateModeQueryString(mode, buildFirst) {
-            if (!window.history || !window.history.replaceState) {
-                return;
-            }
-            const url = new URL(window.location.href);
-            url.searchParams.delete("assistance");
-            url.searchParams.set("mode", mode);
-            if (buildFirst) {
-                url.searchParams.set("build", "1");
-            } else {
-                url.searchParams.delete("build");
-            }
-            window.history.replaceState(null, "", url.toString());
-        }
-
         function assistanceModeFromQueryString() {
             const params = new URLSearchParams(window.location.search);
             const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
@@ -3850,6 +3821,7 @@ Promise.resolve().then(() => {
             assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
             buildFirstEnabled = buildFirst && isInteractiveLevel(getCurrentLevel());
             document.body.classList.remove("no-level-loaded");
+            exerciseLoadStatus.hidden = true;
             loadLevel(0, buildFirstEnabled);
         }
 
@@ -4299,25 +4271,11 @@ Promise.resolve().then(() => {
             }, preview);
         }
 
-        function downloadCurrentMoveHistory(destination) {
-            const history = getCurrentMoveHistory();
-            const preview = destination ? window.open("about:blank", "_blank") || window : null;
-            downloadMoveHistoryJson(history);
-            if (destination === "player") {
-                const fileName = `${history.id}.json`;
-                ExplodedAlgebraTransfer.open("exploded-algebra.html",
-                    { source: "custom", level: fileName, mode: "guided", build: "1" },
-                    { fileName, text: JSON.stringify(history) }, preview);
-            } else if (destination === "editor") {
-                openEditorCopy(history, undefined, preview);
-            }
-        }
-
         function updateExerciseMenu(level) {
-            restartProblemButton.disabled = !level;
+            restartProblemButton.disabled = !level || level.creative === true;
             moveHistoryButton.disabled = !level || !solutionRecorder || buildingStartingExpression;
-            movesForEditorButton.disabled = moveHistoryButton.disabled;
-            editLevelCopyButton.disabled = !level || (!Array.isArray(level.recordedActions) && moveHistoryButton.disabled);
+            openEditorButton.textContent = moveHistoryButton.disabled ? "Open Problem Editor" : "Open Current Work in Editor";
+            editLevelCopyButton.hidden = !Array.isArray(level?.recordedActions);
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4697,44 +4655,39 @@ Promise.resolve().then(() => {
 
         function openRestartProblemDialog() {
             const level = getCurrentLevel();
-            if (!creativeSessionActive) {
-                restartGuidedInput.disabled = !hasGuidedMode(level);
-                restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
-                restartBuildInput.disabled = !isInteractiveLevel(level);
-                restartBuildInput.checked = buildFirstEnabled;
-                document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
-                document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
+            restartGuidedInput.disabled = !hasGuidedMode(level);
+            restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
+            restartBuildInput.disabled = !isInteractiveLevel(level);
+            restartBuildInput.checked = buildFirstEnabled;
+            let hasRecordedRewrites = false;
+            try {
+                hasRecordedRewrites = !!(prescribedGuide || makePrescribedNumericalGuide(level))?.choices.size;
+            } catch {
+                // The exercise can still be restarted with unrestricted rewrites.
             }
-            restartProblemDialog.returnValue = "";
+            restartPrescribedInput.disabled = !prescribedRewritesEnabled && !hasRecordedRewrites;
+            restartPrescribedInput.checked = prescribedRewritesEnabled;
+            document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
+            document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
+            document.getElementById("restartPrescribedUnavailable").hidden = !restartPrescribedInput.disabled;
             restartProblemDialog.showModal();
         }
 
-        function restartCurrentExercise(mode, buildFirst) {
-            if (creativeSessionActive) {
-                startCreativeSession();
-                return;
+        function restartCurrentExercise(mode, buildFirst, prescribed) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("assistance");
+            url.searchParams.set("mode", mode);
+            if (buildFirst) {
+                url.searchParams.set("build", "1");
+            } else {
+                url.searchParams.delete("build");
             }
-            startLoadedLevel(mode, buildFirst);
-            updateModeQueryString(assistanceMode, buildFirstEnabled);
-        }
-
-        function closeCurrentExercise() {
-            if (creativeSessionActive) {
-                window.location.assign("index.html");
-                return;
+            if (prescribed) {
+                url.searchParams.set("rewrites", "prescribed");
+            } else {
+                url.searchParams.delete("rewrites");
             }
-            window.close();
-            // Same-tab launches can return through browser history if closing is blocked.
-            setTimeout(() => {
-                if (window.closed) {
-                    return;
-                }
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    window.alert("Close this tab using your browser controls.");
-                }
-            }, 0);
+            window.location.replace(url.href);
         }
 
         function initializeExplodedAlgebra() {
@@ -4746,20 +4699,19 @@ Promise.resolve().then(() => {
             setOperationBarShading(getSavedOperationBarShading(SETTINGS.operationBarShading));
             setOperationStyle(getSavedOperationStyle());
             setOperationSize(getSavedOperationSize());
+            openExerciseForm.addEventListener("submit", event => {
+                if (event.submitter?.value === "cancel") return;
+                event.preventDefault();
+                loadChosenLevelFile(levelFileInput.files[0]);
+            });
+            for (const dialog of [openExerciseDialog, restartProblemDialog]) {
+                dialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
+            }
             restartProblemDialog.addEventListener("submit", event => {
-                if (event.submitter?.value !== "restart") {
-                    return;
-                }
+                if (event.submitter?.value !== "restart") return;
                 event.preventDefault();
                 const mode = restartGuidedInput.checked ? ASSISTANCE_MODES.guided : ASSISTANCE_MODES.unguided;
-                restartProblemDialog.close("restart");
-                restartCurrentExercise(mode, restartBuildInput.checked);
-            });
-            restartProblemDialog.addEventListener("close", () => {
-                const focusTarget = restartProblemDialog.returnValue === "restart"
-                    ? workspaceConventionalLine
-                    : workspaceUtilityMenuToggle;
-                focusTarget.focus({ preventScroll: true });
+                restartCurrentExercise(mode, restartBuildInput.checked, restartPrescribedInput.checked);
             });
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
@@ -4820,20 +4772,31 @@ Promise.resolve().then(() => {
                         return;
                     }
                     setWorkspaceUtilityMenuOpen(false);
-                    if (button.dataset.workspaceAction === "openSettings") {
+                    if (button.dataset.workspaceAction === "newExpression") {
+                        window.location.assign("exploded-algebra.html");
+                    } else if (button.dataset.workspaceAction === "openExercise") {
+                        openExerciseForm.reset();
+                        openExerciseError.hidden = true;
+                        openExerciseDialog.showModal();
+                    } else if (button.dataset.workspaceAction === "openSettings") {
                         openSettingsPanel();
                     } else if (button.dataset.workspaceAction === "restartExercise") {
                         openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
-                        downloadCurrentMoveHistory(creativeSessionActive ? "player" : null);
+                        downloadMoveHistoryJson(getCurrentMoveHistory());
                         workspaceUtilityMenuToggle.focus();
-                    } else if (button.dataset.workspaceAction === "downloadMovesForEditor") {
-                        downloadCurrentMoveHistory("editor");
+                    } else if (button.dataset.workspaceAction === "openProblemEditor") {
+                        if (moveHistoryButton.disabled) {
+                            if (!window.open("problem-builder.html", "_blank")) {
+                                window.location.assign("problem-builder.html");
+                            }
+                        } else {
+                            openEditorCopy(getCurrentMoveHistory());
+                        }
+                        workspaceUtilityMenuToggle.focus();
                     } else if (button.dataset.workspaceAction === "editLevelCopy") {
-                        const level = getCurrentLevel();
-                        openEditorCopy(Array.isArray(level.recordedActions) ? level : getCurrentMoveHistory());
-                    } else if (button.dataset.workspaceAction === "closeExercise") {
-                        closeCurrentExercise();
+                        openEditorCopy(getCurrentLevel());
+                        workspaceUtilityMenuToggle.focus();
                     }
                     event.stopPropagation();
                 });
@@ -4968,7 +4931,7 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
-                if (event.defaultPrevented || restartProblemDialog.open ||
+                if (event.defaultPrevented || openExerciseDialog.open || restartProblemDialog.open ||
                     (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
                     return;
                 }
@@ -6923,6 +6886,15 @@ ctx.font = SETTINGS.textFont;
             return Math.max(1, node.right() - node.left()) * Math.max(1, node.bottom() - node.top());
         }
 
+        function getInverseHeaderBottom(node) {
+            const barTop = Number(node.layout?.inverseBarTop);
+            const barThickness = Number(node.layout?.inverseBarThickness);
+            const headerBottom = Number.isFinite(barTop) && Number.isFinite(barThickness)
+                ? barTop + barThickness : Number(node.layout?.inverseDenominatorBoxTop);
+            return node.top() + (Number.isFinite(headerBottom)
+                ? headerBottom : Math.max(1, (node.bottom() - node.top()) / 2));
+        }
+
         function collectVisibleObjectCandidates(node, x, y, candidates) {
             if (!node) {
                 return;
@@ -6967,21 +6939,11 @@ ctx.font = SETTINGS.textFont;
             }
 
             if (node.type === "inv") {
-                const relativeBarTop = Number(node.layout && node.layout.inverseBarTop);
-                const barThickness = Number(node.layout && node.layout.inverseBarThickness);
-                const relativeHeaderBottom = Number.isFinite(relativeBarTop) && Number.isFinite(barThickness)
-                    ? relativeBarTop + barThickness
-                    : Number(node.layout && node.layout.inverseDenominatorBoxTop);
-                const headerBottom = node.top() + (
-                    Number.isFinite(relativeHeaderBottom)
-                        ? relativeHeaderBottom
-                        : Math.max(1, (node.bottom() - node.top()) / 2)
-                );
                 const clickedInverseHeader =
                     x >= node.left() &&
                     x <= node.right() &&
                     y >= node.top() &&
-                    y <= headerBottom;
+                    y <= getInverseHeaderBottom(node);
 
                 // Only the solid black numerator/header (the 1 and fraction
                 // bar) targets the inverse wrapper. Below it, including the
@@ -12849,26 +12811,21 @@ function renderToolArea() {
         }
 
         function releaseWorkspacePointer() {
-            workspaceSelectionDragLine.setAttribute("visibility", "hidden");
+            workspaceSelectionDragRect.setAttribute("visibility", "hidden");
             activeWorkspacePointerId = null;
             workspacePointerStart = null;
             document.body.classList.remove("workspace-panning");
         }
 
-        function selectFromWorkspaceTap(x, y, pointerType, allowSelectionCancel = true) {
-            if (
-                allowSelectionCancel &&
-                selection.node &&
-                (isPointInsideCurrentSelection(x, y) || !isPointInsideExpression(x, y))
-            ) {
+        function selectFromWorkspaceTap(x, y, pointerType) {
+            if (selection.node && (isPointInsideCurrentSelection(x, y) || !isPointInsideExpression(x, y))) {
                 return cancelCurrentWorkspaceSelection();
             }
+            return selectWorkspaceTarget(findNearestVisibleObject(x, y, pointerType));
+        }
 
-            const target = findNearestVisibleObject(x, y, pointerType);
-            if (!target) {
-                return false;
-            }
-
+        function selectWorkspaceTarget(target) {
+            if (!target) return false;
             if (!growSelectionToInclude(target)) {
                 return false;
             }
@@ -12918,21 +12875,49 @@ function renderToolArea() {
             return Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) <= tolerance;
         }
 
+        function selectionRectangle(startX, startY, endX, endY) {
+            return {
+                left: Math.min(startX, endX),
+                right: Math.max(startX, endX),
+                top: Math.min(startY, endY),
+                bottom: Math.max(startY, endY)
+            };
+        }
+
         function updateWorkspaceSelectionDrag(event) {
             const start = workspacePointerStart;
             if (event.pointerId !== activeWorkspacePointerId || start?.mode !== "selection") {
                 return;
             }
             if (isWorkspaceTap(event, start)) {
-                workspaceSelectionDragLine.setAttribute("visibility", "hidden");
+                workspaceSelectionDragRect.setAttribute("visibility", "hidden");
                 return;
             }
-            const { left, top } = workspaceSelectionDragLine.ownerSVGElement.getBoundingClientRect();
-            workspaceSelectionDragLine.setAttribute("x1", start.clientX - left);
-            workspaceSelectionDragLine.setAttribute("y1", start.clientY - top);
-            workspaceSelectionDragLine.setAttribute("x2", event.clientX - left);
-            workspaceSelectionDragLine.setAttribute("y2", event.clientY - top);
-            workspaceSelectionDragLine.setAttribute("visibility", "visible");
+            const { left, top } = workspaceSelectionDragRect.ownerSVGElement.getBoundingClientRect();
+            const rect = selectionRectangle(start.clientX, start.clientY, event.clientX, event.clientY);
+            workspaceSelectionDragRect.setAttribute("x", rect.left - left);
+            workspaceSelectionDragRect.setAttribute("y", rect.top - top);
+            workspaceSelectionDragRect.setAttribute("width", Math.max(1, rect.right - rect.left));
+            workspaceSelectionDragRect.setAttribute("height", Math.max(1, rect.bottom - rect.top));
+            workspaceSelectionDragRect.setAttribute("visibility", "visible");
+        }
+
+        function findWorkspaceRectangleTarget(rect) {
+            const paths = [];
+            function collect(node, path) {
+                if (!node?.layout || node.right() < rect.left || node.left() > rect.right ||
+                    node.bottom() < rect.top || node.top() > rect.bottom) {
+                    return;
+                }
+                // The inverse header selects its whole inverse, as it does on a tap.
+                if (node.type === "value" || node.type === "inv" && getInverseHeaderBottom(node) >= rect.top) {
+                    paths.push(path);
+                    return;
+                }
+                node.args.forEach((child, index) => collect(child, path.concat(index)));
+            }
+            collect(expressionRoot, []);
+            return selectionTargetContainingPaths(paths);
         }
 
         function finishWorkspaceTap(e) {
@@ -12958,16 +12943,14 @@ function renderToolArea() {
                 const point = workspaceClientPointToSvg(e.clientX, e.clientY);
                 if (pointerStart.mode === "cancelBuilder") {
                     cancelExpressionBuilder();
-                } else if (pointerStart.mode === "cancelSelection") {
-                    cancelCurrentWorkspaceSelection();
                 } else {
                     selectFromWorkspaceTap(point.x, point.y, pointerStart.pointerType);
                 }
             } else if (pointerStart.mode === "selection") {
                 const startPoint = workspaceClientPointToSvg(pointerStart.clientX, pointerStart.clientY);
                 const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
-                selectFromWorkspaceTap(startPoint.x, startPoint.y, pointerStart.pointerType, false);
-                selectFromWorkspaceTap(endPoint.x, endPoint.y, pointerStart.pointerType, false);
+                const rect = selectionRectangle(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+                selectWorkspaceTarget(findWorkspaceRectangleTarget(rect));
             }
             releaseWorkspacePointer();
         }
@@ -12980,50 +12963,9 @@ function renderToolArea() {
         }
 
         svgContainer.addEventListener("pointerdown", e => {
-            if (e.target !== svgContainer) {
+            if (!currentExpressionRoot || e.target !== svgContainer && !workspaceSvg.contains(e.target)) {
                 return;
             }
-            if (e.pointerType === "mouse" && e.button !== 0) {
-                return;
-            }
-            const integratedBuilder = uiState.stage === "builder" &&
-                isIntegratedExpressionBuilder(uiState.expressionBuilder);
-            const panningView = !integratedBuilder && uiState.workspaceMode === "pan";
-            const cancelingSelectionFromBlankWorkspace = !integratedBuilder && !panningView && !!selection.node;
-            if (
-                activeWorkspacePointerId !== null ||
-                uiState.mode !== "edit" ||
-                uiState.stage === "postview" ||
-                (!integratedBuilder && !panningView && !cancelingSelectionFromBlankWorkspace)
-            ) {
-                return;
-            }
-
-            activeWorkspacePointerId = e.pointerId;
-            workspacePointerStart = {
-                clientX: e.clientX,
-                clientY: e.clientY,
-                pointerType: e.pointerType || "mouse",
-                panX: workspacePanX,
-                panY: workspacePanY,
-                mode: integratedBuilder
-                    ? "builderPan"
-                    : panningView
-                        ? "pan"
-                        : "cancelSelection"
-            };
-            if (svgContainer.setPointerCapture) {
-                try {
-                    svgContainer.setPointerCapture(e.pointerId);
-                } catch (error) {
-                    // The document-level pointerup fallback still completes
-                    // the gesture when capture is unavailable.
-                }
-            }
-            e.preventDefault();
-        });
-
-        workspaceSvg.addEventListener("pointerdown", e => {
             if (e.pointerType === "mouse" && e.button !== 0) {
                 return;
             }
@@ -13091,9 +13033,9 @@ function renderToolArea() {
                             ? "commute"
                             : "selection"
             };
-            if (workspaceSvg.setPointerCapture) {
+            if (svgContainer.setPointerCapture) {
                 try {
-                    workspaceSvg.setPointerCapture(e.pointerId);
+                    svgContainer.setPointerCapture(e.pointerId);
                 } catch (error) {
                     // The document-level pointerup fallback still completes
                     // the gesture when capture is unavailable.
@@ -13136,10 +13078,6 @@ function renderToolArea() {
         });
 
         svgContainer.addEventListener("pointercancel", e => {
-            cancelWorkspaceTap(e);
-        });
-
-        workspaceSvg.addEventListener("lostpointercapture", e => {
             cancelWorkspaceTap(e);
         });
 
