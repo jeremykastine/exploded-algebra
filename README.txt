@@ -9,8 +9,9 @@ CREATING AND PLAYING LEVELS
 In Creative Mode, build a starting expression and transform it. The workspace
 menu downloads the moves and opens either a guided player or the Problem Editor.
 The player menu opens a copy in the editor. The editor can open the edited copy
-in the player and download it as a level JSON file. Exercises.html also opens
-a downloaded file.
+in the player or download it as a level JSON file. Open in Player starts
+unguided and limits numerical rewrites to recorded choices. Exercises.html
+also opens a downloaded file.
 
 Conventional notation appears as an unboxed stack immediately above the exploded
 expression. A Transform heading introduces the current expression followed by

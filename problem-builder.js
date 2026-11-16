@@ -237,8 +237,13 @@
       const level = (await waitForApi()).validateLevel(buildExportLevel(title, id));
       if (preview) {
         const fileName = `${level.id}.json`;
-        const params = { source: "problem-editor", level: fileName, mode: "guided", build: "1" };
-        if (editorQuery.has("rewrites")) params.rewrites = editorQuery.get("rewrites");
+        const params = {
+          source: "problem-editor",
+          level: fileName,
+          mode: "unguided",
+          build: "1",
+          rewrites: "prescribed"
+        };
         ExplodedAlgebraTransfer.open("exploded-algebra.html", params,
           { fileName, text: JSON.stringify(level) }, preview);
         status.textContent = "Opened in Player.";

@@ -4292,9 +4292,7 @@ Promise.resolve().then(() => {
         }
 
         function openEditorCopy(level, fileName = `${level.id}.json`, preview) {
-            const params = { source: "transfer" };
-            if (prescribedRewritesEnabled) params.rewrites = "prescribed";
-            ExplodedAlgebraTransfer.open("problem-builder.html", params, {
+            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" }, {
                 fileName,
                 text: JSON.stringify(level)
             }, preview);

@@ -31,6 +31,8 @@ assert(/class="major-step-cell"[\s\S]*?data-major-step[\s\S]*?<\/td>\s*<td>[\s\S
   "The major-step checkbox must appear before the editable notation and gray out unchecked rows");
 assert(builderJs.includes("data-conventional-notation") && builderJs.includes('ExplodedAlgebraNotation.verify(row.expression, entry.value)'), "Edited notation must be verified against the recorded expression");
 assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
+assert(/const params = \{[^}]*source: "problem-editor"[^}]*mode: "unguided"[^}]*build: "1"[^}]*rewrites: "prescribed"[^}]*\}/.test(builderJs),
+  "Open in Player must start unguided with build-first and prescribed numerical rewrites");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
