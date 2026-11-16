@@ -6,14 +6,14 @@
   <title>Problem Editor — Exploded Algebra</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261115-major-steps">
+  <link rel="stylesheet" href="problem-builder.css?v=20261115-menu">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="level-transfer.js"></script>
   <script defer src="conventional-notation.js"></script>
-  <script defer src="problem-builder.js?v=20261115-major-steps"></script>
+  <script defer src="problem-builder.js?v=20261115-menu"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T15:54:38-05:00">11/15/26, 3:54 PM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-15T19:36:54-05:00">11/15/26, 7:36 PM EST</time></p>
   <main>
     <h1>Problem Editor</h1>
     <p id="setupError" class="form-error" role="alert"></p>
@@ -48,21 +48,9 @@
           <tbody id="curationTable"></tbody>
         </table>
       </div>
-
-      <details class="exercise-guidance-card card">
-        <summary>Exercise Guidance</summary>
-        <div class="step-mode-toggle" role="group" aria-label="Exercise guidance display mode">
-          <button type="button" data-guidance-mode="view" aria-pressed="true">View</button>
-          <button type="button" data-guidance-mode="edit" aria-pressed="false">Edit</button>
-        </div>
-        <div id="exerciseGuidanceView" class="exercise-guidance-view" aria-label="Exercise guidance preview"></div>
-        <label id="exerciseGuidanceEditor" class="exercise-guidance-editor" for="exerciseGuidance" hidden>Exercise guidance
-          <textarea id="exerciseGuidance" rows="12" spellcheck="false"></textarea>
-        </label>
-      </details>
     </section>
   </main>
 
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-major-steps" hidden></iframe>
+  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261115-menu" hidden></iframe>
 </body>
 </html>

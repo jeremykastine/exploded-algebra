@@ -30,7 +30,6 @@ assert(/class="major-step-cell"[\s\S]*?data-major-step[\s\S]*?<\/td>\s*<td>[\s\S
   builderJs.includes('classList.toggle("minor-step", !event.target.checked)') && builderCss.includes(".minor-step textarea"),
   "The major-step checkbox must appear before the editable notation and gray out unchecked rows");
 assert(builderJs.includes("data-conventional-notation") && builderJs.includes('ExplodedAlgebraNotation.verify(row.expression, entry.value)'), "Edited notation must be verified against the recorded expression");
-assert(builderHtml.includes('id="exerciseGuidance"') && builderHtml.includes('id="exerciseGuidanceView"'), "Exercise guidance must remain editable");
 assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
@@ -44,16 +43,9 @@ assert(playerJs.includes('performBuilderAction(isIntegratedExpressionBuilder(bui
 assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder must not render a separate Cancel button");
 assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
 assert(!playerJs.includes('data-builder-review') && !playerHtml.includes('builderPeekDismissLayer'), "The Builder keypad must omit Peek");
-assert(playerHtml.includes('data-workspace-action="showExerciseGuidance"') && playerHtml.includes('aria-label="Exercise guidance"'), "Student pre-selection must provide an Exercise Guidance button");
-assert(playerJs.includes('function showExerciseGuidance()') && playerJs.includes('<span class="exercise-guidance-popover-title">Exercise Guidance</span>'), "The Exercise Guidance button must open the combined guidance view");
-assert(playerJs.includes('function getProblemStatementKatex(level)') && playerJs.includes('<h3>Problem Statement</h3>'), "Exercise Guidance must automatically include the problem statement expression");
-assert(playerJs.includes('playerQuery.get("rewrites") === "prescribed"') && playerJs.includes('<h3>Numerical Rewrites</h3>'), "Exercise Guidance must automatically include the numerical rewrite mode");
-assert(playerJs.includes('normalizeTextBlocks(level.exerciseGuidance)') && playerJs.includes('<h3>Additional Guidance</h3>'), "Exercise Guidance must include the author-provided exercise-level guidance");
-assert(playerJs.includes('function getCompleteExerciseGuidanceHtml(source)') && playerJs.includes('level.exerciseGuidanceIsComplete && authorGuidance.length'), "The player must render a combined author-edited guidance field without duplicating its prefilled sections");
-assert(playerJs.includes('function getMixedInstructionHtml(source)') && playerJs.includes('data-display-mode="${match.displayMode}"'), "Author guidance must recognize mixed plain text and KaTeX");
-assert(playerJs.includes('node.dataset.displayMode === "true"') && playerHtml.includes(".exercise-guidance-popover .instruction-math-display"), "Author guidance KaTeX must render in inline or display mode");
-assert(!playerJs.includes("getStepGuidanceForDisplay") && !playerJs.includes("showStepGuidance") && !playerJs.includes("view-step-guidance-button"), "Student steps must no longer expose individual guidance");
-assert(playerJs.includes('"exerciseGuidance"'), "Level validation must accept the exercise-level guidance field");
+assert(playerJs.includes('playerQuery.get("rewrites") === "prescribed"'), "Prescribed numerical rewrites must be controlled by the player URL");
+assert(!/exercise[ -]guidance|showExerciseGuidance/i.test([builderHtml, builderCss, builderJs, playerHtml, playerJs].join("\n")),
+  "The player and editor must omit the retired help interface");
 assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 1 / span 2; }'), "Variable x must occupy the upper two cells on the right");
 assert(playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 3 / span 2; }'), "Times and Plus must each occupy two rows in column two");
 assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 1; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-negative-one-button { grid-column: 1; grid-row: 3 / span 2; }'), "Inverse and negative one must each occupy two rows in column one");

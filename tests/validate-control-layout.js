@@ -317,7 +317,7 @@ assert(
     "The controls must expose only their diagonally opposite upper-left resize handle"
 );
 assert(playerJs.includes("function showInactivePostSelectionPalette()") && playerJs.includes('mainActionPanel.inert = true;'), "Post-selection actions must remain visible but inactive before selection");
-assert(playerJs.includes("function setWorkspaceUtilityMenuOpen(open)") && playerHtml.includes('data-workspace-action="showExerciseGuidance" role="menuitem"'), "The hamburger menu must expose Exercise Guidance and manage its expanded state");
+assert(playerJs.includes("function setWorkspaceUtilityMenuOpen(open)") && playerHtml.includes('data-workspace-action="openSettings" role="menuitem"'), "The hamburger menu must expose Settings and manage its expanded state");
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 // Each fixed commute control must reject selections from the other operation.

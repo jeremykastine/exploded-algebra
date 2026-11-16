@@ -21,16 +21,10 @@ layout. The expression stays editable after completion. The stack shares the
 workspace pan and zoom.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
-Exercise Guidance includes the problem statement and numerical rewrite mode. New Problem Builder exports
-store the complete, author-editable view in the top-level `exerciseGuidance`
-field and set `exerciseGuidanceIsComplete` so the player does not duplicate its
-prefilled sections. Older files still receive the automatic sections and may use
-`exerciseGuidance` for additional author guidance.
 
 The original expression remains the first item in `steps` for matching and move
-history compatibility, but it is displayed only in the problem-statement section.
-Subsequent steps are revealed progressively without individual step guidance. A
-step may include `beforeKatex` and `afterKatex` conventional-display versions. The before
+history compatibility. Subsequent steps are revealed progressively. A step may
+include `beforeKatex` and `afterKatex` conventional-display versions. The before
 version is shown while the goal is current; the after version replaces it when the
 step is complete. If either is omitted, the ordinary `katex` version is used. This
 permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
@@ -38,10 +32,6 @@ exact exploded `expression` used to recognize the completed step. If the current
 expression matches a later recorded step, intervening steps are marked skipped
 with an amber skip icon, the matched step receives a green check, and the next step
 is revealed. Undo restores the prior step statuses.
-
-Older files remain compatible: `introduction` falls back to `instruction` in the
-problem-statement portion of Exercise Guidance. Legacy per-step guidance fields
-remain loadable but are no longer displayed.
 
 The conventional notation stack and exploded expression form one group anchored
 at the upper-left by default; the Pan tool moves them together. A single
@@ -51,9 +41,9 @@ View, Pan, Select, and Undo. The lower four rows contain contextual actions or
 the Expression Builder. Before a selection, those action rows show the full
 action layout in a quiet, inactive state so learners can see what becomes
 available after selecting. A hamburger menu anchored at the upper-right contains
-Settings and Exercise Guidance. The palette stays fully inside the visible viewport
-and remembers the user's chosen size. It keeps the button arrangement fixed
-while labels and icons scale gently. Tap inside the selection or outside the
+Settings. The palette stays fully inside the visible viewport and remembers the
+user's chosen size. It keeps the button arrangement fixed while labels and icons
+scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
 empty-workspace clicks. Each notation row stays non-wrapping, and long expressions remain reachable by
 panning the shared workspace.
@@ -71,11 +61,10 @@ operation width. Bars appear only when a sum or product contains a structured
 child; otherwise only the operation symbol appears.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
-in a text field. The Exercise Guidance pre-selection button shows numerical
-permissions as a two-level bulleted list. The Numerical Manipulation action button
-is marked with bold `123`. Operation display
-settings appear on the settings screen. Restart Problem, Download Moves, and
-Close Problem are available in the workspace menu.
+in a text field. The Numerical Manipulation action button is marked with bold
+`123`. Use the `rewrites=prescribed` query parameter to limit numerical
+replacements to the choices recorded in the level. Restart Problem, Download
+Moves, and Close Problem are available in the workspace menu.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. Initial expression entry and zero-product insertion

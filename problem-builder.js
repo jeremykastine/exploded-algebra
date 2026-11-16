@@ -4,7 +4,6 @@
   const byId = id => document.getElementById(id);
   const editorQuery = new URLSearchParams(window.location.search);
   let draft;
-  let currentGuidanceMode = "view";
 
   async function waitForApi() {
     const workspace = byId("eaWorkspace");
@@ -46,21 +45,11 @@
       nextIndex = index + 1;
     }
 
-    draft = {
-      ...imported,
-      rows,
-      metadata: {
-        exerciseGuidance: Array.isArray(authored?.exerciseGuidance)
-          ? authored.exerciseGuidance.join("\n\n") : (authored?.exerciseGuidance || "").replace(
-              /\n\n## Numerical Rewrites\n\n(?:Build any equivalent numerical expression\.|Choose from the recorded equivalent replacements when Numerical Manipulation is available\.)$/, ""
-            )
-      }
-    };
+    draft = { ...imported, rows };
     byId("problemTitle").value = title;
     byId("setupForm").hidden = true;
     byId("editorWorkspace").hidden = false;
     renderCurationTable();
-    renderGuidance();
   }
 
   async function openMoves(event) {
@@ -134,8 +123,6 @@
       ...(draft.initialBuilderActions && { initialBuilderActions: draft.initialBuilderActions }),
       finalExpression: steps.at(-1).expression,
       finalKatex: steps.at(-1).afterKatex,
-      exerciseGuidance: draft.metadata.exerciseGuidance.trim() || defaultExerciseGuidance(),
-      exerciseGuidanceIsComplete: true,
       requireFullDemo: true,
       steps,
       ...(minorSteps.length && { minorSteps }),
@@ -220,124 +207,11 @@
       entry.value = notation;
       handleNotationChange(tableRow, entry);
       status.textContent = "Saved.";
-      if (row.isInitial && !draft.metadata.exerciseGuidance) renderGuidancePreview();
     } catch (error) {
       entry.setAttribute("aria-invalid", "true");
       status.textContent = error.message || "The notation could not be verified.";
       entry.focus({ preventScroll: true });
     }
-  }
-
-  function getGuidanceInlineHtml(source) {
-    const text = String(source || "");
-    let cursor = 0;
-    let html = "";
-    while (cursor < text.length) {
-      const start = text.indexOf("\\(", cursor);
-      if (start < 0) {
-        html += escapeHtml(text.slice(cursor));
-        break;
-      }
-      html += escapeHtml(text.slice(cursor, start));
-      const end = text.indexOf("\\)", start + 2);
-      if (end < 0) {
-        html += escapeHtml(text.slice(start));
-        break;
-      }
-      const expression = text.slice(start + 2, end).trim();
-      html += `<span class="guidance-math" data-guidance-math="${escapeHtml(expression)}" data-display-mode="false"></span>`;
-      cursor = end + 2;
-    }
-    return html;
-  }
-
-  function getGuidancePreviewHtml(source) {
-    const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n");
-    const html = [];
-    let index = 0;
-    while (index < lines.length) {
-      const line = lines[index];
-      const trimmed = line.trim();
-      if (!trimmed) {
-        index += 1;
-        continue;
-      }
-      const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
-      if (heading) {
-        html.push(`<h3>${getGuidanceInlineHtml(heading[1])}</h3>`);
-        index += 1;
-        continue;
-      }
-      if (trimmed === "\\[") {
-        const expressionLines = [];
-        index += 1;
-        while (index < lines.length && lines[index].trim() !== "\\]") {
-          expressionLines.push(lines[index]);
-          index += 1;
-        }
-        if (index < lines.length) index += 1;
-        html.push(`<div class="guidance-math guidance-math-display" data-guidance-math="${escapeHtml(expressionLines.join("\n").trim())}" data-display-mode="true"></div>`);
-        continue;
-      }
-      const topBullet = line.match(/^-\s+(.+)$/);
-      if (topBullet) {
-        const items = [];
-        while (index < lines.length) {
-          const itemMatch = lines[index].match(/^-\s+(.+)$/);
-          if (!itemMatch) break;
-          index += 1;
-          const nested = [];
-          while (index < lines.length) {
-            const nestedMatch = lines[index].match(/^\s{2,}-\s+(.+)$/);
-            if (!nestedMatch) break;
-            nested.push(`<li>${getGuidanceInlineHtml(nestedMatch[1])}</li>`);
-            index += 1;
-          }
-          items.push(`<li><span>${getGuidanceInlineHtml(itemMatch[1])}</span>${nested.length ? `<ul>${nested.join("")}</ul>` : ""}</li>`);
-        }
-        html.push(`<ul class="guidance-preview-list">${items.join("")}</ul>`);
-        continue;
-      }
-      html.push(`<p>${getGuidanceInlineHtml(trimmed)}</p>`);
-      index += 1;
-    }
-    return html.join("");
-  }
-
-  function renderGuidancePreview() {
-    const target = byId("exerciseGuidanceView");
-    target.innerHTML = getGuidancePreviewHtml(draft.metadata.exerciseGuidance || defaultExerciseGuidance());
-    target.querySelectorAll("[data-guidance-math]").forEach(node => {
-      const expression = node.dataset.guidanceMath || "";
-      if (!window.katex) {
-        node.textContent = expression;
-        return;
-      }
-      window.katex.render(expression, node, {
-        throwOnError: false,
-        displayMode: node.dataset.displayMode === "true"
-      });
-    });
-  }
-
-  function renderGuidanceMode() {
-    const editing = currentGuidanceMode === "edit";
-    byId("exerciseGuidanceView").hidden = editing;
-    byId("exerciseGuidanceEditor").hidden = !editing;
-    document.querySelectorAll("[data-guidance-mode]").forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset.guidanceMode === currentGuidanceMode));
-    });
-    if (!editing) renderGuidancePreview();
-  }
-
-  function defaultExerciseGuidance() {
-    return ["## Problem Statement", "", "\\[", draft.rows[0].afterKatex || draft.initialKatex, "\\]"].join("\n");
-  }
-
-  function renderGuidance() {
-    byId("exerciseGuidance").value = draft.metadata.exerciseGuidance;
-    currentGuidanceMode = "view";
-    renderGuidanceMode();
   }
 
   function downloadLevel(level) {
@@ -416,22 +290,6 @@
     const tableRow = event.target.closest("[data-step-index]");
     draft.rows[Number(tableRow.dataset.stepIndex)].major = event.target.checked;
     tableRow.classList.toggle("minor-step", !event.target.checked);
-  });
-  document.querySelectorAll("[data-guidance-mode]").forEach(button => {
-    button.addEventListener("click", () => {
-      currentGuidanceMode = button.dataset.guidanceMode;
-      renderGuidanceMode();
-      if (currentGuidanceMode === "edit") {
-        const guidance = byId("exerciseGuidance");
-        if (!guidance.value) guidance.value = defaultExerciseGuidance();
-        guidance.focus({ preventScroll: true });
-      } else {
-        button.focus({ preventScroll: true });
-      }
-    });
-  });
-  byId("exerciseGuidance").addEventListener("input", event => {
-    draft.metadata.exerciseGuidance = event.target.value;
   });
   byId("openInPlayerButton").addEventListener("click", () => exportProblem(true));
   byId("downloadLevelButton").addEventListener("click", () => exportProblem(false));

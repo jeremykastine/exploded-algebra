@@ -47,14 +47,8 @@ assert(
     "The single conventional line must sit immediately above the exploded notation"
 );
 assert(
-    !playerJs.includes('view-step-guidance-button')
-        && !playerJs.includes('showStepGuidance')
-        && playerHtml.includes('data-workspace-action="showExerciseGuidance"'),
-    "Guidance must live in the pre-selection Exercise Guidance control rather than on individual steps"
-);
-assert(
     !playerJs.includes('step-card step-hold-target'),
-    "Conventional expressions must no longer use long-hold guidance"
+    "Conventional expressions must have no long-hold interaction"
 );
 
 console.log("Workspace pan checks passed.");

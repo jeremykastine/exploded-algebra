@@ -1349,7 +1349,6 @@ Promise.resolve().then(() => {
         const movesForEditorButton = document.querySelector('[data-workspace-action="downloadMovesForEditor"]');
         const editLevelCopyButton = document.querySelector('[data-workspace-action="editLevelCopy"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
-        const guidancePopover = document.getElementById("guidancePopover");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
         const topPanelResizeHandle = document.getElementById("topPanelResizeHandle");
@@ -2716,62 +2715,6 @@ Promise.resolve().then(() => {
             });
         }
 
-        function hideExerciseGuidance() {
-            if (!guidancePopover) {
-                return;
-            }
-            guidancePopover.classList.add("hidden");
-            guidancePopover.replaceChildren();
-            document.body.classList.remove("exercise-guidance-active");
-        }
-
-        function getMixedInstructionHtml(source) {
-            const text = String(source || "");
-            let cursor = 0;
-            let html = "";
-            while (cursor < text.length) {
-                const starts = [
-                    { index: text.indexOf("\\(", cursor), close: "\\)", displayMode: false },
-                    { index: text.indexOf("\\[", cursor), close: "\\]", displayMode: true }
-                ].filter(item => item.index >= 0).sort((left, right) => left.index - right.index);
-                if (!starts.length) {
-                    html += escapeHtml(text.slice(cursor));
-                    break;
-                }
-                const match = starts[0];
-                html += escapeHtml(text.slice(cursor, match.index));
-                const mathStart = match.index + 2;
-                const mathEnd = text.indexOf(match.close, mathStart);
-                if (mathEnd < 0) {
-                    html += escapeHtml(text.slice(match.index));
-                    break;
-                }
-                const expression = text.slice(mathStart, mathEnd);
-                const tag = match.displayMode ? "div" : "span";
-                const className = match.displayMode ? "instruction-math-display" : "instruction-math-inline";
-                html += `<${tag} class="${className} katex-placeholder" data-display-mode="${match.displayMode}" data-expr="${escapeHtml(expression)}"></${tag}>`;
-                cursor = mathEnd + 2;
-            }
-            return html;
-        }
-
-        function renderExerciseGuidanceMath() {
-            if (!guidancePopover) {
-                return;
-            }
-            guidancePopover.querySelectorAll(".katex-placeholder").forEach(node => {
-                const expression = node.getAttribute("data-expr") || "";
-                if (!window.katex) {
-                    node.textContent = expression;
-                    return;
-                }
-                katex.render(expression, node, {
-                    throwOnError: false,
-                    displayMode: node.dataset.displayMode === "true"
-                });
-            });
-        }
-
         function isDemoOnlyLevel(level) {
             if (!level) {
                 return false;
@@ -3398,13 +3341,6 @@ Promise.resolve().then(() => {
             level.demo.steps = upgradedSteps;
         }
 
-        function normalizeTextBlocks(value) {
-            if (Array.isArray(value)) {
-                return value.map(item => String(item).trim()).filter(Boolean);
-            }
-            return typeof value === "string" && value.trim() ? [value.trim()] : [];
-        }
-
         function isValidTextBlocks(value) {
             return (typeof value === "string" && !!value.trim()) || (
                 Array.isArray(value) &&
@@ -3482,8 +3418,7 @@ Promise.resolve().then(() => {
                 "instruction",
                 "introduction",
                 "conclusion",
-                "completionMessage",
-                "exerciseGuidance"
+                "completionMessage"
             ].forEach(fieldName => {
                 if (level[fieldName] === undefined) {
                     return;
@@ -3492,12 +3427,6 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has an invalid ${fieldName}.`);
                 }
             });
-            if (
-                level.exerciseGuidanceIsComplete !== undefined &&
-                typeof level.exerciseGuidanceIsComplete !== "boolean"
-            ) {
-                throw new Error(`${sourceName} has an invalid exerciseGuidanceIsComplete setting.`);
-            }
             if (level.showConventionalSteps !== undefined && typeof level.showConventionalSteps !== "boolean") {
                 throw new Error(`${sourceName} has an invalid showConventionalSteps setting.`);
             }
@@ -3510,7 +3439,7 @@ Promise.resolve().then(() => {
                     throw new Error(`${sourceName} has an invalid expression in step ${index + 1}.`);
                 }
                 textToExpression(step.expression);
-                ["guidance", "introduction", "conclusion"].forEach(fieldName => {
+                ["introduction", "conclusion"].forEach(fieldName => {
                     if (step[fieldName] === undefined) {
                         return;
                     }
@@ -3529,6 +3458,17 @@ Promise.resolve().then(() => {
             });
 
             const levelCopy = clonePlainData(level);
+            for (const definition of [levelCopy, levelCopy.sourceLevel]) {
+                if (!definition || typeof definition !== "object") continue;
+                delete definition.exerciseGuidance;
+                delete definition.exerciseGuidanceIsComplete;
+                for (const steps of [definition.steps, definition.minorSteps]) {
+                    if (!Array.isArray(steps)) continue;
+                    for (const step of steps) {
+                        if (step && typeof step === "object") delete step.guidance;
+                    }
+                }
+            }
             let copy = isDemoOnlyLevel(levelCopy) && levelCopy.sourceLevel && typeof levelCopy.sourceLevel === "object"
                 ? { ...clonePlainData(levelCopy.sourceLevel), ...levelCopy }
                 : levelCopy;
@@ -4487,7 +4427,6 @@ Promise.resolve().then(() => {
             if (!level) {
                 levelContent.innerHTML = "";
                 updateExerciseMenu(null);
-                hideExerciseGuidance();
                 return;
             }
 
@@ -4657,7 +4596,6 @@ Promise.resolve().then(() => {
             buildingStartingExpression = buildFirst;
             document.body.classList.toggle("creative-workspace", level.creative === true);
             resetDemoStateForCurrentLevel();
-            hideExerciseGuidance();
             resetSolutionRecorderForCurrentLevel();
             resetExpressionUndoHistory();
             completedSteps = new Array((level.steps || []).length).fill(false);
@@ -4734,7 +4672,6 @@ Promise.resolve().then(() => {
                 return;
             }
             setWorkspaceUtilityMenuOpen(false);
-            hideExerciseGuidance();
             hideToolOptionMenu();
             refreshQuickSettingButtons();
             settingsPanel.classList.remove("hidden");
@@ -4856,10 +4793,6 @@ Promise.resolve().then(() => {
                         }
                         return;
                     }
-                    if (button.dataset.workspaceAction === "showExerciseGuidance") {
-                        showExerciseGuidance();
-                        return;
-                    }
                     if (button.dataset.workspaceAction === "openSettings") {
                         openSettingsPanel();
                         return;
@@ -4890,8 +4823,6 @@ Promise.resolve().then(() => {
                     setWorkspaceUtilityMenuOpen(false);
                     if (button.dataset.workspaceAction === "openSettings") {
                         openSettingsPanel();
-                    } else if (button.dataset.workspaceAction === "showExerciseGuidance") {
-                        showExerciseGuidance();
                     } else if (button.dataset.workspaceAction === "restartExercise") {
                         openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
@@ -4936,14 +4867,6 @@ Promise.resolve().then(() => {
                     }
                 });
             }
-            document.addEventListener("click", event => {
-                if (!document.body.classList.contains("exercise-guidance-active")) {
-                    return;
-                }
-                event.preventDefault();
-                event.stopImmediatePropagation();
-                hideExerciseGuidance();
-            }, true);
             installTopPanelResizing();
             installFloatingPaletteInteractions();
             if (toolOptionMenu) {
@@ -5038,11 +4961,6 @@ Promise.resolve().then(() => {
             scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
-                if (guidancePopover && !guidancePopover.classList.contains("hidden") &&
-                    !event.target.closest('[data-workspace-action="showExerciseGuidance"]') &&
-                    !guidancePopover.contains(event.target)) {
-                    hideExerciseGuidance();
-                }
                 if (uiState.mode !== "inspect") {
                     return;
                 }
@@ -7967,115 +7885,6 @@ ctx.font = SETTINGS.textFont;
             }
             return Number.isFinite(result) && !Number.isNaN(result) ? result : null;
         }
-
-        function getProblemStatementKatex(level) {
-            const firstStep = level && Array.isArray(level.steps) ? level.steps[0] : null;
-            return level && level.initialKatex || (
-                firstStep
-                    ? firstStep.afterKatex || firstStep.katex || firstStep.beforeKatex || level.startExpression
-                    : level && level.startExpression || ""
-            );
-        }
-
-        function getCompleteExerciseGuidanceHtml(source) {
-            const text = Array.isArray(source) ? source.join("\n\n") : String(source || "");
-            const lines = text.replace(/\r\n?/g, "\n").split("\n");
-            const html = [];
-            let index = 0;
-            while (index < lines.length) {
-                const line = lines[index];
-                const trimmed = line.trim();
-                if (!trimmed) {
-                    index += 1;
-                    continue;
-                }
-                const heading = trimmed.match(/^#{1,6}\s+(.+)$/);
-                if (heading) {
-                    html.push(`<h3>${getMixedInstructionHtml(heading[1])}</h3>`);
-                    index += 1;
-                    continue;
-                }
-                if (trimmed === "\\[") {
-                    const expressionLines = [];
-                    index += 1;
-                    while (index < lines.length && lines[index].trim() !== "\\]") {
-                        expressionLines.push(lines[index]);
-                        index += 1;
-                    }
-                    if (index < lines.length) index += 1;
-                    html.push(`<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(expressionLines.join("\n").trim())}"></span></div>`);
-                    continue;
-                }
-                const topBullet = line.match(/^-\s+(.+)$/);
-                if (topBullet) {
-                    const items = [];
-                    while (index < lines.length) {
-                        const itemMatch = lines[index].match(/^-\s+(.+)$/);
-                        if (!itemMatch) break;
-                        index += 1;
-                        const nested = [];
-                        while (index < lines.length) {
-                            const nestedMatch = lines[index].match(/^\s{2,}-\s+(.+)$/);
-                            if (!nestedMatch) break;
-                            nested.push(`<li>${getMixedInstructionHtml(nestedMatch[1])}</li>`);
-                            index += 1;
-                        }
-                        items.push(`<li><span>${getMixedInstructionHtml(itemMatch[1])}</span>${nested.length ? `<ul>${nested.join("")}</ul>` : ""}</li>`);
-                    }
-                    html.push(`<ul class="exercise-guidance-list">${items.join("")}</ul>`);
-                    continue;
-                }
-                html.push(`<div class="exercise-guidance-instruction">${getMixedInstructionHtml(trimmed)}</div>`);
-                index += 1;
-            }
-            return html.join("");
-        }
-
-        function showExerciseGuidance() {
-            if (!guidancePopover) return;
-            const level = getCurrentLevel();
-            if (!level) return;
-            const problemText = normalizeTextBlocks(level.instruction).length
-                ? normalizeTextBlocks(level.instruction)
-                : normalizeTextBlocks(level.introduction);
-            const problemTextHtml = problemText
-                .map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`)
-                .join("");
-            const problemExpression = getProblemStatementKatex(level);
-            const problemExpressionHtml = problemExpression
-                ? `<div class="exercise-guidance-expression"><span class="katex-placeholder" data-display-mode="true" data-expr="${escapeHtml(problemExpression)}"></span></div>`
-                : "";
-            const authorGuidance = normalizeTextBlocks(level.exerciseGuidance);
-            const numericalGuidance = prescribedRewritesEnabled
-                ? "Choose from the recorded equivalent replacements."
-                : "Build any equivalent numerical expression.";
-            if (level.exerciseGuidanceIsComplete && authorGuidance.length) {
-                guidancePopover.innerHTML = `
-                    <div class="exercise-guidance-popover-content">
-                        <span class="exercise-guidance-popover-title">Exercise Guidance</span>
-                        <div class="exercise-guidance-complete">${getCompleteExerciseGuidanceHtml(level.exerciseGuidance)}</div>
-                        <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3><p>${numericalGuidance}</p></section>
-                    </div>`;
-                guidancePopover.classList.remove("hidden");
-                document.body.classList.add("exercise-guidance-active");
-                renderExerciseGuidanceMath();
-                return;
-            }
-            const authorGuidanceHtml = authorGuidance.length
-                ? `<section class="exercise-guidance-section"><h3>Additional Guidance</h3>${authorGuidance.map(text => `<div class="exercise-guidance-instruction">${getMixedInstructionHtml(text)}</div>`).join("")}</section>`
-                : "";
-            guidancePopover.innerHTML = `
-                <div class="exercise-guidance-popover-content">
-                    <span class="exercise-guidance-popover-title">Exercise Guidance</span>
-                    <section class="exercise-guidance-section"><h3>Problem Statement</h3>${problemTextHtml}${problemExpressionHtml}</section>
-                    <section class="exercise-guidance-section"><h3>Numerical Rewrites</h3><p>${numericalGuidance}</p></section>
-                    ${authorGuidanceHtml}
-                </div>`;
-            guidancePopover.classList.remove("hidden");
-            document.body.classList.add("exercise-guidance-active");
-            renderExerciseGuidanceMath();
-        }
-
 
         function greatestCommonDivisorBigInt(a, b) {
             let x = a < 0n ? -a : a;

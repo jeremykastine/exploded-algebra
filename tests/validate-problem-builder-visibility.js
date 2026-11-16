@@ -55,6 +55,21 @@ function checkPlayer() {
   vm.runInContext(extract(player, "validateChosenLevel", "        "), scope);
   scope.level = { id: "add", title: "Add", startExpression: "(2)", steps: [{ expression: "(2)" }], showConventionalSteps: "no" };
   assert.throws(() => vm.runInContext("validateChosenLevel(level, 'test')", scope), /invalid showConventionalSteps/);
+  delete scope.level.showConventionalSteps;
+  scope.level.exerciseGuidance = "Old explanation";
+  scope.level.exerciseGuidanceIsComplete = true;
+  scope.level.steps[0].guidance = "Old hint";
+  scope.clonePlainData = data => JSON.parse(JSON.stringify(data));
+  scope.isDemoOnlyLevel = () => false;
+  scope.getExplodedExpressionTextsForStep = () => [];
+  scope.inferVariablesFromExpressionTextForLevel = () => [];
+  scope.upgradeLegacyCommuteDemoSteps = () => {};
+  const loaded = vm.runInContext("validateChosenLevel(level, 'test')", scope);
+  assert.equal(loaded.startExpression, "(2)");
+  assert.equal(loaded.steps[0].expression, "(2)");
+  assert.equal(loaded.exerciseGuidance, undefined);
+  assert.equal(loaded.exerciseGuidanceIsComplete, undefined);
+  assert.equal(loaded.steps[0].guidance, undefined);
 }
 
 checkPlayer();
@@ -116,7 +131,6 @@ function checkImportAndExport() {
   vm.runInContext(extract(editor, "buildExportLevel", "  "), scope);
   scope.draft = {
     ...scope.imported,
-    metadata: { id: "edited", title: "Edited", exerciseGuidance: "Solve the problem." },
     rows: [
       { expression: initial, katex: "x+2+4", beforeKatex: "", afterKatex: "x+2+4", isInitial: true, major: true },
       { expression: intermediate, katex: "x+6", beforeKatex: "", afterKatex: "6+x", moveIndex: 0, major: false },
