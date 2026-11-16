@@ -1318,6 +1318,9 @@ Promise.resolve().then(() => {
         }
 
         function isToolActuallyApplicable(toolName) {
+            if (prescribedRewritesEnabled && isNumericalBuilderTool(toolName)) {
+                return canNumericalRewrite();
+            }
             const applicable = getApplicableTools();
             return !!applicable[toolName];
         }
@@ -3092,7 +3095,7 @@ Promise.resolve().then(() => {
                 if (toolIndex < 0) return;
                 const toolName = moveActions[toolIndex].tool;
                 let numericalRewrite = action.numericalRewrite || null;
-                const isRecordedNumerical = isNumericalRewriteTool(toolName) || toolName === "automaticNumericalRewrite";
+                const isRecordedNumerical = isNumericalBuilderTool(toolName) || toolName === "automaticNumericalRewrite";
                 if (isRecordedNumerical && !numericalRewrite) {
                     const selected = actions[selectionIndex];
                     const to = inferRecordedNumericalReplacement(selected, expression);
@@ -7984,9 +7987,11 @@ ctx.font = SETTINGS.textFont;
 
         function getPrescribedNumericalRewriteChoices(selectedNode = cloneSelectedRangeNode()) {
             const source = expressionToFullyParenthesizedText(selectedNode);
+            if (prescribedRewritesEnabled) {
+                return Array.from(prescribedGuide?.choices.get(source) || []);
+            }
             const guide = getCurrentDemoStep();
-            return Array.from(prescribedGuide?.choices.get(source) ||
-                (guide?.action === "chooseNumericalRewrite" ? [guide.value] : []));
+            return guide?.action === "chooseNumericalRewrite" ? [guide.value] : [];
         }
 
         function exactRationalsAreEqual(first, second) {
@@ -12337,6 +12342,9 @@ function renderToolArea() {
         }
 
         function beginTool(toolName) {
+            if (prescribedRewritesEnabled && isNumericalBuilderTool(toolName)) {
+                toolName = "numericalRewrite";
+            }
             if (toolName === "insertIdentityAddZeroTop") {
                 if (!canInsertIdentity()) {
                     return;
@@ -12411,7 +12419,7 @@ function renderToolArea() {
             uiState.previewColors = null;
 
             if (isNumericalRewriteTool(toolName) &&
-                ((prescribedRewritesEnabled) || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
+                (prescribedRewritesEnabled || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
                 uiState.stage = "numericalChoices";
             } else if (
                 toolName === "commute" ||
