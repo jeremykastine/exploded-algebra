@@ -53,12 +53,7 @@ expression to clear it; guided demonstrations ignore off-target selections and
 empty-workspace clicks. Each notation row stays non-wrapping, and long expressions remain reachable by
 panning the shared workspace.
 The settings screen replaces the exploded-expression workspace while open.
-Four independent operation controls determine the appearance of sums and
-products. Bar Shape
-cycles through Thick, Endpoints, Ellipse, Flared, Midline, Nested ( ), Nested +
-Ops, and Outward ( ). Bar Shading offers solid black, gray, and light gray, plus
-three gradients with the corresponding color at each end and a white center
-matching the visible operation symbol's width.
+Bars use a gray gradient with a white center and a continuous midline.
 Operation Style chooses a bare black symbol, a black outlined circle containing
 a black symbol, or a black filled circle containing a white symbol. Operation
 Size scales the chosen symbol and circle to 100%, 75%, or 50% of the reserved
@@ -68,8 +63,8 @@ Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Numerical Manipulation action button is marked with bold
 `123`. Use the `rewrites=prescribed` query parameter to limit numerical
-replacements to the choices recorded in the level. Restart Problem, Download
-Moves, and Close Problem are available in the workspace menu.
+replacements to the choices recorded in the level. Download Moves saves the
+current move history from the workspace menu.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
 downloaded move histories. Initial expression entry and zero-product insertion
@@ -155,8 +150,11 @@ Level saves the edited exercise JSON.
 For a hosted exercise, use exploded-algebra.html?level=path/to/exercise.json.
 Add mode=guided to highlight recorded steps, build=1 to require building the
 starting expression, or rewrites=prescribed to allow only recorded numerical
-rewrites. Restart Exercise in the workspace menu reloads the current exercise
-with the selected settings. A player URL without an exercise opens Free Play.
+rewrites. Reset in the workspace menu clears the current run's moves and returns
+to the beginning with the current exercise settings. In Free Play, Reset returns
+to the expression you built, or clears the builder if you are still building it.
+Restart Exercise lets you choose new exercise settings. A player URL without an
+exercise opens Free Play.
 Existing links with mode=creative also open Free Play.
 
 With recorded numerical rewrites, Numerical Manipulation applies a single

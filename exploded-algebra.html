@@ -1804,20 +1804,6 @@
 
         .level-menu-panel.hidden { display: none; }
         .level-menu-title { margin: 0 0 8px; font-size: 15px; }
-        .bar-style-control {
-            margin: 12px 0;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-        }
-        .bar-style-control label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .bar-style-control .panel-select { margin: 0 0 10px; }
-        .bar-style-control .panel-select:last-child { margin-bottom: 0; }
         .level-menu-actions {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3422,8 +3408,7 @@
             margin: 0 auto;
         }
         .level-menu-actions,
-        .layout-size-controls,
-        .bar-style-control {
+        .layout-size-controls {
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -3505,18 +3490,6 @@
             align-items: center;
             justify-content: center;
             font-size: var(--steps-font-size);
-        }
-        .bar-style-control label {
-            margin: 2px 0 0;
-            font-size: 14px;
-            text-align: center;
-        }
-        .bar-style-control .panel-select {
-            min-height: 46px;
-            margin: 0;
-            border-radius: 7px;
-            font-size: 14px;
-            text-align: center;
         }
         #moveHistoryControls:not(:empty) { padding: 0; }
         .exit-settings-button {
@@ -4426,7 +4399,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T15:19:36-05:00">11/16/26, 3:19 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T16:30:43-05:00">11/16/26, 4:30 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4436,6 +4409,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <div id="workspaceUtilityMenuItems" class="workspace-utility-menu-items hidden" role="menu" aria-label="Workspace menu">
+                <button type="button" data-workspace-action="resetRun" role="menuitem" disabled>Reset</button>
                 <button type="button" data-workspace-action="newExpression" role="menuitem">New Expression</button>
                 <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Open Exercise…</button>
                 <button type="button" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Exercise…</button>
@@ -4575,14 +4549,6 @@
         <h2 id="settingsPanelTitle" class="level-menu-title">Settings</h2>
         <div class="settings-control-stack">
             <div class="level-menu-actions">
-                <button type="button" class="workspace-setting-button" data-workspace-setting="bar-shape">
-                    <span class="workspace-setting-name">Bar Shape</span>
-                    <span class="workspace-setting-value" data-setting-value>Midline</span>
-                </button>
-                <button type="button" class="workspace-setting-button" data-workspace-setting="bar-shading">
-                    <span class="workspace-setting-name">Bar Shading</span>
-                    <span class="workspace-setting-value" data-setting-value>Gradient Gray</span>
-                </button>
                 <button type="button" class="workspace-setting-button" data-workspace-setting="operation-style">
                     <span class="workspace-setting-name">Operation Style</span>
                     <span class="workspace-setting-value" data-setting-value>Filled Circle</span>
@@ -4598,7 +4564,7 @@
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261116-rewrite-lines"></script>
+    <script src="exploded-algebra-tool.js?v=20261116-reset"></script>
 
 </body>
 </html>

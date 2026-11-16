@@ -38,7 +38,7 @@ assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MOD
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["New Expression", "Open Exercise…", "Restart Exercise…", "Open Problem Editor", "Download Moves"]) {
+for (const label of ["Reset", "New Expression", "Open Exercise…", "Restart Exercise…", "Open Problem Editor", "Download Moves"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
 assert.equal((workspaceMenu.match(/data-workspace-action="restartExercise"/g) || []).length, 1);
@@ -115,13 +115,13 @@ assert(!introductionHtml.includes("intro-levels/") && introductionHtml.includes(
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
 assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "The upper-right hamburger menu must open Settings");
-["bar-shape", "bar-shading", "operation-style", "operation-size"].forEach(setting => {
+["operation-style", "operation-size"].forEach(setting => {
     assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
 });
 assert(!playerHtml.includes('data-workspace-setting="steps-text-size"'), "The removed conventional history panel must not retain a text-size setting");
 assert(!playerHtml.includes('data-workspace-setting="child-alignment"'));
 assert(!playerJs.includes('CHILD_ALIGNMENT_STORAGE_KEY'));
-assert(!playerJs.includes('button.hidden = !classicBars'), "All four operation controls must stay independent");
+assert(!/data-workspace-setting="bar-(shape|shading)"/.test(playerHtml), "Bar appearance must use the renderer defaults");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerJs.includes('function openSettingsPanel()') && playerJs.includes('function closeSettingsPanel()'), "The Settings screen must have open and close behavior");
 assert(/\.bottom-controls-panel \.workspace-toolbar button\[data-workspace-mode\]\.is-active \{[\s\S]*?z-index: 6;[\s\S]*?box-shadow: inset 0 0 0 4px #205fa8;/.test(playerHtml), "The active Select or Hand tool must use an aligned bold inset outline above the grid overlay");
@@ -269,10 +269,7 @@ assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
 assert(/src="exploded-algebra-tool\.js\?v=\d{8}-[a-z0-9-]+"/.test(playerHtml));
 assert(playerJs.includes('function cycleQuickSetting(setting)'));
-assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_STYLE_OPTIONS'));
-assert(playerJs.includes('getNextCyclicOption(OPERATION_BAR_SHADING_OPTIONS'));
-assert(playerJs.includes('value: "gradient-gray", shortLabel: "Gradient Gray"'));
-assert(playerJs.includes('value: "gradient-light-gray", shortLabel: "Gradient Light Gray"'));
+assert(!/getSavedOperationBar(?:Style|Shading)/.test(playerJs), "Saved bar styles must not override the renderer defaults");
 assert(playerJs.includes('getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle)'));
 assert(playerJs.includes('value: "bare", shortLabel: "Bare"'));
 assert(playerJs.includes('value: "outlined", shortLabel: "Outlined Circle"'));
