@@ -1888,14 +1888,7 @@ Promise.resolve().then(() => {
             };
         }
 
-        function appendWorkspaceConventionalText(text, row = workspaceConventionalLine) {
-            const span = document.createElement("span");
-            span.className = "workspace-conventional-label";
-            span.textContent = text;
-            row.appendChild(span);
-        }
-
-        function appendWorkspaceConventionalMath(katexSource, row = workspaceConventionalLine) {
+        function appendWorkspaceConventionalMath(katexSource, row) {
             const span = document.createElement("span");
             span.className = "workspace-conventional-math";
             if (window.katex) {
@@ -1904,6 +1897,11 @@ Promise.resolve().then(() => {
                 span.textContent = katexSource || "□";
             }
             row.appendChild(span);
+            const rowHeight = row.clientHeight;
+            const mathHeight = span.offsetHeight;
+            if (rowHeight && mathHeight > rowHeight) {
+                span.style.fontSize = `${rowHeight / mathHeight}em`;
+            }
         }
 
         function renderWorkspaceConventionalLine() {
@@ -1911,21 +1909,21 @@ Promise.resolve().then(() => {
                 return;
             }
             const content = getWorkspaceConventionalLineContent();
-            workspaceConventionalLine.replaceChildren();
+            for (const row of workspaceConventionalLine.children) {
+                row.replaceChildren();
+            }
             workspaceConventionalLine.hidden = !content;
             if (!content) {
                 return;
             }
-            appendWorkspaceConventionalText(content.heading);
+            const [headingRow, sourceRow, targetRow] = workspaceConventionalLine.children;
+            headingRow.textContent = content.heading;
             workspaceConventionalLine.setAttribute("aria-label", content.heading);
             if (content.sourceKatex) {
-                const sourceRow = document.createElement("div");
-                sourceRow.className = "workspace-conventional-expressions";
                 appendWorkspaceConventionalMath(content.sourceKatex, sourceRow);
-                appendWorkspaceConventionalText(content.connector, sourceRow);
-                workspaceConventionalLine.appendChild(sourceRow);
+                sourceRow.append(content.connector);
             }
-            appendWorkspaceConventionalMath(content.targetKatex);
+            appendWorkspaceConventionalMath(content.targetKatex, content.sourceKatex ? targetRow : sourceRow);
         }
 
         function positionWorkspaceConventionalLine() {
@@ -1933,7 +1931,7 @@ Promise.resolve().then(() => {
                 return;
             }
             const bounds = getExpressionBounds();
-            const lineHeight = workspaceConventionalLine.offsetHeight || 25;
+            const lineHeight = workspaceConventionalLine.offsetHeight;
             const gap = 8;
             workspaceConventionalLine.style.left = `${bounds.left}px`;
             workspaceConventionalLine.style.top = `${bounds.top - lineHeight - gap}px`;

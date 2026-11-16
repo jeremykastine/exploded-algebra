@@ -4085,12 +4085,11 @@
         }
         .workspace-conventional-line {
             position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+            display: grid;
+            grid-template-rows: repeat(4, 1lh);
+            justify-items: start;
             width: max-content;
             max-width: none;
-            min-height: 1.25em;
             margin: 0;
             padding: 0;
             border: 0;
@@ -4101,9 +4100,9 @@
             white-space: nowrap;
             user-select: none;
         }
-        .workspace-conventional-expressions {
+        .workspace-conventional-row {
             display: flex;
-            align-items: baseline;
+            align-items: center;
             gap: 0.38em;
         }
         .workspace-conventional-line .katex { font-size: 1em; }
@@ -4395,7 +4394,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-15T21:25:21-05:00">11/15/26, 9:25 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T06:07:38-05:00">11/16/26, 6:07 AM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4480,7 +4479,12 @@
             </div>
             <div id="svgContainer" class="right-svg-wrap">
                 <div id="workspaceNotationLayer" class="workspace-notation-layer" aria-live="polite">
-                    <div id="workspaceConventionalLine" class="workspace-conventional-line" tabindex="-1" hidden></div>
+                    <div id="workspaceConventionalLine" class="workspace-conventional-line" tabindex="-1" hidden>
+                        <div class="workspace-conventional-row"></div>
+                        <div class="workspace-conventional-row"></div>
+                        <div class="workspace-conventional-row"></div>
+                        <div class="workspace-conventional-row" aria-hidden="true"></div>
+                    </div>
                 </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <svg class="workspace-selection-feedback" aria-hidden="true" focusable="false">
@@ -4535,7 +4539,7 @@
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261009-selection-bars-fix"></script>
     <script src="level-transfer.js"></script>
-    <script src="exploded-algebra-tool.js?v=20261115-rewrites"></script>
+    <script src="exploded-algebra-tool.js?v=20261116-four-rows"></script>
 
 </body>
 </html>

@@ -96,13 +96,15 @@ for (const corner of ["ne", "se", "sw"]) {
 assert(
     playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceConventionalLine"') &&
         /\.workspace-conventional-line \{[\s\S]*?font: 20px\/1\.25 Verdana,[\s\S]*?white-space: nowrap;/.test(playerHtml) &&
-        /\.workspace-conventional-line \{[\s\S]*?flex-direction: column;/.test(playerHtml),
-    "Conventional notation must be a multiline target/current stack at the exploded expression's font size"
+        /\.workspace-conventional-line \{[^}]*grid-template-rows: repeat\(4, 1lh\);/.test(playerHtml),
+    "Conventional notation must reserve four fixed rows above the exploded expression"
 );
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");
 assert(playerJs.includes('heading: "Transform"') && playerJs.includes('sourceKatex: currentKatex'), "The workspace line must show the current expression and the next target");
-assert(playerJs.includes('appendWorkspaceConventionalMath(content.sourceKatex, sourceRow)') && playerJs.includes('appendWorkspaceConventionalMath(content.targetKatex);'), "The source and target expressions must occupy separate rows");
+assert(playerJs.includes('appendWorkspaceConventionalMath(content.sourceKatex, sourceRow)') &&
+    playerJs.includes('appendWorkspaceConventionalMath(content.targetKatex, content.sourceKatex ? targetRow : sourceRow);'),
+    "The target must move to the third row when a source expression is shown");
 assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: "with"'), "Builder mode must show the selected expression followed by with");
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");

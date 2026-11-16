@@ -18,8 +18,10 @@ expression. A Transform heading introduces the current expression followed by
 into on the second line and the next target on the third. Replace uses the
 selected expression followed by with and the live replacement on the third
 line. You transformed uses the original and completed expressions in the same
-layout. The expression stays editable after completion. The stack shares the
-workspace pan and zoom.
+layout. The stack reserves four lines. The fourth is always blank, and the
+third is also blank when only a heading and one expression are shown. The
+expression stays editable after completion. The stack shares the workspace
+pan and zoom.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
 

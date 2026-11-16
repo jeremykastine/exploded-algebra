@@ -38,7 +38,26 @@ assert.equal(phases.children.length, 2, "Static examples must show exactly the b
 assert.equal(phases.children[0], frames[1]);
 assert.equal(phases.children[1], frames[2]);
 
-assert(player.includes("function renderWorkspaceConventionalLine()"));
-assert(player.includes('appendWorkspaceConventionalText(content.heading)'));
+const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html"), "utf8");
+const rows = Array.from(playerHtml.matchAll(/<div class="workspace-conventional-row"( aria-hidden="true")?><\/div>/g),
+    () => ({
+        textContent: "",
+        replaceChildren() { this.textContent = ""; },
+        append(text) { this.textContent += text; }
+    }));
+assert.equal(rows.length, 4);
+const line = { children: rows, setAttribute() {} };
+let notation = { heading: "Transform", sourceKatex: "2+3", connector: " into", targetKatex: "5" };
+const playerContext = vm.createContext({
+    workspaceConventionalLine: line,
+    getWorkspaceConventionalLineContent: () => notation,
+    appendWorkspaceConventionalMath: (math, row) => row.append(math)
+});
+loadFunction(playerContext, player, "renderWorkspaceConventionalLine", 8);
+playerContext.renderWorkspaceConventionalLine();
+assert.deepEqual(rows.map(row => row.textContent), ["Transform", "2+3 into", "5", ""]);
+notation = { heading: "Build the expression:", targetKatex: "2+3" };
+playerContext.renderWorkspaceConventionalLine();
+assert.deepEqual(rows.map(row => row.textContent), ["Build the expression:", "2+3", "", ""]);
 assert(player.includes("function positionWorkspaceConventionalLine()"));
 console.log("Startup visibility, static examples, and workspace target-line checks passed.");
