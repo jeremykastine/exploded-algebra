@@ -4349,18 +4349,28 @@
         .workspace-dialog-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
         .numerical-rewrite-dialog { width: min(32rem, calc(100% - 2rem)); }
         #numericalRewriteMessage { margin: 0 0 0.85rem; }
-        .numerical-rewrite-table {
+        .numerical-rewrite-list {
             max-height: min(45vh, 26rem);
             overflow: auto;
             border: 1px solid #d5d9de;
             border-radius: 0.35rem;
         }
-        .numerical-rewrite-table table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .numerical-rewrite-table th,
-        .numerical-rewrite-table td { padding: 0.45rem 0.75rem; text-align: left; }
-        .numerical-rewrite-table th { position: sticky; top: 0; background: #f1f3f5; }
-        .numerical-rewrite-table td { border-top: 1px solid #d5d9de; }
-        .numerical-rewrite-table button {
+        .numerical-rewrite-list ul {
+            width: max-content;
+            min-width: 100%;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .numerical-rewrite-list li { padding: 0.45rem 0.75rem; }
+        .numerical-rewrite-list li + li { border-top: 1px solid #d5d9de; }
+        .numerical-rewrite-line {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.65em;
+            white-space: nowrap;
+        }
+        .numerical-rewrite-list button {
             min-height: 2.75rem;
             padding: 0.3rem 0.6rem;
             border: 1px solid #858e9b;
@@ -4369,9 +4379,8 @@
             color: inherit;
             font: inherit;
             cursor: pointer;
-            white-space: nowrap;
         }
-        .numerical-rewrite-table button:hover { background: #e8f1ff; }
+        .numerical-rewrite-list button:hover { background: #e8f1ff; }
         body.settings-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
             position: absolute;
@@ -4417,7 +4426,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T15:07:03-05:00">11/16/26, 3:07 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T15:19:36-05:00">11/16/26, 3:19 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4553,12 +4562,9 @@
         <form method="dialog">
             <h2 id="numericalRewriteTitle"></h2>
             <p id="numericalRewriteMessage" hidden></p>
-            <div id="numericalRewriteTable" class="numerical-rewrite-table" role="region"
+            <div id="numericalRewriteList" class="numerical-rewrite-list" role="region"
                 aria-label="Recorded rewrites" tabindex="0">
-                <table>
-                    <thead><tr><th scope="col">From</th><th scope="col">To</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+                <ul role="list"></ul>
             </div>
             <div class="workspace-dialog-actions">
                 <button id="numericalRewriteClose" autofocus>Close</button>
@@ -4592,7 +4598,7 @@
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261116-recorded-rewrites"></script>
+    <script src="exploded-algebra-tool.js?v=20261116-rewrite-lines"></script>
 
 </body>
 </html>

@@ -12515,6 +12515,7 @@ function renderToolArea() {
                 math.textContent = source;
             }
             container.append(math);
+            return math;
         }
 
         function showRestrictedNumericalRewrites(choices) {
@@ -12523,8 +12524,8 @@ function renderToolArea() {
             const rewrites = choosing ? choices.map(to => ({ from, to })) : prescribedGuide?.rewrites || [];
             const title = document.getElementById("numericalRewriteTitle");
             const message = document.getElementById("numericalRewriteMessage");
-            const table = document.getElementById("numericalRewriteTable");
-            const body = table.querySelector("tbody");
+            const scroller = document.getElementById("numericalRewriteList");
+            const list = scroller.querySelector("ul");
             const closeButton = document.getElementById("numericalRewriteClose");
             title.textContent = choosing ? "Choose a rewrite" : "Recorded numerical rewrites";
             closeButton.textContent = choosing ? "Cancel" : "Close";
@@ -12537,26 +12538,44 @@ function renderToolArea() {
                 appendRewriteMath(message, from);
                 message.append(".");
             }
-            table.hidden = rewrites.length === 0;
-            body.replaceChildren();
-            for (const rewrite of rewrites) {
-                const row = body.insertRow();
-                appendRewriteMath(row.insertCell(), rewrite.from);
-                const replacement = row.insertCell();
+            scroller.hidden = rewrites.length === 0;
+            list.replaceChildren();
+            const rows = rewrites.map(rewrite => {
+                const row = document.createElement("li");
+                const line = document.createElement(choosing ? "button" : "span");
+                line.className = "numerical-rewrite-line";
+                const original = appendRewriteMath(line, rewrite.from);
+                line.append("→");
+                appendRewriteMath(line, rewrite.to);
                 if (choosing) {
-                    const button = document.createElement("button");
-                    button.type = "button";
-                    appendRewriteMath(button, rewrite.to);
-                    button.addEventListener("click", () => {
+                    line.type = "button";
+                    line.addEventListener("click", () => {
                         numericalRewriteDialog.close();
                         commitRestrictedNumericalRewrite(rewrite.to);
                     });
-                    replacement.append(button);
-                } else {
-                    appendRewriteMath(replacement, rewrite.to);
                 }
-            }
+                row.append(line);
+                list.append(row);
+                return { row, original };
+            });
             numericalRewriteDialog.showModal();
+            scroller.scrollTo(0, 0);
+            if (!choosing && rows.length > 1) {
+                const sortByWidth = () => {
+                    const measured = rows.map(({ row, original }) => ({
+                        row,
+                        width: original.getBoundingClientRect().width
+                    }));
+                    measured.sort((a, b) => b.width - a.width);
+                    if (measured.some(({ row }, index) => list.children[index] !== row)) {
+                        list.append(...measured.map(({ row }) => row));
+                    }
+                };
+                sortByWidth();
+                document.fonts?.ready.then(() => {
+                    if (numericalRewriteDialog.open && rows[0].row.parentElement === list) sortByWidth();
+                });
+            }
         }
 
         function commitRestrictedNumericalRewrite(value) {

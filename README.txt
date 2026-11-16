@@ -161,9 +161,9 @@ Existing links with mode=creative also open Free Play.
 
 With recorded numerical rewrites, Numerical Manipulation applies a single
 match immediately. If there are multiple matches, choose one in the dialog.
-With no match, a read-only table lists the recorded rewrites in their original
-order. In a guided run, the tool applies the replacement recorded for the
-current step.
+With no match, a read-only list shows each rewrite on one line with a right arrow.
+The widest starting expressions appear first. In a guided run, the tool applies
+the replacement recorded for the current step.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication
