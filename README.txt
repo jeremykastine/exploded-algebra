@@ -160,7 +160,7 @@ Existing links with mode=creative also open Free Play.
 With recorded numerical rewrites, Numerical Manipulation applies a single
 match immediately. If there are multiple matches, choose one in the dialog.
 With no match, a read-only list shows each rewrite on one line with a right arrow.
-The widest starting expressions appear first. In a guided run, the tool applies
+The shortest starting expressions appear first. In a guided run, the tool applies
 the replacement recorded for the current step.
 
 Post-selection action layout

@@ -12438,7 +12438,7 @@ function renderToolArea() {
                         row,
                         width: original.getBoundingClientRect().width
                     }));
-                    measured.sort((a, b) => b.width - a.width);
+                    measured.sort((a, b) => a.width - b.width);
                     if (measured.some(({ row }, index) => list.children[index] !== row)) {
                         list.append(...measured.map(({ row }) => row));
                     }
