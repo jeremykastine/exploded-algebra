@@ -90,7 +90,8 @@ function checkImportAndExport() {
     "addExactRationals", "multiplyExactRationals", "exactRationalsAreEqual",
     "inferRecordedNumericalReplacement", "inspectMoveHistory", "getPrescribedNumericalRewriteChoices",
     "canNumericalRewrite", "makePrescribedNumericalGuide", "numericalRewriteNodesHaveSameStructure",
-    "normalizeCloneForMatching", "isNumericalBuilderTool", "isToolActuallyApplicable", "beginTool"
+    "normalizeCloneForMatching", "isNumericalBuilderTool", "isToolActuallyApplicable", "activateTool",
+    "commitRestrictedNumericalRewrite", "applyPrescribedNumericalRewrite", "isDemoActionAllowed"
   ];
   vm.runInContext(names.map(name => extract(player, name, "        ")).join("\n"), scope);
   scope.isNumericalRewriteTool = tool => tool === "numericalRewrite";
@@ -155,6 +156,7 @@ function checkImportAndExport() {
   assert.equal(scope.prescribedGuide.choices.size, 2);
   assert.deepEqual(Array.from(scope.prescribedGuide.moveEnds), [3, 6]);
   scope.getCurrentDemoStep = () => null;
+  scope.isDemoModeActive = () => false;
   scope.prescribedRewritesEnabled = true;
   assert.deepEqual(Array.from(vm.runInContext("getPrescribedNumericalRewriteChoices(textToExpression('((2)+(4))'))", scope)),
     ["((3)*(2))"], "Only kept numerical moves may become choices");
@@ -164,6 +166,7 @@ function checkImportAndExport() {
   scope.cloneSelectedRangeNode = () => vm.runInContext("textToExpression('((1)/((2)+(3)))')", scope);
   assert.equal(vm.runInContext("canNumericalRewrite()", scope), false);
   assert.equal(vm.runInContext("isToolActuallyApplicable('evaluate')", scope), false);
+  assert.equal(vm.runInContext("isToolActuallyApplicable('numericalRewrite')", scope), true);
   scope.getCurrentDemoStep = () => null;
 
   const legacy = JSON.parse(JSON.stringify(exported));
@@ -173,13 +176,51 @@ function checkImportAndExport() {
   assert.deepEqual(Array.from(legacyGuide.choices.get("((2)+(4))")), ["((3)*(2))"]);
   assert.equal(legacyGuide.steps[1].tool, "numericalRewrite");
 
-  scope.cloneSelectedRangeNode = () => vm.runInContext("textToExpression('((2)+(4))')", scope);
-  scope.uiState = {};
-  scope.isInverseRewriteTool = () => false;
-  scope.getAutoExecuteFunctionForTool = () => null;
-  scope.refreshStatus = scope.drawExpression = scope.renderToolArea = () => {};
-  vm.runInContext("beginTool('numericalEquivalence')", scope);
-  assert.equal(scope.uiState.stage, "numericalChoices", "Legacy arithmetic must also use the recorded choices");
+  const recordedMoves = scope.imported.moves;
+  const alternateMove = { ...recordedMoves[0], numericalRewrite: { from: "((2)+(4))", to: "(6)" } };
+  scope.inspectMoveHistory = () => ({ moves: [...recordedMoves, alternateMove, recordedMoves[0]] });
+  const guideWithDuplicate = vm.runInContext("makePrescribedNumericalGuide(exported)", scope);
+  assert.deepEqual(Array.from(guideWithDuplicate.rewrites, ({ from, to }) => [from, to]),
+    [["((2)+(4))", "((3)*(2))"], ["((3)*(2))", "((1)+(5))"], ["((2)+(4))", "(6)"]]);
+  assert.deepEqual(Array.from(guideWithDuplicate.choices.get("((2)+(4))")), ["((3)*(2))", "(6)"]);
+
+  let selected = "((2)+(4))";
+  const events = [];
+  scope.cloneSelectedRangeNode = () => scope.textToExpression(selected);
+  scope.getExpressionTextForTrace = () => initial;
+  scope.recordCurrentSelectionForSolution = () => events.push("select");
+  scope.recordToolForSolution = tool => events.push(tool);
+  scope.solutionRecorder = { actions: [] };
+  scope.recordActionForSolution = (action, value) => scope.solutionRecorder.actions.push({ action, value });
+  scope.replaceSelectedRange = replacement => events.push(scope.expressionToFullyParenthesizedText(replacement));
+  scope.finishOperation = () => events.push("finish");
+  scope.advanceDemoStep = () => { if (scope.isDemoModeActive()) scope.demoStepIndex++; };
+  scope.showRestrictedNumericalRewrites = choices => events.push(Array.from(choices));
+
+  vm.runInContext("activateTool('numericalEquivalence')", scope);
+  assert.deepEqual(events.splice(0), ["select", "numericalRewrite", "((3)*(2))", "finish"],
+    "One match should apply immediately even through a legacy arithmetic button");
+  assert.equal(scope.solutionRecorder.actions.at(-1).numericalRewrite.to, "((3)*(2))");
+
+  selected = "(9)";
+  vm.runInContext("activateTool('numericalRewrite')", scope);
+  assert.deepEqual(events.splice(0), [[]], "A missing match should open the reference without recording a move");
+
+  selected = "((2)+(4))";
+  scope.prescribedGuide = guideWithDuplicate;
+  vm.runInContext("activateTool('numericalRewrite')", scope);
+  assert.deepEqual(events.splice(0), [["((3)*(2))", "(6)"]], "Multiple matches should open the chooser");
+  vm.runInContext("commitRestrictedNumericalRewrite('(6)')", scope);
+  assert.deepEqual(events.splice(0), ["select", "numericalRewrite", "(6)", "finish"]);
+
+  scope.getCurrentDemoSteps = () => guideWithDuplicate.steps;
+  scope.isDemoModeActive = () => scope.demoStepIndex < guideWithDuplicate.steps.length;
+  scope.getCurrentDemoStep = () => guideWithDuplicate.steps[scope.demoStepIndex];
+  scope.demoStepIndex = 7;
+  vm.runInContext("activateTool('numericalRewrite')", scope);
+  assert.deepEqual(events.splice(0), ["select", "numericalRewrite", "(6)", "finish"],
+    "Guided runs should apply the recorded replacement for the current step");
+  assert.equal(scope.demoStepIndex, 9);
 
   scope.cloneSelectedRangeNode = () => vm.runInContext("textToExpression('((1)/((2)+(3)))')", scope);
   scope.prescribedRewritesEnabled = false;

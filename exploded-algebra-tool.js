@@ -1319,7 +1319,7 @@ Promise.resolve().then(() => {
 
         function isToolActuallyApplicable(toolName) {
             if (prescribedRewritesEnabled && isNumericalBuilderTool(toolName)) {
-                return canNumericalRewrite();
+                return canNumericalRewrite(toolName === "numericalRewrite");
             }
             const applicable = getApplicableTools();
             return !!applicable[toolName];
@@ -1336,6 +1336,7 @@ Promise.resolve().then(() => {
         const builderDigitRail = document.getElementById("builderDigitRail");
         const startingExpressionStatus = document.getElementById("startingExpressionStatus");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
+        const numericalRewriteDialog = document.getElementById("numericalRewriteDialog");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
         const workspaceUtilityMenu = document.getElementById("workspaceUtilityMenu");
         const workspaceUtilityMenuToggle = document.getElementById("workspaceUtilityMenuToggle");
@@ -3709,6 +3710,7 @@ Promise.resolve().then(() => {
             const { moves } = inspectMoveHistory(level, true);
             const steps = [];
             const choices = new Map();
+            const rewrites = [];
             const moveEnds = [];
             for (const move of moves) {
                 if (move.isRecordedNumerical && move.numericalRewrite) {
@@ -3720,7 +3722,11 @@ Promise.resolve().then(() => {
                         throw new Error("The recording contains an invalid numerical replacement.");
                     }
                     if (!choices.has(from)) choices.set(from, new Set());
-                    choices.get(from).add(to);
+                    const replacements = choices.get(from);
+                    if (!replacements.has(to)) {
+                        replacements.add(to);
+                        rewrites.push({ from, to });
+                    }
                     steps.push(move.demo[0], { type: "tool", tool: "numericalRewrite" },
                         { type: "action", action: "chooseNumericalRewrite", value: to });
                 } else {
@@ -3728,7 +3734,7 @@ Promise.resolve().then(() => {
                 }
                 moveEnds.push(steps.length);
             }
-            return { steps, choices, moveEnds };
+            return { steps, choices, rewrites, moveEnds };
         }
 
         function getCurrentDemoSteps() {
@@ -4843,12 +4849,8 @@ Promise.resolve().then(() => {
                         markToolButtonNotApplicable(button);
                         return;
                     }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordCurrentSelectionForSolution();
-                    recordToolForSolution(toolName, beforeExpression);
                     hideToolOptionMenu();
-                    advanceDemoStep();
-                    beginTool(toolName);
+                    activateTool(toolName);
                 });
                 document.addEventListener("click", event => {
                     const menuAnchor = event.target.closest && event.target.closest("button[data-rule-category]");
@@ -4931,7 +4933,7 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
-                if (event.defaultPrevented || openExerciseDialog.open || restartProblemDialog.open ||
+                if (event.defaultPrevented || openExerciseDialog.open || restartProblemDialog.open || numericalRewriteDialog.open ||
                     (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
                     return;
                 }
@@ -8564,7 +8566,7 @@ ctx.font = SETTINGS.textFont;
                 writeNumberAsSum: canWriteNumberAsSum(),
                 evaluate: canEvaluate(),
                 numericalEquivalence: canNumericalEquivalence(),
-                numericalRewrite: canNumericalRewrite(),
+                numericalRewrite: canNumericalRewrite(true),
                 arithmeticLevel0: canNumericalRewrite(),
                 arithmeticLevel1: canNumericalRewrite(),
                 arithmeticLevel2: canNumericalRewrite(),
@@ -10667,10 +10669,11 @@ ctx.font = SETTINGS.textFont;
             return getNumericalEquivalenceModeForSelection() !== null;
         }
 
-        function canNumericalRewrite() {
+        function canNumericalRewrite(allowReference = false) {
             const selectedNode = cloneSelectedRangeNode();
             if (!selectedNode || !evaluateNumericalRewriteNodeExactly(selectedNode)) return false;
             return !prescribedRewritesEnabled ||
+                (allowReference && !isDemoModeActive()) ||
                 getPrescribedNumericalRewriteChoices(selectedNode).length > 0;
         }
 
@@ -11698,7 +11701,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function resolveContextualNumericalRewriteAction() {
-            return canNumericalRewrite()
+            return canNumericalRewrite(true)
                 ? { toolName: "numericalRewrite", label: "Numerical Manipulation" }
                 : null;
         }
@@ -11915,11 +11918,7 @@ ctx.font = SETTINGS.textFont;
                         }
                         return;
                     }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordCurrentSelectionForSolution();
-                    recordToolForSolution(resolved.toolName, beforeExpression);
-                    advanceDemoStep();
-                    beginTool(resolved.toolName);
+                    activateTool(resolved.toolName);
                 });
             });
 
@@ -11933,11 +11932,7 @@ ctx.font = SETTINGS.textFont;
                         }
                         return;
                     }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordCurrentSelectionForSolution();
-                    recordToolForSolution(resolved.toolName, beforeExpression);
-                    advanceDemoStep();
-                    beginTool(resolved.toolName);
+                    activateTool(resolved.toolName);
                 });
             }
 
@@ -11950,11 +11945,7 @@ ctx.font = SETTINGS.textFont;
                         }
                         return;
                     }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordCurrentSelectionForSolution();
-                    recordToolForSolution(resolved.toolName, beforeExpression);
-                    advanceDemoStep();
-                    beginTool(resolved.toolName);
+                    activateTool(resolved.toolName);
                 });
             });
 
@@ -11975,11 +11966,7 @@ ctx.font = SETTINGS.textFont;
                     if (applicableTools.length === 1) {
                         hideToolOptionMenu();
                         const toolName = applicableTools[0];
-                        const beforeExpression = getExpressionTextForTrace();
-                        recordCurrentSelectionForSolution();
-                        recordToolForSolution(toolName, beforeExpression);
-                        advanceDemoStep();
-                        beginTool(toolName);
+                        activateTool(toolName);
                         return;
                     }
                     if (activeToolOptionAnchor === btn && !toolOptionMenu.classList.contains("hidden")) {
@@ -12040,11 +12027,7 @@ ctx.font = SETTINGS.textFont;
                         }
                         return;
                     }
-                    const beforeExpression = getExpressionTextForTrace();
-                    recordCurrentSelectionForSolution();
-                    recordToolForSolution(toolName, beforeExpression);
-                    advanceDemoStep();
-                    beginTool(toolName);
+                    activateTool(toolName);
                 });
             });
 
@@ -12301,10 +12284,30 @@ function renderToolArea() {
             return null;
         }
 
-        function beginTool(toolName) {
+        function activateTool(toolName) {
             if (prescribedRewritesEnabled && isNumericalBuilderTool(toolName)) {
-                toolName = "numericalRewrite";
+                const choices = getPrescribedNumericalRewriteChoices();
+                if (isDemoModeActive()) {
+                    const next = getCurrentDemoSteps()[demoStepIndex + 1];
+                    if (next?.action === "chooseNumericalRewrite" && choices.includes(next.value)) {
+                        commitRestrictedNumericalRewrite(next.value);
+                    }
+                } else if (choices.length === 1) {
+                    commitRestrictedNumericalRewrite(choices[0]);
+                } else {
+                    showRestrictedNumericalRewrites(choices);
+                }
+                return;
             }
+
+            const beforeExpression = getExpressionTextForTrace();
+            recordCurrentSelectionForSolution();
+            recordToolForSolution(toolName, beforeExpression);
+            advanceDemoStep();
+            beginTool(toolName);
+        }
+
+        function beginTool(toolName) {
             if (toolName === "insertIdentityAddZeroTop") {
                 if (!canInsertIdentity()) {
                     return;
@@ -12378,8 +12381,7 @@ function renderToolArea() {
             uiState.commuteOrder = [];
             uiState.previewColors = null;
 
-            if (isNumericalRewriteTool(toolName) &&
-                (prescribedRewritesEnabled || getCurrentDemoStep()?.action === "chooseNumericalRewrite")) {
+            if (isNumericalRewriteTool(toolName) && getCurrentDemoStep()?.action === "chooseNumericalRewrite") {
                 uiState.stage = "numericalChoices";
             } else if (
                 toolName === "commute" ||
@@ -12504,8 +12506,71 @@ function renderToolArea() {
             renderToolArea();
         }
 
+        function appendRewriteMath(container, expression) {
+            const math = document.createElement("span");
+            const source = ExplodedAlgebraRenderer.expressionToKatex(textToExpression(expression));
+            if (window.katex) {
+                katex.render(source, math, { throwOnError: false });
+            } else {
+                math.textContent = source;
+            }
+            container.append(math);
+        }
+
+        function showRestrictedNumericalRewrites(choices) {
+            const from = expressionToFullyParenthesizedText(cloneSelectedRangeNode());
+            const choosing = choices.length > 0;
+            const rewrites = choosing ? choices.map(to => ({ from, to })) : prescribedGuide?.rewrites || [];
+            const title = document.getElementById("numericalRewriteTitle");
+            const message = document.getElementById("numericalRewriteMessage");
+            const table = document.getElementById("numericalRewriteTable");
+            const body = table.querySelector("tbody");
+            const closeButton = document.getElementById("numericalRewriteClose");
+            title.textContent = choosing ? "Choose a rewrite" : "Recorded numerical rewrites";
+            closeButton.textContent = choosing ? "Cancel" : "Close";
+            message.hidden = choosing;
+            message.textContent = "";
+            if (!rewrites.length) {
+                message.textContent = "This exercise has no recorded numerical rewrites.";
+            } else if (!choosing) {
+                message.textContent = "No recorded numerical rewrite starts with ";
+                appendRewriteMath(message, from);
+                message.append(".");
+            }
+            table.hidden = rewrites.length === 0;
+            body.replaceChildren();
+            for (const rewrite of rewrites) {
+                const row = body.insertRow();
+                appendRewriteMath(row.insertCell(), rewrite.from);
+                const replacement = row.insertCell();
+                if (choosing) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    appendRewriteMath(button, rewrite.to);
+                    button.addEventListener("click", () => {
+                        numericalRewriteDialog.close();
+                        commitRestrictedNumericalRewrite(rewrite.to);
+                    });
+                    replacement.append(button);
+                } else {
+                    appendRewriteMath(replacement, rewrite.to);
+                }
+            }
+            numericalRewriteDialog.showModal();
+        }
+
+        function commitRestrictedNumericalRewrite(value) {
+            if (!getPrescribedNumericalRewriteChoices().includes(value)) return;
+            const beforeExpression = getExpressionTextForTrace();
+            recordCurrentSelectionForSolution();
+            recordToolForSolution("numericalRewrite", beforeExpression);
+            advanceDemoStep();
+            applyPrescribedNumericalRewrite(value);
+        }
+
         function applyPrescribedNumericalRewrite(value) {
-            if (uiState.stage !== "numericalChoices" || !getPrescribedNumericalRewriteChoices().includes(value)) return;
+            if (!isDemoActionAllowed("chooseNumericalRewrite", value) ||
+                !getPrescribedNumericalRewriteChoices().includes(value)) return;
             const from = expressionToFullyParenthesizedText(cloneSelectedRangeNode());
             recordActionForSolution("chooseNumericalRewrite", value, getExpressionTextForTrace());
             const completedAction = solutionRecorder?.actions.at(-1);

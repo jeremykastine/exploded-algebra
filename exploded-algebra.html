@@ -4347,6 +4347,31 @@
             margin-top: 1rem;
         }
         .workspace-dialog-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
+        .numerical-rewrite-dialog { width: min(32rem, calc(100% - 2rem)); }
+        #numericalRewriteMessage { margin: 0 0 0.85rem; }
+        .numerical-rewrite-table {
+            max-height: min(45vh, 26rem);
+            overflow: auto;
+            border: 1px solid #d5d9de;
+            border-radius: 0.35rem;
+        }
+        .numerical-rewrite-table table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .numerical-rewrite-table th,
+        .numerical-rewrite-table td { padding: 0.45rem 0.75rem; text-align: left; }
+        .numerical-rewrite-table th { position: sticky; top: 0; background: #f1f3f5; }
+        .numerical-rewrite-table td { border-top: 1px solid #d5d9de; }
+        .numerical-rewrite-table button {
+            min-height: 2.75rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid #858e9b;
+            border-radius: 0.3rem;
+            background: #fff;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .numerical-rewrite-table button:hover { background: #e8f1ff; }
         body.settings-active .workspace-utility-menu { display: none !important; }
         .palette-resize-handle-nw {
             position: absolute;
@@ -4392,7 +4417,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T14:47:01-05:00">11/16/26, 2:47 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T15:07:03-05:00">11/16/26, 3:07 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4523,6 +4548,23 @@
             </div>
         </form>
     </dialog>
+    <dialog id="numericalRewriteDialog" class="workspace-dialog numerical-rewrite-dialog"
+        aria-labelledby="numericalRewriteTitle" aria-describedby="numericalRewriteMessage">
+        <form method="dialog">
+            <h2 id="numericalRewriteTitle"></h2>
+            <p id="numericalRewriteMessage" hidden></p>
+            <div id="numericalRewriteTable" class="numerical-rewrite-table" role="region"
+                aria-label="Recorded rewrites" tabindex="0">
+                <table>
+                    <thead><tr><th scope="col">From</th><th scope="col">To</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="workspace-dialog-actions">
+                <button id="numericalRewriteClose" autofocus>Close</button>
+            </div>
+        </form>
+    </dialog>
     <section id="settingsPanel" class="level-menu-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
         <h2 id="settingsPanelTitle" class="level-menu-title">Settings</h2>
         <div class="settings-control-stack">
@@ -4550,7 +4592,7 @@
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261116-free-play"></script>
+    <script src="exploded-algebra-tool.js?v=20261116-recorded-rewrites"></script>
 
 </body>
 </html>

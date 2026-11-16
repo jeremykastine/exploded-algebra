@@ -240,7 +240,8 @@ assert(playerJs.includes('if (canEliminateDoubleInverse())') && playerJs.include
 assert(playerJs.includes('if (canZeroProduct())') && playerJs.includes('return canInsertZeroProduct()'));
 assert(playerJs.includes('if (getCancelOppositesData())') && playerJs.includes('canReplaceZeroWithOppositeSum()'));
 assert(playerJs.includes('if (canCancelProductWithInverse())') && playerJs.includes('canReplaceOneWithInverseProduct()'));
-assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includes('recordToolForSolution(resolved.toolName, beforeExpression)'));
+assert(playerJs.includes('button[data-contextual-rule-pair]') && playerJs.includes('activateTool(resolved.toolName)') &&
+    playerJs.includes('recordToolForSolution(toolName, beforeExpression)'));
 assert(playerJs.includes('function resolveContextualCommuteTool(toolName = "")'));
 assert(playerJs.includes('selection.node.type === "sum"') && playerJs.includes('toolName: "commuteTerms"'));
 assert(playerJs.includes('selection.node.type === "prod"') && playerJs.includes('toolName: "commuteFactors"'));

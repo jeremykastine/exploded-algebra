@@ -159,6 +159,12 @@ rewrites. Restart Exercise in the workspace menu reloads the current exercise
 with the selected settings. A player URL without an exercise opens Free Play.
 Existing links with mode=creative also open Free Play.
 
+With recorded numerical rewrites, Numerical Manipulation applies a single
+match immediately. If there are multiple matches, choose one in the dialog.
+With no match, a read-only table lists the recorded rewrites in their original
+order. In a guided run, the tool applies the replacement recorded for the
+current step.
+
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication
 commute in row 3 columns 2–3, Numerical Manipulation in row 3 columns 4–5,
