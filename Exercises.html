@@ -46,11 +46,11 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T12:56:45-05:00">11/17/26, 12:56 PM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T14:54:13-05:00">11/17/26, 2:54 PM EST</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
-    <p><a href="exploded-algebra.html">Use Exploded Algebra</a> to build and transform your own expression, or open an exercise from the workspace menu.</p>
-    <p>Open a move history or a level exported by the Problem Editor.</p>
+    <p><a href="exploded-algebra.html">Use Exploded Algebra</a> to build and transform your own expression, or choose Guided Replay from the workspace menu to follow a saved run.</p>
+    <p>Open a saved move history or an exercise with recorded guided steps.</p>
     <div class="upload-row">
       <label for="customLevelFileInput">Upload an exercise file:</label>
       <input id="customLevelFileInput" type="file" accept=".json,application/json">
@@ -68,7 +68,7 @@
       const player = window.open("about:blank", "_blank") || window;
       try {
         const level = JSON.parse(await file.text());
-        const options = level.kind === "demoOnly" ? { mode: "guided", build: "1" } : {};
+        const options = { mode: "guided" };
         ExplodedAlgebraTransfer.open("exploded-algebra.html", { source: "custom", level: file.name, ...options },
           { fileName: file.name, text: JSON.stringify(level) }, player);
         fileStatus.textContent = "";

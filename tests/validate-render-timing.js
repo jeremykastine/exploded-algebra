@@ -49,6 +49,7 @@ const connector = notationElement("workspaceGoalConnector", 12, 24);
 let goalKatex = "5";
 const playerContext = vm.createContext({
     window: {},
+    getComputedStyle: () => ({ lineHeight: "25px" }),
     workspaceCurrentNotation: current,
     workspaceGoalNotation: goal,
     workspaceGoalConnector: connector,
@@ -63,11 +64,11 @@ for (const name of ["renderWorkspaceMath", "renderWorkspaceNotation", "positionW
 playerContext.renderWorkspaceNotation("2+3", null);
 playerContext.positionWorkspaceNotation();
 assert.equal(current.textContent, "2+3");
-assert.deepEqual(current.style, { left: "20px", top: "15px" });
+assert.deepEqual(current.style, { left: "20px", top: "-2px" });
 assert.equal(goal.textContent, "5");
-assert.deepEqual(goal.style, { left: "45px", top: "164px" });
+assert.deepEqual(goal.style, { left: "45px", top: "181.5px" });
 assert.equal(connector.hidden, false);
-assert.deepEqual(connector.style, { left: "50px", top: "136px" });
+assert.deepEqual(connector.style, { left: "50px", top: "145px" });
 
 goal.offsetWidth = 100;
 playerContext.positionWorkspaceNotation();

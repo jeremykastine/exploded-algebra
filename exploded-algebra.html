@@ -4351,7 +4351,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T12:56:45-05:00">11/17/26, 12:56 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T14:54:13-05:00">11/17/26, 2:54 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4362,13 +4362,9 @@
             </button>
             <div id="workspaceUtilityMenuItems" class="workspace-utility-menu-items hidden" role="menu" aria-label="Workspace menu">
                 <button type="button" data-workspace-action="resetRun" role="menuitem" disabled>Reset</button>
-                <button type="button" data-workspace-action="newExpression" role="menuitem">New Expression</button>
-                <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Open Exercise…</button>
-                <button type="button" data-workspace-action="restartExercise" role="menuitem" aria-haspopup="dialog" disabled>Restart Exercise…</button>
-                <button type="button" data-workspace-action="openProblemEditor" role="menuitem">Open Problem Editor</button>
-                <button type="button" data-workspace-action="editLevelCopy" role="menuitem" hidden>Edit a Copy</button>
+                <button type="button" data-workspace-action="newExpression" role="menuitem">Free Play / New Expression</button>
+                <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Guided Replay…</button>
                 <button type="button" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
-                <button id="settingsButton" type="button" data-workspace-action="openSettings" role="menuitem">Settings</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
@@ -4453,28 +4449,13 @@
     </div>
     <dialog id="openExerciseDialog" class="workspace-dialog" aria-labelledby="openExerciseTitle">
         <form id="openExerciseForm">
-            <h2 id="openExerciseTitle">Open Exercise</h2>
-            <label for="levelFileInput">Exercise or move history JSON file</label>
+            <h2 id="openExerciseTitle">Guided Replay</h2>
+            <label for="levelFileInput">Recorded exercise or move history JSON file</label>
             <input id="levelFileInput" class="level-file-input" type="file" accept=".json,application/json" required>
             <p id="openExerciseError" role="alert" hidden></p>
             <div class="workspace-dialog-actions">
                 <button type="submit" formmethod="dialog" formnovalidate value="cancel">Cancel</button>
                 <button id="openExerciseSubmit" type="submit">Open</button>
-            </div>
-        </form>
-    </dialog>
-    <dialog id="restartProblemDialog" class="workspace-dialog" aria-labelledby="restartProblemTitle">
-        <form method="dialog">
-            <h2 id="restartProblemTitle">Restart Exercise</h2>
-            <label><input id="restartGuidedInput" type="checkbox"> Use guided steps</label>
-            <small id="restartGuidedUnavailable" hidden>This exercise has no recorded guide.</small>
-            <label><input id="restartBuildInput" type="checkbox"> Build the starting expression</label>
-            <small id="restartBuildUnavailable" hidden>Building the starting expression is available for interactive exercises.</small>
-            <label><input id="restartPrescribedInput" type="checkbox"> Restrict numerical rewrites to recorded choices</label>
-            <small id="restartPrescribedUnavailable" hidden>This exercise has no recorded numerical rewrites.</small>
-            <div class="workspace-dialog-actions">
-                <button value="cancel" autofocus>Cancel</button>
-                <button value="restart">Restart</button>
             </div>
         </form>
     </dialog>
@@ -4492,26 +4473,10 @@
             </div>
         </form>
     </dialog>
-    <section id="settingsPanel" class="level-menu-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
-        <h2 id="settingsPanelTitle" class="level-menu-title">Settings</h2>
-        <div class="settings-control-stack">
-            <div class="level-menu-actions">
-                <button type="button" class="workspace-setting-button" data-workspace-setting="operation-style">
-                    <span class="workspace-setting-name">Operation Style</span>
-                    <span class="workspace-setting-value" data-setting-value>Filled Circle</span>
-                </button>
-                <button type="button" class="workspace-setting-button" data-workspace-setting="operation-size">
-                    <span class="workspace-setting-name">Operation Size</span>
-                    <span class="workspace-setting-value" data-setting-value>100%</span>
-                </button>
-            </div>
-        </div>
-        <button type="button" class="exit-settings-button" data-settings-action="close">Done</button>
-    </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261117-workspace-notation"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261117-builder-xyz"></script>
+    <script src="exploded-algebra-tool.js?v=20261117-free-guided"></script>
 
 </body>
 </html>

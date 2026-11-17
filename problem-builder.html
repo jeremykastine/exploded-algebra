@@ -1,56 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Problem Editor — Exploded Algebra</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0;url=exploded-algebra.html">
+  <title>Exploded Algebra</title>
   <link rel="stylesheet" href="last-updated.css?v=20260923-top-right">
-  <link rel="stylesheet" href="problem-builder.css?v=20261115-menu">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-  <script defer src="level-transfer.js?v=20261116-player-menu"></script>
-  <script defer src="conventional-notation.js?v=20261116-linear-notation"></script>
-  <script defer src="problem-builder.js?v=20261115-preview-version"></script>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T12:56:45-05:00">11/17/26, 12:56 PM EST</time></p>
-  <main>
-    <h1>Problem Editor</h1>
-    <p id="setupError" class="form-error" role="alert"></p>
-    <form id="setupForm" class="card form-card" aria-label="Open a recording">
-      <p class="editor-intro">Open moves from <a href="exploded-algebra.html">the player</a> or upload a move history or edited level.</p>
-      <label>Move history or level JSON
-        <input id="moveFile" name="moveFile" type="file" accept=".json,application/json" required>
-      </label>
-      <button id="openMovesButton" class="primary-button" type="submit">Open Recording</button>
-    </form>
-
-    <section id="editorWorkspace" aria-label="Edit problem" hidden>
-      <div class="editor-controls">
-        <label>Problem name
-          <input id="problemTitle" autocomplete="off">
-        </label>
-        <div class="editor-actions">
-          <button id="openInPlayerButton" class="primary-button" type="button">Open in Player</button>
-          <button id="downloadLevelButton" class="secondary-button" type="button">Download Level</button>
-        </div>
-      </div>
-      <p id="exportStatus" class="status-line" aria-live="polite"></p>
-
-      <div class="step-table-wrap">
-        <table class="step-table" aria-label="Recorded solution steps">
-          <thead>
-            <tr>
-              <th scope="col" class="major-step-column">Major step</th>
-              <th scope="col">Step notation</th>
-            </tr>
-          </thead>
-          <tbody id="curationTable"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <iframe id="eaWorkspace" title="Problem Editor support" src="exploded-algebra.html?editor=1&amp;v=20261117-workspace-notation" hidden></iframe>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T14:54:13-05:00">11/17/26, 2:54 PM EST</time></p>
+  <p><a href="exploded-algebra.html">Open Free Play</a> to create an expression and save its moves, or choose Guided Replay from the workspace menu to follow a saved run.</p>
 </body>
 </html>

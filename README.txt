@@ -6,18 +6,21 @@ server such as GitHub Pages.
 
 CREATING AND PLAYING LEVELS
 
-Use Exploded Algebra opens the player in Free Play. Build a starting
-expression and transform it. The workspace menu can start a new expression,
-open an exercise file, send the current work to the Problem Editor, or download
-the moves. The editor can download a level JSON file or open it in the player
-with an unguided build and recorded numerical rewrites.
+Use Exploded Algebra opens Free Play. Build any starting expression and
+transform it without restrictions. Download Moves saves the run. Guided Replay
+opens a saved move history or an exercise with recorded actions and guides
+every step, including building the starting expression when it was recorded.
+Replay stops at the end of the recording. Reset starts the same run again.
+The workspace menu offers only Reset, Free Play / New Expression, Guided
+Replay, and Download Moves. The former Problem Editor URL forwards to Free Play.
 
 One line of conventional notation above the exploded expression shows the
-current expression, including any live entry. During a replacement, the
+current expression, including any live entry. One text line of whitespace
+separates the conventional and exploded notation. During a replacement, the
 selected part fades progressively behind the new entry in both views. When
 an exercise has a current goal, a vertical line connects the exploded
-expression to the goal's conventional notation below. The expression stays
-editable after completion. Drag anywhere in the workspace to pan. Tap a part
+expression to the goal's conventional notation below. Free Play remains
+editable without a completion requirement. Drag anywhere in the workspace to pan. Tap a part
 of the expression to select it, then tap another part to extend the selection.
 Generated conventional expressions use ÷ for division and preserve parentheses
 around non-leading negative-one factors.
@@ -42,24 +45,21 @@ View, and Undo. The lower four rows contain contextual actions or
 the Expression Builder. Before a selection, those action rows show the full
 action layout in a quiet, inactive state so learners can see what becomes
 available after selecting. A hamburger menu anchored at the upper-right contains
-Settings. The palette stays fully inside the visible viewport and remembers the
+the run and file actions. The palette stays fully inside the visible viewport and remembers the
 user's chosen size. It keeps the button arrangement fixed while labels and icons
 scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
 empty-workspace clicks. Each notation row stays non-wrapping, and long expressions remain reachable by
 panning the shared workspace.
-The settings screen replaces the exploded-expression workspace while open.
 Bars use a gray gradient with a white center and a continuous midline.
-Operation Style chooses a bare black symbol, a black outlined circle containing
-a black symbol, or a black filled circle containing a white symbol. Operation
-Size scales the chosen symbol and circle to 100%, 75%, or 50% of the reserved
-operation width. Bars appear only when a sum or product contains a structured
-child; otherwise only the operation symbol appears.
+Operations use the default black filled circle with a white symbol at 100% size.
+Bars appear only when a sum or product contains a structured child; otherwise
+only the operation symbol appears. Appearance settings are no longer exposed.
 Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Numerical Manipulation action button is marked with bold
-`123`. Use the `rewrites=prescribed` query parameter to limit numerical
-replacements to the choices recorded in the level. Download Moves saves the
+`123`. Guided Replay follows the recorded numerical
+replacement entries. Free Play allows unrestricted numerical replacements. Download Moves saves the
 current move history from the workspace menu.
 
 Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
@@ -132,32 +132,18 @@ representation. See `EXPONENT_IMPLEMENTATION_ARCHIVE.md` for the archived design
 
 CUSTOM LEVELS
 
-Choose a compatible JSON file with Open Exercise in the workspace menu.
-Each tab keeps its own level state. Open Current Work in Editor sends the run so
-far. Edit a Copy opens the original authored exercise when available.
+Choose a compatible recording with Guided Replay in the workspace menu.
+Each tab keeps its own level state. Move histories keep the inputs used to build
+the starting expression and the completed transformations. Undo in Free Play
+discards the undone actions from the recording.
 
-Move histories keep the inputs used to build the starting expression and the
-completed transformations. Undo discards the undone actions from the recording.
-The editor lists the recorded steps in one column. Mark a row as major to
-make it a player checkpoint. Conventional notation edits must render and have
-the same exact rational expression value before you can save them. Download
-Level saves the edited exercise JSON.
-
-For a hosted exercise, use exploded-algebra.html?level=path/to/exercise.json.
-Add mode=guided to highlight recorded steps, build=1 to require building the
-starting expression, or rewrites=prescribed to allow only recorded numerical
-rewrites. Reset in the workspace menu clears the current run's moves and returns
-to the beginning with the current exercise settings. In Free Play, Reset returns
-to the expression you built, or clears the builder if you are still building it.
-Restart Exercise lets you choose new exercise settings. A player URL without an
-exercise opens Free Play.
-Existing links with mode=creative also open Free Play.
-
-With recorded numerical rewrites, Numerical Manipulation applies a single
-match immediately. If there are multiple matches, choose one in the dialog.
-With no match, a read-only list shows each rewrite on one line with a right arrow.
-The shortest starting expressions appear first. In a guided run, the tool applies
-the replacement recorded for the current step.
+For a hosted replay, use exploded-algebra.html?level=path/to/exercise.json.
+All exercise links open Guided Replay, including old unguided links. A recording
+must contain guided actions; files with only checkpoints cannot be replayed.
+When initial builder actions are available, playback guides those actions first.
+The build, assistance, and rewrites query parameters no longer change the mode.
+A player URL without an exercise opens Free Play; mode=free and legacy
+mode=creative links also open Free Play. The editor=1 parameter is retired.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication

@@ -94,7 +94,7 @@ assert(
     "The conventional line must share the exploded expression's pan and zoom transform"
 );
 assert(
-    /function positionWorkspaceNotation\(\)[\s\S]*?bounds\.top - workspaceCurrentNotation\.offsetHeight - gap[\s\S]*?const arrowTop = bounds\.bottom \+ 2 \* gap/.test(playerJs),
+    /function positionWorkspaceNotation\(\)[\s\S]*?bounds\.top - workspaceCurrentNotation\.offsetHeight - gap[\s\S]*?const arrowTop = bounds\.bottom \+ gap/.test(playerJs),
     "The current line stays above the exploded notation and the goal arrow clears its bottom"
 );
 assert(

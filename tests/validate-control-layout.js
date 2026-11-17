@@ -32,26 +32,18 @@ assert(exercisesHtml.includes('id="customLevelFileInput"') && !exercisesHtml.inc
 assert(!exercisesHtml.includes("high, medium, or low assistance"), "The removed assistance levels must not be listed");
 assert(!playerHtml.includes("data-assistance-level") && !playerHtml.includes(">High</button>") && !playerHtml.includes(">Medium</button>") && !playerHtml.includes(">Low</button>"), "The old three-level assistance prompt must be removed");
 assert(playerJs.includes("const ASSISTANCE_MODES") && !playerJs.includes("ASSISTANCE_LEVELS"), "The player must use the two-mode assistance model");
-assert(playerJs.includes('url.searchParams.set("mode", mode)') && playerJs.includes('url.searchParams.delete("assistance")'), "Mode choices must write the canonical mode query parameter");
-assert(playerJs.includes("high: ASSISTANCE_MODES.guided") && playerJs.includes("medium: ASSISTANCE_MODES.unguided"), "Existing high and medium assistance links must map to Guided and Unguided");
+assert(!playerJs.includes("ASSISTANCE_MODES.unguided"), "The player must offer only Free Play and Guided Replay");
 assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MODES.low"), "The removed low/final-only behavior must not remain");
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["Reset", "New Expression", "Open Exercise…", "Restart Exercise…", "Open Problem Editor", "Download Moves"]) {
+for (const label of ["Reset", "Free Play / New Expression", "Guided Replay…", "Download Moves"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
-assert.equal((workspaceMenu.match(/data-workspace-action="restartExercise"/g) || []).length, 1);
-const restartDialog = playerHtml.match(/<dialog id="restartProblemDialog"[^>]*>([\s\S]*?)<\/dialog>/)[1];
-assert(restartDialog.includes('id="restartGuidedInput" type="checkbox"'));
-assert(restartDialog.includes('id="restartBuildInput" type="checkbox"'));
-assert(restartDialog.includes('id="restartPrescribedInput" type="checkbox"'));
-assert(playerJs.includes('url.searchParams.set("rewrites", "prescribed")') &&
-    playerJs.includes('url.searchParams.delete("rewrites")') && playerJs.includes('window.location.replace(url.href)'));
-assert(playerJs.includes('url.searchParams.set("build", "1")') && playerJs.includes('url.searchParams.delete("build")'));
+assert.equal((workspaceMenu.match(/role="menuitem"/g) || []).length, 4);
+assert(!playerHtml.includes('id="restartProblemDialog"') && !playerHtml.includes('id="settingsPanel"'));
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
-assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
-assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
+assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());'));
 assert(
     !playerHtml.includes('id="preSelectionControlsPanel"') && playerHtml.includes('id="bottomControlsPanel"') &&
         playerHtml.includes('class="palette-content"') &&
@@ -105,16 +97,14 @@ assert(!introductionHtml.includes("intro-levels/") && introductionHtml.includes(
     "The introduction must link to the default player");
 assert(introductionHtml.includes('const inverse = argument => ({ type: "inv"'), "The expanded Introduction must render inverse expressions");
 assert(introductionHtml.includes('const negativeSection = addSection("Negatives and the negative unit"') && introductionHtml.includes('const exponentSection = addSection("Exponents as repeated multiplication"') && introductionHtml.includes('const inverseSection = addSection("Division and the inverse operator"'), "The three former outlines must be full narrative sections");
-assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && playerHtml.includes('id="workspaceUtilityMenuItems"') && playerHtml.includes('id="settingsButton"') && playerHtml.includes('id="settingsPanel"'), "The upper-right hamburger menu must open Settings");
-["operation-style", "operation-size"].forEach(setting => {
-    assert(playerHtml.includes(`data-workspace-setting="${setting}"`), `Missing ${setting} setting button`);
-});
+assert(playerHtml.includes('id="workspaceUtilityMenuToggle"') && !playerHtml.includes('id="settingsButton"'), "The workspace menu must omit settings");
+assert(!playerHtml.includes('data-workspace-setting='), "All settings controls must be removed");
 assert(!playerHtml.includes('data-workspace-setting="steps-text-size"'), "The removed conventional history panel must not retain a text-size setting");
 assert(!playerHtml.includes('data-workspace-setting="child-alignment"'));
 assert(!playerJs.includes('CHILD_ALIGNMENT_STORAGE_KEY'));
 assert(!/data-workspace-setting="bar-(shape|shading)"/.test(playerHtml), "Bar appearance must use the renderer defaults");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
-assert(playerJs.includes('function openSettingsPanel()') && playerJs.includes('function closeSettingsPanel()'), "The Settings screen must have open and close behavior");
+assert(!playerJs.includes("function openSettingsPanel()"), "The removed Settings screen must not have an opener");
 for (const [selector, column] of [["zoomIn", 1], ["zoomOut", 2], ["resetZoom", "3 / span 2"], ["undoExpression", "5 / span 2"]]) {
     assert(playerHtml.includes(`.bottom-controls-panel .workspace-toolbar [data-workspace-action="${selector}"] { grid-column: ${column}; grid-row: 1 !important; }`));
 }
@@ -258,13 +248,8 @@ assert(/\.bottom-controls-panel \.workspace-toolbar button,[\s\S]*?\.builder-key
 assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button \{[\s\S]*?border: 0;[\s\S]*?border-radius: 0;[\s\S]*?background: transparent;/.test(playerHtml));
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
 assert(/src="exploded-algebra-tool\.js\?v=\d{8}-[a-z0-9-]+"/.test(playerHtml));
-assert(playerJs.includes('function cycleQuickSetting(setting)'));
-assert(!/getSavedOperationBar(?:Style|Shading)/.test(playerJs), "Saved bar styles must not override the renderer defaults");
-assert(playerJs.includes('getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle)'));
-assert(playerJs.includes('value: "bare", shortLabel: "Bare"'));
-assert(playerJs.includes('value: "outlined", shortLabel: "Outlined Circle"'));
-assert(playerJs.includes('value: "filled", shortLabel: "Filled Circle"'));
-assert(playerJs.includes('getNextCyclicOption(OPERATION_SIZE_OPTIONS, SETTINGS.operationSize)'));
+assert(!playerJs.includes('function cycleQuickSetting(setting)'));
+assert(playerJs.includes('SETTINGS.operationStyle = "filled";') && playerJs.includes('SETTINGS.operationSize = "100";'), "The default appearance must be fixed");
 assert(playerJs.includes('const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];'));
 assert(playerJs.includes('function calculateContextualStepsFontSizes'));
 assert(playerJs.includes('function fitStepsFontSizeToPanelWidth'));
@@ -309,7 +294,7 @@ assert(
     "The controls must expose only their diagonally opposite upper-left resize handle"
 );
 assert(playerJs.includes("function showInactivePostSelectionPalette()") && playerJs.includes('mainActionPanel.inert = true;'), "Post-selection actions must remain visible but inactive before selection");
-assert(playerJs.includes("function setWorkspaceUtilityMenuOpen(open)") && playerHtml.includes('data-workspace-action="openSettings" role="menuitem"'), "The hamburger menu must expose Settings and manage its expanded state");
+assert(playerJs.includes("function setWorkspaceUtilityMenuOpen(open)") && !playerHtml.includes('data-workspace-action="openSettings"'), "The hamburger menu must manage its expanded state without Settings");
 assert(/document\.body\.classList\.toggle\("selection-active", selectionActive\);[\s\S]{0,500}?applyResponsiveMainButtonSize\(\);/.test(playerJs));
 
 // Each fixed commute control must reject selections from the other operation.

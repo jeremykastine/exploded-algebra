@@ -1344,23 +1344,13 @@ Promise.resolve().then(() => {
         const workspaceUtilityMenuToggle = document.getElementById("workspaceUtilityMenuToggle");
         const workspaceUtilityMenuItems = document.getElementById("workspaceUtilityMenuItems");
         const resetRunButton = document.querySelector('[data-workspace-action="resetRun"]');
-        const restartProblemButton = document.querySelector('[data-workspace-action="restartExercise"]');
-        const restartProblemDialog = document.getElementById("restartProblemDialog");
-        const restartGuidedInput = document.getElementById("restartGuidedInput");
-        const restartBuildInput = document.getElementById("restartBuildInput");
-        const restartPrescribedInput = document.getElementById("restartPrescribedInput");
         const openExerciseDialog = document.getElementById("openExerciseDialog");
         const openExerciseForm = document.getElementById("openExerciseForm");
         const openExerciseError = document.getElementById("openExerciseError");
         const openExerciseSubmit = document.getElementById("openExerciseSubmit");
         const exerciseLoadStatus = document.getElementById("exerciseLoadStatus");
-        const settingsButton = document.getElementById("settingsButton");
-        const settingsPanel = document.getElementById("settingsPanel");
         const mainActionPanel = document.getElementById("mainActionPanel");
-        const quickSettingButtons = Array.from(document.querySelectorAll("button[data-workspace-setting]"));
         const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
-        const openEditorButton = document.querySelector('[data-workspace-action="openProblemEditor"]');
-        const editLevelCopyButton = document.querySelector('[data-workspace-action="editLevelCopy"]');
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1399,19 +1389,18 @@ Promise.resolve().then(() => {
 
         const ASSISTANCE_MODES = {
             guided: "guided",
-            unguided: "unguided"
+            free: "free"
         };
 
         const playerQuery = new URLSearchParams(window.location.search);
         const requestedLevelFile = String(playerQuery.get("level") || "").trim();
         const navigationSource = String(playerQuery.get("source") || "").toLowerCase();
-        const exerciseSources = ["problem-editor", "problem-builder", "custom", "builtin"];
-        const creativeSessionActive = playerQuery.get("mode") === "creative" ||
+        const exerciseSources = ["custom", "builtin"];
+        const creativeSessionActive = ["free", "creative"].includes(playerQuery.get("mode")) ||
             (!requestedLevelFile && !exerciseSources.includes(navigationSource));
-        const prescribedRewritesEnabled = !creativeSessionActive && playerQuery.get("rewrites") === "prescribed";
+        const prescribedRewritesEnabled = false;
         let prescribedGuide = null;
-        const problemEditorApiRequested = playerQuery.get("editor") === "1";
-        let assistanceMode = ASSISTANCE_MODES.unguided;
+        let assistanceMode = ASSISTANCE_MODES.free;
         let buildFirstEnabled = false;
         let buildingStartingExpression = false;
         let demoStepIndex = 0;
@@ -1437,36 +1426,6 @@ Promise.resolve().then(() => {
             return window.matchMedia
                 ? window.matchMedia("(orientation: landscape)").matches
                 : window.innerWidth > window.innerHeight;
-        }
-
-        function refreshQuickSettingButtons() {
-            quickSettingButtons.forEach(button => {
-                const setting = button.dataset.workspaceSetting;
-                const valueElement = button.querySelector("[data-setting-value]");
-                let value = "";
-                let nextValue = "";
-                if (setting === "steps-text-size") {
-                    const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
-                    const nextIndex = (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length;
-                    value = stepsTextSizePreference[0].toUpperCase() + stepsTextSizePreference.slice(1);
-                    const nextPreference = STEPS_TEXT_SIZE_OPTIONS[nextIndex];
-                    nextValue = nextPreference[0].toUpperCase() + nextPreference.slice(1);
-                } else if (setting === "operation-style") {
-                    const current = OPERATION_STYLE_OPTIONS.find(option => option.value === SETTINGS.operationStyle) || OPERATION_STYLE_OPTIONS[0];
-                    value = current.shortLabel;
-                    nextValue = getNextCyclicOption(OPERATION_STYLE_OPTIONS, current.value).shortLabel;
-                } else if (setting === "operation-size") {
-                    const current = OPERATION_SIZE_OPTIONS.find(option => option.value === SETTINGS.operationSize) || OPERATION_SIZE_OPTIONS[0];
-                    value = current.shortLabel;
-                    nextValue = getNextCyclicOption(OPERATION_SIZE_OPTIONS, current.value).shortLabel;
-                }
-                if (valueElement) {
-                    valueElement.textContent = value;
-                }
-                const name = button.querySelector(".workspace-setting-name")?.textContent.trim() || "Setting";
-                button.setAttribute("aria-label", `${name}: ${value}. Press to change to ${nextValue}.`);
-                button.setAttribute("title", `${name}: ${value}; next: ${nextValue}`);
-            });
         }
 
         function applyResponsivePaletteSize(panel, content) {
@@ -1523,7 +1482,6 @@ Promise.resolve().then(() => {
                     window.localStorage.setItem(STEPS_TEXT_SIZE_STORAGE_KEY, stepsTextSizePreference);
                 } catch (error) {}
             }
-            refreshQuickSettingButtons();
             scheduleStepsFontSizeRecalculation();
         }
 
@@ -1608,7 +1566,7 @@ Promise.resolve().then(() => {
         }
 
         function recalculateResponsiveStepsLayout() {
-            if (!appContainer || !leftPanel || leftPanel.hidden || document.body.classList.contains("settings-active")) {
+            if (!appContainer || !leftPanel || leftPanel.hidden) {
                 return;
             }
             const sizes = calculateContextualStepsFontSizes();
@@ -1856,13 +1814,13 @@ Promise.resolve().then(() => {
 
         function positionWorkspaceNotation() {
             const bounds = getExpressionBounds();
-            const gap = 8;
+            const gap = parseFloat(getComputedStyle(workspaceCurrentNotation).lineHeight) || 24;
             workspaceCurrentNotation.style.left = `${bounds.left}px`;
             workspaceCurrentNotation.style.top = `${bounds.top - workspaceCurrentNotation.offsetHeight - gap}px`;
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
                 // Clear the outline as well as the expression's layout bounds.
-                const arrowTop = bounds.bottom + 2 * gap;
+                const arrowTop = bounds.bottom + gap;
                 workspaceGoalConnector.style.left = `${center}px`;
                 workspaceGoalConnector.style.top = `${arrowTop}px`;
                 workspaceGoalNotation.style.left = `${center - workspaceGoalNotation.offsetWidth / 2}px`;
@@ -2663,7 +2621,7 @@ Promise.resolve().then(() => {
         function hasGuidedMode(level) {
             const initialActions = level?.initialBuilderActions;
             const steps = level?.demo?.steps;
-            return (Array.isArray(initialActions) && initialActions.length > 0) ||
+            return (Array.isArray(initialActions) && initialActions.some(step => step && step.type !== "view")) ||
                 (Array.isArray(steps) && steps.some(step => step && step.type !== "view"));
         }
 
@@ -3466,10 +3424,7 @@ Promise.resolve().then(() => {
                 validateChosenLevel(level, file.name);
                 if (!openExerciseDialog.open || levelFileInput.files[0] !== file) return;
                 const params = { source: "custom", level: file.name, fileKey: crypto.getRandomValues(new Uint32Array(4)).join("-") };
-                if (isDemoOnlyLevel(level)) {
-                    params.mode = "guided";
-                    params.build = "1";
-                }
+                params.mode = "guided";
                 ExplodedAlgebraTransfer.open("exploded-algebra.html", params, { fileName: file.name, text }, window);
             } catch (error) {
                 openExerciseError.textContent = error.message || "The exercise file could not be opened.";
@@ -3528,7 +3483,7 @@ Promise.resolve().then(() => {
                 steps: []
             });
             currentLevelIndex = 0;
-            startLoadedLevel(ASSISTANCE_MODES.unguided, true);
+            startLoadedLevel(ASSISTANCE_MODES.free, true);
         }
 
         function loadInitialLevelFromNavigation() {
@@ -3539,21 +3494,6 @@ Promise.resolve().then(() => {
 
             const fileKey = playerQuery.get("fileKey");
             const transferKey = fileKey ? ExplodedAlgebraTransfer.fileStorageKey(fileKey) : undefined;
-            if (navigationSource === "problem-editor" || navigationSource === "problem-builder") {
-                try {
-                    const draftKey = String(playerQuery.get("draftKey") || "").trim();
-                    const payload = ExplodedAlgebraTransfer.read(draftKey || undefined, !!draftKey);
-                    const parsed = JSON.parse(payload.text);
-                    return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile || "Problem Editor preview");
-                } catch (error) {
-                    console.error("The Problem Editor preview could not be loaded.", error);
-                    showNoLevelSelectedState(error && error.message
-                        ? error.message
-                        : "The Problem Editor preview could not be loaded. Return to the editor and try again.");
-                    return false;
-                }
-            }
-
             if (requestedLevelFile) {
                 // Uploaded levels carry their JSON in this tab so
                 // file:// works, while the URL still identifies the selected file.
@@ -3668,7 +3608,7 @@ Promise.resolve().then(() => {
         }
 
         function isDemoModeActive() {
-            return assistanceMode === ASSISTANCE_MODES.guided && demoStepIndex < getCurrentDemoSteps().length;
+            return assistanceMode === ASSISTANCE_MODES.guided;
         }
 
         function getCurrentDemoStep() {
@@ -3711,9 +3651,6 @@ Promise.resolve().then(() => {
         }
 
         function updateModeControls() {
-            if (assistanceMode === ASSISTANCE_MODES.guided && !hasGuidedMode(getCurrentLevel())) {
-                assistanceMode = ASSISTANCE_MODES.unguided;
-            }
             refreshDemoBodyClass();
         }
 
@@ -3723,33 +3660,24 @@ Promise.resolve().then(() => {
         }
 
         function assistanceModeFromQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            const requestedMode = String(params.get("mode") || "").trim().toLowerCase();
-            if (Object.values(ASSISTANCE_MODES).includes(requestedMode)) {
-                return requestedMode;
-            }
-
-            // Preserve the two supported legacy assistance values.
-            const legacyAssistance = String(params.get("assistance") || "").trim().toLowerCase();
-            return {
-                high: ASSISTANCE_MODES.guided,
-                medium: ASSISTANCE_MODES.unguided
-            }[legacyAssistance] || null;
+            // Every loaded recording is guided, including legacy unguided links.
+            return ASSISTANCE_MODES.guided;
         }
 
         function normalizeAssistanceModeForLevel(mode, level) {
-            if (mode === ASSISTANCE_MODES.unguided) {
-                return mode;
-            }
-            if (mode === ASSISTANCE_MODES.guided && hasGuidedMode(level)) {
-                return mode;
-            }
-            return null;
+            return mode === ASSISTANCE_MODES.free && level?.creative === true
+                ? ASSISTANCE_MODES.free : ASSISTANCE_MODES.guided;
         }
 
-        function startLoadedLevel(mode, buildFirst = new URLSearchParams(window.location.search).get("build") === "1") {
-            assistanceMode = normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided;
-            buildFirstEnabled = buildFirst && isInteractiveLevel(getCurrentLevel());
+        function startLoadedLevel(mode, buildFirst) {
+            const level = getCurrentLevel();
+            assistanceMode = normalizeAssistanceModeForLevel(mode, level);
+            if (assistanceMode === ASSISTANCE_MODES.guided && !hasGuidedMode(level)) {
+                showNoLevelSelectedState("This exercise has no recorded guide. Open a saved move history for Guided Replay, or choose Free Play from the menu.");
+                return;
+            }
+            buildFirstEnabled = level.creative === true ? buildFirst === true
+                : Array.isArray(level.initialBuilderActions) && level.initialBuilderActions.some(step => step && step.type !== "view");
             document.body.classList.remove("no-level-loaded");
             exerciseLoadStatus.hidden = true;
             loadLevel(0, buildFirstEnabled);
@@ -4194,19 +4122,9 @@ Promise.resolve().then(() => {
             return makeDemoOnlyLevelFromCurrentRun(completionExportCompletedAtDate || new Date());
         }
 
-        function openEditorCopy(level, fileName = `${level.id}.json`, preview) {
-            ExplodedAlgebraTransfer.open("problem-builder.html", { source: "transfer" }, {
-                fileName,
-                text: JSON.stringify(level)
-            }, preview);
-        }
-
         function updateExerciseMenu(level) {
             resetRunButton.disabled = !level;
-            restartProblemButton.disabled = !level || level.creative === true;
             moveHistoryButton.disabled = !level || !solutionRecorder || buildingStartingExpression;
-            openEditorButton.textContent = moveHistoryButton.disabled ? "Open Problem Editor" : "Open Current Work in Editor";
-            editLevelCopyButton.hidden = !Array.isArray(level?.recordedActions);
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4553,106 +4471,28 @@ Promise.resolve().then(() => {
             workspaceUtilityMenuToggle.setAttribute("aria-label", shouldOpen ? "Close workspace menu" : "Open workspace menu");
         }
 
-        function openSettingsPanel() {
-            if (!settingsPanel || !settingsButton) {
-                return;
-            }
-            setWorkspaceUtilityMenuOpen(false);
-            hideToolOptionMenu();
-            refreshQuickSettingButtons();
-            settingsPanel.classList.remove("hidden");
-            settingsPanel.setAttribute("aria-hidden", "false");
-            document.body.classList.add("settings-active");
-            const firstControl = settingsPanel.querySelector("button:not([hidden]):not([disabled])");
-            if (firstControl) {
-                firstControl.focus();
-            }
-        }
-
-        function closeSettingsPanel() {
-            if (!settingsPanel) {
-                return;
-            }
-            settingsPanel.classList.add("hidden");
-            settingsPanel.setAttribute("aria-hidden", "true");
-            document.body.classList.remove("settings-active");
-            scheduleResponsiveLayoutRecalculation();
-            if (workspaceUtilityMenuToggle) {
-                workspaceUtilityMenuToggle.focus();
-            }
-        }
-
         function resetCurrentRun() {
             const buildFirst = getCurrentLevel().creative ? buildingStartingExpression : buildFirstEnabled;
             loadLevel(currentLevelIndex, buildFirst);
         }
 
-        function openRestartProblemDialog() {
-            const level = getCurrentLevel();
-            restartGuidedInput.disabled = !hasGuidedMode(level);
-            restartGuidedInput.checked = !restartGuidedInput.disabled && assistanceMode === ASSISTANCE_MODES.guided;
-            restartBuildInput.disabled = !isInteractiveLevel(level);
-            restartBuildInput.checked = buildFirstEnabled;
-            let hasRecordedRewrites = false;
-            try {
-                hasRecordedRewrites = !!(prescribedGuide || makePrescribedNumericalGuide(level))?.choices.size;
-            } catch {
-                // The exercise can still be restarted with unrestricted rewrites.
-            }
-            restartPrescribedInput.disabled = !prescribedRewritesEnabled && !hasRecordedRewrites;
-            restartPrescribedInput.checked = prescribedRewritesEnabled;
-            document.getElementById("restartGuidedUnavailable").hidden = !restartGuidedInput.disabled;
-            document.getElementById("restartBuildUnavailable").hidden = !restartBuildInput.disabled;
-            document.getElementById("restartPrescribedUnavailable").hidden = !restartPrescribedInput.disabled;
-            restartProblemDialog.showModal();
-        }
-
-        function restartCurrentExercise(mode, buildFirst, prescribed) {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("assistance");
-            url.searchParams.set("mode", mode);
-            if (buildFirst) {
-                url.searchParams.set("build", "1");
-            } else {
-                url.searchParams.delete("build");
-            }
-            if (prescribed) {
-                url.searchParams.set("rewrites", "prescribed");
-            } else {
-                url.searchParams.delete("rewrites");
-            }
-            window.location.replace(url.href);
-        }
-
         function initializeExplodedAlgebra() {
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             layoutFloatingPalette();
-            setStepsTextSizePreference(loadSavedStepsTextSizePreference());
+            setStepsTextSizePreference("medium");
             updatePanelResizeHandleOrientation();
-            setOperationStyle(getSavedOperationStyle());
-            setOperationSize(getSavedOperationSize());
+            SETTINGS.operationStyle = "filled";
+            SETTINGS.operationSize = "100";
             openExerciseForm.addEventListener("submit", event => {
                 if (event.submitter?.value === "cancel") return;
                 event.preventDefault();
                 loadChosenLevelFile(levelFileInput.files[0]);
             });
-            for (const dialog of [openExerciseDialog, restartProblemDialog]) {
-                dialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
-            }
-            restartProblemDialog.addEventListener("submit", event => {
-                if (event.submitter?.value !== "restart") return;
-                event.preventDefault();
-                const mode = restartGuidedInput.checked ? ASSISTANCE_MODES.guided : ASSISTANCE_MODES.unguided;
-                restartCurrentExercise(mode, restartBuildInput.checked, restartPrescribedInput.checked);
-            });
+            openExerciseDialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
                     if (!button || button.disabled) {
-                        return;
-                    }
-                    if (button.dataset.workspaceSetting) {
-                        cycleQuickSetting(button.dataset.workspaceSetting);
                         return;
                     }
                     if (button.dataset.workspaceAction === "zoomIn") {
@@ -4674,10 +4514,6 @@ Promise.resolve().then(() => {
                         } else {
                             undoExpressionStep();
                         }
-                        return;
-                    }
-                    if (button.dataset.workspaceAction === "openSettings") {
-                        openSettingsPanel();
                         return;
                     }
                 });
@@ -4716,24 +4552,8 @@ Promise.resolve().then(() => {
                         openExerciseForm.reset();
                         openExerciseError.hidden = true;
                         openExerciseDialog.showModal();
-                    } else if (button.dataset.workspaceAction === "openSettings") {
-                        openSettingsPanel();
-                    } else if (button.dataset.workspaceAction === "restartExercise") {
-                        openRestartProblemDialog();
                     } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
                         downloadMoveHistoryJson(getCurrentMoveHistory());
-                        workspaceUtilityMenuToggle.focus();
-                    } else if (button.dataset.workspaceAction === "openProblemEditor") {
-                        if (moveHistoryButton.disabled) {
-                            if (!window.open("problem-builder.html", "_blank")) {
-                                window.location.assign("problem-builder.html");
-                            }
-                        } else {
-                            openEditorCopy(getCurrentMoveHistory());
-                        }
-                        workspaceUtilityMenuToggle.focus();
-                    } else if (button.dataset.workspaceAction === "editLevelCopy") {
-                        openEditorCopy(getCurrentLevel());
                         workspaceUtilityMenuToggle.focus();
                     }
                     event.stopPropagation();
@@ -4748,22 +4568,6 @@ Promise.resolve().then(() => {
                         setWorkspaceUtilityMenuOpen(false);
                         workspaceUtilityMenuToggle.focus();
                         event.preventDefault();
-                    }
-                });
-            }
-            if (settingsPanel) {
-                settingsPanel.addEventListener("click", event => {
-                    const button = event.target.closest("button");
-                    if (!button || button.disabled) {
-                        return;
-                    }
-                    if (button.dataset.settingsAction === "close") {
-                        closeSettingsPanel();
-                        return;
-                    }
-                    if (button.dataset.workspaceSetting) {
-                        cycleQuickSetting(button.dataset.workspaceSetting);
-                        return;
                     }
                 });
             }
@@ -4846,14 +4650,7 @@ Promise.resolve().then(() => {
                 });
             }
             updateWorkspaceToolbar();
-            if (problemEditorApiRequested) {
-                window.ExplodedAlgebraProblemEditor = Object.freeze({
-                    inspectMoveHistory,
-                    validateLevel: level => validateChosenLevel(level, "Edited problem")
-                });
-            } else {
-                loadInitialLevelFromNavigation();
-            }
+            loadInitialLevelFromNavigation();
             scheduleResponsiveLayoutRecalculation();
 
             document.addEventListener("click", event => {
@@ -4865,12 +4662,8 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
-                if (event.defaultPrevented || openExerciseDialog.open || restartProblemDialog.open || numericalRewriteDialog.open ||
+                if (event.defaultPrevented || openExerciseDialog.open || numericalRewriteDialog.open ||
                     (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
-                    return;
-                }
-                if (event.key === "Escape" && document.body.classList.contains("settings-active")) {
-                    closeSettingsPanel();
                     return;
                 }
                 if (event.key === "Escape" && toolOptionMenu && !toolOptionMenu.classList.contains("hidden")) {
@@ -5018,85 +4811,6 @@ ctx.font = SETTINGS.textFont;
         let workspaceViewManuallyPanned = false;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
-        const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV2";
-        const OPERATION_STYLE_OPTIONS = [
-            { value: "bare", shortLabel: "Bare" },
-            { value: "outlined", shortLabel: "Outlined Circle" },
-            { value: "filled", shortLabel: "Filled Circle" }
-        ];
-        const OPERATION_SIZE_STORAGE_KEY = "explodedAlgebraOperationSizeV1";
-        const OPERATION_SIZE_OPTIONS = [
-            { value: "100", shortLabel: "100%" },
-            { value: "75", shortLabel: "75%" },
-            { value: "50", shortLabel: "50%" }
-        ];
-
-        function getNextCyclicOption(options, currentValue) {
-            const currentIndex = options.findIndex(option => option.value === currentValue);
-            return options[(currentIndex + 1 + options.length) % options.length];
-        }
-
-        function cycleQuickSetting(setting) {
-            if (setting === "steps-text-size") {
-                const currentIndex = STEPS_TEXT_SIZE_OPTIONS.indexOf(stepsTextSizePreference);
-                const nextPreference = STEPS_TEXT_SIZE_OPTIONS[
-                    (currentIndex + 1) % STEPS_TEXT_SIZE_OPTIONS.length
-                ];
-                setStepsTextSizePreference(nextPreference, true);
-                return;
-            }
-            if (setting === "operation-style") {
-                setOperationStyle(getNextCyclicOption(OPERATION_STYLE_OPTIONS, SETTINGS.operationStyle).value, true);
-                return;
-            }
-            if (setting === "operation-size") {
-                setOperationSize(getNextCyclicOption(OPERATION_SIZE_OPTIONS, SETTINGS.operationSize).value, true);
-            }
-        }
-
-        function getSavedOperationStyle() {
-            try {
-                const saved = window.localStorage.getItem(OPERATION_STYLE_STORAGE_KEY);
-                return OPERATION_STYLE_OPTIONS.some(option => option.value === saved) ? saved : "filled";
-            } catch (error) {
-                return "filled";
-            }
-        }
-
-        function getSavedOperationSize() {
-            try {
-                const saved = window.localStorage.getItem(OPERATION_SIZE_STORAGE_KEY);
-                return OPERATION_SIZE_OPTIONS.some(option => option.value === saved) ? saved : "100";
-            } catch (error) {
-                return "100";
-            }
-        }
-
-        function setOperationSize(size, persist = false) {
-            SETTINGS.operationSize = OPERATION_SIZE_OPTIONS.some(option => option.value === size) ? size : "100";
-            if (persist) {
-                try {
-                    window.localStorage.setItem(OPERATION_SIZE_STORAGE_KEY, SETTINGS.operationSize);
-                } catch (error) {}
-            }
-            if (expressionRoot) drawExpression();
-            refreshQuickSettingButtons();
-        }
-
-        function setOperationStyle(style, persist = false) {
-            SETTINGS.operationStyle = OPERATION_STYLE_OPTIONS.some(option => option.value === style) ? style : "filled";
-            if (persist) {
-                try {
-                    window.localStorage.setItem(OPERATION_STYLE_STORAGE_KEY, SETTINGS.operationStyle);
-                } catch (error) {}
-            }
-            if (expressionRoot) {
-                layoutExpression(expressionRoot);
-                drawExpression();
-            }
-            refreshQuickSettingButtons();
-        }
-
         function applyWorkspaceZoomSizing() {
             const width = getSvgWidth(workspaceSvg);
             const height = getSvgHeight(workspaceSvg);
@@ -12445,6 +12159,10 @@ function renderToolArea() {
         }
 
         function refreshStatus() {
+            if (isDemoModeActive() && !getCurrentDemoStep() && uiState.stage !== "postview") {
+                setStatus("Guided replay complete. Use Reset to replay it or Free Play to start a new expression.");
+                return;
+            }
             if (uiState.stage === "postview" && uiState.postviewData) {
                 if (uiState.postviewData.type === "distribution") {
                     setStatus("Distribution postview: the transformed expression is shown with the same colors as the preview.");

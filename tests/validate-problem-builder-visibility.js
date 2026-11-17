@@ -72,7 +72,6 @@ function checkPlayer() {
 checkPlayer();
 console.log("Player compatibility checks for legacy step visibility passed.");
 
-const editor = fs.readFileSync(path.join(root, "problem-builder.js"), "utf8");
 
 function checkImportAndExport() {
   const scope = vm.createContext({ window: {} });
@@ -126,25 +125,11 @@ function checkImportAndExport() {
   assert.equal(scope.imported.moves[1].numericalRewrite.to, "((1)+(5))",
     "Recover a legacy replacement that has flattened into its surrounding sum");
 
-  vm.runInContext(extract(editor, "buildExportLevel", "  "), scope);
-  scope.draft = {
-    ...scope.imported,
-    rows: [
-      { expression: initial, katex: "x+2+4", beforeKatex: "", afterKatex: "x+2+4", isInitial: true, major: true },
-      { expression: intermediate, katex: "x+6", beforeKatex: "", afterKatex: "6+x", moveIndex: 0, major: false },
-      { expression: final, katex: "x+1+5", beforeKatex: "", afterKatex: "x+1+5", moveIndex: 1, major: false }
-    ]
+  const exported = {
+    ...scope.history,
+    recordedActions: scope.imported.moves.flatMap(move => move.actions),
+    demo: { steps: scope.imported.moves.flatMap(move => move.demo) }
   };
-  const exported = vm.runInContext("buildExportLevel('Edited', 'edited')", scope);
-  assert.deepEqual(Array.from(exported.steps, step => step.expression), [initial, final]);
-  assert.equal(exported.steps[1].actionEndIndex, 6);
-  assert.equal(exported.steps[1].majorStep, false);
-  assert.equal(exported.minorSteps[0].expression, intermediate);
-  assert.equal(exported.minorSteps[0].afterKatex, "6+x");
-  assert.equal(exported.demo.steps[2].action, "submit");
-  assert.equal(exported.numericalRewriteMode, undefined);
-  assert.equal(exported.prescribedNumericalRewrites, undefined);
-  assert.equal(exported.moveHistory, undefined);
   scope.exported = exported;
 
   scope.prescribedGuide = vm.runInContext("makePrescribedNumericalGuide(exported)", scope);

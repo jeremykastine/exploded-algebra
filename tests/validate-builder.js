@@ -9,30 +9,12 @@ const assert = (condition, message) => {
 };
 
 const builderHtml = read("problem-builder.html");
-const builderCss = read("problem-builder.css");
-const builderJs = read("problem-builder.js");
 const playerHtml = read("exploded-algebra.html");
 const playerJs = read("exploded-algebra-tool.js");
 const rendererJs = read("exploded-algebra-renderer.js");
 
-const htmlIds = new Set(Array.from(builderHtml.matchAll(/\bid="([^"]+)"/g), match => match[1]));
-const requestedIds = new Set(Array.from(builderJs.matchAll(/\bbyId\("([^"]+)"\)/g), match => match[1]));
-for (const id of requestedIds) {
-  assert(htmlIds.has(id), `problem-builder.js references missing HTML id: ${id}`);
-}
-assert(builderHtml.includes('id="setupForm"') && builderHtml.includes('id="editorWorkspace"'), "The editor must offer file upload and a loaded editor");
-assert(builderHtml.includes('id="moveFile"') && builderJs.includes("api.inspectMoveHistory(history, true)"), "The editor must accept move recordings");
-assert(!builderHtml.includes('id="rewriteMode"') && !builderJs.includes("rewriteMode"), "The editor must omit numerical rewrite settings");
-assert(!builderHtml.includes("numericalPermissionsTable") && !playerJs.includes("installAuthoringApi"), "The former instructor workflow must be removed");
-assert(builderHtml.includes('<tbody id="curationTable"></tbody>') && !builderHtml.includes("data-notation") &&
-  !builderJs.includes("data-functional-notation"), "The editor must show conventional notation only");
-assert(/class="major-step-cell"[\s\S]*?data-major-step[\s\S]*?<\/td>\s*<td>[\s\S]*?data-conventional-notation/.test(builderJs) &&
-  builderJs.includes('classList.toggle("minor-step", !event.target.checked)') && builderCss.includes(".minor-step textarea"),
-  "The major-step checkbox must appear before the editable notation and gray out unchecked rows");
-assert(builderJs.includes("data-conventional-notation") && builderJs.includes('ExplodedAlgebraNotation.verify(row.expression, entry.value)'), "Edited notation must be verified against the recorded expression");
-assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
-assert(/const params = \{[^}]*source: "problem-editor"[^}]*mode: "unguided"[^}]*build: "1"[^}]*rewrites: "prescribed"[^}]*\}/.test(builderJs),
-  "Open in Player must start unguided with build-first and prescribed numerical rewrites");
+assert(builderHtml.includes('content="0;url=exploded-algebra.html"'), "The old editor URL must forward to Free Play");
+assert(!fs.existsSync(path.join(root, "problem-builder.js")), "The retired editor implementation must be removed");
 assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(displayRoot, !!window.katex)") &&
   playerJs.includes("renderWorkspaceNotation(explodedDisplayRoot, builder)"), "Both notation views must use the same live replacement tree");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
@@ -46,8 +28,7 @@ assert(playerJs.includes('performBuilderAction(isIntegratedExpressionBuilder(bui
 assert(!playerJs.includes('class="builder-cancel-button"'), "Expression Builder must not render a separate Cancel button");
 assert(/function undoExpressionBuilderStep[\s\S]*?expressionBuilderIsEmpty\(builder\)[\s\S]*?cancelExpressionBuilder\(\)/.test(playerJs), "Undo must cancel the Expression Builder after its contents are empty");
 assert(!playerJs.includes('data-builder-review') && !playerHtml.includes('builderPeekDismissLayer'), "The Builder keypad must omit Peek");
-assert(playerJs.includes('playerQuery.get("rewrites") === "prescribed"'), "Prescribed numerical rewrites must be controlled by the player URL");
-assert(!/exercise[ -]guidance|showExerciseGuidance/i.test([builderHtml, builderCss, builderJs, playerHtml, playerJs].join("\n")),
+assert(!/exercise[ -]guidance|showExerciseGuidance/i.test([builderHtml, playerHtml, playerJs].join("\n")),
   "The player and editor must omit the retired help interface");
 assert(/\.builder-keypad-panel \.builder-variable-rail \{[^}]*grid-column: 5;\s*grid-row: 4;/.test(playerHtml), "XYZ must occupy the cell below 3");
 assert(playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 6; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 6; grid-row: 3 / span 2; }'), "Times and Plus must each occupy two rows in column six");
@@ -153,10 +134,7 @@ assert(!rendererJs.includes('builderPotentialBoxes') && !rendererJs.includes('bu
 assert(!playerJs.includes("recordUndoForSolution") &&
   playerJs.includes("Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount)"),
   "Undo must prune the recorded actions");
-assert(playerHtml.includes('data-workspace-action="openProblemEditor"') &&
-  playerHtml.includes('data-workspace-action="editLevelCopy"') &&
-  builderHtml.includes('id="openInPlayerButton"'),
-  "The workspace and editor must expose their navigation actions");
+assert(!playerHtml.includes('data-workspace-action="openProblemEditor"') && !playerHtml.includes('data-workspace-action="editLevelCopy"'), "The workspace must omit retired editor actions");
 assert(!/recordSolutionAction\s*\(\s*\{[^}]*type:\s*["']view["']/s.test(playerJs), "View/zoom actions must not be recorded");
 
 const rendererContext = { window: {}, console };
