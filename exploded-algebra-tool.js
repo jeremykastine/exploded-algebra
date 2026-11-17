@@ -1809,8 +1809,7 @@ Promise.resolve().then(() => {
             const currentKatex = displayRoot && (builder
                 ? ExplodedAlgebraRenderer.expressionBuilderToKatex(displayRoot, !!window.katex)
                 : ExplodedAlgebraRenderer.expressionToKatex(displayRoot));
-            // The live expression is generated locally. Authored goal notation
-            // keeps KaTeX's default trust restrictions.
+            // The live expression is generated locally.
             renderWorkspaceMath(workspaceCurrentNotation, displayRoot ? currentKatex || "\\square" : "", {
                 strict: "ignore",
                 trust: ({ command, class: className, style }) =>
@@ -1818,9 +1817,10 @@ Promise.resolve().then(() => {
                     (command === "\\htmlStyle" && /^opacity:[0-9.e-]+$/.test(style))
             });
 
-            const goalKatex = displayRoot ? getWorkspaceGoalKatex(getCurrentLevel(), builder) : "";
-            renderWorkspaceMath(workspaceGoalNotation, goalKatex);
-            workspaceGoalConnector.hidden = !goalKatex;
+            // Guided recordings identify the next action through highlighting.
+            // Keep the legacy goal containers empty and outside layout bounds.
+            renderWorkspaceMath(workspaceGoalNotation, "");
+            workspaceGoalConnector.hidden = true;
         }
 
         function positionWorkspaceNotation() {

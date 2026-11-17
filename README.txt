@@ -25,9 +25,9 @@ The former Problem Editor URL forwards to Free Play.
 One line of conventional notation above the exploded expression shows the
 current expression, including any live entry. One text line of whitespace
 separates the conventional and exploded notation. During a replacement, the
-selected part fades progressively behind the new entry in both views. When
-an exercise has a current goal, a vertical line connects the exploded
-expression to the goal's conventional notation below. Free Play remains
+selected part fades progressively behind the new entry in both views.
+Guided Replay highlights the next required action. The conventional notation
+above the exploded expression is the only notation shown. Free Play remains
 editable without a completion requirement. Drag anywhere in the workspace to pan. Tap a part
 of the expression to select it, then tap another part to extend the selection.
 Generated conventional expressions use ÷ for division and preserve parentheses
@@ -35,15 +35,8 @@ around non-leading negative-one factors.
 `initialKatex` remains the conventional form of the starting expression in the
 level data.
 
-The original expression remains the first item in `steps` for matching and move
-history compatibility. Subsequent steps are revealed progressively. A step may
-include `beforeKatex` and `afterKatex` conventional-display versions. The before
-version is shown while the goal is current, with the after version or ordinary
-`katex` version as fallbacks. This permits a current goal such as
-`\\frac{?}{6}+\\frac{5}{6}` without changing the
-exact exploded `expression` used to recognize the completed step. If the current
-expression matches a later recorded step, the intervening steps are skipped and
-the next goal is revealed. Undo restores the prior goal.
+Legacy level files retain their step and notation metadata for matching and
+move-history compatibility. Goal notation and connectors are not displayed.
 
 The conventional notation and exploded expression form one group anchored
 at the upper-left by default and move together when you drag. A single
