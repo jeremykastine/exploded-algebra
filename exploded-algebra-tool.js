@@ -1367,7 +1367,9 @@ Promise.resolve().then(() => {
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
-        const workspaceConventionalLine = document.getElementById("workspaceConventionalLine");
+        const workspaceCurrentNotation = document.getElementById("workspaceCurrentNotation");
+        const workspaceGoalNotation = document.getElementById("workspaceGoalNotation");
+        const workspaceGoalConnector = document.getElementById("workspaceGoalConnector");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
         const currentExpressionSvg = document.getElementById("currentExpressionSvg");
@@ -1803,138 +1805,63 @@ Promise.resolve().then(() => {
             clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
         }
 
-        function getWorkspaceConventionalLineContent() {
-            const level = getCurrentLevel();
-            if (!level || !expressionRoot) {
-                return null;
-            }
-            const activeBuilder = uiState.mode === "edit" && uiState.stage === "builder"
-                ? uiState.expressionBuilder
-                : null;
-            if (activeBuilder) {
-                if (activeBuilder.tool === "studentInitial") {
-                    if (creativeSessionActive) {
-                        return {
-                            heading: "Build an expression",
-                            targetKatex: ExplodedAlgebraRenderer.expressionBuilderToKatex(activeBuilder.root) || "\\square"
-                        };
-                    }
-                    return {
-                        heading: "Build the expression:",
-                        targetKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.mainRoot)
-                    };
-                }
-                const insertionBuilder = ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"]
-                    .includes(activeBuilder.tool);
-                const liveBuilderRoot = insertionBuilder
-                    ? makeBuilderInsertionRoot(activeBuilder)
-                    : activeBuilder.root;
-                const liveKatex = insertionBuilder
-                    ? ExplodedAlgebraRenderer.expressionToKatex(liveBuilderRoot)
-                    : ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot);
-                const selectedKatex = !activeBuilder.originalSelectedNode
-                    ? ""
-                    : ExplodedAlgebraRenderer.expressionToKatex(activeBuilder.originalSelectedNode);
-                return selectedKatex
-                    ? {
-                        heading: "Replace",
-                        sourceKatex: selectedKatex,
-                        connector: "with",
-                        targetKatex: liveKatex || "\\square"
-                    }
-                    : { heading: "Build the starting expression", targetKatex: liveKatex || "\\square" };
+        function getWorkspaceGoalKatex(level, builder) {
+            if (!level || level.creative === true) return "";
+            if (builder?.tool === "studentInitial") {
+                return level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(builder.mainRoot);
             }
 
-            if (level.creative === true) {
-                return {
-                    heading: "Free Play",
-                    targetKatex: ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square"
-                };
-            }
-
-            const completion = getStepCompletionStates(level);
-            const lastStep = level.steps?.at(-1);
-            if (lastStep && uiState.mode === "edit" && completion.at(-1) === true) {
-                const targetKatex = lastStep.afterKatex || lastStep.katex ||
-                    ExplodedAlgebraRenderer.expressionToKatex(textToExpression(lastStep.expression));
-                if (level.requireFullDemo && !level.demo?.steps?.length) {
-                    return { heading: "You built", targetKatex };
-                }
-                return {
-                    heading: "You transformed",
-                    sourceKatex: level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(textToExpression(level.startExpression)),
-                    connector: "into",
-                    targetKatex
-                };
-            }
-
-            let targetIndex = completion.findIndex(isComplete => !isComplete);
-            if (targetIndex < 0) {
-                targetIndex = Math.max(0, (level.steps || []).length - 1);
-            }
-            if (uiState.mode === "inspect" && uiState.inspectStepIndex >= 0) {
-                targetIndex = uiState.inspectStepIndex;
-            }
-            const targetStep = level.steps && level.steps[targetIndex];
-            const currentKatex = ExplodedAlgebraRenderer.expressionToKatex(expressionRoot) || "\\square";
-            const targetKatex = targetStep
-                ? targetStep.beforeKatex || targetStep.afterKatex || targetStep.katex || targetStep.expression
-                : level.initialKatex || currentKatex;
-            return {
-                heading: "Transform",
-                sourceKatex: currentKatex,
-                connector: "into",
-                targetKatex
-            };
+            const targetIndex = uiState.mode === "inspect"
+                ? uiState.inspectStepIndex
+                : getStepCompletionStates(level).findIndex(isComplete => !isComplete);
+            const target = level.steps?.[targetIndex];
+            return target
+                ? target.beforeKatex || target.afterKatex || target.katex ||
+                    ExplodedAlgebraRenderer.expressionToKatex(textToExpression(target.expression))
+                : "";
         }
 
-        function appendWorkspaceConventionalMath(katexSource, row) {
-            const span = document.createElement("span");
-            span.className = "workspace-conventional-math";
-            if (window.katex) {
-                katex.render(katexSource || "\\square", span, { throwOnError: false, displayMode: false });
+        function renderWorkspaceMath(element, source, options = {}) {
+            element.hidden = !source;
+            if (!source) {
+                element.replaceChildren();
+            } else if (window.katex) {
+                window.katex.render(source, element, { throwOnError: false, ...options });
             } else {
-                span.textContent = katexSource || "□";
-            }
-            row.appendChild(span);
-            const rowHeight = row.clientHeight;
-            const mathHeight = span.offsetHeight;
-            if (rowHeight && mathHeight > rowHeight) {
-                span.style.fontSize = `${rowHeight / mathHeight}em`;
+                element.textContent = source === "\\square" ? "□" : source;
             }
         }
 
-        function renderWorkspaceConventionalLine() {
-            if (!workspaceConventionalLine) {
-                return;
-            }
-            const content = getWorkspaceConventionalLineContent();
-            for (const row of workspaceConventionalLine.children) {
-                row.replaceChildren();
-            }
-            workspaceConventionalLine.hidden = !content;
-            if (!content) {
-                return;
-            }
-            const [headingRow, sourceRow, targetRow] = workspaceConventionalLine.children;
-            headingRow.textContent = content.heading;
-            workspaceConventionalLine.setAttribute("aria-label", content.heading);
-            if (content.sourceKatex) {
-                appendWorkspaceConventionalMath(content.sourceKatex, sourceRow);
-                sourceRow.append(content.connector);
-            }
-            appendWorkspaceConventionalMath(content.targetKatex, content.sourceKatex ? targetRow : sourceRow);
+        function renderWorkspaceNotation(displayRoot, builder) {
+            const currentKatex = displayRoot && (builder
+                ? ExplodedAlgebraRenderer.expressionBuilderToKatex(displayRoot, !!window.katex)
+                : ExplodedAlgebraRenderer.expressionToKatex(displayRoot));
+            // The live expression is generated locally. Authored goal notation
+            // keeps KaTeX's default trust restrictions.
+            renderWorkspaceMath(workspaceCurrentNotation, displayRoot ? currentKatex || "\\square" : "", {
+                strict: "ignore",
+                trust: ({ command, class: className, style }) =>
+                    (command === "\\htmlClass" && /^(workspace-rewrite-preview|workspace-rewrite-entry)$/.test(className)) ||
+                    (command === "\\htmlStyle" && /^opacity:[0-9.e-]+$/.test(style))
+            });
+
+            const goalKatex = displayRoot ? getWorkspaceGoalKatex(getCurrentLevel(), builder) : "";
+            renderWorkspaceMath(workspaceGoalNotation, goalKatex);
+            workspaceGoalConnector.hidden = !goalKatex;
         }
 
-        function positionWorkspaceConventionalLine() {
-            if (!workspaceConventionalLine || workspaceConventionalLine.hidden || !expressionRoot) {
-                return;
-            }
+        function positionWorkspaceNotation() {
             const bounds = getExpressionBounds();
-            const lineHeight = workspaceConventionalLine.offsetHeight;
             const gap = 8;
-            workspaceConventionalLine.style.left = `${bounds.left}px`;
-            workspaceConventionalLine.style.top = `${bounds.top - lineHeight - gap}px`;
+            workspaceCurrentNotation.style.left = `${bounds.left}px`;
+            workspaceCurrentNotation.style.top = `${bounds.top - workspaceCurrentNotation.offsetHeight - gap}px`;
+            if (!workspaceGoalNotation.hidden) {
+                const center = (bounds.left + bounds.right) / 2;
+                workspaceGoalConnector.style.left = `${center}px`;
+                workspaceGoalConnector.style.top = `${bounds.bottom}px`;
+                workspaceGoalNotation.style.left = `${Math.max(bounds.left, center - workspaceGoalNotation.offsetWidth / 2)}px`;
+                workspaceGoalNotation.style.top = `${bounds.bottom + workspaceGoalConnector.offsetHeight}px`;
+            }
         }
 
         function getMatchingParenthesisPairs(text) {
@@ -3514,6 +3441,7 @@ Promise.resolve().then(() => {
             clearParenthesizedExpressionSvg(targetExpressionSvg, targetExpressionCtx);
             clearParenthesizedExpressionSvg(currentExpressionSvg, currentExpressionCtx);
             workspaceSvg.replaceChildren();
+            renderWorkspaceNotation(null, null);
             floatingToolMenu.classList.add("hidden");
         }
 
@@ -4360,8 +4288,8 @@ Promise.resolve().then(() => {
         }
 
         function syncConventionalStepsVisibility(level) {
-            // Conventional notation now lives in the pannable workspace as one
-            // live line. The former step-history panel remains only as a hidden
+            // Conventional notation now lives in the pannable workspace.
+            // The former step-history panel remains only as a hidden
             // compatibility mount for older loading and error paths.
             const hidden = !!level;
             document.body.classList.toggle("conventional-steps-hidden", hidden);
@@ -4371,7 +4299,6 @@ Promise.resolve().then(() => {
 
         function renderLevelInfo(levelIndex) {
             const level = LEVELS[levelIndex];
-            renderWorkspaceConventionalLine();
             if (syncConventionalStepsVisibility(level)) {
                 updateStepCompletion(level);
                 levelContent.replaceChildren();
@@ -5220,20 +5147,17 @@ ctx.font = SETTINGS.textFont;
 
         function getWorkspaceContentBounds() {
             const bounds = getExpressionBounds();
-            if (!workspaceConventionalLine || workspaceConventionalLine.hidden) {
-                return bounds;
+            for (const line of [workspaceCurrentNotation, workspaceGoalNotation]) {
+                if (line.hidden) continue;
+                const left = parseFloat(line.style.left);
+                const top = parseFloat(line.style.top);
+                if (!Number.isFinite(left) || !Number.isFinite(top)) continue;
+                bounds.left = Math.min(bounds.left, left);
+                bounds.top = Math.min(bounds.top, top);
+                bounds.right = Math.max(bounds.right, left + line.offsetWidth);
+                bounds.bottom = Math.max(bounds.bottom, top + line.offsetHeight);
             }
-            const lineLeft = parseFloat(workspaceConventionalLine.style.left);
-            const lineTop = parseFloat(workspaceConventionalLine.style.top);
-            if (!Number.isFinite(lineLeft) || !Number.isFinite(lineTop)) {
-                return bounds;
-            }
-            return {
-                left: Math.min(bounds.left, lineLeft),
-                top: Math.min(bounds.top, lineTop),
-                right: Math.max(bounds.right, lineLeft + workspaceConventionalLine.offsetWidth),
-                bottom: Math.max(bounds.bottom, lineTop + workspaceConventionalLine.offsetHeight)
-            };
+            return bounds;
         }
 
         function clampWorkspacePan(x, y) {
@@ -5292,7 +5216,7 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            // The shared content bounds begin at the conventional heading when it is visible.
+            // The shared content bounds begin at the current conventional expression.
             const { left, top } = expressionRoot ? getWorkspaceContentBounds() : { left: 0, top: 0 };
             const anchorPadding = 8;
             const zoomDelta = workspaceZoom - boundedZoom;
@@ -5853,7 +5777,7 @@ ctx.font = SETTINGS.textFont;
 
         function isInContextReplacementTool(toolName) {
             return isNumericalBuilderTool(toolName) ||
-                ["replaceOneWithInverseProduct", "cancelOpposites"].includes(toolName);
+                ["replaceOneWithInverseProduct", "insertZeroProduct", "cancelOpposites"].includes(toolName);
         }
 
         function countReplacementEntrySymbols(node) {
@@ -5876,17 +5800,9 @@ ctx.font = SETTINGS.textFont;
             // and siblings account for the larger of the old and new expressions,
             // which share one overlaid region in the selected position.
             const entrySymbols = countReplacementEntrySymbols(builder.root);
-            const pairInsertion = ["replaceOneWithInverseProduct", "cancelOpposites"].includes(builder.tool);
-            let replacement = builder.root;
-            // Nothing is generated until A has content. Keep the live A tree as
-            // the first copy so grouping hit targets use its displayed position.
-            if (pairInsertion && entrySymbols > 0) {
-                const copy = cloneBuilderNodeForHistory(builder.root);
-                replacement = builder.tool === "replaceOneWithInverseProduct"
-                    ? new ExprNode("prod", [builder.root, new ExprNode("inv", [copy], null)], null)
-                    : new ExprNode("sum", [builder.root,
-                        new ExprNode("prod", [valueNode("-1"), copy], null)], null);
-            }
+            // Nothing is generated until A has content. Keep the live A tree
+            // so grouping hit targets use its displayed position.
+            const replacement = entrySymbols > 0 ? makeBuilderInsertionRoot(builder, builder.root) : builder.root;
             const preview = new ExprNode("rewritePreview", [
                 cloneNode(builder.originalSelectedNode), replacement
             ], null);
@@ -5919,23 +5835,25 @@ ctx.font = SETTINGS.textFont;
         function drawExpression() {
             updateWorkspaceToolbar();
             renderCurrentExpressionDisplay();
-            renderWorkspaceConventionalLine();
-
             if (!expressionRoot) {
                 workspaceDisplayBounds = null;
                 workspaceSvg.replaceChildren();
+                renderWorkspaceNotation(null, null);
                 return;
             }
 
-            if (uiState.mode === "inspect") {
-                return;
-            }
-
-            const integratedBuilder = isIntegratedExpressionBuilder(uiState.expressionBuilder);
-            const contextualBuilder = isInContextReplacementBuilder();
+            const builder = uiState.expressionBuilder;
+            const integratedBuilder = isIntegratedExpressionBuilder(builder);
+            const contextualBuilder = isInContextReplacementBuilder(builder);
             const explodedDisplayRoot = integratedBuilder || contextualBuilder
-                ? getExplodedBuilderDisplayRoot(uiState.expressionBuilder)
+                ? getExplodedBuilderDisplayRoot(builder)
                 : expressionRoot;
+            renderWorkspaceNotation(explodedDisplayRoot, builder);
+            if (uiState.mode === "inspect") {
+                positionWorkspaceNotation();
+                return;
+            }
+
             layoutExpression(explodedDisplayRoot);
             workspaceDisplayBounds = {
                 left: explodedDisplayRoot.left(),
@@ -5981,7 +5899,7 @@ ctx.font = SETTINGS.textFont;
 
             drawExpressionOutlineToContext(explodedDisplayRoot, ctx, SETTINGS);
             drawDemoSelectionPrompt();
-            positionWorkspaceConventionalLine();
+            positionWorkspaceNotation();
             if (builderWorkspaceViewActive && !workspaceViewManuallyPanned) {
                 resetWorkspacePanToDefault();
             }
@@ -8847,12 +8765,11 @@ ctx.font = SETTINGS.textFont;
             return null;
         }
 
-        function makeBuilderInsertionRoot(builder) {
-            const expressionDisplay = cloneBuilderRootForDisplay(builder.root, builder.currentPath);
+        function makeBuilderInsertionRoot(builder, expressionDisplay = cloneBuilderRootForDisplay(builder.root, builder.currentPath)) {
             if (builder.tool === "replaceOneWithInverseProduct") {
                 const root = new ExprNode("prod", [
                     expressionDisplay,
-                    makeInverseNode(cloneBuilderRootForDisplay(builder.root, builder.currentPath))
+                    new ExprNode("inv", [cloneBuilderNodeForHistory(expressionDisplay)], null)
                 ], null);
                 root.isBuilderOuter = true;
                 return root;
@@ -8865,19 +8782,18 @@ ctx.font = SETTINGS.textFont;
                 return root;
             }
             if (builder.tool === "cancelOpposites") {
-                const negCopy = new ExprNode("prod", [valueNode("-1"), cloneBuilderRootForDisplay(builder.root, builder.currentPath)], null);
+                const negCopy = new ExprNode("prod", [valueNode("-1"), cloneBuilderNodeForHistory(expressionDisplay)], null);
                 const root = new ExprNode("sum", [expressionDisplay, negCopy], null);
                 root.isBuilderOuter = true;
                 return root;
             }
-            if (builder.tool === "numericalEquivalence" ||
+            if (expressionDisplay !== builder.root && (builder.tool === "numericalEquivalence" ||
                 isNumericalRewriteTool(builder.tool) ||
                 builder.tool === "factorNumber" ||
                 builder.tool === "writeNumberAsSum" ||
                 builder.tool === "evaluate" ||
-                isStructuredNumericalTool(builder.tool)) {
+                isStructuredNumericalTool(builder.tool))) {
                 expressionDisplay.isBuilderOuter = true;
-                return expressionDisplay;
             }
             return expressionDisplay;
         }

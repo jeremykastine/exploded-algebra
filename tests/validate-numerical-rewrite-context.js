@@ -35,7 +35,7 @@ function loadFunction(name) {
     const end = playerSource.indexOf("\n        function ", start + 1);
     vm.runInContext(playerSource.slice(start, end), context);
 }
-for (const name of ["cloneNode", "cloneBuilderNodeForHistory", "valueNode", "makeInverseNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextReplacementTool", "isInContextReplacementBuilder", "countReplacementEntrySymbols", "makeReplacementBuilderDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
+for (const name of ["cloneNode", "cloneBuilderNodeForHistory", "valueNode", "makeInverseNode", "getNodeAtPath", "isNumericalBuilderTool", "isInContextReplacementTool", "isInContextReplacementBuilder", "countReplacementEntrySymbols", "makeBuilderInsertionRoot", "makeReplacementBuilderDisplayRoot", "isIntegratedExpressionBuilder", "getExplodedBuilderDisplayRoot"]) {
     loadFunction(name);
 }
 vm.runInContext(`
@@ -101,6 +101,8 @@ const selected = value("6");
 const mainRoot = operation("sum", [operation("prod", [value("x"), selected]), value("7")]);
 const builder = makeBuilder(mainRoot, selected);
 const single = render(builder);
+const conventional = context.window.ExplodedAlgebraRenderer.expressionBuilderToKatex(single.display);
+assert.match(conventional, /^x.*\\htmlStyle\{opacity:0\.035\}\{6\}.*\\htmlClass\{workspace-rewrite-entry\}\{\\left\(2 \\cdot 3\\right\)\}.* \+ 7$/);
 const labels = single.svg.children.filter(child => child.name === "text");
 for (const text of ["x", "7"]) {
     const label = labels.find(label => label.textContent === text);
@@ -153,6 +155,9 @@ const placeholder = value("?");
 placeholder.isBuilderPlaceholder = true;
 builder.root = placeholder;
 const empty = render(builder);
+const emptyConventional = context.window.ExplodedAlgebraRenderer.expressionBuilderToKatex(empty.display);
+assert.match(emptyConventional, /\\htmlStyle\{opacity:0\.28\}\{6\}/);
+assert(!emptyConventional.includes("workspace-rewrite-entry"), "Empty conventional entry must show only the faded original");
 assert.equal(empty.preview.layout.width, empty.preview.args[0].layout.width, "Empty entry must not enlarge the original width");
 assert.equal(empty.preview.layout.height, empty.preview.args[0].layout.height, "Empty entry must not enlarge the original height");
 const oldLabel = empty.svg.children.find(child => child.name === "text" && child.textContent === "6");
@@ -262,8 +267,20 @@ const flattened = operation("prod", [value("2"), value("3"), value("4")]);
 assert.equal(originalOpacity(regrouped), originalOpacity(flattened), "Cycling an operation's level must not count as another insertion");
 builder.root = placeholder;
 assert(context.inContext(builder));
-for (const tool of ["authorInitial", "insertZeroProduct"]) {
-    assert.equal(context.inContext({ ...builder, tool }), false, "Other expression-building modes must retain their current display");
+assert.equal(context.inContext({ ...builder, tool: "studentInitial" }), false, "Starting expression entry has no replacement");
+for (const zeroProductOrientation of ["left", "right"]) {
+    const zero = value("0");
+    const zeroBuilder = {
+        ...makeBuilder(zero, zero), tool: "insertZeroProduct", zeroProductOrientation, root: value("2")
+    };
+    assert(context.inContext(zeroBuilder));
+    const { display, preview } = render(zeroBuilder);
+    assert.equal(preview.rewriteOriginalOpacity, 0.14);
+    assert.equal(preview.args[1].args[zeroProductOrientation === "left" ? 1 : 0], zeroBuilder.root);
+    const entry = zeroProductOrientation === "left" ? "0 \\cdot 2" : "2 \\cdot 0";
+    assert(context.window.ExplodedAlgebraRenderer.expressionBuilderToKatex(display).includes(
+        `\\htmlClass{workspace-rewrite-entry}{${entry}}`
+    ));
 }
 
 // Both generated pairs use the same selected-site overlay. Nothing new is

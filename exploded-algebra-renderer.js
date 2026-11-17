@@ -2059,7 +2059,7 @@ function escapeKatexValue(value) {
         .replace(/([{}_#$%&])/g, "\\$1");
 }
 
-function renderConventionalKatex(rootOrData, builder = false) {
+function renderConventionalKatex(rootOrData, builder = false, showRewriteOverlay = true) {
     const isNegativeOne = node => node?.type === "value" && node.value === "-1";
     const isNegativeProduct = node => node?.type === "prod" &&
         node.args.length > 1 && isNegativeOne(node.args[0]);
@@ -2124,6 +2124,17 @@ function renderConventionalKatex(rootOrData, builder = false) {
 
     function render(node, parent = null) {
         if (!node) return builder ? "\\phantom{0}" : "";
+        if (node.isReplacementBuilderPreview) {
+            const [original, replacement] = node.args;
+            const originalParent = node.rewriteRangeType === "prod" && parent === "factor" ? null : parent;
+            const originalKatex = render(original, originalParent);
+            const replacementKatex = node.preserveOriginalLayoutWhenEmpty ? "" : render(replacement, parent);
+            if (!showRewriteOverlay) return replacementKatex || originalKatex;
+
+            const faded = `\\htmlStyle{opacity:${node.rewriteOriginalOpacity}}{${originalKatex}}`;
+            const entry = replacementKatex ? `\\htmlClass{workspace-rewrite-entry}{${replacementKatex}}` : "";
+            return `\\mathord{\\htmlClass{workspace-rewrite-preview}{${faded}${entry}}}`;
+        }
         if (builder && node.isBuilderPlaceholder) return "\\square";
         if (builder && node.isBuilderSequence) return renderSequence(node, parent);
         if (node.type === "value") {
@@ -2160,8 +2171,8 @@ function expressionToKatex(rootOrData) {
     return renderConventionalKatex(rootOrData);
 }
 
-function expressionBuilderToKatex(rootOrData) {
-    return renderConventionalKatex(rootOrData, true);
+function expressionBuilderToKatex(rootOrData, showRewriteOverlay = true) {
+    return renderConventionalKatex(rootOrData, true, showRewriteOverlay);
 }
 
 function renderExpressionInto(target, rootOrData, options = {}) {

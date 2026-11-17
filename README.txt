@@ -12,16 +12,13 @@ open an exercise file, send the current work to the Problem Editor, or download
 the moves. The editor can download a level JSON file or open it in the player
 with an unguided build and recorded numerical rewrites.
 
-Conventional notation appears as an unboxed stack immediately above the exploded
-expression. A Transform heading introduces the current expression followed by
-into on the second line and the next target on the third. Replace uses the
-selected expression followed by with and the live replacement on the third
-line. You transformed uses the original and completed expressions in the same
-layout. The stack reserves four lines. The fourth is always blank, and the
-third is also blank when only a heading and one expression are shown. The
-expression stays editable after completion. The stack shares the workspace
-pan and zoom. Drag anywhere in the workspace to pan. Tap a part of the
-expression to select it, then tap another part to extend the selection.
+One line of conventional notation above the exploded expression shows the
+current expression, including any live entry. During a replacement, the
+selected part fades progressively behind the new entry in both views. When
+an exercise has a current goal, a vertical line connects the exploded
+expression to the goal's conventional notation below. The expression stays
+editable after completion. Drag anywhere in the workspace to pan. Tap a part
+of the expression to select it, then tap another part to extend the selection.
 Generated conventional expressions use ÷ for division and preserve parentheses
 around non-leading negative-one factors.
 `initialKatex` remains the conventional form of the starting expression in the
@@ -30,15 +27,14 @@ level data.
 The original expression remains the first item in `steps` for matching and move
 history compatibility. Subsequent steps are revealed progressively. A step may
 include `beforeKatex` and `afterKatex` conventional-display versions. The before
-version is shown while the goal is current; the after version replaces it when the
-step is complete. If either is omitted, the ordinary `katex` version is used. This
-permits a current goal such as `\\frac{?}{6}+\\frac{5}{6}` without changing the
+version is shown while the goal is current, with the after version or ordinary
+`katex` version as fallbacks. This permits a current goal such as
+`\\frac{?}{6}+\\frac{5}{6}` without changing the
 exact exploded `expression` used to recognize the completed step. If the current
-expression matches a later recorded step, intervening steps are marked skipped
-with an amber skip icon, the matched step receives a green check, and the next step
-is revealed. Undo restores the prior step statuses.
+expression matches a later recorded step, the intervening steps are skipped and
+the next goal is revealed. Undo restores the prior goal.
 
-The conventional notation stack and exploded expression form one group anchored
+The conventional notation and exploded expression form one group anchored
 at the upper-left by default and move together when you drag. A single
 six-column by five-row palette is anchored at the lower-right and resizes from
 its upper-left corner. Its permanent top row contains Zoom In, Zoom Out, Reset

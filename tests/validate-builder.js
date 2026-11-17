@@ -33,7 +33,8 @@ assert(builderJs.includes("data-conventional-notation") && builderJs.includes('E
 assert(builderJs.includes("downloadLevel(level)") && builderJs.includes('source: "problem-editor"') && playerJs.includes('navigationSource === "problem-editor"'), "The editor must download and preview the resulting exercise");
 assert(/const params = \{[^}]*source: "problem-editor"[^}]*mode: "unguided"[^}]*build: "1"[^}]*rewrites: "prescribed"[^}]*\}/.test(builderJs),
   "Open in Player must start unguided with build-first and prescribed numerical rewrites");
-assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(liveBuilderRoot)") && playerJs.includes('sourceKatex: selectedKatex'), "Expression entry must render its live conventional replacement on the workspace line");
+assert(playerJs.includes("ExplodedAlgebraRenderer.expressionBuilderToKatex(displayRoot, !!window.katex)") &&
+  playerJs.includes("renderWorkspaceNotation(explodedDisplayRoot, builder)"), "Both notation views must use the same live replacement tree");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");
 assert(playerJs.includes('flowVersion: 5'), "Shared Expression Builder must use the direct-notation level-navigation flow");

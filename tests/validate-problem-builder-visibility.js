@@ -31,25 +31,22 @@ function checkPlayer() {
   scope.LEVELS = [scope.level];
   scope.completedSteps = [true, false];
   scope.buildingStartingExpression = false;
-  scope.expressionMatchesParenthesizedText = expression => expression === "(5)";
   scope.maybePrepareCompletedLevelExport = () => {};
   scope.levelContent = { replaceChildren() {} };
   scope.updateExerciseMenu = () => {};
-  scope.renderWorkspaceConventionalLine = () => {};
-  scope.getCurrentLevel = () => scope.level;
   scope.isInteractiveLevel = () => true;
   scope.expressionRoot = {};
   scope.uiState = { mode: "edit", stage: "idle", expressionBuilder: null };
-  for (const name of ["updateStepCompletion", "getStepCompletionStates", "renderLevelInfo", "getWorkspaceConventionalLineContent"]) {
+  for (const name of ["updateStepCompletion", "getStepCompletionStates", "renderLevelInfo", "getWorkspaceGoalKatex"]) {
     vm.runInContext(extract(player, name, "        "), scope);
   }
+  scope.expressionMatchesParenthesizedText = () => false;
+  assert.equal(vm.runInContext("getWorkspaceGoalKatex(level)", scope), "5");
+  scope.expressionMatchesParenthesizedText = expression => expression === "(5)";
   vm.runInContext("renderLevelInfo(0)", scope);
   assert.equal(scope.completedSteps[1], true, "Hidden panels must still track the final solution step");
   scope.expressionMatchesParenthesizedText = () => false;
-  const completion = vm.runInContext("getWorkspaceConventionalLineContent()", scope);
-  assert.equal(completion.heading, "You transformed", "The completion message must persist after further edits");
-  assert.equal(completion.sourceKatex, "2+3");
-  assert.equal(completion.targetKatex, "5");
+  assert.equal(vm.runInContext("getWorkspaceGoalKatex(level)", scope), "", "A completed exercise has no remaining goal, including after further edits");
 
   scope.isValidTextBlocks = () => true;
   vm.runInContext(extract(player, "validateChosenLevel", "        "), scope);

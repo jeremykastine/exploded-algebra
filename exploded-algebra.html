@@ -3971,8 +3971,8 @@
             }
         }
 
-        /* The expression workspace fills the screen. Its conventional target
-           line pans with the exploded notation, while the controls remain a
+        /* The expression workspace fills the screen. The conventional lines
+           pan with the exploded notation, while the controls remain a
            fixed, lower-right foreground palette. */
         .app-container,
         body.expression-builder-active .app-container,
@@ -4017,28 +4017,27 @@
         #openExerciseError { color: #a00000; overflow-wrap: anywhere; }
         .workspace-conventional-line {
             position: absolute;
-            display: grid;
-            grid-template-rows: repeat(4, 1lh);
-            justify-items: start;
             width: max-content;
-            max-width: none;
-            margin: 0;
-            padding: 0;
-            border: 0;
-            background: transparent;
-            box-shadow: none;
             color: #111;
             font: 20px/1.25 Verdana, Arial, Helvetica, sans-serif;
             white-space: nowrap;
             user-select: none;
         }
-        .workspace-conventional-row {
-            display: flex;
-            align-items: center;
-            gap: 0.38em;
+        .workspace-goal-connector {
+            position: absolute;
+            height: 20px;
+            border-left: 1px solid #aaa;
         }
         .workspace-conventional-line .katex { font-size: 1em; }
-        .workspace-conventional-line[hidden] { display: none !important; }
+        .workspace-rewrite-preview {
+            display: inline-grid;
+            grid-template-columns: max-content;
+        }
+        .workspace-rewrite-preview > .enclosing {
+            grid-area: 1 / 1;
+            justify-self: center;
+            align-self: baseline;
+        }
 
         .bottom-controls-panel {
             --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
@@ -4358,7 +4357,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-16T21:15:42-05:00">11/16/26, 9:15 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T06:28:49-05:00">11/17/26, 6:28 AM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4439,12 +4438,9 @@
             </div>
             <div id="svgContainer" class="right-svg-wrap">
                 <div id="workspaceNotationLayer" class="workspace-notation-layer" aria-live="polite">
-                    <div id="workspaceConventionalLine" class="workspace-conventional-line" tabindex="-1" hidden>
-                        <div class="workspace-conventional-row"></div>
-                        <div class="workspace-conventional-row"></div>
-                        <div class="workspace-conventional-row"></div>
-                        <div class="workspace-conventional-row" aria-hidden="true"></div>
-                    </div>
+                    <div id="workspaceCurrentNotation" class="workspace-conventional-line" role="group" aria-label="Current expression" hidden></div>
+                    <div id="workspaceGoalConnector" class="workspace-goal-connector" aria-hidden="true" hidden></div>
+                    <div id="workspaceGoalNotation" class="workspace-conventional-line" role="group" aria-label="Goal expression" hidden></div>
                 </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <p id="exerciseLoadStatus" class="exercise-load-status" role="status" hidden></p>
@@ -4512,9 +4508,9 @@
         <button type="button" class="exit-settings-button" data-settings-action="close">Done</button>
     </section>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20261116-linear-notation"></script>
+    <script src="exploded-algebra-renderer.js?v=20261117-workspace-notation"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261116-pan-and-tap"></script>
+    <script src="exploded-algebra-tool.js?v=20261117-workspace-notation"></script>
 
 </body>
 </html>

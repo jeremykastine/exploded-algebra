@@ -39,25 +39,44 @@ assert.equal(phases.children[0], frames[1]);
 assert.equal(phases.children[1], frames[2]);
 
 const playerHtml = fs.readFileSync(path.join(projectRoot, "exploded-algebra.html"), "utf8");
-const rows = Array.from(playerHtml.matchAll(/<div class="workspace-conventional-row"( aria-hidden="true")?><\/div>/g),
-    () => ({
-        textContent: "",
-        replaceChildren() { this.textContent = ""; },
-        append(text) { this.textContent += text; }
-    }));
-assert.equal(rows.length, 4);
-const line = { children: rows, setAttribute() {} };
-let notation = { heading: "Transform", sourceKatex: "2+3", connector: " into", targetKatex: "5" };
+function notationElement(id, offsetWidth, offsetHeight) {
+    assert(playerHtml.includes(`id="${id}"`));
+    return { style: {}, offsetWidth, offsetHeight, replaceChildren() { this.textContent = ""; } };
+}
+const current = notationElement("workspaceCurrentNotation", 40, 25);
+const goal = notationElement("workspaceGoalNotation", 10, 25);
+const connector = notationElement("workspaceGoalConnector", 1, 20);
+let goalKatex = "5";
 const playerContext = vm.createContext({
-    workspaceConventionalLine: line,
-    getWorkspaceConventionalLineContent: () => notation,
-    appendWorkspaceConventionalMath: (math, row) => row.append(math)
+    window: {},
+    workspaceCurrentNotation: current,
+    workspaceGoalNotation: goal,
+    workspaceGoalConnector: connector,
+    ExplodedAlgebraRenderer: { expressionToKatex: node => node, expressionBuilderToKatex: node => node },
+    getCurrentLevel: () => ({}),
+    getWorkspaceGoalKatex: () => goalKatex,
+    getExpressionBounds: () => ({ left: 20, top: 48, bottom: 120, right: 80 })
 });
-loadFunction(playerContext, player, "renderWorkspaceConventionalLine", 8);
-playerContext.renderWorkspaceConventionalLine();
-assert.deepEqual(rows.map(row => row.textContent), ["Transform", "2+3 into", "5", ""]);
-notation = { heading: "Build the expression:", targetKatex: "2+3" };
-playerContext.renderWorkspaceConventionalLine();
-assert.deepEqual(rows.map(row => row.textContent), ["Build the expression:", "2+3", "", ""]);
-assert(player.includes("function positionWorkspaceConventionalLine()"));
+for (const name of ["renderWorkspaceMath", "renderWorkspaceNotation", "positionWorkspaceNotation"]) {
+    loadFunction(playerContext, player, name, 8);
+}
+playerContext.renderWorkspaceNotation("2+3", null);
+playerContext.positionWorkspaceNotation();
+assert.equal(current.textContent, "2+3");
+assert.deepEqual(current.style, { left: "20px", top: "15px" });
+assert.equal(goal.textContent, "5");
+assert.deepEqual(goal.style, { left: "45px", top: "140px" });
+assert.equal(connector.hidden, false);
+assert.deepEqual(connector.style, { left: "50px", top: "120px" });
+
+goalKatex = "";
+playerContext.renderWorkspaceNotation("5", null);
+assert.equal(current.textContent, "5");
+assert.equal(goal.hidden, true);
+assert.equal(connector.hidden, true);
+
+goalKatex = "2+3";
+playerContext.renderWorkspaceNotation("\\square", { tool: "studentInitial" });
+assert.equal(current.textContent, "□");
+assert.equal(goal.textContent, "2+3");
 console.log("Startup visibility, static examples, and workspace target-line checks passed.");

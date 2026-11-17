@@ -51,7 +51,6 @@ assert(playerJs.includes('url.searchParams.set("rewrites", "prescribed")') &&
 assert(playerJs.includes('url.searchParams.set("build", "1")') && playerJs.includes('url.searchParams.delete("build")'));
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
 assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
-assert(playerJs.includes('heading: "You transformed"') && playerJs.includes('completion.at(-1) === true'));
 assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 !important; }'));
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 !important; }'));
@@ -94,18 +93,13 @@ for (const corner of ["ne", "se", "sw"]) {
     assert(!playerHtml.includes(`data-palette-resize="${corner}"`), `The controls palette must not retain its ${corner} resize handle`);
 }
 assert(
-    playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceConventionalLine"') &&
-        /\.workspace-conventional-line \{[\s\S]*?font: 20px\/1\.25 Verdana,[\s\S]*?white-space: nowrap;/.test(playerHtml) &&
-        /\.workspace-conventional-line \{[^}]*grid-template-rows: repeat\(4, 1lh\);/.test(playerHtml),
-    "Conventional notation must reserve four fixed rows above the exploded expression"
+    playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceCurrentNotation"') &&
+        playerHtml.includes('id="workspaceGoalNotation"') && playerHtml.includes('id="workspaceGoalConnector"') &&
+        /\.workspace-conventional-line \{[^}]*white-space: nowrap;/.test(playerHtml),
+    "Current and goal notation must each occupy a single line"
 );
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");
-assert(playerJs.includes('heading: "Transform"') && playerJs.includes('sourceKatex: currentKatex'), "The workspace line must show the current expression and the next target");
-assert(playerJs.includes('appendWorkspaceConventionalMath(content.sourceKatex, sourceRow)') &&
-    playerJs.includes('appendWorkspaceConventionalMath(content.targetKatex, content.sourceKatex ? targetRow : sourceRow);'),
-    "The target must move to the third row when a source expression is shown");
-assert(playerJs.includes('heading: "Replace"') && playerJs.includes('connector: "with"'), "Builder mode must show the selected expression followed by with");
 assert(playerJs.includes('const FLOATING_PALETTE_STORAGE_KEY = "explodedAlgebraFixedPaletteV3"'), "The five-row controls palette must remember its size independently of the former layout");
 assert(/function setFloatingPaletteRect\([\s\S]*?const left = bounds\.right - width;[\s\S]*?const top = bounds\.bottom - height;/.test(playerJs), "Palette sizing must preserve its lower-right anchor");
 
