@@ -37,7 +37,7 @@ assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MOD
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["Reset", "Free Play / New Expression", "Guided Replay…", "Download Moves"]) {
+for (const label of ["Reset", "Free Play / New Expression", "Guided Replay…", "Share / Download Moves…"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
 assert.equal((workspaceMenu.match(/role="menuitem"/g) || []).length, 4);

@@ -7,12 +7,20 @@ server such as GitHub Pages.
 CREATING AND PLAYING LEVELS
 
 Use Exploded Algebra opens Free Play. Build any starting expression and
-transform it without restrictions. Download Moves saves the run. Guided Replay
-opens a saved move history or an exercise with recorded actions and guides
-every step, including building the starting expression when it was recorded.
-Replay stops at the end of the recording. Reset starts the same run again.
-The workspace menu offers only Reset, Free Play / New Expression, Guided
-Replay, and Download Moves. The former Problem Editor URL forwards to Free Play.
+transform it without restrictions. Share / Download Moves opens one dialog with
+Copy Link, Download Moves (.txt), and a checkbox to have the learner build the
+starting expression. Sharing is available during building and transformations,
+including unfinished entries. Reset starts the same run again.
+
+Links carry ?moves=<recording>&build=1 or build=0. Both versions contain the
+entire build and transformation recording. build=0 reconstructs the starting
+expression automatically before the learner begins the transformations.
+The downloaded text file contains precisely the moves parameter value, with
+its build preference included. Guided Replay opens that file, shows its build
+preference in a checkbox, and lets the recipient override it before opening.
+A build parameter on a link overrides the preference inside its recording.
+Older JSON move histories remain importable; new exports use plain text.
+The former Problem Editor URL forwards to Free Play.
 
 One line of conventional notation above the exploded expression shows the
 current expression, including any live entry. One text line of whitespace
@@ -59,11 +67,11 @@ Undo returns through completed expression and workspace-zoom states as far as
 the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
 in a text field. The Numerical Manipulation action button is marked with bold
 `123`. Guided Replay follows the recorded numerical
-replacement entries. Free Play allows unrestricted numerical replacements. Download Moves saves the
-current move history from the workspace menu.
+replacement entries. Free Play allows unrestricted numerical replacements.
+Share / Download Moves saves or copies the current mathematical recording.
 
-Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo and in
-downloaded move histories. Initial expression entry and zero-product insertion
+Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo.
+Shared recordings omit view changes. Initial expression entry and zero-product insertion
 use the shared expression entry canvas.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.
@@ -102,48 +110,61 @@ places the pending operation at its lowest available level; repeated presses of
 that same button, before the next value is entered, cycle it through the higher
 levels and back to the lowest. Values, x, negative one, and inverses never
 insert an operation implicitly.
-Inverse and negative one occupy two rows each in the leftmost column.
-Times and Plus occupy two rows each beside them. The number pad sits in the
-middle, with a single zero key under 1, 2, and 3. Variable x and Submit
-occupy two rows each on the right. The top workspace row provides the view controls and Undo, which
-acts as Backspace during entry. Level cycling flattens a lifted sum into an
-immediately surrounding sum, and likewise for products, while retaining
-meaningful grouping across unlike operations.
+Enter fills the four leftmost builder rows. Inverse and negative one occupy
+the second column; Times and Plus occupy the far-right column. Digits occupy
+the middle three columns, with zero below 1-2 and XYZ below 3. The top row
+provides view controls and Undo, which acts as Backspace during entry.
+Level cycling flattens a lifted sum into an immediately surrounding sum, and
+likewise for products, while retaining grouping across unlike operations.
+Free Play accepts numerical replacements with the same exact numerical value.
+Guided Replay follows the recorded numerical replacement entry.
 
-Free Numerical Rewrites accepts any different expression of the same exact
-numerical value. Only Prescribed Numerical Rewrites offers the replacements
-recorded for the selected expression. Add `rewrites=prescribed` to the player URL
-to use choices. The default is free rewrites, and the downloaded level JSON can
-be used with either setting. The Problem Editor carries an explicit URL setting
-through Open in Player.
-
-Introduce Element(s) always offers Add Zero, Multiply by One, and Double Inverse.
-Selecting a literal 1 adds a Product of Inverses choice
-that replaces 1 with A times inverse(A). Selecting a literal 0 instead adds a
-fifth Additive Inverses choice that replaces 0 with A plus negative one times A.
-The main Remove Element(s) category retains the existing eraser icon.
-
-Exponents may still appear in conventional-notation KaTeX fields such as
-`initialKatex`, `katex`, `beforeKatex`, and `afterKatex`. The corresponding
-exploded expression must write each positive whole-number power as repeated
-multiplication; for example, conventional `x^2` is exploded as `((x)*(x))`.
 There is no exponent node, exponent tool, or exponent input in the exploded
 representation. See `EXPONENT_IMPLEMENTATION_ARCHIVE.md` for the archived design.
 
 CUSTOM LEVELS
 
-Choose a compatible recording with Guided Replay in the workspace menu.
-Each tab keeps its own level state. Move histories keep the inputs used to build
-the starting expression and the completed transformations. Undo in Free Play
-discards the undone actions from the recording.
+Choose a moves text file with Guided Replay in the workspace menu, or open
+a shared link. Each tab keeps its own level state. Undo in Free Play discards
+undone actions from the recording. Abandoned builder entries are omitted;
+currently active partial entries remain part of the shared recording.
 
-For a hosted replay, use exploded-algebra.html?level=path/to/exercise.json.
-All exercise links open Guided Replay, including old unguided links. A recording
-must contain guided actions; files with only checkpoints cannot be replayed.
-When initial builder actions are available, playback guides those actions first.
-The build, assistance, and rewrites query parameters no longer change the mode.
-A player URL without an exercise opens Free Play; mode=free and legacy
+Legacy hosted exercises can still use exploded-algebra.html?level=path/to/exercise.json.
+All exercise links open Guided Replay, including old unguided links. Legacy
+files must contain guided actions; checkpoints alone cannot be replayed.
+A player URL without a recording opens Free Play; mode=free and legacy
 mode=creative links also open Free Play. The editor=1 parameter is retired.
+
+COMPACT MOVES FORMAT
+
+moves-codec.js defines permanent version-1 codes. A file has this form:
+1.<build-default-0-or-1>.<action-stream>.<eight-hex-digit-checksum>
+The checksum covers the version, build default, and action stream; it detects
+accidental damage and truncation, and is not an authentication mechanism.
+The payload uses URL-safe ASCII without percent-encoding expansion.
+
+Button characters: 0123456789ABCDEFGHIJKLMNOPQRSTUV.
+Digits 0-9 enter digits. A/B/C enter x/y/z; D cycles the XYZ key. E/F enter
+sum/product, G enters inverse, H negative one, and I submits the builder.
+J-U encode the twelve contextual transformation buttons in the fixed order
+listed in ExplodedAlgebraMoves.commands. Do not reorder version-1 commands.
+V extends a position code beyond the ordinary 32-position alphabet.
+Undo is represented by retaining the surviving mathematical actions.
+
+Position characters: WXYZabcdefghijklmnopqrstuvwxyz-_.
+Values are numbered in expression order; each inverse is numbered before its
+input. Its black numerator/header selects the inverse itself. Group selections
+use their first and last targets; commute permutations use expression targets.
+Positions 0-31 occupy one character. Positions 32-1023 use V plus two base-32
+position characters, allowing larger intermediate expressions without changing
+the ordinary one-character representation.
+
+Opening a compact recording reconstructs its mathematical states with the same
+builder and transformation engine, with rendering and animation suppressed.
+It then starts guided playback at the requested build stage. Conventional
+notation, intermediate trees, and numerical rewrite permissions are not stored
+in the shared stream. Future engine changes must preserve version-1 behavior
+or provide an explicit versioned migration.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication

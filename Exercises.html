@@ -46,17 +46,18 @@
   </style>
 </head>
 <body>
-  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T14:54:13-05:00">11/17/26, 2:54 PM EST</time></p>
+  <p class="page-last-updated">Last updated: <time datetime="2026-11-17T16:09:12-05:00">11/17/26, 4:09 PM EST</time></p>
   <main>
     <h1>Try Exploded Algebra</h1>
     <p><a href="exploded-algebra.html">Use Exploded Algebra</a> to build and transform your own expression, or choose Guided Replay from the workspace menu to follow a saved run.</p>
-    <p>Open a saved move history or an exercise with recorded guided steps.</p>
+    <p>Open a moves text file to follow its guided replay. Older JSON recordings also work.</p>
     <div class="upload-row">
-      <label for="customLevelFileInput">Upload an exercise file:</label>
-      <input id="customLevelFileInput" type="file" accept=".json,application/json">
+      <label for="customLevelFileInput">Open a moves file:</label>
+      <input id="customLevelFileInput" type="file" accept=".txt,text/plain,.json,application/json">
       <span id="customLevelFileStatus" aria-live="polite"></span>
     </div>
   </main>
+  <script src="moves-codec.js?v=20261117-compact-moves"></script>
   <script src="level-transfer.js?v=20261116-player-menu"></script>
   <script>
     const fileInput = document.getElementById("customLevelFileInput");
@@ -67,10 +68,12 @@
 
       const player = window.open("about:blank", "_blank") || window;
       try {
-        const level = JSON.parse(await file.text());
+        const text = (await file.text()).trim();
+        if (text.startsWith("{")) JSON.parse(text);
+        else ExplodedAlgebraMoves.decode(text);
         const options = { mode: "guided" };
         ExplodedAlgebraTransfer.open("exploded-algebra.html", { source: "custom", level: file.name, ...options },
-          { fileName: file.name, text: JSON.stringify(level) }, player);
+          { fileName: file.name, text }, player);
         fileStatus.textContent = "";
       } catch (error) {
         if (player !== window) player.close();

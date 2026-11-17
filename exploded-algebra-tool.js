@@ -1350,7 +1350,15 @@ Promise.resolve().then(() => {
         const openExerciseSubmit = document.getElementById("openExerciseSubmit");
         const exerciseLoadStatus = document.getElementById("exerciseLoadStatus");
         const mainActionPanel = document.getElementById("mainActionPanel");
-        const moveHistoryButton = document.querySelector('[data-workspace-action="downloadMoveHistory"]');
+        const moveHistoryButton = document.querySelector('[data-workspace-action="shareMoves"]');
+        const shareMovesDialog = document.getElementById("shareMovesDialog");
+        const shareBuildInput = document.getElementById("shareBuildInput");
+        const shareMovesLink = document.getElementById("shareMovesLink");
+        const shareMovesStatus = document.getElementById("shareMovesStatus");
+        const openBuildInput = document.getElementById("openBuildInput");
+        let compilingMoves = false;
+        let sharePayload = "";
+        let shareBuildDefault = true;
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -1397,7 +1405,7 @@ Promise.resolve().then(() => {
         const navigationSource = String(playerQuery.get("source") || "").toLowerCase();
         const exerciseSources = ["custom", "builtin"];
         const creativeSessionActive = ["free", "creative"].includes(playerQuery.get("mode")) ||
-            (!requestedLevelFile && !exerciseSources.includes(navigationSource));
+            (!playerQuery.has("moves") && !requestedLevelFile && !exerciseSources.includes(navigationSource));
         const prescribedRewritesEnabled = false;
         let prescribedGuide = null;
         let assistanceMode = ASSISTANCE_MODES.free;
@@ -1773,6 +1781,9 @@ Promise.resolve().then(() => {
                 return level.initialKatex || ExplodedAlgebraRenderer.expressionToKatex(builder.mainRoot);
             }
 
+            if (level.compactMoves) {
+                return getCurrentDemoStep() ? level.finalKatex || "" : "";
+            }
             const targetIndex = uiState.mode === "inspect"
                 ? uiState.inspectStepIndex
                 : getStepCompletionStates(level).findIndex(isComplete => !isComplete);
@@ -2621,7 +2632,7 @@ Promise.resolve().then(() => {
         function hasGuidedMode(level) {
             const initialActions = level?.initialBuilderActions;
             const steps = level?.demo?.steps;
-            return (Array.isArray(initialActions) && initialActions.some(step => step && step.type !== "view")) ||
+            return level?.compactMoves === true || (Array.isArray(initialActions) && initialActions.some(step => step && step.type !== "view")) ||
                 (Array.isArray(steps) && steps.some(step => step && step.type !== "view"));
         }
 
@@ -3073,23 +3084,6 @@ Promise.resolve().then(() => {
             return history;
         }
 
-        function downloadMoveHistoryJson(demoOnlyLevel) {
-            const json = `${JSON.stringify(demoOnlyLevel, null, 2)}\n`;
-            const blob = new Blob([json], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const safeId = String(demoOnlyLevel && demoOnlyLevel.id ? demoOnlyLevel.id : "move-history")
-                .replace(/[^0-9A-Za-z_-]+/g, "-")
-                .replace(/^-+|-+$/g, "") || "move-history";
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `${safeId}.json`;
-            link.style.display = "none";
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }
-
         function maybePrepareCompletedLevelExport(level) {
             if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level)) {
                 return;
@@ -3414,24 +3408,32 @@ Promise.resolve().then(() => {
             openExerciseSubmit.disabled = true;
             openExerciseError.hidden = true;
             try {
-                const text = await file.text();
-                let level;
-                try {
-                    level = JSON.parse(text);
-                } catch {
-                    throw new Error("The exercise file must contain valid JSON.");
-                }
-                validateChosenLevel(level, file.name);
+                const text = (await file.text()).trim();
                 if (!openExerciseDialog.open || levelFileInput.files[0] !== file) return;
-                const params = { source: "custom", level: file.name, fileKey: crypto.getRandomValues(new Uint32Array(4)).join("-") };
-                params.mode = "guided";
-                ExplodedAlgebraTransfer.open("exploded-algebra.html", params, { fileName: file.name, text }, window);
+                if (text.startsWith("{")) {
+                    const level = validateChosenLevel(JSON.parse(text), file.name);
+                    LEVELS.splice(0, LEVELS.length, level);
+                    currentLevelIndex = 0;
+                    startLoadedLevel(ASSISTANCE_MODES.guided, openBuildInput.checked);
+                } else {
+                    installCompactMoves(text, openBuildInput.checked ? "1" : "0");
+                }
+                // The open file is now the current recording; old link parameters
+                // must not reappear when the learner changes the build option.
+                try { history.replaceState(null, "", window.location.pathname); } catch {}
+                openExerciseDialog.close();
             } catch (error) {
-                openExerciseError.textContent = error.message || "The exercise file could not be opened.";
+                openExerciseError.textContent = error.message || "The moves file could not be opened.";
                 openExerciseError.hidden = false;
             } finally {
                 openExerciseSubmit.disabled = false;
             }
+        }
+
+        function installRecordingText(text, sourceName) {
+            return String(text).trim().startsWith("{")
+                ? installLevelFromParsedJson(JSON.parse(text), sourceName)
+                : installCompactMoves(text, playerQuery.get("build"));
         }
 
         function installLevelFromParsedJson(parsed, sourceName) {
@@ -3487,7 +3489,15 @@ Promise.resolve().then(() => {
         }
 
         function loadInitialLevelFromNavigation() {
-            if (creativeSessionActive) {
+            if (playerQuery.has("moves")) {
+                try {
+                    installCompactMoves(playerQuery.get("moves"), playerQuery.get("build"));
+                } catch (error) {
+                    showNoLevelSelectedState(error.message || "The moves recording could not be opened.");
+                }
+                return true;
+            }
+            if (creativeSessionActive || compilingMoves) {
                 startCreativeSession();
                 return true;
             }
@@ -3505,8 +3515,7 @@ Promise.resolve().then(() => {
                                 throw new Error("The saved custom level does not match the level named in this URL. Use Open Exercise in the workspace menu to choose the file again.");
                             }
                         } else {
-                            const parsed = JSON.parse(payload.text);
-                            return installLevelFromParsedJson(parsed, payload.fileName || requestedLevelFile);
+                            return installRecordingText(payload.text, payload.fileName || requestedLevelFile);
                         }
                     } catch (error) {
                         if (navigationSource === "custom") {
@@ -3530,11 +3539,10 @@ Promise.resolve().then(() => {
             if (navigationSource === "custom" || navigationSource === "builtin") {
                 try {
                     const payload = ExplodedAlgebraTransfer.read(transferKey);
-                    const parsed = JSON.parse(payload.text);
                     const sourceName = payload.fileName || (navigationSource === "builtin"
                         ? "The selected built-in level"
                         : "The selected custom level file");
-                    return installLevelFromParsedJson(parsed, sourceName);
+                    return installRecordingText(payload.text, sourceName);
                 } catch (error) {
                     console.error("The selected level could not be loaded.", error);
                     showNoLevelSelectedState(error && error.message
@@ -3676,8 +3684,9 @@ Promise.resolve().then(() => {
                 showNoLevelSelectedState("This exercise has no recorded guide. Open a saved move history for Guided Replay, or choose Free Play from the menu.");
                 return;
             }
+            const hasBuild = Array.isArray(level.initialBuilderActions) && level.initialBuilderActions.some(step => step && step.type !== "view");
             buildFirstEnabled = level.creative === true ? buildFirst === true
-                : Array.isArray(level.initialBuilderActions) && level.initialBuilderActions.some(step => step && step.type !== "view");
+                : hasBuild && (buildFirst === undefined ? playerQuery.get("build") !== "0" : buildFirst === true);
             document.body.classList.remove("no-level-loaded");
             exerciseLoadStatus.hidden = true;
             loadLevel(0, buildFirstEnabled);
@@ -4117,6 +4126,216 @@ Promise.resolve().then(() => {
             return completedSteps.slice();
         }
 
+        const COMPACT_TOOL_PAIRS = {
+            factorProductOfInverses: "inverse", distributeInverseOverProduct: "inverse",
+            commuteTerms: "commuteTerms", commuteFactors: "commuteFactors", numericalRewrite: "numericalRewrite",
+            numericalEquivalence: "numericalRewrite",
+            factorLeft: "distribute-left", distributeLeftToRight: "distribute-left",
+            factorRight: "distribute-right", distributeRightToLeft: "distribute-right",
+            insertIdentityAddZeroBottom: "additive-identity", insertIdentityMultiplyByOneRight: "multiplicative-identity",
+            cancelOpposites: "additive-inverse", replaceOneWithInverseProduct: "multiplicative-inverse",
+            cancelProductWithInverse: "multiplicative-inverse", insertDoubleInverse: "double-inverse",
+            eliminateDoubleInverse: "double-inverse", insertZeroProductRight: "zero-product", zeroProduct: "zero-product"
+        };
+
+        function compactBuilderCommand(step) {
+            if (step.action === "digit") return `digit:${step.value}`;
+            if (step.action === "value") return `value:${step.value}`;
+            if (step.action === "cycleVariable") return "cycleVariable";
+            if (step.action === "pendingOperation") return step.value;
+            if (step.action === "enterInverse") return "inv";
+            if (["negativeOne", "submit"].includes(step.action)) return step.action;
+            throw new Error("This older recording uses a builder action that cannot be shared in the compact format.");
+        }
+
+        function getCompactEventsForCurrentRun() {
+            const level = getCurrentLevel();
+            if (level.compactPayload && !level.creative) return ExplodedAlgebraMoves.decode(level.compactPayload).events;
+            const initial = buildingStartingExpression
+                ? uiState.expressionBuilder?.initialActions || [] : level.initialBuilderActions || [];
+            const events = initial.map(step => ({ type: "button", command: compactBuilderCommand(step) }));
+            if (buildingStartingExpression) return events;
+            const actions = solutionRecorder?.actions || [];
+            const history = {
+                startExpression: level.startExpression,
+                finalExpression: getExpressionTextForTrace(),
+                recordedActions: actions,
+                demo: { steps: solutionRecorder?.demoSteps || [] }
+            };
+            const { moves } = inspectMoveHistory(history, true);
+            const surviving = moves.flatMap(move => move.actions);
+            const lastIndex = surviving.at(-1)?.index ?? -1;
+            // Completed moves omit abandoned entries. Preserve an entry that is
+            // still being built, or a partially chosen commute permutation.
+            if (uiState.activeTool && uiState.stage !== "postview") {
+                const firstPending = actions.findLastIndex(action => action.type === "select");
+                if (firstPending > lastIndex) surviving.push(...actions.slice(firstPending));
+            }
+            let selected = null;
+            for (const action of surviving) {
+                if (action.type === "select") {
+                    selected = action;
+                    const root = normalizeExpressionTree(textToExpression(action.beforeExpression));
+                    const indices = ExplodedAlgebraMoves.selectionPositions(root, action);
+                    indices.forEach(index => events.push({ type: "position", index }));
+                } else if (action.type === "tool") {
+                    let command = COMPACT_TOOL_PAIRS[action.tool];
+                    if (action.tool === "eliminateIdentities") {
+                        command = selected?.selectedType === "sum" ? "additive-identity" : "multiplicative-identity";
+                    }
+                    if (!command) throw new Error("This older recording contains a tool that cannot be shared in the compact format.");
+                    events.push({ type: "button", command });
+                } else if (action.type === "builder") {
+                    events.push({ type: "button", command: compactBuilderCommand(action) });
+                } else if (action.type === "commuteChoice") {
+                    const root = normalizeExpressionTree(textToExpression(action.beforeExpression));
+                    const path = selected.path.concat(selected.firstPart + action.relativeIndex);
+                    const index = ExplodedAlgebraMoves.targets(root).findIndex(target => path.every((part, i) => target.path[i] === part));
+                    if (index < 0) throw new Error("The recorded commute choice could not be numbered.");
+                    events.push({ type: "position", index });
+                } else {
+                    throw new Error("This recording contains an action that cannot be shared in the compact format.");
+                }
+            }
+            if (selection.node && !uiState.activeTool && !buildingStartingExpression) {
+                const path = findPathToNode(expressionRoot, selection.node);
+                ExplodedAlgebraMoves.selectionPositions(expressionRoot, { path, firstPart: selection.firstPart, lastPart: selection.lastPart })
+                    .forEach(index => events.push({ type: "position", index }));
+            }
+            return events;
+        }
+
+        function performCompactButton(command) {
+            if (command.startsWith("digit:")) return performBuilderAction("digit", command.slice(6));
+            if (command.startsWith("value:")) return performBuilderAction("value", command.slice(6));
+            if (command === "cycleVariable") {
+                const current = getDirectBuilderCurrentNode(uiState.expressionBuilder);
+                const index = BUILDER_VARIABLES.indexOf(current?.value);
+                if (index < 0) return false;
+                return performBuilderAction("cycleVariable", BUILDER_VARIABLES[(index + 1) % BUILDER_VARIABLES.length]);
+            }
+            if (command === "sum" || command === "prod") return performBuilderAction("pendingOperation", command);
+            if (command === "inv") return performBuilderAction("enterInverse");
+            if (["negativeOne", "submit"].includes(command)) return performBuilderAction(command);
+            if (uiState.stage !== "idle" || !selection.node) return false;
+            const resolved = command === "numericalRewrite" ? resolveContextualNumericalRewriteAction()
+                : command === "commuteTerms" || command === "commuteFactors" ? resolveContextualCommuteTool(command)
+                : resolveContextualRulePair(command);
+            if (!resolved) return false;
+            activateTool(resolved.toolName);
+            return true;
+        }
+
+        function performCompactPosition(index) {
+            const target = ExplodedAlgebraMoves.targets(expressionRoot)[index];
+            if (!target) return false;
+            if (uiState.stage === "preview" && ["commuteTerms", "commuteFactors", "commute"].includes(uiState.activeTool)) {
+                const path = findPathToNode(expressionRoot, selection.node);
+                if (!path || !path.every((part, i) => part === target.path[i])) return false;
+                return recordCommutePermutationChoice(target.path[path.length]);
+            }
+            if (uiState.stage !== "idle" || uiState.activeTool) return false;
+            return growSelectionToInclude({ node: target.node, firstPart: 0, lastPart: 0 });
+        }
+
+        function compileCompactMoves(decoded) {
+            compilingMoves = true;
+            try {
+                startCreativeSession();
+                for (let i = 0; i < decoded.events.length; i++) {
+                    const event = decoded.events[i];
+                    const ok = event.type === "position" ? performCompactPosition(event.index) : performCompactButton(event.command);
+                    if (ok === false) throw new Error(`The recording cannot be replayed at action ${i + 1}.`);
+                }
+                if (selection.node && !uiState.activeTool && !buildingStartingExpression) recordCurrentSelectionForSolution();
+                const source = getCurrentLevel();
+                const builder = uiState.expressionBuilder;
+                const partialInitial = buildingStartingExpression;
+                const completedBuild = partialInitial ? getIntegratedBuilderCompletedRoot(builder) : null;
+                const startExpression = partialInitial && completedBuild
+                    ? expressionToFullyParenthesizedText(normalizeExpressionTree(completedBuild)) : source.startExpression;
+                const finalExpression = partialInitial ? startExpression : getExpressionTextForTrace();
+                return {
+                    id: "shared-moves", title: "Guided Replay", kind: "guidedCapable", compactMoves: true,
+                    compactPayload: decoded.text, partialInitial,
+                    startExpression, finalExpression,
+                    initialKatex: partialInitial ? ExplodedAlgebraRenderer.expressionBuilderToKatex(builder.root)
+                        : source.initialKatex,
+                    finalKatex: ExplodedAlgebraRenderer.expressionToKatex(textToExpression(finalExpression)),
+                    initialBuilderActions: clonePlainData(partialInitial ? builder.initialActions || [] : source.initialBuilderActions || []),
+                    steps: [{ expression: startExpression }, { expression: finalExpression }],
+                    variables: BUILDER_VARIABLES.slice(),
+                    demo: { steps: clonePlainData(solutionRecorder.demoSteps) },
+                    recordedActions: clonePlainData(solutionRecorder.actions)
+                };
+            } finally {
+                compilingMoves = false;
+                clearSelection();
+                clearInteraction();
+            }
+        }
+
+        function installCompactMoves(text, buildOverride) {
+            const decoded = ExplodedAlgebraMoves.decode(text);
+            if (buildOverride !== null && buildOverride !== undefined && !["0", "1"].includes(buildOverride)) {
+                throw new Error("The build option must be 0 or 1.");
+            }
+            const level = compileCompactMoves(decoded);
+            LEVELS.splice(0, LEVELS.length, level);
+            currentLevelIndex = 0;
+            shareBuildDefault = buildOverride == null ? decoded.build : buildOverride === "1";
+            startLoadedLevel(ASSISTANCE_MODES.guided, shareBuildDefault);
+            return level;
+        }
+
+        function updateShareMovesPreview() {
+            sharePayload = "";
+            try {
+                sharePayload = ExplodedAlgebraMoves.encode(getCompactEventsForCurrentRun(), shareBuildInput.checked);
+                const url = new URL("exploded-algebra.html", window.location.href);
+                url.search = new URLSearchParams({ moves: sharePayload, build: shareBuildInput.checked ? "1" : "0" });
+                url.hash = "";
+                shareMovesLink.value = url.href;
+                shareMovesStatus.textContent = `${url.href.length.toLocaleString()} characters in the link. The text file contains the same recording.`;
+            } catch (error) {
+                shareMovesLink.value = "";
+                shareMovesStatus.textContent = error.message;
+            }
+            document.getElementById("copyMovesLinkButton").disabled = !sharePayload;
+            document.getElementById("downloadMovesTextButton").disabled = !sharePayload;
+        }
+
+        function openShareMovesDialog() {
+            shareBuildInput.checked = shareBuildDefault;
+            updateShareMovesPreview();
+            shareMovesDialog.showModal();
+        }
+
+        async function copyMovesLink() {
+            if (!sharePayload) return;
+            const link = shareMovesLink.value;
+            try {
+                await navigator.clipboard.writeText(link);
+                shareMovesStatus.textContent = "Link copied.";
+            } catch {
+                shareMovesLink.focus();
+                shareMovesLink.select();
+                shareMovesStatus.textContent = document.execCommand("copy") ? "Link copied." : "Copy the selected link.";
+            }
+        }
+
+        function downloadMovesText() {
+            if (!sharePayload) return;
+            const blob = new Blob([sharePayload + "\n"], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "exploded-algebra-moves.txt";
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            shareMovesStatus.textContent = "Moves downloaded.";
+        }
+
         function getCurrentMoveHistory() {
             solutionRecorder.finalExpression = getExpressionTextForTrace();
             return makeDemoOnlyLevelFromCurrentRun(completionExportCompletedAtDate || new Date());
@@ -4124,7 +4343,7 @@ Promise.resolve().then(() => {
 
         function updateExerciseMenu(level) {
             resetRunButton.disabled = !level;
-            moveHistoryButton.disabled = !level || !solutionRecorder || buildingStartingExpression;
+            moveHistoryButton.disabled = !level || (!level.creative && !level.compactMoves);
         }
 
         const STEP_PANEL_SCROLL_DURATION_MS = 2000;
@@ -4222,6 +4441,7 @@ Promise.resolve().then(() => {
         }
 
         function renderLevelInfo(levelIndex) {
+            if (compilingMoves) return;
             const level = LEVELS[levelIndex];
             if (syncConventionalStepsVisibility(level)) {
                 updateStepCompletion(level);
@@ -4398,7 +4618,7 @@ Promise.resolve().then(() => {
 
             currentLevelIndex = levelIndex;
             prescribedGuide = prescribedRewritesEnabled && !level.creative ? makePrescribedNumericalGuide(level) : null;
-            buildingStartingExpression = buildFirst;
+            buildingStartingExpression = buildFirst || level.partialInitial === true;
             document.body.classList.toggle("creative-workspace", level.creative === true);
             resetDemoStateForCurrentLevel();
             resetSolutionRecorderForCurrentLevel();
@@ -4433,6 +4653,19 @@ Promise.resolve().then(() => {
                 uiState.activeTool = "studentInitial";
                 uiState.stage = "builder";
                 beginExpressionBuilder("studentInitial");
+                if (level.partialInitial && !buildFirstEnabled && !compilingMoves) {
+                    compilingMoves = true;
+                    assistanceMode = ASSISTANCE_MODES.free;
+                    try {
+                        for (const step of level.initialBuilderActions) performBuilderAction(step.action, step.value || "");
+                    } finally {
+                        compilingMoves = false;
+                        assistanceMode = ASSISTANCE_MODES.guided;
+                    }
+                    demoStepIndex = level.initialBuilderActions.length;
+                    renderToolArea();
+                    drawExpression();
+                }
                 return;
             }
             layoutExpression(expressionRoot);
@@ -4489,6 +4722,29 @@ Promise.resolve().then(() => {
                 loadChosenLevelFile(levelFileInput.files[0]);
             });
             openExerciseDialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
+            levelFileInput.addEventListener("change", async () => {
+                const file = levelFileInput.files[0];
+                if (!file) return;
+                openExerciseError.hidden = true;
+                openExerciseSubmit.disabled = true;
+                try {
+                    const text = (await file.text()).trim();
+                    if (levelFileInput.files[0] !== file) return;
+                    openBuildInput.checked = text.startsWith("{") ? true : ExplodedAlgebraMoves.decode(text).build;
+                } catch (error) {
+                    openExerciseError.textContent = error.message;
+                    openExerciseError.hidden = false;
+                } finally {
+                    if (levelFileInput.files[0] === file) openExerciseSubmit.disabled = false;
+                }
+            });
+            shareBuildInput.addEventListener("change", () => {
+                shareBuildDefault = shareBuildInput.checked;
+                updateShareMovesPreview();
+            });
+            document.getElementById("copyMovesLinkButton").addEventListener("click", copyMovesLink);
+            document.getElementById("downloadMovesTextButton").addEventListener("click", downloadMovesText);
+            shareMovesDialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
             if (workspaceToolbar) {
                 workspaceToolbar.addEventListener("click", event => {
                     const button = event.target.closest("button");
@@ -4552,9 +4808,8 @@ Promise.resolve().then(() => {
                         openExerciseForm.reset();
                         openExerciseError.hidden = true;
                         openExerciseDialog.showModal();
-                    } else if (button.dataset.workspaceAction === "downloadMoveHistory") {
-                        downloadMoveHistoryJson(getCurrentMoveHistory());
-                        workspaceUtilityMenuToggle.focus();
+                    } else if (button.dataset.workspaceAction === "shareMoves") {
+                        openShareMovesDialog();
                     }
                     event.stopPropagation();
                 });
@@ -4662,7 +4917,7 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
-                if (event.defaultPrevented || openExerciseDialog.open || numericalRewriteDialog.open ||
+                if (event.defaultPrevented || openExerciseDialog.open || shareMovesDialog.open || numericalRewriteDialog.open ||
                     (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
                     return;
                 }
@@ -4831,6 +5086,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function updateWorkspaceToolbar() {
+            if (compilingMoves) return;
             if (!workspaceToolbar) {
                 return;
             }
@@ -5531,6 +5787,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function drawExpression() {
+            if (compilingMoves) return;
             updateWorkspaceToolbar();
             renderCurrentExpressionDisplay();
             if (!expressionRoot) {
@@ -7831,6 +8088,10 @@ ctx.font = SETTINGS.textFont;
         }
 
         function beginPostview(postviewData) {
+            if (compilingMoves) {
+                finishOperation();
+                return;
+            }
             if (uiState.postviewTimerId !== null) {
                 clearTimeout(uiState.postviewTimerId);
             }
@@ -9470,7 +9731,7 @@ ctx.font = SETTINGS.textFont;
                 history: []
             };
             if (toolName === "studentInitial") {
-                if (creativeSessionActive) {
+                if (getCurrentLevel()?.creative === true) {
                     common.initialActions = [];
                 }
                 const extraValues = new Set();
@@ -9816,13 +10077,13 @@ ctx.font = SETTINGS.textFont;
                 ? getIntegratedBuilderCompletedRoot(builder)
                 : builder.root;
             if (!proposedRoot) {
-                return builderValidationFailed(builder.tool === "studentInitial" && !creativeSessionActive
+                return builderValidationFailed(builder.tool === "studentInitial" && getCurrentLevel()?.creative !== true
                     ? "Keep trying. Complete the missing entry."
                     : "Complete the missing entry before submitting.");
             }
             const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
             if (builder.tool === "studentInitial") {
-                if (creativeSessionActive) {
+                if (getCurrentLevel()?.creative === true) {
                     const level = getCurrentLevel();
                     level.startExpression = expressionToFullyParenthesizedText(completed);
                     level.initialKatex = ExplodedAlgebraRenderer.expressionToKatex(completed);
@@ -11581,6 +11842,7 @@ ctx.font = SETTINGS.textFont;
             return false;
         }
 function renderToolArea() {
+            if (compilingMoves) return;
             // The old floating menu is intentionally kept in the document for
             // possible future restoration. Main-workspace and builder actions
             // use the dedicated controls panel at the bottom of the screen.
@@ -11683,6 +11945,10 @@ function renderToolArea() {
         }
 
         function beginAutoPreviewThenExecute(executeFn) {
+            if (compilingMoves) {
+                executeFn();
+                return;
+            }
             hideFloatingMenu();
             drawExpression();
 
@@ -12159,6 +12425,7 @@ function renderToolArea() {
         }
 
         function refreshStatus() {
+            if (compilingMoves) return;
             if (isDemoModeActive() && !getCurrentDemoStep() && uiState.stage !== "postview") {
                 setStatus("Guided replay complete. Use Reset to replay it or Free Play to start a new expression.");
                 return;

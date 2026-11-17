@@ -14,6 +14,7 @@ function extract(source, name, indent) {
 function checkPlayer() {
   const classes = new Set();
   const scope = {
+    compilingMoves: false,
     leftPanel: { hidden: false },
     document: { body: { classList: { toggle(name, on) { if (on) classes.add(name); else classes.delete(name); } } } }
   };

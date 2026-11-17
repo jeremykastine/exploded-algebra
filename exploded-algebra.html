@@ -4345,13 +4345,19 @@
             outline: 2px solid #205fa8;
             outline-offset: 1px;
         }
+        .workspace-dialog .moves-build-option { display: flex; align-items: flex-start; gap: 0.65rem; margin: 1rem 0; font-weight: bold; }
+        .workspace-dialog .moves-build-option input { flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin: 0.15rem 0 0; }
+        #shareMovesLink { display: block; box-sizing: border-box; width: 100%; font: 0.9rem/1.4 monospace; margin-top: 0.5rem; resize: vertical; }
+        #shareMovesStatus { overflow-wrap: anywhere; min-height: 1.5em; }
+        .share-moves-dialog .workspace-dialog-actions { flex-wrap: wrap; }
+        .share-moves-dialog .workspace-dialog-actions form { margin: 0; }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T14:54:13-05:00">11/17/26, 2:54 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T16:09:12-05:00">11/17/26, 4:09 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4364,7 +4370,7 @@
                 <button type="button" data-workspace-action="resetRun" role="menuitem" disabled>Reset</button>
                 <button type="button" data-workspace-action="newExpression" role="menuitem">Free Play / New Expression</button>
                 <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Guided Replay…</button>
-                <button type="button" data-workspace-action="downloadMoveHistory" role="menuitem" disabled>Download Moves</button>
+                <button type="button" data-workspace-action="shareMoves" role="menuitem" aria-haspopup="dialog" disabled>Share / Download Moves…</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
@@ -4450,14 +4456,30 @@
     <dialog id="openExerciseDialog" class="workspace-dialog" aria-labelledby="openExerciseTitle">
         <form id="openExerciseForm">
             <h2 id="openExerciseTitle">Guided Replay</h2>
-            <label for="levelFileInput">Recorded exercise or move history JSON file</label>
-            <input id="levelFileInput" class="level-file-input" type="file" accept=".json,application/json" required>
+            <label for="levelFileInput">Moves text file (older JSON files also work)</label>
+            <input id="levelFileInput" class="level-file-input" type="file" accept=".txt,text/plain,.json,application/json" required>
+            <label class="moves-build-option"><input id="openBuildInput" type="checkbox" checked> Have the learner build the starting expression</label>
             <p id="openExerciseError" role="alert" hidden></p>
             <div class="workspace-dialog-actions">
                 <button type="submit" formmethod="dialog" formnovalidate value="cancel">Cancel</button>
                 <button id="openExerciseSubmit" type="submit">Open</button>
             </div>
         </form>
+    </dialog>
+    <dialog id="shareMovesDialog" class="workspace-dialog share-moves-dialog" aria-labelledby="shareMovesTitle">
+        <h2 id="shareMovesTitle">Share / Download Moves</h2>
+        <label class="moves-build-option"><input id="shareBuildInput" type="checkbox" checked>
+            <span>Have the learner build the starting expression</span>
+        </label>
+        <p>Leave this checked to guide the build first. Uncheck it to begin with the expression already built.</p>
+        <label for="shareMovesLink">Guided replay link</label>
+        <textarea id="shareMovesLink" readonly rows="3" spellcheck="false"></textarea>
+        <p id="shareMovesStatus" role="status" aria-live="polite"></p>
+        <div class="workspace-dialog-actions">
+            <button id="copyMovesLinkButton" type="button">Copy Link</button>
+            <button id="downloadMovesTextButton" type="button">Download Moves (.txt)</button>
+            <form method="dialog"><button>Close</button></form>
+        </div>
     </dialog>
     <dialog id="numericalRewriteDialog" class="workspace-dialog numerical-rewrite-dialog"
         aria-labelledby="numericalRewriteTitle" aria-describedby="numericalRewriteMessage">
@@ -4475,8 +4497,9 @@
     </dialog>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
     <script src="exploded-algebra-renderer.js?v=20261117-workspace-notation"></script>
+    <script src="moves-codec.js?v=20261117-compact-moves"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261117-free-guided"></script>
+    <script src="exploded-algebra-tool.js?v=20261117-compact-moves"></script>
 
 </body>
 </html>
