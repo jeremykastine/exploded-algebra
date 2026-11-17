@@ -59,10 +59,8 @@ assert(!playerJs.includes('data-builder-view-action') && playerHtml.includes('da
 assert(playerHtml.includes('grid-template-rows: repeat(4, var(--main-key-size));'), "The Builder keypad must contain exactly four button rows without empty rows above");
 assert(/\.palette-content > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml), "The Builder keypad must inherit the floating palette's entire six-by-four grid");
 assert(!playerHtml.includes('left-handed') && !playerHtml.includes('handedness'), "Expression Builder must not retain an obsolete left-handed variant");
-assert(playerJs.includes('const panningView = !integratedBuilder && uiState.workspaceMode === "pan"'), "Integrated Expression Builder gestures must not depend on the main workspace Pan mode");
-assert(playerJs.includes('["pan", "builderPan"]') && !playerJs.includes('["pan", "builderOperator", "builderPan"]'), "The integrated Expression Builder canvas must be dedicated to drag-panning rather than operation grouping");
-const whitespacePanHandler = playerJs.match(/svgContainer\.addEventListener\("pointerdown", e => \{([\s\S]*?)\n        \}\);\n\n        svgContainer\.addEventListener\("pointermove"/);
-assert(whitespacePanHandler && whitespacePanHandler[1].includes('isIntegratedExpressionBuilder(activeBuilder)') && whitespacePanHandler[1].includes('? "builderPan"') && whitespacePanHandler[1].includes('? "pan"'), "Expression Builder panning must begin on workspace whitespace");
+assert(/function handleWorkspaceTap[\s\S]*?if \(builder\) \{[\s\S]*?isIntegratedExpressionBuilder\(builder\)[\s\S]*?return;/.test(playerJs),
+  "An integrated Expression Builder tap must leave the current entry in place");
 assert(/\.builder-keypad-panel\s*\{[\s\S]*?pointer-events:\s*none;[\s\S]*?\}/.test(playerHtml), "The transparent Expression Builder keypad grid must not block workspace whitespace");
 assert(/\.builder-keypad-panel button,[\s\S]*?\.builder-keypad-panel \.builder-action-row button\s*\{[\s\S]*?pointer-events:\s*auto;[\s\S]*?\}/.test(playerHtml), "Expression Builder buttons must remain interactive inside the click-through keypad grid");
 assert(playerJs.includes('builder ? "Backspace Delete" : "Control+Z Meta+Z"'), "Undo must support the Backspace and Delete shortcuts during Builder entry");
@@ -79,8 +77,7 @@ assert(/function enterDirectBuilderInverse[\s\S]*?placeDirectBuilderOperationAtL
 assert(/function appendDirectBuilderDigit[\s\S]*?String\(current\.value\) === "-1"[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication between negative one and a following digit");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
-assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pointerStart.commuteIndex"), "Commute choices must match the closest region at pointer down and pointer up");
-assert(/if \(pointerStart\.mode === "commute"\)[\s\S]{0,500}releaseWorkspacePointer\(\);[\s\S]{0,100}return;[\s\S]{0,200}if \(isWorkspaceTap\(e, pointerStart\)\)/.test(playerJs), "Commute choices must bypass the ordinary tap-movement threshold");
+assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pressedIndex"), "Commute choices must match the closest region at pointer down and pointer up");
 assert(playerJs.includes('let currentProduct = completedArgs[0]') && playerJs.includes('completedTerms.push(currentProduct)'), "Submit must resolve unresolved multiplication before unresolved addition");
 assert(!/getIntegratedBuilderCompletedRoot[\s\S]{0,250}builder\.currentPath\.length/.test(playerJs), "A complete expression must be submittable while entry remains inside an inverse");
 

@@ -20,8 +20,8 @@ line. You transformed uses the original and completed expressions in the same
 layout. The stack reserves four lines. The fourth is always blank, and the
 third is also blank when only a heading and one expression are shown. The
 expression stays editable after completion. The stack shares the workspace
-pan and zoom. In Select mode, dragging from one corner to the opposite corner
-shows a blue rectangle. Releasing the drag selects the expression parts it covers.
+pan and zoom. Drag anywhere in the workspace to pan. Tap a part of the
+expression to select it, then tap another part to extend the selection.
 Generated conventional expressions use ÷ for division and preserve parentheses
 around non-leading negative-one factors.
 `initialKatex` remains the conventional form of the starting expression in the
@@ -39,10 +39,10 @@ with an amber skip icon, the matched step receives a green check, and the next s
 is revealed. Undo restores the prior step statuses.
 
 The conventional notation stack and exploded expression form one group anchored
-at the upper-left by default; the Pan tool moves them together. A single
+at the upper-left by default and move together when you drag. A single
 six-column by five-row palette is anchored at the lower-right and resizes from
 its upper-left corner. Its permanent top row contains Zoom In, Zoom Out, Reset
-View, Pan, Select, and Undo. The lower four rows contain contextual actions or
+View, and Undo. The lower four rows contain contextual actions or
 the Expression Builder. Before a selection, those action rows show the full
 action layout in a quiet, inactive state so learners can see what becomes
 available after selecting. A hamburger menu anchored at the upper-right contains

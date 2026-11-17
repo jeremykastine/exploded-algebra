@@ -54,7 +54,6 @@ assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') &
 assert(playerJs.includes('heading: "You transformed"') && playerJs.includes('completion.at(-1) === true'));
 assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 !important; }'));
-assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 !important; }'));
 assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 !important; }'));
 assert(
     !playerHtml.includes('id="preSelectionControlsPanel"') && playerHtml.includes('id="bottomControlsPanel"') &&
@@ -124,13 +123,13 @@ assert(!playerJs.includes('CHILD_ALIGNMENT_STORAGE_KEY'));
 assert(!/data-workspace-setting="bar-(shape|shading)"/.test(playerHtml), "Bar appearance must use the renderer defaults");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerJs.includes('function openSettingsPanel()') && playerJs.includes('function closeSettingsPanel()'), "The Settings screen must have open and close behavior");
-assert(/\.bottom-controls-panel \.workspace-toolbar button\[data-workspace-mode\]\.is-active \{[\s\S]*?z-index: 6;[\s\S]*?box-shadow: inset 0 0 0 4px #205fa8;/.test(playerHtml), "The active Select or Hand tool must use an aligned bold inset outline above the grid overlay");
 for (const [selector, column] of [["zoomIn", 1], ["zoomOut", 2], ["resetZoom", 3], ["undoExpression", 6]]) {
     assert(playerHtml.includes(`.bottom-controls-panel .workspace-toolbar [data-workspace-action="${selector}"] { grid-column: ${column}; grid-row: 1 !important; }`));
 }
-assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="pan"] { grid-column: 4; grid-row: 1 !important; }'));
-assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-mode="select"] { grid-column: 5; grid-row: 1 !important; }'));
-assert(playerHtml.includes('M100 0 V100 M200 0 V100 M300 0 V100 M400 0 V100 M500 0 V100'), "The permanent top row must have six equal cells");
+const workspaceToolbar = playerHtml.match(/id="workspaceToolbar"[^>]*>([\s\S]*?)<\/div>/)[1];
+assert.deepEqual(Array.from(workspaceToolbar.matchAll(/<button[^>]*data-workspace-action="([^"]+)"/g), match => match[1]),
+    ["zoomIn", "zoomOut", "resetZoom", "undoExpression"]);
+assert.equal((workspaceToolbar.match(/<button\b/g) || []).length, 4, "The toolbar must omit the gesture mode buttons");
 assert(/\.palette-content > \.quadrant-tools \{[\s\S]*?grid-row: 1 !important;[\s\S]*?display: grid !important;/.test(playerHtml), "The workspace toolbar must remain visible above post-selection and builder controls");
 assert(
     /if \(builderActive\) \{\s*renderLevelInfo\(currentLevelIndex\);/.test(playerJs),
@@ -162,10 +161,9 @@ assert(/\.main-action-panel \.intent-category-actions \{[\s\S]*?grid-template-co
 
 assert(playerJs.includes("function isPointInsideCurrentSelection(x, y)"), "Selection presses must use the highlighted selection bounds");
 assert(playerJs.includes("function isPointInsideExpression(x, y)"), "Selection presses must distinguish the expression from surrounding workspace");
-assert(/function selectFromWorkspaceTap\(x, y, pointerType\) \{[\s\S]*?isPointInsideCurrentSelection\(x, y\) \|\| !isPointInsideExpression\(x, y\)[\s\S]*?cancelCurrentWorkspaceSelection\(\)/.test(playerJs), "Pressing inside the current selection or outside the expression must clear it");
-assert(playerHtml.includes('<rect id="workspaceSelectionDragRect"') &&
-    playerJs.includes("selectWorkspaceTarget(findWorkspaceRectangleTarget(rect));"),
-    "Selection drags must show a rectangle and use it to select expression parts");
+assert(/function handleWorkspaceTap\(event, start\) \{[\s\S]*?isPointInsideCurrentSelection\(x, y\) \|\| !isPointInsideExpression\(x, y\)[\s\S]*?cancelCurrentWorkspaceSelection\(\)/.test(playerJs), "Pressing inside the current selection or outside the expression must clear it");
+assert(!playerHtml.includes("workspaceSelectionDragRect") && !playerJs.includes("findWorkspaceRectangleTarget"),
+    "Expression selection must only use taps");
 assert(!playerJs.includes('action === "cancelSelection"'), "The old Cancel Selection action must be removed");
 const expectedDirectRules = [
     ['distributeLeftToRight', 'Distribute left'],

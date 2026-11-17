@@ -1366,7 +1366,6 @@ Promise.resolve().then(() => {
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
-        const workspaceSelectionDragRect = document.getElementById("workspaceSelectionDragRect");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceConventionalLine = document.getElementById("workspaceConventionalLine");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
@@ -4569,7 +4568,6 @@ Promise.resolve().then(() => {
             workspacePanX = 0;
             workspacePanY = 0;
             workspaceViewManuallyPanned = false;
-            setWorkspaceMode("select");
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
             uiState.inspectStepIndex = -1;
@@ -4749,11 +4747,6 @@ Promise.resolve().then(() => {
                         openSettingsPanel();
                         return;
                     }
-                    const mode = button.dataset.workspaceMode;
-                    if (!mode) {
-                        return;
-                    }
-                    setWorkspaceMode(mode);
                 });
             }
             if (workspaceUtilityMenu) {
@@ -5039,7 +5032,6 @@ ctx.font = SETTINGS.textFont;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        let activeWorkspacePointerId = null;
         let workspacePointerStart = null;
         const selection = {
             status: "no",
@@ -5071,8 +5063,7 @@ ctx.font = SETTINGS.textFont;
             floatingMenuY: 0,
             selectionRecorded: false,
             mode: "edit",
-            inspectStepIndex: -1,
-            workspaceMode: "select"
+            inspectStepIndex: -1
         };
 
         const WORKSPACE_ZOOM_MIN = 0.5;
@@ -5189,11 +5180,6 @@ ctx.font = SETTINGS.textFont;
             if (!workspaceToolbar) {
                 return;
             }
-            workspaceToolbar.querySelectorAll("button[data-workspace-mode]").forEach(button => {
-                const active = button.dataset.workspaceMode === uiState.workspaceMode;
-                button.classList.toggle("is-active", active);
-                button.setAttribute("aria-pressed", String(active));
-            });
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
             const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
             const builderUndoAction = isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace";
@@ -5228,15 +5214,6 @@ ctx.font = SETTINGS.textFont;
                 builderInputRail.classList.remove("two-columns");
             }
             appContainer.classList.remove("side-panel-two-columns");
-        }
-
-        function setWorkspaceMode(mode) {
-            uiState.workspaceMode = mode === "pan" ? "pan" : "select";
-            document.body.classList.toggle("workspace-pan-active", uiState.workspaceMode === "pan");
-            if (uiState.workspaceMode !== "pan") {
-                document.body.classList.remove("workspace-panning");
-            }
-            updateWorkspaceToolbar();
         }
 
         const WORKSPACE_PAN_MIN_VISIBLE = 32;
@@ -5333,15 +5310,11 @@ ctx.font = SETTINGS.textFont;
         }
 
         function zoomWorkspaceIn() {
-            const changed = setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP);
-            setWorkspaceMode("select");
-            return changed;
+            return setWorkspaceZoom(workspaceZoom * WORKSPACE_ZOOM_STEP);
         }
 
         function zoomWorkspaceOut() {
-            const changed = setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
-            setWorkspaceMode("select");
-            return changed;
+            return setWorkspaceZoom(workspaceZoom / WORKSPACE_ZOOM_STEP);
         }
 
         function resetWorkspaceZoom() {
@@ -5351,7 +5324,6 @@ ctx.font = SETTINGS.textFont;
                 || Math.abs(workspacePanY - defaultPan.y) >= 0.5;
             workspaceViewManuallyPanned = false;
             if (!viewChanged) {
-                setWorkspaceMode("select");
                 return false;
             }
             workspaceZoom = 1;
@@ -5361,7 +5333,6 @@ ctx.font = SETTINGS.textFont;
                 applyWorkspaceZoomSizing();
             }
             resetWorkspacePanToDefault();
-            setWorkspaceMode("select");
             return true;
         }
 
@@ -5441,15 +5412,13 @@ ctx.font = SETTINGS.textFont;
                     zoom: workspaceZoom,
                     panX: workspacePanX,
                     panY: workspacePanY,
-                    manuallyPanned: workspaceViewManuallyPanned,
-                    mode: uiState.workspaceMode
+                    manuallyPanned: workspaceViewManuallyPanned
                 };
                 workspaceZoom = 1;
                 workspacePanX = 0;
                 workspacePanY = 0;
                 workspaceViewManuallyPanned = false;
                 applyWorkspaceZoomSizing();
-                setWorkspaceMode("select");
                 builderWorkspaceViewActive = true;
                 return;
             }
@@ -5464,7 +5433,6 @@ ctx.font = SETTINGS.textFont;
             workspacePanX = Number.isFinite(view.panX) ? view.panX : 0;
             workspacePanY = Number.isFinite(view.panY) ? view.panY : 0;
             workspaceViewManuallyPanned = view.manuallyPanned === true;
-            setWorkspaceMode(view.mode);
             if (expressionRoot) {
                 drawExpression();
             } else {
@@ -6705,7 +6673,6 @@ ctx.font = SETTINGS.textFont;
             if (!selection.node || isDemoModeActive()) {
                 return false;
             }
-            setWorkspaceMode("select");
             clearSelection();
             clearInteraction();
             renderLevelInfo(currentLevelIndex);
@@ -12767,17 +12734,48 @@ function renderToolArea() {
         }
 
         function releaseWorkspacePointer() {
-            workspaceSelectionDragRect.setAttribute("visibility", "hidden");
-            activeWorkspacePointerId = null;
             workspacePointerStart = null;
             document.body.classList.remove("workspace-panning");
         }
 
-        function selectFromWorkspaceTap(x, y, pointerType) {
-            if (selection.node && (isPointInsideCurrentSelection(x, y) || !isPointInsideExpression(x, y))) {
-                return cancelCurrentWorkspaceSelection();
+        function handleWorkspaceTap(event, start) {
+            if (uiState.mode !== "edit" || uiState.stage === "postview") {
+                return;
             }
-            return selectWorkspaceTarget(findNearestVisibleObject(x, y, pointerType));
+            const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
+            if (builder) {
+                if (!isIntegratedExpressionBuilder(builder)) {
+                    cancelExpressionBuilder();
+                }
+                return;
+            }
+
+            const { x, y } = workspaceClientPointToSvg(event.clientX, event.clientY);
+            const choosingCommuteOrder = selection.status === "yes" &&
+                uiState.stage === "preview" &&
+                ["commute", "commuteTerms", "commuteFactors"].includes(uiState.activeTool);
+            const demoStep = isDemoModeActive() ? getCurrentDemoStep() : null;
+            if (choosingCommuteOrder) {
+                if (demoStep?.type === "tool") {
+                    return;
+                }
+                const pressedPoint = workspaceClientPointToSvg(start.clientX, start.clientY);
+                const pressedIndex = getClosestIndexWithinSelection(pressedPoint.x, pressedPoint.y);
+                const releasedIndex = getClosestIndexWithinSelection(x, y);
+                if (releasedIndex >= 0 && releasedIndex === pressedIndex) {
+                    recordCommutePermutationChoice(releasedIndex);
+                }
+                return;
+            }
+            if (selection.node && (isPointInsideCurrentSelection(x, y) || !isPointInsideExpression(x, y))) {
+                cancelCurrentWorkspaceSelection();
+                return;
+            }
+            if (uiState.activeTool || (demoStep && (demoStep.type !== "select" || uiState.stage !== "idle"))) {
+                return;
+            }
+
+            selectWorkspaceTarget(findNearestVisibleObject(x, y, start.pointerType));
         }
 
         function selectWorkspaceTarget(target) {
@@ -12831,234 +12829,78 @@ function renderToolArea() {
             return Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) <= tolerance;
         }
 
-        function selectionRectangle(startX, startY, endX, endY) {
-            return {
-                left: Math.min(startX, endX),
-                right: Math.max(startX, endX),
-                top: Math.min(startY, endY),
-                bottom: Math.max(startY, endY)
-            };
-        }
-
-        function updateWorkspaceSelectionDrag(event) {
+        function updateWorkspacePan(event) {
             const start = workspacePointerStart;
-            if (event.pointerId !== activeWorkspacePointerId || start?.mode !== "selection") {
-                return;
-            }
-            if (isWorkspaceTap(event, start)) {
-                workspaceSelectionDragRect.setAttribute("visibility", "hidden");
-                return;
-            }
-            const { left, top } = workspaceSelectionDragRect.ownerSVGElement.getBoundingClientRect();
-            const rect = selectionRectangle(start.clientX, start.clientY, event.clientX, event.clientY);
-            workspaceSelectionDragRect.setAttribute("x", rect.left - left);
-            workspaceSelectionDragRect.setAttribute("y", rect.top - top);
-            workspaceSelectionDragRect.setAttribute("width", Math.max(1, rect.right - rect.left));
-            workspaceSelectionDragRect.setAttribute("height", Math.max(1, rect.bottom - rect.top));
-            workspaceSelectionDragRect.setAttribute("visibility", "visible");
-        }
-
-        function findWorkspaceRectangleTarget(rect) {
-            const paths = [];
-            function collect(node, path) {
-                if (!node?.layout || node.right() < rect.left || node.left() > rect.right ||
-                    node.bottom() < rect.top || node.top() > rect.bottom) {
-                    return;
-                }
-                // The inverse header selects its whole inverse, as it does on a tap.
-                if (node.type === "value" || node.type === "inv" && getInverseHeaderBottom(node) >= rect.top) {
-                    paths.push(path);
-                    return;
-                }
-                node.args.forEach((child, index) => collect(child, path.concat(index)));
-            }
-            collect(expressionRoot, []);
-            return selectionTargetContainingPaths(paths);
-        }
-
-        function finishWorkspaceTap(e) {
-            if (e.pointerId !== activeWorkspacePointerId || !workspacePointerStart) {
+            if (!start || event.pointerId !== start.pointerId || (!start.dragging && isWorkspaceTap(event, start))) {
                 return;
             }
 
-            const pointerStart = workspacePointerStart;
-            if (pointerStart.mode === "pan" || pointerStart.mode === "builderPan") {
-                releaseWorkspacePointer();
-                return;
-            }
-            if (pointerStart.mode === "commute") {
-                const point = workspaceClientPointToSvg(e.clientX, e.clientY);
-                const releasedIndex = getClosestIndexWithinSelection(point.x, point.y);
-                if (releasedIndex >= 0 && releasedIndex === pointerStart.commuteIndex) {
-                    recordCommutePermutationChoice(releasedIndex);
-                }
-                releaseWorkspacePointer();
-                return;
-            }
-            if (isWorkspaceTap(e, pointerStart)) {
-                const point = workspaceClientPointToSvg(e.clientX, e.clientY);
-                if (pointerStart.mode === "cancelBuilder") {
-                    cancelExpressionBuilder();
-                } else {
-                    selectFromWorkspaceTap(point.x, point.y, pointerStart.pointerType);
-                }
-            } else if (pointerStart.mode === "selection") {
-                const startPoint = workspaceClientPointToSvg(pointerStart.clientX, pointerStart.clientY);
-                const endPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
-                const rect = selectionRectangle(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
-                selectWorkspaceTarget(findWorkspaceRectangleTarget(rect));
-            }
-            releaseWorkspacePointer();
-        }
-
-        function cancelWorkspaceTap(e) {
-            if (e.pointerId !== activeWorkspacePointerId) {
-                return;
-            }
-            releaseWorkspacePointer();
-        }
-
-        svgContainer.addEventListener("pointerdown", e => {
-            if (!currentExpressionRoot || e.target !== svgContainer && !workspaceSvg.contains(e.target)) {
-                return;
-            }
-            if (e.pointerType === "mouse" && e.button !== 0) {
-                return;
-            }
-            if (activeWorkspacePointerId !== null) {
-                return;
-            }
-            if (uiState.mode !== "edit") {
-                return;
-            }
-            if (uiState.stage === "postview") {
-                return;
-            }
-
-            const activeBuilder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
-            const integratedBuilder = isIntegratedExpressionBuilder(activeBuilder);
-            const cancelingBuilder = !!activeBuilder && !integratedBuilder;
-            const panningView = !integratedBuilder && uiState.workspaceMode === "pan";
-            const pointerPoint = workspaceClientPointToSvg(e.clientX, e.clientY);
-            const pointerX = pointerPoint.x;
-            const pointerY = pointerPoint.y;
-
-            const choosingCommuteOrder = selection.status === "yes" &&
-                uiState.stage === "preview" &&
-                (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors");
-            const cancelingSelectionFromCurrentSelection = !activeBuilder && !panningView && !choosingCommuteOrder &&
-                !!selection.node && isPointInsideCurrentSelection(pointerX, pointerY);
-            const cancelingSelectionFromOutsideExpression = !activeBuilder && !panningView && !choosingCommuteOrder &&
-                !!selection.node && !isPointInsideExpression(pointerX, pointerY);
-
-            if (isDemoModeActive() && !panningView) {
-                const step = getCurrentDemoStep();
-                const selectingExpression = !!step && step.type === "select" && uiState.stage === "idle";
-                const choosingDemoCommuteOrder = !!step && choosingCommuteOrder &&
-                    (step.type === "commuteChoice" || step.type !== "tool");
-                if (cancelingSelectionFromCurrentSelection || cancelingSelectionFromOutsideExpression) {
-                    return;
-                }
-                const groupingBuilderOperator = integratedBuilder && !!step && step.type === "builder" && step.action === "groupOperator";
-                if (!cancelingBuilder && !groupingBuilderOperator && !selectingExpression && !choosingDemoCommuteOrder) {
-                    return;
-                }
-            }
-
-            if (!integratedBuilder && !cancelingBuilder && !cancelingSelectionFromCurrentSelection && !cancelingSelectionFromOutsideExpression && !panningView && !choosingCommuteOrder && uiState.activeTool) {
-                return;
-            }
-
-            activeWorkspacePointerId = e.pointerId;
-            workspacePointerStart = {
-                clientX: e.clientX,
-                clientY: e.clientY,
-                pointerType: e.pointerType || "mouse",
-                panX: workspacePanX,
-                panY: workspacePanY,
-                commuteIndex: choosingCommuteOrder
-                    ? getClosestIndexWithinSelection(pointerX, pointerY)
-                    : -1,
-                mode: cancelingBuilder
-                    ? "cancelBuilder"
-                    : panningView
-                        ? "pan"
-                    : integratedBuilder
-                        ? "builderPan"
-                    : choosingCommuteOrder
-                            ? "commute"
-                            : "selection"
-            };
-            if (svgContainer.setPointerCapture) {
-                try {
-                    svgContainer.setPointerCapture(e.pointerId);
-                } catch (error) {
-                    // The document-level pointerup fallback still completes
-                    // the gesture when capture is unavailable.
-                }
-            }
-            if (panningView || integratedBuilder) {
-                e.preventDefault();
-            }
-        });
-
-        svgContainer.addEventListener("pointermove", e => {
-            if (
-                e.pointerId !== activeWorkspacePointerId ||
-                !workspacePointerStart ||
-                !["pan", "builderPan"].includes(workspacePointerStart.mode)
-            ) {
-                return;
-            }
-            const deltaX = e.clientX - workspacePointerStart.clientX;
-            const deltaY = e.clientY - workspacePointerStart.clientY;
-            const movement = Math.hypot(deltaX, deltaY);
-            if (movement > 2) {
-                document.body.classList.add("workspace-panning");
-            }
+            // Once a gesture starts panning it stays a drag, even if the
+            // pointer returns to where it started.
+            start.dragging = true;
+            document.body.classList.add("workspace-panning");
             setWorkspacePan(
-                workspacePointerStart.panX + deltaX,
-                workspacePointerStart.panY + deltaY
+                start.panX + event.clientX - start.clientX,
+                start.panY + event.clientY - start.clientY
             );
-            if (
-                ["pan", "builderPan"].includes(workspacePointerStart.mode) &&
-                (workspacePanX !== workspacePointerStart.panX || workspacePanY !== workspacePointerStart.panY)
-            ) {
+            if (workspacePanX !== start.panX || workspacePanY !== start.panY) {
                 workspaceViewManuallyPanned = true;
             }
-            e.preventDefault();
-        });
+        }
 
-        svgContainer.addEventListener("pointerup", e => {
-            finishWorkspaceTap(e);
-        });
+        function finishWorkspacePointer(event) {
+            const start = workspacePointerStart;
+            if (!start || event.pointerId !== start.pointerId) {
+                return;
+            }
+            updateWorkspacePan(event);
+            releaseWorkspacePointer();
+            if (!start.dragging && !start.tapBlocked) {
+                handleWorkspaceTap(event, start);
+            }
+        }
 
-        svgContainer.addEventListener("pointercancel", e => {
-            cancelWorkspaceTap(e);
-        });
+        function cancelWorkspacePointer(event) {
+            if (event.pointerId === workspacePointerStart?.pointerId) {
+                releaseWorkspacePointer();
+            }
+        }
 
-        svgContainer.addEventListener("lostpointercapture", e => {
-            cancelWorkspaceTap(e);
-        });
-
-        document.addEventListener("pointermove", updateWorkspaceSelectionDrag);
-
-        document.addEventListener("pointerup", e => {
-            if (activeWorkspacePointerId !== null) {
-                finishWorkspaceTap(e);
+        svgContainer.addEventListener("pointerdown", event => {
+            if (!currentExpressionRoot || (event.target !== svgContainer && !workspaceSvg.contains(event.target))) {
+                return;
+            }
+            if (workspacePointerStart || (event.pointerType === "mouse" && event.button !== 0)) {
+                return;
+            }
+            workspacePointerStart = {
+                pointerId: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                pointerType: event.pointerType || "mouse",
+                panX: workspacePanX,
+                panY: workspacePanY,
+                dragging: false,
+                tapBlocked: event.defaultPrevented
+            };
+            try {
+                svgContainer.setPointerCapture(event.pointerId);
+            } catch (error) {
+                // The document listeners can still track the gesture.
             }
         });
 
-        document.addEventListener("pointercancel", e => {
-            if (activeWorkspacePointerId !== null) {
-                cancelWorkspaceTap(e);
-            }
-        });
+        document.addEventListener("pointermove", updateWorkspacePan);
+        document.addEventListener("pointerup", finishWorkspacePointer);
+        document.addEventListener("pointercancel", cancelWorkspacePointer);
+        svgContainer.addEventListener("lostpointercapture", cancelWorkspacePointer);
 
         document.addEventListener("pointerdown", e => {
             if (dismissNumericalRewriteError()) {
                 e.preventDefault();
-                e.stopImmediatePropagation();
+                if (e.target !== svgContainer && !workspaceSvg.contains(e.target)) {
+                    e.stopImmediatePropagation();
+                }
             }
         }, true);
 
