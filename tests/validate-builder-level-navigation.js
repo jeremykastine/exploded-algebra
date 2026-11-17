@@ -41,6 +41,7 @@ const functionNames = [
 ];
 
 const context = {
+    BUILDER_VARIABLES: ["x", "y", "z"],
     ExprNode: class ExprNode {
         constructor(type, args = [], value = null) {
             this.type = type;
@@ -193,11 +194,13 @@ assert.equal(inverseBuilder.root.type, "inv");
 assert.equal(inverseBuilder.root.args[0].type, "sum");
 assertNoAdjacentMatchingOperations(inverseBuilder.root);
 
-const valueThenX = makeBuilder(value("2"));
-context.uiState.expressionBuilder = valueThenX;
-assert.equal(context.api.enterDirectBuilderValue("x"), true, "x after a value must insert multiplication");
-assert.equal(valueThenX.root.type, "prod");
-assertJsonEqual(valueThenX.root.args.map(node => node.value), ["2", "x"], "Implicit multiplication before x must use the lowest level");
+for (const variable of context.BUILDER_VARIABLES) {
+    const valueThenVariable = makeBuilder(value("2"));
+    context.uiState.expressionBuilder = valueThenVariable;
+    assert.equal(context.api.enterDirectBuilderValue(variable), true, `${variable} after a value must insert multiplication`);
+    assert.equal(valueThenVariable.root.type, "prod");
+    assertJsonEqual(valueThenVariable.root.args.map(node => node.value), ["2", variable], "Implicit multiplication must use the lowest level");
+}
 
 const valueThenNegativeOne = makeBuilder(new context.ExprNode("prod", [value("2"), value("3")], null));
 valueThenNegativeOne.currentPath = [1];

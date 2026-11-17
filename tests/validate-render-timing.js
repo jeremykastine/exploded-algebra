@@ -45,7 +45,7 @@ function notationElement(id, offsetWidth, offsetHeight) {
 }
 const current = notationElement("workspaceCurrentNotation", 40, 25);
 const goal = notationElement("workspaceGoalNotation", 10, 25);
-const connector = notationElement("workspaceGoalConnector", 1, 20);
+const connector = notationElement("workspaceGoalConnector", 12, 24);
 let goalKatex = "5";
 const playerContext = vm.createContext({
     window: {},
@@ -65,9 +65,13 @@ playerContext.positionWorkspaceNotation();
 assert.equal(current.textContent, "2+3");
 assert.deepEqual(current.style, { left: "20px", top: "15px" });
 assert.equal(goal.textContent, "5");
-assert.deepEqual(goal.style, { left: "45px", top: "140px" });
+assert.deepEqual(goal.style, { left: "45px", top: "164px" });
 assert.equal(connector.hidden, false);
-assert.deepEqual(connector.style, { left: "50px", top: "120px" });
+assert.deepEqual(connector.style, { left: "50px", top: "136px" });
+
+goal.offsetWidth = 100;
+playerContext.positionWorkspaceNotation();
+assert.equal(goal.style.left, "0px", "A wide goal must remain centered under the arrow");
 
 goalKatex = "";
 playerContext.renderWorkspaceNotation("5", null);

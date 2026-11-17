@@ -1333,6 +1333,8 @@ Promise.resolve().then(() => {
         const builderCommandPanel = document.getElementById("builderCommandPanel");
         const builderInputRail = document.getElementById("builderInputRail");
         const builderVariableRail = document.getElementById("builderVariableRail");
+        const builderVariableButton = document.getElementById("builderVariableButton");
+        const builderExtraValues = document.getElementById("builderExtraValues");
         const builderDigitRail = document.getElementById("builderDigitRail");
         const startingExpressionStatus = document.getElementById("startingExpressionStatus");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
@@ -1377,9 +1379,11 @@ Promise.resolve().then(() => {
         const inspectExitButton = document.getElementById("inspectExitButton");
 
         const LEVELS = [];
+        const BUILDER_VARIABLES = ["x", "y", "z"];
 
         function inferVariablesFromExpressionTextForLevel(text) {
-            return /(^|[^A-Za-z])x([^A-Za-z]|$)/.test(String(text || "")) ? ["x"] : [];
+            const tokens = String(text || "").match(/[A-Za-z][A-Za-z0-9_]*/g) || [];
+            return BUILDER_VARIABLES.filter(value => tokens.includes(value));
         }
 
         LEVELS.forEach(level => {
@@ -1857,10 +1861,12 @@ Promise.resolve().then(() => {
             workspaceCurrentNotation.style.top = `${bounds.top - workspaceCurrentNotation.offsetHeight - gap}px`;
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
+                // Clear the outline as well as the expression's layout bounds.
+                const arrowTop = bounds.bottom + 2 * gap;
                 workspaceGoalConnector.style.left = `${center}px`;
-                workspaceGoalConnector.style.top = `${bounds.bottom}px`;
-                workspaceGoalNotation.style.left = `${Math.max(bounds.left, center - workspaceGoalNotation.offsetWidth / 2)}px`;
-                workspaceGoalNotation.style.top = `${bounds.bottom + workspaceGoalConnector.offsetHeight}px`;
+                workspaceGoalConnector.style.top = `${arrowTop}px`;
+                workspaceGoalNotation.style.left = `${center - workspaceGoalNotation.offsetWidth / 2}px`;
+                workspaceGoalNotation.style.top = `${arrowTop + workspaceGoalConnector.offsetHeight + gap / 2}px`;
             }
         }
 
@@ -4490,11 +4496,11 @@ Promise.resolve().then(() => {
             currentExpressionRoot = textToExpression(level.startExpression);
             currentExpressionRoot = normalizeExpressionTree(currentExpressionRoot);
             expressionRoot = currentExpressionRoot;
-            savedMainWorkspaceView = null;
-            workspaceZoom = 1;
-            workspacePanX = 0;
-            workspacePanY = 0;
-            workspaceViewManuallyPanned = false;
+            const view = level.creative && buildFirst ? takeNewExpressionView() : null;
+            workspaceZoom = view?.zoom ?? 1;
+            workspacePanX = view?.panX ?? 0;
+            workspacePanY = view?.panY ?? 0;
+            workspaceViewManuallyPanned = view?.manuallyPanned === true;
             inspectSavedExpressionRoot = null;
             uiState.mode = "edit";
             uiState.inspectStepIndex = -1;
@@ -4697,6 +4703,14 @@ Promise.resolve().then(() => {
                         resetCurrentRun();
                         workspaceUtilityMenuToggle.focus();
                     } else if (button.dataset.workspaceAction === "newExpression") {
+                        try {
+                            window.sessionStorage.setItem(NEW_EXPRESSION_VIEW_KEY, JSON.stringify({
+                                zoom: workspaceZoom,
+                                panX: workspacePanX,
+                                panY: workspacePanY,
+                                manuallyPanned: workspaceViewManuallyPanned
+                            }));
+                        } catch {} // Navigation also works with storage disabled.
                         window.location.assign("exploded-algebra.html");
                     } else if (button.dataset.workspaceAction === "openExercise") {
                         openExerciseForm.reset();
@@ -4996,13 +5010,12 @@ ctx.font = SETTINGS.textFont;
         const WORKSPACE_ZOOM_MIN = 0.5;
         const WORKSPACE_ZOOM_MAX = 3;
         const WORKSPACE_ZOOM_STEP = 1.25;
+        const NEW_EXPRESSION_VIEW_KEY = "explodedAlgebraNewExpressionView";
         let workspaceZoom = 1;
         let workspacePanX = 0;
         let workspacePanY = 0;
         let workspaceDisplayBounds = null;
         let workspaceViewManuallyPanned = false;
-        let builderWorkspaceViewActive = false;
-        let savedMainWorkspaceView = null;
         let responsiveLayoutFrame = null;
         let pendingResponsiveWorkspaceView = null;
         const OPERATION_STYLE_STORAGE_KEY = "explodedAlgebraOperationStyleV2";
@@ -5294,7 +5307,7 @@ ctx.font = SETTINGS.textFont;
         }
 
         function scheduleResponsiveLayoutRecalculation() {
-            if (!builderWorkspaceViewActive && workspaceViewManuallyPanned) {
+            if (workspaceViewManuallyPanned) {
                 pendingResponsiveWorkspaceView = captureWorkspaceView();
             } else {
                 pendingResponsiveWorkspaceView = null;
@@ -5311,9 +5324,9 @@ ctx.font = SETTINGS.textFont;
                 if (expressionRoot) {
                     drawExpression();
                 }
-                if (!builderWorkspaceViewActive && pendingResponsiveWorkspaceView) {
+                if (pendingResponsiveWorkspaceView) {
                     restoreWorkspaceView(pendingResponsiveWorkspaceView);
-                } else if (!builderWorkspaceViewActive && !workspaceViewManuallyPanned) {
+                } else if (!workspaceViewManuallyPanned) {
                     resetWorkspacePanToDefault();
                 }
                 positionToolOptionMenu();
@@ -5323,44 +5336,15 @@ ctx.font = SETTINGS.textFont;
             });
         }
 
-        function syncBuilderWorkspaceView(builderActive) {
-            if (builderActive === builderWorkspaceViewActive) {
-                return;
-            }
-
-            if (builderActive) {
-                // The builder preview has its own top-left fit-to-screen layout.
-                // Preserve the main workspace's exact view without borrowing or
-                // changing that state while the builder is open.
-                savedMainWorkspaceView = {
-                    zoom: workspaceZoom,
-                    panX: workspacePanX,
-                    panY: workspacePanY,
-                    manuallyPanned: workspaceViewManuallyPanned
-                };
-                workspaceZoom = 1;
-                workspacePanX = 0;
-                workspacePanY = 0;
-                workspaceViewManuallyPanned = false;
-                applyWorkspaceZoomSizing();
-                builderWorkspaceViewActive = true;
-                return;
-            }
-
-            builderWorkspaceViewActive = false;
-            if (!savedMainWorkspaceView) {
-                return;
-            }
-            const view = savedMainWorkspaceView;
-            savedMainWorkspaceView = null;
-            workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX, view.zoom));
-            workspacePanX = Number.isFinite(view.panX) ? view.panX : 0;
-            workspacePanY = Number.isFinite(view.panY) ? view.panY : 0;
-            workspaceViewManuallyPanned = view.manuallyPanned === true;
-            if (expressionRoot) {
-                drawExpression();
-            } else {
-                applyWorkspaceZoomSizing();
+        function takeNewExpressionView() {
+            try {
+                const serialized = window.sessionStorage.getItem(NEW_EXPRESSION_VIEW_KEY);
+                window.sessionStorage.removeItem(NEW_EXPRESSION_VIEW_KEY);
+                const view = JSON.parse(serialized);
+                return view && [view.zoom, view.panX, view.panY].every(Number.isFinite) &&
+                    view.zoom >= WORKSPACE_ZOOM_MIN && view.zoom <= WORKSPACE_ZOOM_MAX ? view : null;
+            } catch {
+                return null;
             }
         }
 
@@ -5900,7 +5884,7 @@ ctx.font = SETTINGS.textFont;
             drawExpressionOutlineToContext(explodedDisplayRoot, ctx, SETTINGS);
             drawDemoSelectionPrompt();
             positionWorkspaceNotation();
-            if (builderWorkspaceViewActive && !workspaceViewManuallyPanned) {
+            if (builder && !workspaceViewManuallyPanned) {
                 resetWorkspacePanToDefault();
             }
 
@@ -9108,7 +9092,7 @@ ctx.font = SETTINGS.textFont;
             if (!current) return false;
             let implicitOperation = null;
             if (!isBuilderPlaceholder(current)) {
-                implicitOperation = String(value) === "x" ? "prod" : null;
+                implicitOperation = BUILDER_VARIABLES.includes(value) ? "prod" : null;
                 if (!implicitOperation) {
                     uiState.message = "Choose an operation before entering another value.";
                     renderToolArea();
@@ -9460,7 +9444,7 @@ ctx.font = SETTINGS.textFont;
             const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
             const implicitOperation = !needsImplicitOperation
                 ? null
-                : String(value) === "x"
+                : BUILDER_VARIABLES.includes(value)
                     ? "prod"
                     : null;
             if (needsImplicitOperation && !implicitOperation) {
@@ -9777,7 +9761,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 const extraValues = new Set();
                 traversePreOrder(selectedNode, node => {
-                    if (node.type === "value" && !/^(?:[0-9]+|x|-1)$/.test(node.value)) {
+                    if (node.type === "value" && !BUILDER_VARIABLES.includes(node.value) && !/^(?:[0-9]+|-1)$/.test(node.value)) {
                         extraValues.add(node.value);
                     }
                 });
@@ -10148,7 +10132,7 @@ ctx.font = SETTINGS.textFont;
                 buildingStartingExpression = false;
                 resetDemoStateForCurrentLevel();
                 finishOperation();
-                resetWorkspacePanToDefault();
+                if (!workspaceViewManuallyPanned) resetWorkspacePanToDefault();
                 return true;
             }
             if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
@@ -10995,24 +10979,30 @@ ctx.font = SETTINGS.textFont;
         }
 
         function renderBuilderVariableRail(builderActive) {
-            if (!builderVariableRail) {
-                return;
+            if (!builderActive) return;
+
+            const builder = uiState.expressionBuilder;
+            const current = getDirectBuilderCurrentNode(builder);
+            const index = current?.type === "value" ? BUILDER_VARIABLES.indexOf(current.value) : -1;
+            let action = index === -1 ? "value" : "cycleVariable";
+            let value = BUILDER_VARIABLES[(index + 1) % BUILDER_VARIABLES.length];
+            const step = isDemoModeActive() ? getCurrentDemoStep() : null;
+            if (step?.type === "builder" && ["value", "cycleVariable"].includes(step.action) && BUILDER_VARIABLES.includes(step.value)) {
+                action = step.action;
+                value = step.value;
             }
-            if (!builderActive) {
-                builderVariableRail.replaceChildren();
-                return;
+
+            builderVariableButton.dataset.builderAction = action;
+            builderVariableButton.dataset.value = value;
+            builderVariableButton.disabled = !builderAllowsVariables(uiState.activeTool);
+            const label = action === "cycleVariable" ? `Change variable to ${value}` : `Insert ${value}`;
+            builderVariableButton.setAttribute("aria-label", `XYZ: ${label}`);
+            builderVariableButton.title = label;
+            builderExtraValues.hidden = !builder.extraValues?.length;
+            if (!builderExtraValues.hidden) {
+                builderExtraValues.replaceChildren(new Option("Other", ""),
+                    ...builder.extraValues.map(extra => new Option(extra, extra)));
             }
-            const extraValues = uiState.expressionBuilder.extraValues;
-            if (extraValues?.length) {
-                builderVariableRail.innerHTML = `<select class="builder-extra-value" aria-label="Insert a value">
-                    <option value="">Value</option>
-                    ${["x", ...extraValues].map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
-                </select>`;
-                return;
-            }
-            const disabled = !builderAllowsVariables(uiState.activeTool);
-            const availability = disabled ? " unavailable in this expression" : "";
-            builderVariableRail.innerHTML = `<button type="button" class="builder-variable-button builder-labeled-key" data-builder-action="value" data-value="x" aria-label="Insert x${availability}" title="${disabled ? "x is unavailable in this expression" : "Keyboard shortcut: x"}"${disabled ? " disabled" : ""}><span class="builder-key-label">Variable</span><i class="builder-key-symbol">x</i></button>`;
         }
 
         function buildExpressionBuilderHtml() {
@@ -11043,7 +11033,7 @@ ctx.font = SETTINGS.textFont;
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
                         <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>${isStudentInitial ? "Enter" : "Submit"}</button>
+                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Enter</button>
                         ${negativeOneButton}
                     </div></div>
                 </div>`;
@@ -11517,12 +11507,20 @@ ctx.font = SETTINGS.textFont;
                 : getExpressionTextForTrace();
             uiState.message = "";
             let result = true;
-            if (isIntegratedExpressionBuilder(builderAtStart) && action === "digit") {
+            if (action === "cycleVariable") {
+                const current = getDirectBuilderCurrentNode(builderAtStart);
+                if (current?.type !== "value" || !BUILDER_VARIABLES.includes(current.value) || !BUILDER_VARIABLES.includes(value)) {
+                    return false;
+                }
+                pushExpressionBuilderUndoState();
+                setDirectBuilderCurrentValue(builderAtStart, value);
+                refreshExpressionBuilderPreview();
+            } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "digit") {
                 result = appendIntegratedBuilderDigit(value);
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "negativeOne") {
                 result = enterIntegratedBuilderValue("-1");
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "value") {
-                result = value === "x" || builderAtStart.extraValues?.includes(value)
+                result = BUILDER_VARIABLES.includes(value) || builderAtStart.extraValues?.includes(value)
                     ? enterIntegratedBuilderValue(value)
                     : false;
             } else if (isIntegratedExpressionBuilder(builderAtStart) && action === "pendingOperation") {
@@ -11630,9 +11628,9 @@ ctx.font = SETTINGS.textFont;
                 action = integrated ? "undo" : "undoBackspace";
             } else if (event.key === "Escape") {
                 action = "cancel";
-            } else if (event.key.toLowerCase() === "x") {
+            } else if (!event.ctrlKey && !event.metaKey && !event.altKey && BUILDER_VARIABLES.includes(event.key.toLowerCase())) {
                 action = "value";
-                value = "x";
+                value = event.key.toLowerCase();
             } else {
                 return false;
             }
@@ -11645,7 +11643,7 @@ ctx.font = SETTINGS.textFont;
                 cancelExpressionBuilder();
                 return true;
             }
-            if (action === "value" && builder.extraValues?.length) {
+            if (action === "value" && !builderVariableButton.disabled) {
                 event.preventDefault();
                 return performBuilderAction(action, value);
             }
@@ -11877,11 +11875,6 @@ function renderToolArea() {
             const builderActive = uiState.mode === "edit" && uiState.stage === "builder" && !!uiState.expressionBuilder;
             const integratedBuilder = builderActive && isIntegratedExpressionBuilder(uiState.expressionBuilder);
             const selectionActive = uiState.mode === "edit" && !!selection.node && !builderActive;
-            const exitingBuilder = !builderActive && builderWorkspaceViewActive;
-            if (builderActive) {
-                // Save the main view before the builder layout changes the page.
-                syncBuilderWorkspaceView(true);
-            }
             document.body.classList.toggle("expression-builder-active", builderActive);
             document.body.classList.toggle("builder-entry-mode", integratedBuilder);
             document.body.classList.toggle("replacement-builder-context", builderActive && isInContextReplacementBuilder());
@@ -11906,10 +11899,6 @@ function renderToolArea() {
             }
             if (builderInputRail) {
                 builderInputRail.classList.toggle("hidden", !builderActive);
-            }
-            if (exitingBuilder) {
-                // Restore only after the normal workspace dimensions are back.
-                syncBuilderWorkspaceView(false);
             }
             if (!builderActive && builderCommandPanel) {
                 builderCommandPanel.replaceChildren();

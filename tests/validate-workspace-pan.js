@@ -94,8 +94,8 @@ assert(
     "The conventional line must share the exploded expression's pan and zoom transform"
 );
 assert(
-    /function positionWorkspaceNotation\(\)[\s\S]*?bounds\.top - workspaceCurrentNotation\.offsetHeight - gap[\s\S]*?workspaceGoalConnector\.style\.top = `\${bounds\.bottom}px`/.test(playerJs),
-    "The current line stays above the exploded notation and the goal connector starts at its bottom"
+    /function positionWorkspaceNotation\(\)[\s\S]*?bounds\.top - workspaceCurrentNotation\.offsetHeight - gap[\s\S]*?const arrowTop = bounds\.bottom \+ 2 \* gap/.test(playerJs),
+    "The current line stays above the exploded notation and the goal arrow clears its bottom"
 );
 assert(
     !playerJs.includes('step-card step-hold-target'),

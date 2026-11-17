@@ -52,8 +52,6 @@ assert(playerJs.includes('url.searchParams.set("build", "1")') && playerJs.inclu
 assert(!playerHtml.includes('id="exerciseCompletionPanel"') && !playerHtml.includes('id="modeChoiceBackdrop"'));
 assert(playerJs.includes('startLoadedLevel(assistanceModeFromQueryString());') && playerJs.includes('normalizeAssistanceModeForLevel(mode, getCurrentLevel()) || ASSISTANCE_MODES.unguided'));
 assert(playerJs.includes('return !!level && !isDemoOnlyLevel(level);') && playerJs.includes('if (!solutionRecorder || completionExportReadyForRun || !isInteractiveLevel(level))'), "Move history must be available for Guided and Unguided exercises");
-assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="resetZoom"] { grid-column: 3; grid-row: 1 !important; }'));
-assert(playerHtml.includes('.bottom-controls-panel .workspace-toolbar [data-workspace-action="undoExpression"] { grid-column: 6; grid-row: 1 !important; }'));
 assert(
     !playerHtml.includes('id="preSelectionControlsPanel"') && playerHtml.includes('id="bottomControlsPanel"') &&
         playerHtml.includes('class="palette-content"') &&
@@ -117,7 +115,7 @@ assert(!playerJs.includes('CHILD_ALIGNMENT_STORAGE_KEY'));
 assert(!/data-workspace-setting="bar-(shape|shading)"/.test(playerHtml), "Bar appearance must use the renderer defaults");
 assert(!/left-handed|handedness-toggle|handedness-choice/i.test(playerHtml) && !playerJs.includes("setLeftHandedLayout"), "The obsolete left-handed layout must be fully removed");
 assert(playerJs.includes('function openSettingsPanel()') && playerJs.includes('function closeSettingsPanel()'), "The Settings screen must have open and close behavior");
-for (const [selector, column] of [["zoomIn", 1], ["zoomOut", 2], ["resetZoom", 3], ["undoExpression", 6]]) {
+for (const [selector, column] of [["zoomIn", 1], ["zoomOut", 2], ["resetZoom", "3 / span 2"], ["undoExpression", "5 / span 2"]]) {
     assert(playerHtml.includes(`.bottom-controls-panel .workspace-toolbar [data-workspace-action="${selector}"] { grid-column: ${column}; grid-row: 1 !important; }`));
 }
 const workspaceToolbar = playerHtml.match(/id="workspaceToolbar"[^>]*>([\s\S]*?)<\/div>/)[1];

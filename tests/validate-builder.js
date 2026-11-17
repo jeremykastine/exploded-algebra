@@ -49,13 +49,13 @@ assert(!playerJs.includes('data-builder-review') && !playerHtml.includes('builde
 assert(playerJs.includes('playerQuery.get("rewrites") === "prescribed"'), "Prescribed numerical rewrites must be controlled by the player URL");
 assert(!/exercise[ -]guidance|showExerciseGuidance/i.test([builderHtml, builderCss, builderJs, playerHtml, playerJs].join("\n")),
   "The player and editor must omit the retired help interface");
-assert(playerHtml.includes('.builder-keypad-panel .builder-variable-button { grid-column: 6; grid-row: 1 / span 2; }'), "Variable x must occupy the upper two cells on the right");
-assert(playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 2; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 2; grid-row: 3 / span 2; }'), "Times and Plus must each occupy two rows in column two");
-assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 1; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-negative-one-button { grid-column: 1; grid-row: 3 / span 2; }'), "Inverse and negative one must each occupy two rows in column one");
-assert(playerHtml.includes('[data-builder-action="digit"][data-value="0"] { grid-column: 3 / span 3; grid-row: 4; }'), "A single zero key must span the width of the number pad");
+assert(/\.builder-keypad-panel \.builder-variable-rail \{[^}]*grid-column: 5;\s*grid-row: 4;/.test(playerHtml), "XYZ must occupy the cell below 3");
+assert(playerHtml.includes('.builder-keypad-panel .builder-prod-button { grid-column: 6; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-sum-button { grid-column: 6; grid-row: 3 / span 2; }'), "Times and Plus must each occupy two rows in column six");
+assert(playerHtml.includes('.builder-keypad-panel .builder-inv-button { grid-column: 2; grid-row: 1 / span 2; }') && playerHtml.includes('.builder-keypad-panel .builder-negative-one-button { grid-column: 2; grid-row: 3 / span 2; }'), "Inverse and negative one must each occupy two rows in column two");
+assert(playerHtml.includes('[data-builder-action="digit"][data-value="0"] { grid-column: 3 / span 2; grid-row: 4; }'), "Zero must span the cells below 1 and 2");
 assert(playerHtml.includes('[data-builder-action="digit"][data-value="7"] { grid-column: 3; grid-row: 1; }') && playerHtml.includes('[data-builder-action="digit"][data-value="9"] { grid-column: 5; grid-row: 1; }'), "The number pad must occupy columns three through five");
-assert(playerHtml.includes('M100 0 V400 M200 0 V400 M300 0 V300 M400 0 V300 M500 0 V400 M200 100 H500 M0 200 H600 M200 300 H500'), "The Builder grid overlay must leave the tall controls and the wide zero key undivided");
-assert(/button\.builder-submit-button,\s*\.builder-keypad-panel \.builder-action-row button\.builder-next-submit-button \{\s*grid-column: 6;\s*grid-row: 3 \/ span 2;/.test(playerHtml), "Submit must occupy the lower two cells on the right");
+assert(playerHtml.includes('M100 0 V400 M200 0 V400 M300 0 V300 M400 0 V400 M500 0 V400 M200 100 H500 M100 200 H600 M200 300 H500'), "The Builder grid overlay must leave the tall controls and the wide zero key undivided");
+assert(/button\.builder-submit-button,\s*\.builder-keypad-panel \.builder-action-row button\.builder-next-submit-button \{\s*grid-column: 1;\s*grid-row: 1 \/ span 4;/.test(playerHtml), "Enter must occupy all four Builder rows on the left");
 assert(!playerJs.includes('data-builder-view-action') && playerHtml.includes('data-workspace-action="resetZoom"'), "The Builder must use the permanent workspace view controls");
 assert(playerHtml.includes('grid-template-rows: repeat(4, var(--main-key-size));'), "The Builder keypad must contain exactly four button rows without empty rows above");
 assert(/\.palette-content > \.builder-keypad-panel \{[\s\S]*?grid-template-columns: subgrid;[\s\S]*?grid-template-rows: subgrid;[\s\S]*?width: 100%;[\s\S]*?height: 100%;/.test(playerHtml), "The Builder keypad must inherit the floating palette's entire six-by-four grid");
@@ -73,7 +73,7 @@ assert(/function installLiftedDirectBuilderOperation[\s\S]*?parent\.type === lif
 assert(playerJs.includes("function cycleDirectBuilderOperationToLowestLevel") && playerJs.includes("cloneBuilderMoveCycle(builder.moveCycle)"), "Repeated operation presses must cycle from the highest level back to the lowest placement");
 assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation[\s\S]*?moveCycle/.test(playerJs), "Undo snapshots must preserve the operation target and movement cycle");
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode') && playerJs.includes('if (isBuilderPlaceholder(node)) return null;'), "Submit must reject an unfinished direct-notation operand");
-assert(/function enterDirectBuilderValue[\s\S]*?implicitOperation = String\(value\) === "x" \? "prod" : null/.test(playerJs), "Expression Builder must insert multiplication before x without inserting addition before negative one");
+assert(/function enterDirectBuilderValue[\s\S]*?implicitOperation = BUILDER_VARIABLES\.includes\(value\) \? "prod" : null/.test(playerJs), "Expression Builder must insert multiplication before each variable without inserting addition before negative one");
 assert(/function enterDirectBuilderInverse[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication before an inverse");
 assert(/function appendDirectBuilderDigit[\s\S]*?String\(current\.value\) === "-1"[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication between negative one and a following digit");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
@@ -142,10 +142,8 @@ assert(collapseContext.collapseCompletedIntegratedBuilderNode(
   pendingSequence([testValue("2"), incompleteOpenInverse], ["prod"])
 ) === null, "Submit must remain disabled when an inverse contains a genuinely missing entry");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
-assert(playerJs.includes('data-builder-action="value" data-value="x"'), "The shared builder must expose x");
-assert(playerJs.includes('const disabled = !builderAllowsVariables(uiState.activeTool);') && playerJs.includes('${disabled ? " disabled" : ""}'), "The x button must remain visible and become disabled only when variables are unavailable");
-assert(!/if \(disabled\) \{\s*builderVariableRail\.replaceChildren\(\);\s*return;\s*\}/.test(playerJs), "A disallowed x must be disabled rather than removed from the keypad");
-assert(!playerJs.includes('data-value="y"'), "The shared builder must not expose additional variables");
+assert(playerHtml.includes('data-builder-action="value" data-value="x">XYZ</button>'), "The shared builder must expose XYZ");
+assert(playerJs.includes('builderVariableButton.disabled = !builderAllowsVariables(uiState.activeTool);'), "XYZ must stay visible and become disabled when variables are unavailable");
 assert(playerJs.includes('flowVersion: 5') && playerJs.includes('root: makePlaceholderNode()'), "New Expression Builder sessions must begin directly in exploded notation rather than a diagonal sequence");
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");
