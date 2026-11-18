@@ -111,7 +111,6 @@ const boundsScope = vm.createContext({
     getExpressionBounds: () => ({ left: 20, top: 20, right: 60, bottom: 80 }),
     getSelectionMargin: () => 8,
     workspaceCurrentNotation: { hidden: true }, workspaceGoalNotation: { hidden: true },
-    workspaceComponentNotation: { children: [] },
     expressionRoot: {}, workspaceZoom: 1,
     svgContainer: { getBoundingClientRect: () => ({ left: 0, top: 0 }) },
     getFloatingPaletteViewportBounds: () => ({ left: 10, top: 10 }),
