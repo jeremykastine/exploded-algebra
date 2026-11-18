@@ -1369,6 +1369,7 @@ Promise.resolve().then(() => {
         const svgContainer = document.getElementById("svgContainer");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceCurrentNotation = document.getElementById("workspaceCurrentNotation");
+        const workspaceComponentNotation = document.getElementById("workspaceComponentNotation");
         const workspaceGoalNotation = document.getElementById("workspaceGoalNotation");
         const workspaceGoalConnector = document.getElementById("workspaceGoalConnector");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
@@ -1814,6 +1815,7 @@ Promise.resolve().then(() => {
             // This serializer escapes values and emits only local preview spans.
             workspaceCurrentNotation.innerHTML = displayRoot
                 ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder) || "□" : "";
+            renderWorkspaceComponentNotation(displayRoot, builder);
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.
@@ -1821,11 +1823,51 @@ Promise.resolve().then(() => {
             workspaceGoalConnector.hidden = true;
         }
 
+        function renderWorkspaceComponentNotation(displayRoot, builder) {
+            workspaceComponentNotation.replaceChildren();
+            // Label only the outermost operation. Nested expressions remain
+            // together in the conventional notation of their term or factor.
+            const type = displayRoot?.type;
+            if (!['sum', 'prod'].includes(type) || displayRoot.isBuilderSequence || displayRoot.args.length < 2) {
+                workspaceComponentNotation.hidden = true;
+                return;
+            }
+            workspaceComponentNotation.hidden = false;
+            workspaceComponentNotation.dataset.operation = type;
+            displayRoot.args.forEach((node, index) => {
+                const label = document.createElement('div');
+                label.className = 'workspace-conventional-line workspace-component-label';
+                label.setAttribute('aria-label', `${type === 'sum' ? 'Term' : 'Factor'} ${index + 1}`);
+                label.innerHTML = ExplodedAlgebraRenderer.expressionToCodeMarkup(node, !!builder) || '□';
+                label.expressionNode = node;
+                workspaceComponentNotation.appendChild(label);
+            });
+        }
+
+        function positionWorkspaceComponentNotation(bounds, gap) {
+            if (workspaceComponentNotation.hidden) return;
+            const outlinePadding = SETTINGS.expressionOutline === false ? 0
+                : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
+            const labels = Array.from(workspaceComponentNotation.children);
+            const rowHeight = Math.max(gap, ...labels.map(label => label.offsetHeight)) + gap / 2;
+            labels.forEach((label, index) => {
+                const node = label.expressionNode;
+                if (workspaceComponentNotation.dataset.operation === 'sum') {
+                    label.style.left = `${bounds.right + outlinePadding + gap}px`;
+                    label.style.top = `${(node.top() + node.bottom() - label.offsetHeight) / 2}px`;
+                } else {
+                    label.style.left = `${(node.left() + node.right() - label.offsetWidth) / 2}px`;
+                    label.style.top = `${bounds.bottom + outlinePadding + gap + index * rowHeight}px`;
+                }
+            });
+        }
+
         function positionWorkspaceNotation() {
             const bounds = getExpressionBounds();
             const gap = parseFloat(getComputedStyle(workspaceCurrentNotation).lineHeight) || 24;
             workspaceCurrentNotation.style.left = `${bounds.left}px`;
             workspaceCurrentNotation.style.top = `${bounds.top - workspaceCurrentNotation.offsetHeight - gap}px`;
+            positionWorkspaceComponentNotation(bounds, gap);
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
                 // Clear the outline as well as the expression's layout bounds.
@@ -5330,7 +5372,8 @@ ctx.font = SETTINGS.textFont;
             bounds.top -= outlinePadding;
             bounds.right += outlinePadding;
             bounds.bottom += outlinePadding;
-            for (const line of [workspaceCurrentNotation, workspaceGoalNotation]) {
+            for (const line of [workspaceCurrentNotation, workspaceGoalNotation,
+                ...workspaceComponentNotation.children]) {
                 if (line.hidden) continue;
                 const left = parseFloat(line.style.left);
                 const top = parseFloat(line.style.top);

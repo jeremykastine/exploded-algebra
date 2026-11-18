@@ -53,6 +53,8 @@ const playerContext = vm.createContext({
     workspaceCurrentNotation: current,
     workspaceGoalNotation: goal,
     workspaceGoalConnector: connector,
+    renderWorkspaceComponentNotation() {},
+    positionWorkspaceComponentNotation() {},
     ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node },
     getCurrentLevel: () => ({}),
     getWorkspaceGoalKatex: () => goalKatex,
