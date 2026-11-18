@@ -198,3 +198,16 @@ assert.equal(vm.runInContext('getExpressionOutlinePadding(SETTINGS)', rendererCo
 assert.equal(vm.runInContext('getComponentGap(SETTINGS)', rendererContext), 16);
 assert.equal(vm.runInContext('getExpressionOutlinePadding(scaledSettings(SETTINGS, 0.5))', rendererContext), 8);
 assert.equal(vm.runInContext('getExpressionOutlinePadding({ bufferSize: 40, expressionOutlinePadding: 16 })', rendererContext), 16);
+
+// Temporary separator outlines follow the allocated layout slot, without
+// extending the bar's long axis into other components.
+for (const type of ['sum', 'prod']) {
+    const rectangles = [];
+    const drawing = { save() {}, restore() {}, strokeRect(...args) { rectangles.push(args); } };
+    const node = parent(type, false);
+    rendererContext.drawSeparatorBufferBounds(drawing, node, type, 60, 60,
+        { ...settings, debugSeparatorBounds: true });
+    assert.deepEqual(rectangles, type === 'sum' ? [[10, 38, 100, 44]] : [[38, 10, 44, 100]]);
+    rendererContext.drawSeparatorBufferBounds(drawing, node, type, 60, 60, settings);
+    assert.equal(rectangles.length, 1, 'Disabling temporary outlines removes them');
+}

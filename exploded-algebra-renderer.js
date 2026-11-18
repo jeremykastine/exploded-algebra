@@ -67,6 +67,7 @@ const SETTINGS = {
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     builderOperationFill: "rgb(235, 235, 235)",
+    debugSeparatorBounds: true, // Temporary: show each separator slot, including its full buffer.
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -1443,6 +1444,22 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
 
 */
 
+// Show the actual allocated slot: the bar's span on one axis, and the
+// operator thickness plus both component gaps on the perpendicular axis.
+function drawSeparatorBufferBounds(drawingContext, node, type, x, y, settings) {
+    if (!settings.debugSeparatorBounds) return;
+    const halfSlot = getOperatorHalfSize(settings) + getComponentGap(settings);
+    drawingContext.save();
+    drawingContext.strokeStyle = "rgba(30, 120, 220, 0.65)";
+    drawingContext.lineWidth = getStructuralStrokeWidth(settings);
+    if (type === "sum") {
+        drawingContext.strokeRect(node.left(), y - halfSlot, node.layout.width, halfSlot * 2);
+    } else {
+        drawingContext.strokeRect(x - halfSlot, node.top(), halfSlot * 2, node.layout.height);
+    }
+    drawingContext.restore();
+}
+
 function drawOperationBar(drawingContext, node, type, center, settings) {
     const half = getOperatorHalfSize(settings);
     const symbolWidth = getOperationMarkGeometry(settings, type).width;
@@ -1552,6 +1569,7 @@ function drawNodeToContext(
                 drawingContext.restore();
             }
             drawOperationMark(drawingContext, type, x, y, settings, separatorFill(node, j - 1));
+            drawSeparatorBufferBounds(drawingContext, node, type, x, y, settings);
             const half = getOperatorHalfSize(settings);
             if (type === "sum") drawDebugComponentBounds(drawingContext, node.left(), y - half, node.right(), y + half, settings);
             else drawDebugComponentBounds(drawingContext, x - half, node.top(), x + half, node.bottom(), settings);

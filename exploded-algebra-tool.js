@@ -2725,6 +2725,26 @@ Promise.resolve().then(() => {
             };
         }
 
+        function captureSelectionUndoState() {
+            return {
+                ...captureExpressionUndoState(),
+                selectionBefore: selection.node ? {
+                    path: findPathToNode(expressionRoot, selection.node),
+                    firstPart: selection.firstPart,
+                    lastPart: selection.lastPart,
+                    clicks: clonePlainData(selection.clicks || []),
+                    recorded: uiState.selectionRecorded
+                } : null
+            };
+        }
+
+        function rememberSelectionChangeForUndo(snapshot) {
+            if (!snapshot) return;
+            expressionUndoHistory.push(snapshot);
+            stableExpressionState = captureSelectionUndoState();
+            updateWorkspaceToolbar();
+        }
+
         function captureInitialBuilderUndoState(builder) {
             const copyHistoryEntry = entry => ({
                 ...entry,
@@ -2831,11 +2851,20 @@ Promise.resolve().then(() => {
                 updateExerciseMenu(getCurrentLevel());
                 return true;
             }
+            if (snapshot.selectionBefore) {
+                const previous = snapshot.selectionBefore;
+                const node = nodeAtPath(expressionRoot, previous.path);
+                if (node && applySelectionTarget({ node, firstPart: previous.firstPart, lastPart: previous.lastPart })) {
+                    selection.clicks = clonePlainData(previous.clicks);
+                    uiState.selectionRecorded = previous.recorded;
+                }
+            }
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
             renderCurrentExpressionDisplay();
             refreshStatus();
-            stableExpressionState = captureExpressionUndoState();
+            stableExpressionState = captureSelectionUndoState();
+            renderToolArea();
             drawExpression();
             return true;
         }
@@ -5262,7 +5291,7 @@ ctx.font = SETTINGS.textFont;
                     : builder ? (buildingStartingExpression && !builder.history.length) || !isDemoBuilderActionAllowed(builderUndoAction)
                         : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
                 undoExpressionButton.setAttribute("aria-label", isDemoModeActive() ? "Undo previous guided action"
-                    : builder ? "Undo builder entry" : "Undo previous expression step");
+                    : builder ? "Undo builder entry" : "Undo previous expression or selection step");
                 undoExpressionButton.setAttribute("aria-keyshortcuts", builder ? "Backspace Delete" : "Control+Z Meta+Z");
             }
             workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
@@ -6719,8 +6748,10 @@ ctx.font = SETTINGS.textFont;
             if (!selection.node || isDemoModeActive()) {
                 return false;
             }
+            const selectionUndo = !compilingMoves ? captureSelectionUndoState() : null;
             clearSelection();
             clearInteraction();
+            rememberSelectionChangeForUndo(selectionUndo);
             renderLevelInfo(currentLevelIndex);
             refreshStatus();
             drawExpression();
@@ -12875,6 +12906,7 @@ function renderToolArea() {
                 if (!sameSelectionClickTarget(target, expected)) return false;
             }
             const undoPoint = captureGuidedUndoPoint();
+            const selectionUndo = !isDemoModeActive() && !compilingMoves ? captureSelectionUndoState() : null;
             if (!growSelectionToInclude(target)) {
                 return false;
             }
@@ -12890,6 +12922,7 @@ function renderToolArea() {
                 renderToolArea();
             }
             rememberGuidedUndoPoint(undoPoint);
+            if (selectionUndo) rememberSelectionChangeForUndo(selectionUndo);
             return true;
         }
 
