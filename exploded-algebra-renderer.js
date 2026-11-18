@@ -2215,7 +2215,7 @@ function expressionToCodeMarkup(rootOrData, builder = false) {
             }
             const body = negativeOne(factor) && (index > 0 || leadingMinus)
                 ? "(-1)" : render(factor, "factor", markup);
-            return (index ? " * " : "") + body;
+            return (index ? "*" : "") + body;
         }).join("");
     }
 
@@ -2246,8 +2246,8 @@ function expressionToCodeMarkup(rootOrData, builder = false) {
                 }
             });
             const tree = terms.length > 1 ? new ExprNode("sum", terms, null) : terms[0];
-            const trailing = operators[node.args.length - 1] === "sum" ? " + "
-                : operators[node.args.length - 1] === "prod" ? " * " : "";
+            const trailing = operators[node.args.length - 1] === "sum" ? "   +   "
+                : operators[node.args.length - 1] === "prod" ? "*" : "";
             return trailing && parent ? group(render(tree, null, markup) + trailing) : render(tree, parent, markup) + trailing;
         }
         if (node.type === "value") {
@@ -2264,7 +2264,7 @@ function expressionToCodeMarkup(rootOrData, builder = false) {
                 if (negativeOne(term) || negativeProduct(term)) {
                     return (index ? " - " : "-") + (negativeOne(term) ? "1" : product(term.args.slice(1), markup, true));
                 }
-                return (index ? " + " : "") + render(term, "term", markup);
+                return (index ? "   +   " : "") + render(term, "term", markup);
             }).join("");
             return parent && parent !== "term" ? group(body) : body;
         }
