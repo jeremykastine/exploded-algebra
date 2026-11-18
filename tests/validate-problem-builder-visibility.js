@@ -91,6 +91,8 @@ function checkImportAndExport() {
     "commitRestrictedNumericalRewrite", "applyPrescribedNumericalRewrite", "isDemoActionAllowed"
   ];
   vm.runInContext(names.map(name => extract(player, name, "        ")).join("\n"), scope);
+  scope.captureGuidedUndoPoint = () => null;
+  scope.rememberGuidedUndoPoint = () => {};
   scope.isNumericalRewriteTool = tool => tool === "numericalRewrite";
 
   const initial = "((x)+(2)+(4))";

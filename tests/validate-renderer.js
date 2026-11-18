@@ -193,3 +193,9 @@ assert.equal(positionedParent("prod", "end").narrow.top(), 22,
     "Legacy alignment preferences must leave product factors centered");
 
 console.log("Exploded Algebra renderer checks passed.");
+
+// Outline breathing room is separate from the component and selection buffers.
+assert.equal(vm.runInContext('getExpressionOutlinePadding(SETTINGS)', rendererContext), 16);
+assert.equal(vm.runInContext('getComponentGap(SETTINGS)', rendererContext), 16);
+assert.equal(vm.runInContext('getExpressionOutlinePadding(scaledSettings(SETTINGS, 0.5))', rendererContext), 8);
+assert.equal(vm.runInContext('getExpressionOutlinePadding({ bufferSize: 40, expressionOutlinePadding: 16 })', rendererContext), 16);

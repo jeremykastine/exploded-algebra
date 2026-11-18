@@ -55,7 +55,8 @@ click target in yellow. Multi-click selections prompt each click in its original
 order, followed by the tool button. Inverse prompts cover only the header when
 the inverse itself was clicked, and operation clicks highlight the separator.
 Each notation row stays non-wrapping, and long expressions remain reachable by
-panning the shared workspace.
+panning the shared workspace. The outer outline leaves 16 pixels around the
+expression, independently of internal component spacing and selection buffers.
 Bars use a gray gradient with a white center and a continuous midline.
 Operations use the default black filled circle with a white symbol at 100% size.
 Bars appear only when a sum or product contains a structured child; otherwise
@@ -64,14 +65,19 @@ Undo returns through completed transformations, then reverses Enter to reopen
 the starting-expression builder with its entry history and cursor intact.
 Further Undo presses remove builder entries. Ctrl/Cmd+Z also works across this
 transition and within the builder when focus is not in a text field.
-Undo is never recorded; shared links and text files contain only the surviving
-build inputs and transformations. The Numerical Manipulation action button is marked with bold
+In Guided Replay, Undo navigates backward one recorded click or button press,
+including build entry, selection, tool activation, and completed steps. The next
+yellow highlight then guides the learner forward again. Reconstructing the prior
+step preserves pan and zoom, adds no Undo event, and leaves the original shared
+recording unchanged. Reset clears this navigation history.
+Undo is never recorded; Free Play shares only the surviving build inputs and
+transformations. The Numerical Manipulation action button is marked with bold
 `123`. Guided Replay follows the recorded numerical
 replacement entries. Free Play allows unrestricted numerical replacements.
 Share / Download Moves saves or copies the current mathematical recording.
 
-Workspace zoom-in, zoom-out, and 100% reset actions are included in Undo.
-Shared recordings omit view changes. Initial expression entry and zero-product insertion
+Workspace zoom controls remain separate from guided step navigation.
+Shared recordings omit view changes, and guided Undo preserves the current view. Initial expression entry and zero-product insertion
 use the shared expression entry canvas.
 Manual Numerical Manipulation keeps the complete expression visible, with the
 surrounding content at its usual intensity and only the selected original gray.

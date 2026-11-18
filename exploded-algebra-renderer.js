@@ -44,6 +44,7 @@ const SETTINGS = {
     expressionStrokeFill: "rgb(95,95,95)",
     expressionOutline: true,
     expressionOutlineColor: "#999999",
+    expressionOutlinePadding: 16,
     selectionBlue: "rgb(80,140,255)",
     overlayAlpha: 0.25,
     previewDurationMs: 500,
@@ -108,6 +109,7 @@ function scaledSettings(baseSettings, scale, overrides = {}) {
         marginY: baseSettings.marginY * scale,
         textFont: scaleFont(baseSettings.textFont, scale),
         bufferSize: (baseSettings.bufferSize || baseSettings.debugComponentBuffer || 16) * scale,
+        expressionOutlinePadding: getExpressionOutlinePadding(baseSettings) * scale,
         operatorThickness: (baseSettings.operatorThickness || baseSettings.flare * 2 || 12) * scale,
         debugComponentLineWidth: Math.max(0.5, (baseSettings.debugComponentLineWidth || 1) * scale),
         debugComponentBuffer: (baseSettings.bufferSize || baseSettings.debugComponentBuffer || 16) * scale
@@ -170,10 +172,14 @@ function getComponentGap(settings) {
     return settings.bufferSize || settings.debugComponentBuffer || 16;
 }
 
-// Match the half-buffer used by selection regions around an expression.
+function getExpressionOutlinePadding(settings) {
+    return Number.isFinite(settings.expressionOutlinePadding) && settings.expressionOutlinePadding >= 0
+        ? settings.expressionOutlinePadding : getComponentGap(settings) / 2;
+}
+
 function drawExpressionOutlineToContext(root, drawingContext, settings) {
     if (!root || settings.expressionOutline === false) return;
-    const padding = getComponentGap(settings) / 2;
+    const padding = getExpressionOutlinePadding(settings);
     drawingContext.save();
     drawingContext.strokeStyle = settings.expressionOutlineColor || "#999999";
     drawingContext.lineWidth = getStructuralStrokeWidth(settings);
@@ -1984,7 +1990,7 @@ function renderExpressionSvgMarkup(root, options = {}) {
     drawingContext.textAlign = "center";
     drawingContext.textBaseline = "middle";
     const outlineMargin = settings.expressionOutline === false ? 0
-        : getComponentGap(settings) / 2 + getStructuralStrokeWidth(settings) / 2;
+        : getExpressionOutlinePadding(settings) + getStructuralStrokeWidth(settings) / 2;
     const marginX = Math.max(settings.marginX || 0, outlineMargin);
     const marginY = Math.max(settings.marginY || 0, outlineMargin);
     layoutExpressionWithSettings(root, drawingContext, settings, marginX, marginY);

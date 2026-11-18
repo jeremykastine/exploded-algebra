@@ -25,6 +25,7 @@ const scope = {
   findDemoSelectionTarget: () => ({ node: root, firstPart: 0, lastPart: 2 }),
   uiState: { stage: 'idle', previewTimerId: null, postviewTimerId: null },
   isDemoModeActive: () => true,
+  captureGuidedUndoPoint: () => null, rememberGuidedUndoPoint() {},
   growSelectionToInclude: () => true,
   updateWorkspaceToolbar() {}, clearInteraction() {}, refreshStatus() {}, drawExpression() {}, renderToolArea() {},
   currentSelectionMatchesDemoStep: () => true,

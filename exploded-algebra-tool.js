@@ -1414,6 +1414,8 @@ Promise.resolve().then(() => {
         let buildingStartingExpression = false;
         let demoStepIndex = 0;
         let demoSelectionClickIndex = 0;
+        let guidedUndoHistory = [];
+        let restoringGuidedUndo = false;
 
         let currentLevelIndex = 0;
         let completedSteps = [];
@@ -2786,6 +2788,7 @@ Promise.resolve().then(() => {
         }
 
         function undoExpressionStep() {
+            if (isDemoModeActive() && !restoringGuidedUndo) return undoGuidedAction();
             if (!expressionUndoHistory.length || !isDemoUndoAllowed()) {
                 updateWorkspaceToolbar();
                 return false;
@@ -2927,12 +2930,91 @@ Promise.resolve().then(() => {
             }, step);
         }
 
-        function isDemoUndoAllowed() {
-            if (!isDemoModeActive()) {
+        function captureGuidedUndoPoint() {
+            return isDemoModeActive() && !restoringGuidedUndo ? {
+                building: buildingStartingExpression,
+                step: demoStepIndex,
+                click: demoSelectionClickIndex
+            } : null;
+        }
+
+        function rememberGuidedUndoPoint(point) {
+            if (!point || restoringGuidedUndo) return;
+            guidedUndoHistory.push(point);
+            updateWorkspaceToolbar();
+        }
+
+        function guidedProgressMatches(point) {
+            return buildingStartingExpression === point.building && demoStepIndex === point.step &&
+                demoSelectionClickIndex === point.click;
+        }
+
+        function replayGuidedActionForUndo() {
+            const step = getCurrentDemoStep();
+            if (!step) return false;
+            if (step.type === "select") {
+                const target = getDemoSelectionClickTargets(step)[demoSelectionClickIndex];
+                return !!target && selectWorkspaceTarget(target);
+            }
+            if (step.type === "builder") return performBuilderAction(step.action, step.value || "");
+            if (step.type === "tool") {
+                activateTool(step.tool);
                 return true;
             }
-            const step = getCurrentDemoStep();
-            return !!step && step.type === "undo";
+            if (step.type === "commuteChoice") return recordCommutePermutationChoice(getDemoCommuteChoiceAbsoluteIndex(step));
+            if (step.type === "undo") return undoExpressionStep();
+            if (step.type === "action") {
+                applyDemoInputForCurrentStep();
+                if (step.action === "chooseNumericalRewrite") {
+                    applyPrescribedNumericalRewrite(step.value);
+                } else {
+                    recordActionForSolution(step.action, step.value, getExpressionTextForTrace());
+                    advanceDemoStep();
+                    handleToolAction(step.action, step.value);
+                }
+                return true;
+            }
+            return false;
+        }
+
+        function undoGuidedAction() {
+            if (!guidedUndoHistory.length || restoringGuidedUndo) return false;
+            const point = guidedUndoHistory.pop();
+            const view = { zoom: workspaceZoom, x: workspacePanX, y: workspacePanY, manuallyPanned: workspaceViewManuallyPanned };
+            const wasCompiling = compilingMoves;
+            restoringGuidedUndo = true;
+            compilingMoves = true;
+            try {
+                // Reconstruct the recorded prefix with the same math engine, without
+                // animation. Undo navigates the recording; it never becomes an event.
+                loadLevel(currentLevelIndex, buildFirstEnabled);
+                let remaining = 100000;
+                while (!guidedProgressMatches(point)) {
+                    const before = `${buildingStartingExpression}:${demoStepIndex}:${demoSelectionClickIndex}`;
+                    if (--remaining < 0 || replayGuidedActionForUndo() === false ||
+                        before === `${buildingStartingExpression}:${demoStepIndex}:${demoSelectionClickIndex}`) {
+                        throw new Error("The previous guided step could not be restored.");
+                    }
+                }
+            } finally {
+                compilingMoves = wasCompiling;
+                restoringGuidedUndo = false;
+                workspaceZoom = view.zoom;
+                workspacePanX = view.x;
+                workspacePanY = view.y;
+                workspaceViewManuallyPanned = view.manuallyPanned;
+            }
+            refreshDemoBodyClass();
+            renderLevelInfo(currentLevelIndex);
+            renderToolArea();
+            refreshStatus();
+            drawExpression();
+            updateWorkspaceToolbar();
+            return true;
+        }
+
+        function isDemoUndoAllowed() {
+            return !isDemoModeActive() || guidedUndoHistory.length > 0 || getCurrentDemoStep()?.type === "undo";
         }
 
         function recordCommuteChoiceForSolution(clickedIndex, beforeExpression) {
@@ -3932,6 +4014,9 @@ Promise.resolve().then(() => {
         }
 
         function isDemoBuilderActionAllowed(action, value) {
+            if (["undo", "undoBackspace"].includes(action) && isDemoModeActive() && !restoringGuidedUndo) {
+                return guidedUndoHistory.length > 0;
+            }
             const step = getCurrentDemoStep();
             if (!isDemoModeActive()) {
                 return true;
@@ -4693,6 +4778,7 @@ Promise.resolve().then(() => {
 
         }
         function loadLevel(levelIndex, buildFirst = false) {
+            if (!restoringGuidedUndo) guidedUndoHistory = [];
             const level = LEVELS[levelIndex];
             if (!level) {
                 return;
@@ -5177,10 +5263,12 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
             const builderUndoAction = isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace";
             if (undoExpressionButton) {
-                undoExpressionButton.disabled = builder
-                    ? (buildingStartingExpression && !builder.history.length) || !isDemoBuilderActionAllowed(builderUndoAction)
-                    : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
-                undoExpressionButton.setAttribute("aria-label", builder ? "Undo builder entry" : "Undo previous expression step");
+                undoExpressionButton.disabled = isDemoModeActive()
+                    ? guidedUndoHistory.length === 0
+                    : builder ? (buildingStartingExpression && !builder.history.length) || !isDemoBuilderActionAllowed(builderUndoAction)
+                        : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
+                undoExpressionButton.setAttribute("aria-label", isDemoModeActive() ? "Undo previous guided action"
+                    : builder ? "Undo builder entry" : "Undo previous expression step");
                 undoExpressionButton.setAttribute("aria-keyshortcuts", builder ? "Backspace Delete" : "Control+Z Meta+Z");
             }
             workspaceToolbar.querySelectorAll(".demo-target-button,.demo-blocked-button").forEach(button => {
@@ -5189,9 +5277,9 @@ ctx.font = SETTINGS.textFont;
             if (isDemoModeActive()) {
                 const step = getCurrentDemoStep();
                 if (undoExpressionButton) {
-                    const undoIsNext = builder ? isDemoBuilderActionAllowed(builderUndoAction) : step?.type === "undo";
+                    const undoIsNext = step?.type === "undo";
                     undoExpressionButton.classList.toggle("demo-target-button", undoIsNext);
-                    undoExpressionButton.classList.toggle("demo-blocked-button", !undoIsNext);
+                    undoExpressionButton.classList.toggle("demo-blocked-button", undoExpressionButton.disabled);
                 }
             }
         }
@@ -5213,6 +5301,12 @@ ctx.font = SETTINGS.textFont;
 
         function getWorkspaceContentBounds() {
             const bounds = getExpressionBounds();
+            const outlinePadding = SETTINGS.expressionOutline === false ? 0
+                : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
+            bounds.left -= outlinePadding;
+            bounds.top -= outlinePadding;
+            bounds.right += outlinePadding;
+            bounds.bottom += outlinePadding;
             for (const line of [workspaceCurrentNotation, workspaceGoalNotation]) {
                 if (line.hidden) continue;
                 const left = parseFloat(line.style.left);
@@ -10920,6 +11014,7 @@ ctx.font = SETTINGS.textFont;
             }
 
             const shouldAdvanceDemo = isDemoModeActive() && getCurrentDemoStep() && getCurrentDemoStep().type === "commuteChoice";
+            rememberGuidedUndoPoint(captureGuidedUndoPoint());
             recordCommuteChoiceForSolution(clickedIndex, getExpressionTextForTrace());
             uiState.commuteOrder.push(clickedIndex);
             const selectedLength = getSelectedSliceLength();
@@ -11566,6 +11661,9 @@ ctx.font = SETTINGS.textFont;
         }
 
         function performBuilderAction(action, value = "") {
+            if (["undo", "undoBackspace"].includes(action) && isDemoModeActive() && !restoringGuidedUndo) {
+                return undoGuidedAction();
+            }
             if (!uiState.expressionBuilder || uiState.stage !== "builder") {
                 return false;
             }
@@ -11573,6 +11671,7 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
+            const undoPoint = captureGuidedUndoPoint();
             const builderAtStart = uiState.expressionBuilder;
             const beforeExpression = isIntegratedExpressionBuilder(builderAtStart) && builderAtStart.mainRoot
                 ? expressionToFullyParenthesizedText(builderAtStart.mainRoot)
@@ -11658,6 +11757,7 @@ ctx.font = SETTINGS.textFont;
                 }
                 advanceDemoStep();
             }
+            rememberGuidedUndoPoint(undoPoint);
             return true;
         }
 
@@ -11868,10 +11968,12 @@ ctx.font = SETTINGS.textFont;
                         applyPrescribedNumericalRewrite(value);
                         return;
                     }
+                    const undoPoint = captureGuidedUndoPoint();
                     const beforeExpression = getExpressionTextForTrace();
                     recordActionForSolution(action, value, beforeExpression);
                     advanceDemoStep();
                     handleToolAction(action, value);
+                    rememberGuidedUndoPoint(undoPoint);
                 });
             });
         }
@@ -12107,6 +12209,7 @@ function renderToolArea() {
         }
 
         function activateTool(toolName) {
+            const undoPoint = captureGuidedUndoPoint();
             if (prescribedRewritesEnabled && isNumericalBuilderTool(toolName)) {
                 const choices = getPrescribedNumericalRewriteChoices();
                 if (isDemoModeActive()) {
@@ -12127,6 +12230,7 @@ function renderToolArea() {
             recordToolForSolution(toolName, beforeExpression);
             advanceDemoStep();
             beginTool(toolName);
+            rememberGuidedUndoPoint(undoPoint);
         }
 
         function beginTool(toolName) {
@@ -12412,6 +12516,7 @@ function renderToolArea() {
         function applyPrescribedNumericalRewrite(value) {
             if (!isDemoActionAllowed("chooseNumericalRewrite", value) ||
                 !getPrescribedNumericalRewriteChoices().includes(value)) return;
+            const undoPoint = captureGuidedUndoPoint();
             const from = expressionToFullyParenthesizedText(cloneSelectedRangeNode());
             recordActionForSolution("chooseNumericalRewrite", value, getExpressionTextForTrace());
             const completedAction = solutionRecorder?.actions.at(-1);
@@ -12419,6 +12524,7 @@ function renderToolArea() {
             advanceDemoStep();
             replaceSelectedRange(textToExpression(value));
             finishOperation();
+            rememberGuidedUndoPoint(undoPoint);
         }
 
         function handleToolAction(action, value) {
@@ -12774,6 +12880,7 @@ function renderToolArea() {
                 const expected = clicks[demoSelectionClickIndex];
                 if (!sameSelectionClickTarget(target, expected)) return false;
             }
+            const undoPoint = captureGuidedUndoPoint();
             if (!growSelectionToInclude(target)) {
                 return false;
             }
@@ -12788,6 +12895,7 @@ function renderToolArea() {
                 drawExpression();
                 renderToolArea();
             }
+            rememberGuidedUndoPoint(undoPoint);
             return true;
         }
 

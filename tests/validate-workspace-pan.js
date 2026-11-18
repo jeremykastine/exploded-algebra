@@ -103,3 +103,24 @@ assert(
 );
 
 console.log("Workspace pan checks passed.");
+
+// The enlarged outer outline belongs to the pan/zoom bounds, so default placement
+// cannot clip its left edge when conventional notation shares the same anchor.
+const boundsScope = vm.createContext({
+    SETTINGS: { expressionOutline: true, expressionOutlinePadding: 16 },
+    getExpressionBounds: () => ({ left: 20, top: 20, right: 60, bottom: 80 }),
+    getSelectionMargin: () => 8,
+    workspaceCurrentNotation: { hidden: true }, workspaceGoalNotation: { hidden: true },
+    expressionRoot: {}, workspaceZoom: 1,
+    svgContainer: { getBoundingClientRect: () => ({ left: 0, top: 0 }) },
+    getFloatingPaletteViewportBounds: () => ({ left: 10, top: 10 }),
+    clampWorkspacePan: (x, y) => ({ x, y })
+});
+for (const name of ['getWorkspaceContentBounds', 'getDefaultWorkspacePan']) {
+    const match = playerJs.match(new RegExp(`        function ${name}\\([^\\n]*\\) \\{[\\s\\S]*?\\n        \\}`));
+    vm.runInContext(match[0], boundsScope);
+}
+assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getWorkspaceContentBounds())), { left: 4, top: 4, right: 76, bottom: 96 });
+assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getDefaultWorkspacePan())), { x: 6, y: 6 });
+boundsScope.SETTINGS.expressionOutline = false;
+assert.equal(boundsScope.getWorkspaceContentBounds().left, 20);
