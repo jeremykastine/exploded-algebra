@@ -1362,6 +1362,37 @@ function nodeHasSeparators(node) {
         Array.isArray(node.args) && node.args.length > 1;
 }
 
+// Bold black center symbols retain the gradient separator beams. Keep their size inside the
+// existing operator slot so layout, selection, and guided clicks stay aligned.
+function getOperationMarkGeometry(settings, type) {
+    const proportion = [100, 75, 50].includes(Number(settings.operationSize))
+        ? Number(settings.operationSize) / 100 : 1;
+    const diameter = getOperatorThickness(settings) * proportion;
+    const half = diameter / 2;
+    const strokeWidth = diameter / 4;
+    const markHalf = (diameter - strokeWidth) / 2;
+    return { diameter, half, strokeWidth, markHalf, width: diameter };
+}
+
+function drawOperationMark(drawingContext, type, x, y, settings) {
+    const { half, strokeWidth, markHalf } = getOperationMarkGeometry(settings, type);
+    drawingContext.save();
+    if (type === "sum") {
+        drawingContext.strokeStyle = "black";
+        drawingContext.lineWidth = strokeWidth;
+        drawingContext.beginPath();
+        drawPlusMark(drawingContext, x, y, markHalf);
+        drawingContext.stroke();
+    } else {
+        drawingContext.fillStyle = "black";
+        drawingContext.beginPath();
+        drawingContext.arc(x, y, half, 0, Math.PI * 2);
+        drawingContext.fill();
+    }
+    drawingContext.restore();
+}
+
+/* Previous operation mark styling, retained for restoring the bar appearance.
 // Simple and compound sums/products share the same separator bars.
 // Bar geometry and central operation appearance are independent.
 function getOperationMarkGeometry(settings, type) {
@@ -1409,6 +1440,8 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
     }
     drawingContext.restore();
 }
+
+*/
 
 function drawOperationBar(drawingContext, node, type, center, settings) {
     const half = getOperatorHalfSize(settings);
