@@ -1357,6 +1357,7 @@ Promise.resolve().then(() => {
         const shareMovesStatus = document.getElementById("shareMovesStatus");
         const openBuildInput = document.getElementById("openBuildInput");
         let compilingMoves = false;
+        let compactReplayVersion = 1;
         let sharePayload = "";
         let shareBuildDefault = true;
         const toolOptionMenu = document.getElementById("toolOptionMenu");
@@ -1412,6 +1413,7 @@ Promise.resolve().then(() => {
         let buildFirstEnabled = false;
         let buildingStartingExpression = false;
         let demoStepIndex = 0;
+        let demoSelectionClickIndex = 0;
 
         let currentLevelIndex = 0;
         let completedSteps = [];
@@ -2867,7 +2869,8 @@ Promise.resolve().then(() => {
                 ? {
                     path: selectionPath.slice(),
                     firstPart: selection.firstPart,
-                    lastPart: selection.lastPart
+                    lastPart: selection.lastPart,
+                    clicks: clonePlainData(selection.clicks || [])
                 }
                 : {};
             recordSolutionAction({
@@ -3703,6 +3706,7 @@ Promise.resolve().then(() => {
 
         function resetDemoStateForCurrentLevel() {
             demoStepIndex = 0;
+            demoSelectionClickIndex = 0;
             updateModeControls();
         }
 
@@ -3874,6 +3878,7 @@ Promise.resolve().then(() => {
             }
             const steps = getCurrentDemoSteps();
             demoStepIndex = Math.min(demoStepIndex + 1, steps.length);
+            demoSelectionClickIndex = 0;
             refreshDemoBodyClass();
             refreshDemoPromptAfterAdvance();
         }
@@ -4075,49 +4080,82 @@ Promise.resolve().then(() => {
             };
         }
 
-        function drawDashedDemoSelectionRectangle(node, firstPart, lastPart) {
-            const rect = getSelectionRectangleForNodeRange(node, firstPart, lastPart);
-            if (!rect) {
-                return;
+        function getDemoSelectionClickTargets(step = getCurrentDemoStep()) {
+            if (!step || step.type !== "select") return [];
+            const target = findDemoSelectionTarget(step);
+            if (!target) return [];
+            const path = findPathToNode(expressionRoot, target.node);
+            const record = step.clicks?.length ? step : { path, firstPart: target.firstPart, lastPart: target.lastPart };
+            const all = ExplodedAlgebraMoves.clickTargets(expressionRoot);
+            try {
+                return ExplodedAlgebraMoves.clickPositions(expressionRoot, record).map(index => all[index]);
+            } catch {
+                return [];
             }
+        }
 
-            ctx.save();
-            ctx.globalAlpha = 1;
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "rgb(226, 176, 0)";
-            ctx.setLineDash([3, 5]);
-            ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
-            ctx.restore();
+        function sameSelectionClickTarget(actual, expected) {
+            return !!actual && !!expected && actual.node === expected.node &&
+                actual.firstPart === expected.firstPart && actual.lastPart === expected.lastPart;
+        }
+
+        function getDemoClickHighlightRectangle(target) {
+            const node = target?.node;
+            if (!node) return null;
+            const pad = 3;
+            if (node.type === "inv") {
+                return { x: node.left() - pad, y: node.top() - pad,
+                    width: node.right() - node.left() + 2 * pad,
+                    height: getInverseHeaderBottom(node) - node.top() + 2 * pad };
+            }
+            if (node.type === "value") {
+                return { x: node.left() - pad, y: node.top() - pad,
+                    width: node.right() - node.left() + 2 * pad, height: node.bottom() - node.top() + 2 * pad };
+            }
+            if ((node.type === "sum" || node.type === "prod") && target.lastPart === target.firstPart + 1) {
+                const half = Math.max(4, SETTINGS.operatorThickness || SETTINGS.flare * 2 || 12) / 2 + pad;
+                const bar = nodeHasSeparators(node);
+                if (node.type === "prod") {
+                    const x = relVLine(node, target.lastPart);
+                    const y = (node.top() + node.bottom()) / 2;
+                    return { x: x - half, y: bar ? node.top() - pad : y - half,
+                        width: 2 * half, height: bar ? node.bottom() - node.top() + 2 * pad : 2 * half };
+                }
+                const x = (node.left() + node.right()) / 2;
+                const y = relHLine(node, target.lastPart);
+                return { x: bar ? node.left() - pad : x - half, y: y - half,
+                    width: bar ? node.right() - node.left() + 2 * pad : 2 * half, height: 2 * half };
+            }
+            return getSelectionRectangleForNodeRange(node, target.firstPart, target.lastPart);
+        }
+
+        function drawYellowDemoClickHighlight(target, commute = false) {
+            const rect = commute ? getSelectionRectangleForNodeRange(target.node, target.firstPart, target.lastPart)
+                : getDemoClickHighlightRectangle(target);
+            if (!rect) return;
+            const highlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            for (const [name, value] of Object.entries({ ...rect,
+                fill: "rgba(255, 210, 0, 0.45)", "pointer-events": "none",
+                "aria-hidden": "true", "data-guided-click-highlight": "true" })) {
+                highlight.setAttribute(name, String(value));
+            }
+            // Draw above the blue selection layer while letting input pass through.
+            workspaceSvg.appendChild(highlight);
         }
 
         function drawDemoSelectionPrompt() {
-            if (
-                !isDemoModeActive() ||
-                uiState.stage === "postview" ||
-                uiState.previewTimerId !== null ||
-                uiState.postviewTimerId !== null
-            ) {
-                return;
-            }
+            if (!isDemoModeActive() || uiState.stage === "postview" ||
+                uiState.previewTimerId !== null || uiState.postviewTimerId !== null) return;
             const step = getCurrentDemoStep();
-            if (!step) {
-                return;
-            }
+            if (!step) return;
             if (step.type === "commuteChoice" && uiState.stage === "preview") {
-                const targetIndex = getDemoCommuteChoiceAbsoluteIndex(step);
-                if (targetIndex >= 0) {
-                    drawDashedDemoSelectionRectangle(selection.node, targetIndex, targetIndex);
-                }
+                const index = getDemoCommuteChoiceAbsoluteIndex(step);
+                if (index >= 0) drawYellowDemoClickHighlight({ node: selection.node, firstPart: index, lastPart: index }, true);
                 return;
             }
-            if (uiState.stage === "preview" || step.type !== "select") {
-                return;
-            }
-            const target = findDemoSelectionTarget(step);
-            if (!target) {
-                return;
-            }
-            drawDashedDemoSelectionRectangle(target.node, target.firstPart, target.lastPart);
+            if (uiState.stage === "preview" || step.type !== "select") return;
+            const target = getDemoSelectionClickTargets(step)[demoSelectionClickIndex];
+            if (target) drawYellowDemoClickHighlight(target);
         }
 
         function expressionMatchesParenthesizedText(parenthesizedText) {
@@ -4215,7 +4253,7 @@ Promise.resolve().then(() => {
                 if (action.type === "select") {
                     selected = action;
                     const root = normalizeExpressionTree(textToExpression(action.beforeExpression));
-                    const indices = ExplodedAlgebraMoves.selectionPositions(root, action);
+                    const indices = ExplodedAlgebraMoves.clickPositions(root, action);
                     indices.forEach(index => events.push({ type: "position", index }));
                 } else if (action.type === "tool") {
                     let command = COMPACT_TOOL_PAIRS[action.tool];
@@ -4229,7 +4267,7 @@ Promise.resolve().then(() => {
                 } else if (action.type === "commuteChoice") {
                     const root = normalizeExpressionTree(textToExpression(action.beforeExpression));
                     const path = selected.path.concat(selected.firstPart + action.relativeIndex);
-                    const index = ExplodedAlgebraMoves.targets(root).findIndex(target => path.every((part, i) => target.path[i] === part));
+                    const index = ExplodedAlgebraMoves.clickTargets(root).findIndex(target => path.every((part, i) => target.path[i] === part));
                     if (index < 0) throw new Error("The recorded commute choice could not be numbered.");
                     events.push({ type: "position", index });
                 } else {
@@ -4238,7 +4276,7 @@ Promise.resolve().then(() => {
             }
             if (selection.node && !uiState.activeTool && !buildingStartingExpression) {
                 const path = findPathToNode(expressionRoot, selection.node);
-                ExplodedAlgebraMoves.selectionPositions(expressionRoot, { path, firstPart: selection.firstPart, lastPart: selection.lastPart })
+                ExplodedAlgebraMoves.clickPositions(expressionRoot, { path, firstPart: selection.firstPart, lastPart: selection.lastPart, clicks: selection.clicks })
                     .forEach(index => events.push({ type: "position", index }));
             }
             return events;
@@ -4266,7 +4304,7 @@ Promise.resolve().then(() => {
         }
 
         function performCompactPosition(index) {
-            const target = ExplodedAlgebraMoves.targets(expressionRoot)[index];
+            const target = (compactReplayVersion === 1 ? ExplodedAlgebraMoves.targets(expressionRoot) : ExplodedAlgebraMoves.clickTargets(expressionRoot))[index];
             if (!target) return false;
             if (uiState.stage === "preview" && ["commuteTerms", "commuteFactors", "commute"].includes(uiState.activeTool)) {
                 const path = findPathToNode(expressionRoot, selection.node);
@@ -4274,10 +4312,12 @@ Promise.resolve().then(() => {
                 return recordCommutePermutationChoice(target.path[path.length]);
             }
             if (uiState.stage !== "idle" || uiState.activeTool) return false;
-            return growSelectionToInclude({ node: target.node, firstPart: 0, lastPart: 0 });
+            return growSelectionToInclude({ node: target.node, firstPart: target.firstPart || 0, lastPart: target.lastPart || 0 });
         }
 
         function compileCompactMoves(decoded) {
+            const previousVersion = compactReplayVersion;
+            compactReplayVersion = decoded.version;
             compilingMoves = true;
             try {
                 startCreativeSession();
@@ -4309,6 +4349,7 @@ Promise.resolve().then(() => {
                 };
             } finally {
                 compilingMoves = false;
+                compactReplayVersion = previousVersion;
                 clearSelection();
                 clearInteraction();
             }
@@ -4330,7 +4371,9 @@ Promise.resolve().then(() => {
         function updateShareMovesPreview() {
             sharePayload = "";
             try {
-                sharePayload = ExplodedAlgebraMoves.encode(getCompactEventsForCurrentRun(), shareBuildInput.checked);
+                const original = getCurrentLevel()?.compactPayload;
+                const version = original ? ExplodedAlgebraMoves.decode(original).version : 2;
+                sharePayload = ExplodedAlgebraMoves.encode(getCompactEventsForCurrentRun(), shareBuildInput.checked, version);
                 const url = new URL("exploded-algebra.html", window.location.href);
                 url.search = new URLSearchParams({ moves: sharePayload, build: shareBuildInput.checked ? "1" : "0" });
                 url.hash = "";
@@ -5065,7 +5108,8 @@ ctx.font = SETTINGS.textFont;
             status: "no",
             node: null,
             firstPart: -1,
-            lastPart: -1
+            lastPart: -1,
+            clicks: []
         };
 
         const uiState = {
@@ -6550,6 +6594,8 @@ ctx.font = SETTINGS.textFont;
             selection.node = null;
             selection.firstPart = -1;
             selection.lastPart = -1;
+            selection.clicks = [];
+            demoSelectionClickIndex = 0;
             uiState.selectionRecorded = false;
             updateWorkspaceToolbar();
         }
@@ -6874,7 +6920,11 @@ ctx.font = SETTINGS.textFont;
             if (!isDemoSelectionTargetAllowed(expandedTarget)) {
                 return false;
             }
-            return applySelectionTarget(expandedTarget);
+            const path = findPathToNode(expressionRoot, target.node);
+            const clicks = selection.clicks || [];
+            if (!applySelectionTarget(expandedTarget)) return false;
+            selection.clicks = path ? [...clicks, { path, firstPart: target.firstPart, lastPart: target.lastPart }] : clicks;
+            return true;
         }
 
         function getSelectionBox() {
@@ -12718,13 +12768,20 @@ function renderToolArea() {
 
         function selectWorkspaceTarget(target) {
             if (!target) return false;
+            const step = getCurrentDemoStep();
+            const clicks = step?.type === "select" ? getDemoSelectionClickTargets(step) : [];
+            if (isDemoModeActive() && step?.type === "select") {
+                const expected = clicks[demoSelectionClickIndex];
+                if (!sameSelectionClickTarget(target, expected)) return false;
+            }
             if (!growSelectionToInclude(target)) {
                 return false;
             }
 
             updateWorkspaceToolbar();
             clearInteraction();
-            if (isDemoModeActive() && currentSelectionMatchesDemoStep()) {
+            if (isDemoModeActive() && step?.type === "select") demoSelectionClickIndex++;
+            if (isDemoModeActive() && demoSelectionClickIndex >= clicks.length && currentSelectionMatchesDemoStep()) {
                 advanceDemoStep();
             } else {
                 refreshStatus();

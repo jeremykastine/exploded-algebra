@@ -50,7 +50,11 @@ the run and file actions. The palette stays fully inside the visible viewport an
 user's chosen size. It keeps the button arrangement fixed while labels and icons
 scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
-empty-workspace clicks. Each notation row stays non-wrapping, and long expressions remain reachable by
+empty-workspace clicks. Guided selection prompts fill only the next recorded
+click target in yellow. Multi-click selections prompt each click in its original
+order, followed by the tool button. Inverse prompts cover only the header when
+the inverse itself was clicked, and operation clicks highlight the separator.
+Each notation row stays non-wrapping, and long expressions remain reachable by
 panning the shared workspace.
 Bars use a gray gradient with a white center and a continuous midline.
 Operations use the default black filled circle with a white symbol at 100% size.
@@ -133,8 +137,10 @@ mode=creative links also open Free Play. The editor=1 parameter is retired.
 
 COMPACT MOVES FORMAT
 
-moves-codec.js defines permanent version-1 codes. A file has this form:
-1.<build-default-0-or-1>.<action-stream>.<eight-hex-digit-checksum>
+moves-codec.js defines permanent button codes and versioned target numbering.
+New recordings use version 2; existing version-1 links remain supported.
+A file has this form:
+2.<build-default-0-or-1>.<action-stream>.<eight-hex-digit-checksum>
 The checksum covers the version, build default, and action stream; it detects
 accidental damage and truncation, and is not an authentication mechanism.
 The payload uses URL-safe ASCII without percent-encoding expansion.
@@ -143,14 +149,19 @@ Button characters: 0123456789ABCDEFGHIJKLMNOPQRSTUV.
 Digits 0-9 enter digits. A/B/C enter x/y/z; D cycles the XYZ key. E/F enter
 sum/product, G enters inverse, H negative one, and I submits the builder.
 J-U encode the twelve contextual transformation buttons in the fixed order
-listed in ExplodedAlgebraMoves.commands. Do not reorder version-1 commands.
+listed in ExplodedAlgebraMoves.commands. Do not reorder these command codes.
 V extends a position code beyond the ordinary 32-position alphabet.
 Undo is represented by retaining the surviving mathematical actions.
 
 Position characters: WXYZabcdefghijklmnopqrstuvwxyz-_.
-Values are numbered in expression order; each inverse is numbered before its
-input. Its black numerator/header selects the inverse itself. Group selections
-use their first and last targets; commute permutations use expression targets.
+In version 2, values and operation separators are numbered in expression
+reading order; each inverse header is numbered before its input. The actual
+click targets and their order are retained, including a single separator click
+that selects two adjacent parts. Guided playback prompts each recorded click
+with a filled yellow highlight before enabling the next tool.
+Version 1 retains its original values-and-inverses-only numbering. Legacy JSON
+files without click detail use an equivalent deterministic target sequence.
+Commute permutations continue to use expression targets.
 Positions 0-31 occupy one character. Positions 32-1023 use V plus two base-32
 position characters, allowing larger intermediate expressions without changing
 the ordinary one-character representation.
@@ -160,7 +171,7 @@ builder and transformation engine, with rendering and animation suppressed.
 It then starts guided playback at the requested build stage. Conventional
 notation, intermediate trees, and numerical rewrite permissions are not stored
 in the shared stream. Future engine changes must preserve version-1 behavior
-or provide an explicit versioned migration.
+and version-2 behavior or provide an explicit versioned migration.
 
 Post-selection action layout
 The lower two rows place combine/separate inverses in column 1, multiplication

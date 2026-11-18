@@ -1,4 +1,4 @@
-/* Version 1 is permanent: never reorder the button or position alphabets. */
+/* Button codes and alphabets are permanent; target numbering is versioned. */
 const ExplodedAlgebraMoves = (() => {
   const buttons = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
   const positions = "WXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -16,7 +16,8 @@ const ExplodedAlgebraMoves = (() => {
     return (hash >>> 0).toString(16).padStart(8, "0");
   }
 
-  function encode(events, build = true) {
+  function encode(events, build = true, version = 2) {
+    if (![1, 2].includes(version)) throw new Error("Unsupported recording version.");
     const body = events.map(event => {
       if (event.type === "position") {
         const n = event.index;
@@ -29,7 +30,7 @@ const ExplodedAlgebraMoves = (() => {
       return buttons[index];
     }).join("");
     if (body.length > maxLength) throw new Error("This recording is too long to share.");
-    const content = `1.${build ? 1 : 0}.${body}`;
+    const content = `${version}.${build ? 1 : 0}.${body}`;
     return `${content}.${checksum(content)}`;
   }
 
@@ -37,7 +38,7 @@ const ExplodedAlgebraMoves = (() => {
     const text = String(input || "").trim();
     if (text.length > maxLength + 20) throw new Error("This recording is too long to open.");
     const parts = text.split(".");
-    if (parts.length !== 4 || parts[0] !== "1") throw new Error("This is not a supported moves recording.");
+    if (parts.length !== 4 || !["1", "2"].includes(parts[0])) throw new Error("This is not a supported moves recording.");
     const [version, build, body, check] = parts;
     if (!/^[01]$/.test(build) || !/^[A-Za-z0-9_-]*$/.test(body) ||
         check !== checksum(`${version}.${build}.${body}`)) {
@@ -59,7 +60,7 @@ const ExplodedAlgebraMoves = (() => {
         events.push({ type: "button", command });
       }
     }
-    return { version: 1, build: build === "1", events, text };
+    return { version: Number(version), build: build === "1", events, text };
   }
 
   // Number values left to right. An inverse gets a position before its input.
@@ -100,6 +101,45 @@ const ExplodedAlgebraMoves = (() => {
     return first === last ? [first] : [first, last];
   }
 
-  return Object.freeze({ encode, decode, targets, selectionPositions, commands, positions });
+  // Version 2 also numbers the actual sum/product separators in reading order.
+  // Version 1 keeps its original value/inverse-only numbering permanently.
+  function clickTargets(root) {
+    const result = [];
+    function visit(node, path) {
+      if (!node) return;
+      if (node.type === "value" || node.type === "inv") {
+        result.push({ node, path, firstPart: 0, lastPart: 0 });
+        if (node.type === "inv") visit(node.args[0], path.concat(0));
+        return;
+      }
+      (node.args || []).forEach((child, index) => {
+        if (index > 0) result.push({ node, path, firstPart: index - 1, lastPart: index });
+        visit(child, path.concat(index));
+      });
+    }
+    visit(root, []);
+    return result;
+  }
+
+  function clickPositions(root, selection) {
+    const all = clickTargets(root);
+    const legacy = targets(root);
+    const samePath = (a, b) => a.length === b.length && a.every((part, i) => part === b[i]);
+    const indexOf = click => all.findIndex(target => samePath(target.path, click.path || []) &&
+      target.firstPart === (click.firstPart || 0) && target.lastPart === (click.lastPart || 0));
+    const clicks = selection.clicks?.length ? selection.clicks : [selection];
+    return clicks.flatMap(click => {
+      const exact = indexOf(click);
+      if (exact >= 0) return [exact];
+      // Older files contain the resulting region, not the original click(s).
+      return selectionPositions(root, click).map(index => {
+        const found = indexOf({ path: legacy[index].path, firstPart: 0, lastPart: 0 });
+        if (found < 0) throw new Error("The recorded click could not be numbered.");
+        return found;
+      });
+    });
+  }
+
+  return Object.freeze({ encode, decode, targets, selectionPositions, clickTargets, clickPositions, commands, positions });
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = ExplodedAlgebraMoves;
