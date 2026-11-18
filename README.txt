@@ -56,9 +56,12 @@ Bars use a gray gradient with a white center and a continuous midline.
 Operations use the default black filled circle with a white symbol at 100% size.
 Bars appear only when a sum or product contains a structured child; otherwise
 only the operation symbol appears. Appearance settings are no longer exposed.
-Undo returns through completed expression and workspace-zoom states as far as
-the starting expression; Ctrl/Cmd+Z provides the same behavior when focus is not
-in a text field. The Numerical Manipulation action button is marked with bold
+Undo returns through completed transformations, then reverses Enter to reopen
+the starting-expression builder with its entry history and cursor intact.
+Further Undo presses remove builder entries. Ctrl/Cmd+Z also works across this
+transition and within the builder when focus is not in a text field.
+Undo is never recorded; shared links and text files contain only the surviving
+build inputs and transformations. The Numerical Manipulation action button is marked with bold
 `123`. Guided Replay follows the recorded numerical
 replacement entries. Free Play allows unrestricted numerical replacements.
 Share / Download Moves saves or copies the current mathematical recording.

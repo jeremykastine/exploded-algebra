@@ -2727,6 +2727,29 @@ Promise.resolve().then(() => {
             };
         }
 
+        function captureInitialBuilderUndoState(builder) {
+            const copyHistoryEntry = entry => ({
+                ...entry,
+                root: cloneBuilderNodeForHistory(entry.root),
+                currentPath: entry.currentPath.slice(),
+                lastOperation: entry.lastOperation ? clonePlainData(entry.lastOperation) : null,
+                moveCycle: cloneBuilderMoveCycle(entry.moveCycle)
+            });
+            return {
+                ...captureExpressionUndoState(),
+                level: clonePlainData(getCurrentLevel()),
+                initialBuilder: {
+                    ...builder,
+                    ...getBuilderUndoSnapshot(builder),
+                    mainRoot: cloneExpressionTree(builder.mainRoot),
+                    originalRoot: cloneExpressionTree(builder.originalRoot),
+                    originalSelectedNode: cloneExpressionTree(builder.originalSelectedNode),
+                    initialActions: clonePlainData(builder.initialActions || []),
+                    history: builder.history.map(copyHistoryEntry)
+                }
+            };
+        }
+
         function resetExpressionUndoHistory() {
             expressionUndoHistory = [];
             stableExpressionState = null;
@@ -2792,6 +2815,22 @@ Promise.resolve().then(() => {
             if (solutionRecorder) {
                 solutionRecorder.actions.length = Math.min(solutionRecorder.actions.length, snapshot.recorderActionCount);
                 solutionRecorder.demoSteps.length = Math.min(solutionRecorder.demoSteps.length, snapshot.recorderDemoStepCount);
+            }
+            if (snapshot.initialBuilder) {
+                LEVELS[currentLevelIndex] = snapshot.level;
+                buildingStartingExpression = true;
+                uiState.expressionBuilder = snapshot.initialBuilder;
+                uiState.activeTool = "studentInitial";
+                uiState.stage = "builder";
+                expressionRoot = uiState.expressionBuilder.root;
+                currentExpressionRoot = expressionRoot;
+                demoStepIndex = 0;
+                resetSolutionRecorderForCurrentLevel();
+                stableExpressionState = null;
+                refreshDemoBodyClass();
+                refreshExpressionBuilderPreview();
+                updateExerciseMenu(getCurrentLevel());
+                return true;
             }
             layoutExpression(expressionRoot);
             renderLevelInfo(currentLevelIndex);
@@ -10083,6 +10122,8 @@ ctx.font = SETTINGS.textFont;
             }
             const completed = normalizeExpressionTree(fillBuilderPlaceholders(proposedRoot, null, builder.tool));
             if (builder.tool === "studentInitial") {
+                const initialBuilderUndo = !compilingMoves && getCurrentLevel()?.creative === true
+                    ? captureInitialBuilderUndoState(builder) : null;
                 if (getCurrentLevel()?.creative === true) {
                     const level = getCurrentLevel();
                     level.startExpression = expressionToFullyParenthesizedText(completed);
@@ -10107,6 +10148,12 @@ ctx.font = SETTINGS.textFont;
                 buildingStartingExpression = false;
                 resetDemoStateForCurrentLevel();
                 finishOperation();
+                if (initialBuilderUndo) {
+                    // Enter is an undoable transition even when its value is 0.
+                    // This is UI history only; no Undo action enters a recording.
+                    expressionUndoHistory.push(initialBuilderUndo);
+                    updateWorkspaceToolbar();
+                }
                 if (!workspaceViewManuallyPanned) resetWorkspacePanToDefault();
                 return true;
             }
@@ -11599,7 +11646,8 @@ ctx.font = SETTINGS.textFont;
                 action = "submit";
             } else if (event.key === "ArrowRight" && !integrated) {
                 action = "next";
-            } else if (event.key === "Backspace" || event.key === "Delete") {
+            } else if (event.key === "Backspace" || event.key === "Delete" ||
+                ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "z")) {
                 action = integrated ? "undo" : "undoBackspace";
             } else if (event.key === "Escape") {
                 action = "cancel";
