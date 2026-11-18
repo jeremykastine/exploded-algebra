@@ -1810,16 +1810,10 @@ Promise.resolve().then(() => {
         }
 
         function renderWorkspaceNotation(displayRoot, builder) {
-            const currentKatex = displayRoot && (builder
-                ? ExplodedAlgebraRenderer.expressionBuilderToKatex(displayRoot, !!window.katex)
-                : ExplodedAlgebraRenderer.expressionToKatex(displayRoot));
-            // The live expression is generated locally.
-            renderWorkspaceMath(workspaceCurrentNotation, displayRoot ? currentKatex || "\\square" : "", {
-                strict: "ignore",
-                trust: ({ command, class: className, style }) =>
-                    (command === "\\htmlClass" && /^(workspace-rewrite-preview|workspace-rewrite-entry)$/.test(className)) ||
-                    (command === "\\htmlStyle" && /^opacity:[0-9.e-]+$/.test(style))
-            });
+            workspaceCurrentNotation.hidden = !displayRoot;
+            // This serializer escapes values and emits only local preview spans.
+            workspaceCurrentNotation.innerHTML = displayRoot
+                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder) || "□" : "";
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.

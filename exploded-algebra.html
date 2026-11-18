@@ -4009,9 +4009,12 @@
             position: absolute;
             width: max-content;
             color: #111;
-            font: 20px/1.25 Verdana, Arial, Helvetica, sans-serif;
+            font: 20px/1.25 ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
             white-space: nowrap;
-            user-select: none;
+            user-select: text;
+            -webkit-user-select: text;
+            pointer-events: auto;
+            cursor: text;
         }
         .workspace-goal-connector {
             position: absolute;
@@ -4022,16 +4025,21 @@
         }
         .workspace-goal-connector[hidden] { display: none; }
         .workspace-goal-connector svg { width: 100%; height: 100%; }
-        .workspace-conventional-line .katex { font-size: 1em; }
         .workspace-rewrite-preview {
             display: inline-grid;
             grid-template-columns: max-content;
         }
-        .workspace-rewrite-preview > .enclosing {
+        .workspace-rewrite-preview > span {
             grid-area: 1 / 1;
             justify-self: center;
             align-self: baseline;
         }
+        .workspace-rewrite-original {
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: none;
+        }
+        .workspace-rewrite-original::before { content: attr(data-code); }
 
         .bottom-controls-panel {
             --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
@@ -4357,7 +4365,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T20:01:29-05:00">11/17/26, 8:01 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-17T20:16:42-05:00">11/17/26, 8:16 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4496,10 +4504,10 @@
         </form>
     </dialog>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20261117-outline-spacing"></script>
+    <script src="exploded-algebra-renderer.js?v=20261117-code-notation"></script>
     <script src="moves-codec.js?v=20261117-click-targets-v2"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261117-guided-undo"></script>
+    <script src="exploded-algebra-tool.js?v=20261117-code-notation"></script>
 
 </body>
 </html>

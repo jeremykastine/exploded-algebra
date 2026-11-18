@@ -53,7 +53,7 @@ const playerContext = vm.createContext({
     workspaceCurrentNotation: current,
     workspaceGoalNotation: goal,
     workspaceGoalConnector: connector,
-    ExplodedAlgebraRenderer: { expressionToKatex: node => node, expressionBuilderToKatex: node => node },
+    ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node },
     getCurrentLevel: () => ({}),
     getWorkspaceGoalKatex: () => goalKatex,
     getExpressionBounds: () => ({ left: 20, top: 48, bottom: 120, right: 80 })
@@ -63,7 +63,7 @@ for (const name of ["renderWorkspaceMath", "renderWorkspaceNotation", "positionW
 }
 playerContext.renderWorkspaceNotation("2+3", null);
 playerContext.positionWorkspaceNotation();
-assert.equal(current.textContent, "2+3");
+assert.equal(current.innerHTML, "2+3");
 assert.deepEqual(current.style, { left: "20px", top: "-2px" });
 assert.equal(goal.textContent, "");
 assert.equal(goal.hidden, true);
@@ -77,13 +77,13 @@ assert.deepEqual(goal.style, {}, "A legacy goal must not reserve any workspace b
 
 goalKatex = "";
 playerContext.renderWorkspaceNotation("5", null);
-assert.equal(current.textContent, "5");
+assert.equal(current.innerHTML, "5");
 assert.equal(goal.hidden, true);
 assert.equal(connector.hidden, true);
 
 goalKatex = "2+3";
-playerContext.renderWorkspaceNotation("\\square", { tool: "studentInitial" });
-assert.equal(current.textContent, "□");
+playerContext.renderWorkspaceNotation("□", { tool: "studentInitial" });
+assert.equal(current.innerHTML, "□");
 assert.equal(goal.textContent, "");
 assert.equal(goal.hidden, true, "Building must not reveal target notation");
 assert.equal(connector.hidden, true);

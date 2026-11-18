@@ -2181,6 +2181,85 @@ function expressionBuilderToKatex(rootOrData, showRewriteOverlay = true) {
     return renderConventionalKatex(rootOrData, true, showRewriteOverlay);
 }
 
+// Code-style notation keeps every multiplication explicit and uses inline
+// division. Markup is limited to the live replacement overlay; values are escaped.
+function expressionToCodeMarkup(rootOrData, builder = false) {
+    const escape = value => String(value ?? "").replace(/[&<>"']/g, character =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+    const negativeOne = node => node?.type === "value" && node.value === "-1";
+    const negativeProduct = node => node?.type === "prod" && node.args.length > 1 && negativeOne(node.args[0]);
+    const group = text => `(${text})`;
+
+    function product(factors, markup, leadingMinus = false) {
+        return factors.map((factor, index) => {
+            if (index > 0 && factor.type === "inv") {
+                return ` / ${render(factor.args[0], "divisor", markup)}`;
+            }
+            const body = negativeOne(factor) && (index > 0 || leadingMinus)
+                ? "(-1)" : render(factor, "factor", markup);
+            return (index ? " * " : "") + body;
+        }).join("");
+    }
+
+    function render(node, parent = null, markup = true) {
+        if (!node) return "";
+        if (node.isReplacementBuilderPreview) {
+            const [original, replacement] = node.args;
+            const originalParent = node.rewriteRangeType === "prod" && parent === "factor" ? null : parent;
+            const originalText = render(original, originalParent, false);
+            const replacementText = node.preserveOriginalLayoutWhenEmpty ? "" : render(replacement, parent, markup);
+            if (!markup) return replacementText || originalText;
+            const opacity = Math.max(0, Math.min(1, Number(node.rewriteOriginalOpacity) || 0));
+            if (!replacementText) return `<span style="opacity:${opacity}">${escape(originalText)}</span>`;
+            // Generated content preserves the fading original visually without
+            // adding that obsolete expression to copied or accessible text.
+            return `<span class="workspace-rewrite-preview"><span class="workspace-rewrite-original" aria-hidden="true" data-code="${escape(originalText)}" style="opacity:${opacity}"></span><span class="workspace-rewrite-entry">${replacementText}</span></span>`;
+        }
+        if (builder && node.isBuilderPlaceholder) return "□";
+        if (builder && node.isBuilderSequence) {
+            const operators = node.builderOperators || [];
+            const terms = [];
+            let factors = [];
+            node.args.forEach((arg, index) => {
+                factors.push(arg);
+                if (operators[index] !== "prod" || index === node.args.length - 1) {
+                    terms.push(factors.length === 1 ? factors[0] : new ExprNode("prod", factors, null));
+                    factors = [];
+                }
+            });
+            const tree = terms.length > 1 ? new ExprNode("sum", terms, null) : terms[0];
+            const trailing = operators[node.args.length - 1] === "sum" ? " + "
+                : operators[node.args.length - 1] === "prod" ? " * " : "";
+            return trailing && parent ? group(render(tree, null, markup) + trailing) : render(tree, parent, markup) + trailing;
+        }
+        if (node.type === "value") {
+            const value = String(node.value ?? "");
+            const text = markup ? escape(value) : value;
+            return parent === "divisor" && value.startsWith("-") ? group(text) : text;
+        }
+        if (node.type === "inv") {
+            const body = `1 / ${render(node.args[0], "divisor", markup)}`;
+            return parent === "divisor" ? group(body) : body;
+        }
+        if (node.type === "sum") {
+            const body = node.args.map((term, index) => {
+                if (negativeOne(term) || negativeProduct(term)) {
+                    return (index ? " - " : "-") + (negativeOne(term) ? "1" : product(term.args.slice(1), markup, true));
+                }
+                return (index ? " + " : "") + render(term, "term", markup);
+            }).join("");
+            return parent && parent !== "term" ? group(body) : body;
+        }
+        if (node.type === "prod") {
+            const minus = negativeProduct(node);
+            const body = (minus ? "-" : "") + product(minus ? node.args.slice(1) : node.args, markup, minus);
+            return parent === "divisor" || parent === "factor" ? group(body) : body;
+        }
+        return "?";
+    }
+    return render(exprFromData(rootOrData));
+}
+
 function renderExpressionInto(target, rootOrData, options = {}) {
     const targetElement = typeof target === "string" ? document.querySelector(target) : target;
     if (!targetElement) {
@@ -2257,6 +2336,7 @@ window.ExplodedAlgebraRenderer = {
     renderExpressionInto,
     expressionToKatex,
     expressionBuilderToKatex,
+    expressionToCodeMarkup,
     renderMiniOopsSvg,
     renderAllInDocument
 };
