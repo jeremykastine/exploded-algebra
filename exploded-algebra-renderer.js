@@ -67,7 +67,7 @@ const SETTINGS = {
     builderPlaceholderWidth: 24,
     builderPlaceholderHeight: 20,
     builderOperationFill: "rgb(235, 235, 235)",
-    debugSeparatorBounds: true, // Temporary: show each separator slot, including its full buffer.
+    debugSeparatorBounds: false, // Enable only when inspecting separator buffer alignment.
     debugComponentBounds: false,
     debugComponentStroke: "rgba(70, 145, 210, 0.28)",
     debugComponentStrokeSecondary: "rgba(70, 145, 210, 0.18)",
@@ -1363,37 +1363,6 @@ function nodeHasSeparators(node) {
         Array.isArray(node.args) && node.args.length > 1;
 }
 
-// Bold black center symbols retain the gradient separator beams. Keep their size inside the
-// existing operator slot so layout, selection, and guided clicks stay aligned.
-function getOperationMarkGeometry(settings, type) {
-    const proportion = [100, 75, 50].includes(Number(settings.operationSize))
-        ? Number(settings.operationSize) / 100 : 1;
-    const diameter = getOperatorThickness(settings) * proportion;
-    const half = diameter / 2;
-    const strokeWidth = diameter / 4;
-    const markHalf = (diameter - strokeWidth) / 2;
-    return { diameter, half, strokeWidth, markHalf, width: diameter };
-}
-
-function drawOperationMark(drawingContext, type, x, y, settings) {
-    const { half, strokeWidth, markHalf } = getOperationMarkGeometry(settings, type);
-    drawingContext.save();
-    if (type === "sum") {
-        drawingContext.strokeStyle = "black";
-        drawingContext.lineWidth = strokeWidth;
-        drawingContext.beginPath();
-        drawPlusMark(drawingContext, x, y, markHalf);
-        drawingContext.stroke();
-    } else {
-        drawingContext.fillStyle = "black";
-        drawingContext.beginPath();
-        drawingContext.arc(x, y, half, 0, Math.PI * 2);
-        drawingContext.fill();
-    }
-    drawingContext.restore();
-}
-
-/* Previous operation mark styling, retained for restoring the bar appearance.
 // Simple and compound sums/products share the same separator bars.
 // Bar geometry and central operation appearance are independent.
 function getOperationMarkGeometry(settings, type) {
@@ -1441,8 +1410,6 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
     }
     drawingContext.restore();
 }
-
-*/
 
 // Show the actual allocated slot: the bar's span on one axis, and the
 // operator thickness plus both component gaps on the perpendicular axis.

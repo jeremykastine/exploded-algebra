@@ -133,13 +133,14 @@ for (const type of ["sum", "prod"]) {
                 ...settings, operationStyle, operationSize, operationBarShading: "light-gray"
             });
             const circles = drawing.operations.filter(op => op[0] === "arc");
-            assert.equal(circles.length, type === "sum" ? 0 : 1);
-            if (type === "prod") {
+            assert.equal(circles.length, operationStyle === "bare" && type === "sum" ? 0 :
+                operationStyle === "bare" ? 1 : type === "prod" ? 2 : 1);
+            if (operationStyle !== "bare") {
                 assert.ok(Math.abs(circles[0][3] - 6 * Number(operationSize) / 100) < 1e-9);
             }
             assert.ok(drawing.operations.some(op => (op[0] === "stroke" || op[0] === "fill") &&
-                op[1] === "black"),
-                `The operation must stay black with legacy ${operationStyle} settings`);
+                op[1] === (operationStyle === "filled" ? "white" : "black")),
+                `The ${operationStyle} operation must have the right ink`);
             const adjustedSettings = { ...settings, operationStyle, operationSize, operationBarShading: "gradient" };
             const complexDraw = recordingContext();
             rendererContext.drawNodeToContext(complex, complexDraw, adjustedSettings);
