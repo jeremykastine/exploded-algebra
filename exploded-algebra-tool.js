@@ -1369,6 +1369,7 @@ Promise.resolve().then(() => {
         const svgContainer = document.getElementById("svgContainer");
         const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceCurrentNotation = document.getElementById("workspaceCurrentNotation");
+        const workspaceCompactNotation = document.getElementById("workspaceCompactNotation");
         const workspaceGoalNotation = document.getElementById("workspaceGoalNotation");
         const workspaceGoalConnector = document.getElementById("workspaceGoalConnector");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
@@ -1814,6 +1815,9 @@ Promise.resolve().then(() => {
             // This serializer escapes values and builds aligned, nested notation groups.
             workspaceCurrentNotation.innerHTML = displayRoot
                 ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, true) || "□" : "";
+            workspaceCompactNotation.hidden = !displayRoot;
+            workspaceCompactNotation.textContent = displayRoot
+                ? ExplodedAlgebraRenderer.expressionToCompactText(displayRoot, !!builder) || "□" : "";
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.
@@ -1828,6 +1832,8 @@ Promise.resolve().then(() => {
             const outlinePadding = SETTINGS.expressionOutline === false ? 0
                 : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
             workspaceCurrentNotation.style.top = `${bounds.bottom + outlinePadding + gap}px`;
+            workspaceCompactNotation.style.left = `${bounds.right + outlinePadding + gap}px`;
+            workspaceCompactNotation.style.top = `${bounds.top}px`;
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
                 // Clear the outline as well as the expression's layout bounds.
@@ -5332,7 +5338,7 @@ ctx.font = SETTINGS.textFont;
             bounds.top -= outlinePadding;
             bounds.right += outlinePadding;
             bounds.bottom += outlinePadding;
-            for (const line of [workspaceCurrentNotation, workspaceGoalNotation]) {
+            for (const line of [workspaceCurrentNotation, workspaceCompactNotation, workspaceGoalNotation]) {
                 if (line.hidden) continue;
                 const left = parseFloat(line.style.left);
                 const top = parseFloat(line.style.top);

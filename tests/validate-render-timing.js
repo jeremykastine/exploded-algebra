@@ -44,6 +44,7 @@ function notationElement(id, offsetWidth, offsetHeight) {
     return { style: {}, offsetWidth, offsetHeight, replaceChildren() { this.textContent = ""; } };
 }
 const current = notationElement("workspaceCurrentNotation", 40, 25);
+const compact = notationElement("workspaceCompactNotation", 100, 75);
 const goal = notationElement("workspaceGoalNotation", 10, 25);
 const connector = notationElement("workspaceGoalConnector", 12, 24);
 let goalKatex = "5";
@@ -52,9 +53,10 @@ const playerContext = vm.createContext({
     SETTINGS: { expressionOutlinePadding: 16 },
     getComputedStyle: () => ({ lineHeight: "25px" }),
     workspaceCurrentNotation: current,
+    workspaceCompactNotation: compact,
     workspaceGoalNotation: goal,
     workspaceGoalConnector: connector,
-    ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node },
+    ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node, expressionToCompactText: node => node },
     getCurrentLevel: () => ({}),
     getWorkspaceGoalKatex: () => goalKatex,
     getExpressionBounds: () => ({ left: 20, top: 48, bottom: 120, right: 80 })
@@ -66,6 +68,8 @@ playerContext.renderWorkspaceNotation("2+3", null);
 playerContext.positionWorkspaceNotation();
 assert.equal(current.innerHTML, "2+3");
 assert.deepEqual(current.style, { left: "20px", top: "161px" });
+assert.equal(compact.textContent, "2+3");
+assert.deepEqual(compact.style, { left: "121px", top: "48px" });
 assert.equal(goal.textContent, "");
 assert.equal(goal.hidden, true);
 assert.deepEqual(goal.style, {});
@@ -79,8 +83,12 @@ assert.deepEqual(goal.style, {}, "A legacy goal must not reserve any workspace b
 goalKatex = "";
 playerContext.renderWorkspaceNotation("5", null);
 assert.equal(current.innerHTML, "5");
+assert.equal(compact.textContent, "5", "The compact view updates on every expression render");
 assert.equal(goal.hidden, true);
 assert.equal(connector.hidden, true);
+playerContext.renderWorkspaceNotation(null, null);
+assert.equal(compact.hidden, true);
+assert.equal(compact.textContent, "");
 
 goalKatex = "2+3";
 playerContext.renderWorkspaceNotation("□", { tool: "studentInitial" });

@@ -110,7 +110,7 @@ const boundsScope = vm.createContext({
     SETTINGS: { expressionOutline: true, expressionOutlinePadding: 16 },
     getExpressionBounds: () => ({ left: 20, top: 20, right: 60, bottom: 80 }),
     getSelectionMargin: () => 8,
-    workspaceCurrentNotation: { hidden: true }, workspaceGoalNotation: { hidden: true },
+    workspaceCurrentNotation: { hidden: true }, workspaceCompactNotation: { hidden: true }, workspaceGoalNotation: { hidden: true },
     expressionRoot: {}, workspaceZoom: 1,
     svgContainer: { getBoundingClientRect: () => ({ left: 0, top: 0 }) },
     getFloatingPaletteViewportBounds: () => ({ left: 10, top: 10 }),
@@ -124,3 +124,6 @@ assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getWorkspaceContentBounds
 assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getDefaultWorkspacePan())), { x: 6, y: 6 });
 boundsScope.SETTINGS.expressionOutline = false;
 assert.equal(boundsScope.getWorkspaceContentBounds().left, 20);
+boundsScope.workspaceCompactNotation = { hidden: false, style: { left: "100px", top: "20px" }, offsetWidth: 240, offsetHeight: 150 };
+assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getWorkspaceContentBounds())), { left: 20, top: 20, right: 340, bottom: 170 },
+    "The compact notation remains reachable through the shared workspace pan bounds");

@@ -2286,6 +2286,112 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
     return render(exprFromData(rootOrData));
 }
 
+// Keep operation boundaries while serializing so each possible single-operation
+// expansion can be measured without guessing from parentheses or repeated text.
+function expressionToCompactText(rootOrData, builder = false) {
+    const literal = text => ({ text: String(text), operations: [] });
+    function concat(...parts) {
+        const result = literal("");
+        for (const part of parts) {
+            const doc = typeof part === "string" ? literal(part) : part;
+            const offset = result.text.length;
+            result.operations.push(...doc.operations.map(operation => ({
+                start: operation.start + offset,
+                end: operation.end + offset,
+                breaks: operation.breaks.map(position => position + offset)
+            })));
+            result.text += doc.text;
+        }
+        return result;
+    }
+    const group = doc => concat("(", doc, ")");
+    function operation(parts) {
+        const doc = concat(...parts);
+        if (parts.length > 1) {
+            let offset = 0;
+            const breaks = parts.slice(0, -1).map(part => {
+                offset += part.text.length;
+                return offset;
+            });
+            doc.operations.push({ start: 0, end: doc.text.length, breaks });
+        }
+        return doc;
+    }
+    const negativeOne = node => node?.type === "value" && node.value === "-1";
+    const negativeProduct = node => node?.type === "prod" && node.args.length > 1 && negativeOne(node.args[0]);
+    function product(factors) {
+        return operation(factors.map((factor, index) => index > 0 && factor.type === "inv"
+            ? concat("/", render(factor.args[0], "divisor"))
+            : concat(index ? "*" : "", render(factor, "factor"))));
+    }
+    function render(node, parent = null) {
+        if (!node) return literal("");
+        if (node.isReplacementBuilderPreview) {
+            const [original, replacement] = node.args;
+            const entry = node.preserveOriginalLayoutWhenEmpty ? literal("") : render(replacement, parent);
+            return entry.text ? entry : render(original,
+                node.rewriteRangeType === "prod" && parent === "factor" ? null : parent);
+        }
+        if (builder && node.isBuilderPlaceholder) return literal("□");
+        if (builder && node.isBuilderSequence) {
+            const operators = node.builderOperators || [];
+            const terms = [];
+            let factors = [];
+            node.args.forEach((arg, index) => {
+                factors.push(arg);
+                if (operators[index] !== "prod" || index === node.args.length - 1) {
+                    terms.push(factors.length === 1 ? factors[0] : new ExprNode("prod", factors));
+                    factors = [];
+                }
+            });
+            const tree = terms.length > 1 ? new ExprNode("sum", terms) : terms[0];
+            const trailing = operators[node.args.length - 1] === "sum" ? " + "
+                : operators[node.args.length - 1] === "prod" ? "*" : "";
+            return trailing && parent ? group(concat(render(tree), trailing)) : concat(render(tree, parent), trailing);
+        }
+        if (node.type === "value") {
+            const text = String(node.value ?? "");
+            return parent === "divisor" && text.startsWith("-") && text !== "-1"
+                ? group(literal(text)) : literal(text);
+        }
+        if (node.type === "inv") {
+            const doc = operation([literal("1"), concat("/", render(node.args[0], "divisor"))]);
+            return parent === "divisor" ? group(doc) : doc;
+        }
+        if (node.type === "sum") {
+            const doc = operation(node.args.map((term, index) => negativeOne(term) || negativeProduct(term)
+                ? concat(index ? " - " : "-", negativeOne(term) ? literal("1") : product(term.args.slice(1)))
+                : concat(index ? " + " : "", render(term, "term"))));
+            return parent && parent !== "term" ? group(doc) : doc;
+        }
+        if (node.type === "prod") {
+            const minus = negativeProduct(node);
+            const doc = concat(minus ? "-" : "", product(minus ? node.args.slice(1) : node.args));
+            return parent === "divisor" || parent === "factor" ? group(doc) : doc;
+        }
+        return literal("?");
+    }
+
+    const doc = render(exprFromData(rootOrData));
+    let best = { text: doc.text, width: doc.text.length, rows: 1 };
+    for (const candidate of doc.operations) {
+        const positions = [candidate.start, ...candidate.breaks, candidate.end];
+        const indent = " ".repeat(candidate.start);
+        const lines = positions.slice(0, -1).map((start, index) =>
+            (index ? indent : doc.text.slice(0, candidate.start)) +
+            (index ? doc.text.slice(start, positions[index + 1]).trimStart()
+                : doc.text.slice(start, positions[index + 1])));
+        const suffix = doc.text.slice(candidate.end);
+        const blockWidth = Math.max(...lines.map(line => line.length));
+        if (suffix) lines[lines.length - 1] = lines.at(-1).padEnd(blockWidth) + suffix;
+        const width = Math.max(...lines.map(line => line.length));
+        if (width < best.width || width === best.width && lines.length < best.rows) {
+            best = { text: lines.join("\n"), width, rows: lines.length };
+        }
+    }
+    return best.text;
+}
+
 function renderExpressionInto(target, rootOrData, options = {}) {
     const targetElement = typeof target === "string" ? document.querySelector(target) : target;
     if (!targetElement) {
@@ -2363,6 +2469,7 @@ window.ExplodedAlgebraRenderer = {
     expressionToKatex,
     expressionBuilderToKatex,
     expressionToCodeMarkup,
+    expressionToCompactText,
     renderMiniOopsSvg,
     renderAllInDocument
 };
