@@ -2200,23 +2200,22 @@ function expressionBuilderToKatex(rootOrData, showRewriteOverlay = true) {
 }
 
 // Code-style notation keeps every multiplication explicit and uses inline
-// division. Optional stacked groups lower each parenthesized body one row; values are escaped.
-function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false) {
+// division. Optional inline group highlights deepen through nesting; values are escaped.
+function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = false) {
     const escape = value => String(value ?? "").replace(/[&<>"']/g, character =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
     const negativeOne = node => node?.type === "value" && node.value === "-1";
     const negativeProduct = node => node?.type === "prod" && node.args.length > 1 && negativeOne(node.args[0]);
-    const group = (text, markup) => stackGroups && markup
-        ? `<span class="workspace-code-group"><span class="workspace-code-open">(</span><span class="workspace-code-contents">${text}</span><span class="workspace-code-close">)</span></span>`
+    const group = (text, markup) => highlightGroups && markup
+        ? `<span class="workspace-code-group">(${text})</span>`
         : `(${text})`;
 
-    function product(factors, markup, leadingMinus = false) {
+    function product(factors, markup) {
         return factors.map((factor, index) => {
             if (index > 0 && factor.type === "inv") {
                 return `/${render(factor.args[0], "divisor", markup)}`;
             }
-            const body = negativeOne(factor) && (index > 0 || leadingMinus)
-                ? group("-1", markup) : render(factor, "factor", markup);
+            const body = render(factor, "factor", markup);
             return (index ? "*" : "") + body;
         }).join("");
     }
@@ -2230,12 +2229,12 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
             const replacementText = node.preserveOriginalLayoutWhenEmpty ? "" : render(replacement, parent, markup);
             if (!markup) return replacementText || originalText;
             const opacity = Math.max(0, Math.min(1, Number(node.rewriteOriginalOpacity) || 0));
-            if (!replacementText) return `<span style="opacity:${opacity}">${stackGroups ? render(original, originalParent, true) : escape(originalText)}</span>`;
+            if (!replacementText) return `<span style="opacity:${opacity}">${highlightGroups ? render(original, originalParent, true) : escape(originalText)}</span>`;
             // Generated content preserves the fading original visually without
             // adding that obsolete expression to copied or accessible text.
-            if (stackGroups) {
+            if (highlightGroups) {
                 // Generated text keeps the old expression out of copied text,
-                // while its parenthesized groups retain the same stepped layout.
+                // while its parenthesized groups retain the same nested highlights.
                 const originalMarkup = render(original, originalParent, true).replace(/(^|>)([^<]+)(?=<|$)/g,
                     (_, boundary, text) => `${boundary}<span class="workspace-rewrite-original-text" data-code="${text}"></span>`);
                 return `<span class="workspace-rewrite-preview"><span class="workspace-rewrite-original" aria-hidden="true" style="opacity:${opacity}">${originalMarkup}</span><span class="workspace-rewrite-entry">${replacementText}</span></span>`;
@@ -2262,7 +2261,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
         if (node.type === "value") {
             const value = String(node.value ?? "");
             const text = markup ? escape(value) : value;
-            return parent === "divisor" && value.startsWith("-") ? group(text, markup) : text;
+            return parent === "divisor" && value.startsWith("-") && value !== "-1" ? group(text, markup) : text;
         }
         if (node.type === "inv") {
             const body = `1/${render(node.args[0], "divisor", markup)}`;
@@ -2271,7 +2270,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
         if (node.type === "sum") {
             const body = node.args.map((term, index) => {
                 if (negativeOne(term) || negativeProduct(term)) {
-                    return (index ? " - " : "-") + (negativeOne(term) ? "1" : product(term.args.slice(1), markup, true));
+                    return (index ? " - " : "-") + (negativeOne(term) ? "1" : product(term.args.slice(1), markup));
                 }
                 return (index ? " + " : "") + render(term, "term", markup);
             }).join("");
@@ -2279,7 +2278,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
         }
         if (node.type === "prod") {
             const minus = negativeProduct(node);
-            const body = (minus ? "-" : "") + product(minus ? node.args.slice(1) : node.args, markup, minus);
+            const body = (minus ? "-" : "") + product(minus ? node.args.slice(1) : node.args, markup);
             return parent === "divisor" || parent === "factor" ? group(body, markup) : body;
         }
         return "?";

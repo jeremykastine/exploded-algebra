@@ -4017,15 +4017,11 @@
             cursor: text;
         }
         .workspace-code-group {
-            display: inline-grid;
-            grid-template-columns: 1ch max-content 1ch;
-            grid-template-rows: 0.3125em auto; /* Quarter of the 1.25em line height. */
-            vertical-align: top;
-            line-height: 1.25;
+            display: inline;
+            /* Translucent backgrounds accumulate inside nested parentheses. */
+            background-color: rgba(0, 0, 0, 0.045);
+            border-radius: 2px;
         }
-        .workspace-code-open { grid-column: 1; grid-row: 1; }
-        .workspace-code-contents { grid-column: 2; grid-row: 2; }
-        .workspace-code-close { grid-column: 3; grid-row: 1; }
         .workspace-goal-connector {
             position: absolute;
             width: 12px;
@@ -4376,7 +4372,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-18T20:13:26-05:00">11/18/26, 8:13 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-18T20:31:44-05:00">11/18/26, 8:31 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
