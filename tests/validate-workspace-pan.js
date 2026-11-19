@@ -94,8 +94,10 @@ assert(
     "The conventional line must share the exploded expression's pan and zoom transform"
 );
 assert(
-    /function positionWorkspaceNotation\(\)[\s\S]*?bounds\.bottom \+ outlinePadding \+ gap[\s\S]*?const arrowTop = bounds\.bottom \+ gap/.test(playerJs),
-    "The current notation stays below the exploded notation and clears its outline"
+    /workspaceCurrentNotation\.style\.top = `\$\{bounds\.top - outlinePadding - gap - workspaceCurrentNotation\.offsetHeight\}px`/.test(playerJs)
+        && /workspaceCompactNotation\.style\.left = `\$\{bounds\.left\}px`/.test(playerJs)
+        && /workspaceCompactNotation\.style\.top = `\$\{bounds\.bottom \+ outlinePadding \+ gap\}px`/.test(playerJs),
+    "The plain and expanded views clear the outline above and below, both aligned to its left"
 );
 assert(
     !playerJs.includes('step-card step-hold-target'),

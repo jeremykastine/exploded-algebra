@@ -2201,7 +2201,16 @@ function expressionBuilderToKatex(rootOrData, showRewriteOverlay = true) {
 
 // Code-style notation keeps every multiplication explicit and uses inline
 // division. Optional inline group highlights deepen through nesting; values are escaped.
-function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = false) {
+function getCodeOperatorGaps(spacing) {
+    const gap = (value, fallback) => " ".repeat(Number.isFinite(value)
+        ? Math.max(0, Math.min(20, Math.round(value))) : fallback);
+    return { plus: gap(spacing?.plus, 1), times: gap(spacing?.times, 0) };
+}
+
+function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = false, spacing = {}) {
+    const gaps = getCodeOperatorGaps(spacing);
+    const plus = `${gaps.plus}+${gaps.plus}`;
+    const times = `${gaps.times}*${gaps.times}`;
     const escape = value => String(value ?? "").replace(/[&<>"']/g, character =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
     const negativeOne = node => node?.type === "value" && node.value === "-1";
@@ -2216,7 +2225,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
                 return `/${render(factor.args[0], "divisor", markup)}`;
             }
             const body = render(factor, "factor", markup);
-            return (index ? "*" : "") + body;
+            return (index ? times : "") + body;
         }).join("");
     }
 
@@ -2254,8 +2263,8 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
                 }
             });
             const tree = terms.length > 1 ? new ExprNode("sum", terms, null) : terms[0];
-            const trailing = operators[node.args.length - 1] === "sum" ? " + "
-                : operators[node.args.length - 1] === "prod" ? "*" : "";
+            const trailing = operators[node.args.length - 1] === "sum" ? plus
+                : operators[node.args.length - 1] === "prod" ? times : "";
             return trailing && parent ? group(render(tree, null, markup) + trailing, markup) : render(tree, parent, markup) + trailing;
         }
         if (node.type === "value") {
@@ -2272,7 +2281,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
                 if (negativeOne(term) || negativeProduct(term)) {
                     return (index ? " - " : "-") + (negativeOne(term) ? "1" : product(term.args.slice(1), markup));
                 }
-                return (index ? " + " : "") + render(term, "term", markup);
+                return (index ? plus : "") + render(term, "term", markup);
             }).join("");
             return parent && parent !== "term" ? group(body, markup) : body;
         }
@@ -2288,7 +2297,10 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
 
 // Keep operation boundaries while serializing so each possible single-operation
 // expansion can be measured without guessing from parentheses or repeated text.
-function expressionToCompactText(rootOrData, builder = false) {
+function expressionToCompactText(rootOrData, builder = false, spacing = {}) {
+    const gaps = getCodeOperatorGaps(spacing);
+    const plus = `${gaps.plus}+${gaps.plus}`;
+    const times = `${gaps.times}*${gaps.times}`;
     const literal = text => ({ text: String(text), operations: [] });
     function concat(...parts) {
         const result = literal("");
@@ -2322,7 +2334,7 @@ function expressionToCompactText(rootOrData, builder = false) {
     function product(factors) {
         return operation(factors.map((factor, index) => index > 0 && factor.type === "inv"
             ? concat("/", render(factor.args[0], "divisor"))
-            : concat(index ? "*" : "", render(factor, "factor"))));
+            : concat(index ? times : "", render(factor, "factor"))));
     }
     function render(node, parent = null) {
         if (!node) return literal("");
@@ -2345,8 +2357,8 @@ function expressionToCompactText(rootOrData, builder = false) {
                 }
             });
             const tree = terms.length > 1 ? new ExprNode("sum", terms) : terms[0];
-            const trailing = operators[node.args.length - 1] === "sum" ? " + "
-                : operators[node.args.length - 1] === "prod" ? "*" : "";
+            const trailing = operators[node.args.length - 1] === "sum" ? plus
+                : operators[node.args.length - 1] === "prod" ? times : "";
             return trailing && parent ? group(concat(render(tree), trailing)) : concat(render(tree, parent), trailing);
         }
         if (node.type === "value") {
@@ -2361,7 +2373,7 @@ function expressionToCompactText(rootOrData, builder = false) {
         if (node.type === "sum") {
             const doc = operation(node.args.map((term, index) => negativeOne(term) || negativeProduct(term)
                 ? concat(index ? " - " : "-", negativeOne(term) ? literal("1") : product(term.args.slice(1)))
-                : concat(index ? " + " : "", render(term, "term"))));
+                : concat(index ? plus : "", render(term, "term"))));
             return parent && parent !== "term" ? group(doc) : doc;
         }
         if (node.type === "prod") {

@@ -4008,19 +4008,13 @@
         .workspace-conventional-line {
             position: absolute;
             width: max-content;
-            color: #111;
+            color: #777;
             font: 20px/1.25 ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
             white-space: pre;
             user-select: text;
             -webkit-user-select: text;
             pointer-events: auto;
             cursor: text;
-        }
-        .workspace-code-group {
-            display: inline;
-            /* Translucent backgrounds accumulate inside nested parentheses. */
-            background-color: rgba(0, 0, 0, 0.045);
-            border-radius: 2px;
         }
         .workspace-goal-connector {
             position: absolute;
@@ -4287,6 +4281,17 @@
             margin-top: 1rem;
         }
         .workspace-dialog-actions button { min-height: 2.75rem; padding: 0.35rem 0.85rem; }
+        .notation-spacing-control { margin: 1rem 0; }
+        .notation-spacing-control input { width: 100%; min-height: 2rem; margin: 0; }
+        .notation-spacing-control output { display: block; color: #555; }
+        #notationSpacingPreview {
+            margin: 1rem 0;
+            padding: 0.5rem 0;
+            overflow-x: auto;
+            color: #777;
+            font: 1rem/1.5 ui-monospace, Menlo, Consolas, monospace;
+            white-space: pre;
+        }
         .numerical-rewrite-dialog { width: min(32rem, calc(100% - 2rem)); }
         #numericalRewriteMessage { margin: 0 0 0.85rem; }
         .numerical-rewrite-list {
@@ -4372,7 +4377,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-19T09:28:19-05:00">11/19/26, 9:28 AM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-19T09:35:43-05:00">11/19/26, 9:35 AM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4386,6 +4391,7 @@
                 <button type="button" data-workspace-action="newExpression" role="menuitem">Free Play / New Expression</button>
                 <button type="button" data-workspace-action="openExercise" role="menuitem" aria-haspopup="dialog">Guided Replay…</button>
                 <button type="button" data-workspace-action="shareMoves" role="menuitem" aria-haspopup="dialog" disabled>Share / Download Moves…</button>
+                <button type="button" data-workspace-action="notationSpacing" role="menuitem" aria-haspopup="dialog">Notation Spacing…</button>
             </div>
         </div>
         <div id="bottomControlsPanel" class="bottom-controls-panel" aria-label="Expression actions">
@@ -4469,6 +4475,23 @@
             <div id="numericalRewriteError" class="numerical-rewrite-error hidden" role="alert" aria-live="assertive"></div>
         </div>
     </div>
+    <dialog id="notationSpacingDialog" class="workspace-dialog" aria-labelledby="notationSpacingTitle">
+        <form method="dialog">
+            <h2 id="notationSpacingTitle">Notation Spacing</h2>
+            <div class="notation-spacing-control">
+                <label for="plusSpacingInput">Plus (+)</label>
+                <input id="plusSpacingInput" type="range" min="0" max="20" step="1" value="1" data-notation-spacing="plus" aria-describedby="plusSpacingValue">
+                <output id="plusSpacingValue" for="plusSpacingInput">1 space per side</output>
+            </div>
+            <div class="notation-spacing-control">
+                <label for="timesSpacingInput">Times (*)</label>
+                <input id="timesSpacingInput" type="range" min="0" max="20" step="1" value="0" data-notation-spacing="times" aria-describedby="timesSpacingValue">
+                <output id="timesSpacingValue" for="timesSpacingInput">0 spaces per side</output>
+            </div>
+            <pre id="notationSpacingPreview" aria-label="Spacing preview">a + b*c</pre>
+            <div class="workspace-dialog-actions"><button>Done</button></div>
+        </form>
+    </dialog>
     <dialog id="openExerciseDialog" class="workspace-dialog" aria-labelledby="openExerciseTitle">
         <form id="openExerciseForm">
             <h2 id="openExerciseTitle">Guided Replay</h2>
@@ -4512,10 +4535,10 @@
         </form>
     </dialog>
     <div id="toolOptionMenu" class="tool-option-menu hidden" role="menu" aria-label="Application options"></div>
-    <script src="exploded-algebra-renderer.js?v=20261119-compact-start"></script>
+    <script src="exploded-algebra-renderer.js?v=20261119-notation-spacing"></script>
     <script src="moves-codec.js?v=20261117-click-targets-v2"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261118-compact-notation"></script>
+    <script src="exploded-algebra-tool.js?v=20261119-notation-spacing"></script>
 
 </body>
 </html>

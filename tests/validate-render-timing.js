@@ -51,6 +51,7 @@ let goalKatex = "5";
 const playerContext = vm.createContext({
     window: {},
     SETTINGS: { expressionOutlinePadding: 16 },
+    notationSpacingPreference: { plus: 1, times: 0 },
     getComputedStyle: () => ({ lineHeight: "25px" }),
     workspaceCurrentNotation: current,
     workspaceCompactNotation: compact,
@@ -67,9 +68,9 @@ for (const name of ["renderWorkspaceMath", "renderWorkspaceNotation", "positionW
 playerContext.renderWorkspaceNotation("2+3", null);
 playerContext.positionWorkspaceNotation();
 assert.equal(current.innerHTML, "2+3");
-assert.deepEqual(current.style, { left: "20px", top: "161px" });
+assert.deepEqual(current.style, { left: "20px", top: "-18px" });
 assert.equal(compact.textContent, "2+3");
-assert.deepEqual(compact.style, { left: "121px", top: "48px" });
+assert.deepEqual(compact.style, { left: "20px", top: "161px" });
 assert.equal(goal.textContent, "");
 assert.equal(goal.hidden, true);
 assert.deepEqual(goal.style, {});

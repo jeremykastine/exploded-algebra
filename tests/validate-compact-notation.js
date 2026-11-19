@@ -62,3 +62,22 @@ for (let i = 0; i < 500; i++) {
     assert.equal(compact(expr), result, "Tied layouts must remain stable across redraws");
 }
 console.log("Compact notation chooses the narrowest layout, clears the widest row, and preserves live expression tokens.");
+
+const spacedExpression = node("sum", node("prod", value("2"), value("x")),
+    node("prod", value("3"), node("inv", node("sum", value("y"), value("1")))));
+for (const plus of [0, 1, 4, 20]) {
+    for (const times of [0, 1, 7, 20]) {
+        const spacing = { plus, times };
+        const plusOperator = " ".repeat(plus) + "+" + " ".repeat(plus);
+        const timesOperator = " ".repeat(times) + "*" + " ".repeat(times);
+        const unexpanded = renderer.expressionToCodeMarkup(spacedExpression, false, false, spacing);
+        assert.equal(unexpanded, `2${timesOperator}x${plusOperator}3/(y${plusOperator}1)`);
+        const expanded = compact(spacedExpression, false, spacing);
+        assert.equal(tokens(expanded), tokens(unexpanded));
+        assert(widest(expanded) <= unexpanded.length, "Width selection must measure the selected operator spacing");
+        assert(!expanded.includes(" / "), "Division retains its compact spacing");
+    }
+}
+assert.equal(renderer.expressionToCodeMarkup(node("prod", value("2"), value("x")), false, false, { times: 100 }),
+    "2" + " ".repeat(20) + "*" + " ".repeat(20) + "x");
+console.log("Both notation views share configurable plus/times spacing without changing division or grouping.");

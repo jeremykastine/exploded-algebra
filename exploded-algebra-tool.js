@@ -1343,6 +1343,7 @@ Promise.resolve().then(() => {
         const workspaceUtilityMenu = document.getElementById("workspaceUtilityMenu");
         const workspaceUtilityMenuToggle = document.getElementById("workspaceUtilityMenuToggle");
         const workspaceUtilityMenuItems = document.getElementById("workspaceUtilityMenuItems");
+        const notationSpacingDialog = document.getElementById("notationSpacingDialog");
         const resetRunButton = document.querySelector('[data-workspace-action="resetRun"]');
         const openExerciseDialog = document.getElementById("openExerciseDialog");
         const openExerciseForm = document.getElementById("openExerciseForm");
@@ -1434,6 +1435,8 @@ Promise.resolve().then(() => {
         const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];
         const STEPS_TEXT_SIZE_STORAGE_KEY = "explodedAlgebraStepsTextSizeV1";
         const STEPS_LINE_HEIGHT_RATIO = 1.2;
+        const NOTATION_SPACING_STORAGE_KEY = "explodedAlgebraNotationSpacingV1";
+        let notationSpacingPreference = { plus: 1, times: 0 };
 
         function isLandscapePanelLayout() {
             return window.matchMedia
@@ -1812,12 +1815,12 @@ Promise.resolve().then(() => {
 
         function renderWorkspaceNotation(displayRoot, builder) {
             workspaceCurrentNotation.hidden = !displayRoot;
-            // This serializer escapes values and builds aligned, nested notation groups.
+            // Keep the single-line view plain while retaining live rewrite fading.
             workspaceCurrentNotation.innerHTML = displayRoot
-                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, true) || "□" : "";
+                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false, notationSpacingPreference) || "□" : "";
             workspaceCompactNotation.hidden = !displayRoot;
             workspaceCompactNotation.textContent = displayRoot
-                ? ExplodedAlgebraRenderer.expressionToCompactText(displayRoot, !!builder) || "□" : "";
+                ? ExplodedAlgebraRenderer.expressionToCompactText(displayRoot, !!builder, notationSpacingPreference) || "□" : "";
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.
@@ -1831,9 +1834,9 @@ Promise.resolve().then(() => {
             workspaceCurrentNotation.style.left = `${bounds.left}px`;
             const outlinePadding = SETTINGS.expressionOutline === false ? 0
                 : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
-            workspaceCurrentNotation.style.top = `${bounds.bottom + outlinePadding + gap}px`;
-            workspaceCompactNotation.style.left = `${bounds.right + outlinePadding + gap}px`;
-            workspaceCompactNotation.style.top = `${bounds.top}px`;
+            workspaceCurrentNotation.style.top = `${bounds.top - outlinePadding - gap - workspaceCurrentNotation.offsetHeight}px`;
+            workspaceCompactNotation.style.left = `${bounds.left}px`;
+            workspaceCompactNotation.style.top = `${bounds.bottom + outlinePadding + gap}px`;
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
                 // Clear the outline as well as the expression's layout bounds.
@@ -4893,6 +4896,46 @@ Promise.resolve().then(() => {
             return true;
         }
 
+        function loadNotationSpacingPreference() {
+            try {
+                const saved = JSON.parse(window.localStorage.getItem(NOTATION_SPACING_STORAGE_KEY));
+                for (const operation of ["plus", "times"]) {
+                    if (Number.isInteger(saved?.[operation]) && saved[operation] >= 0 && saved[operation] <= 20) {
+                        notationSpacingPreference[operation] = saved[operation];
+                    }
+                }
+            } catch {} // Defaults also work when storage is unavailable.
+        }
+
+        function updateNotationSpacingControls() {
+            for (const operation of ["plus", "times"]) {
+                const value = notationSpacingPreference[operation];
+                document.getElementById(`${operation}SpacingInput`).value = String(value);
+                document.getElementById(`${operation}SpacingValue`).textContent = `${value} ${value === 1 ? "space" : "spaces"} per side`;
+            }
+            const plusGap = " ".repeat(notationSpacingPreference.plus);
+            const timesGap = " ".repeat(notationSpacingPreference.times);
+            document.getElementById("notationSpacingPreview").textContent = `a${plusGap}+${plusGap}b${timesGap}*${timesGap}c`;
+        }
+
+        function initializeNotationSpacing() {
+            loadNotationSpacingPreference();
+            updateNotationSpacingControls();
+            notationSpacingDialog.addEventListener("input", event => {
+                const operation = event.target.dataset.notationSpacing;
+                const value = Number(event.target.value);
+                if (!["plus", "times"].includes(operation) || !Number.isInteger(value) || value < 0 || value > 20) return;
+                notationSpacingPreference[operation] = value;
+                try {
+                    window.localStorage.setItem(NOTATION_SPACING_STORAGE_KEY, JSON.stringify(notationSpacingPreference));
+                } catch {} // Apply the setting even when it cannot be remembered.
+                updateNotationSpacingControls();
+                drawExpression();
+                setWorkspacePan(workspacePanX, workspacePanY);
+            });
+            notationSpacingDialog.addEventListener("close", () => workspaceUtilityMenuToggle.focus({ preventScroll: true }));
+        }
+
         function setWorkspaceUtilityMenuOpen(open) {
             if (!workspaceUtilityMenuToggle || !workspaceUtilityMenuItems) {
                 return;
@@ -4909,6 +4952,7 @@ Promise.resolve().then(() => {
         }
 
         function initializeExplodedAlgebra() {
+            initializeNotationSpacing();
             document.body.classList.toggle("preview-comparison-disabled", STEP_PREVIEW_COMPARISON_DISABLED_FOR_NOW);
             layoutFloatingPalette();
             setStepsTextSizePreference("medium");
@@ -5009,6 +5053,8 @@ Promise.resolve().then(() => {
                         openExerciseDialog.showModal();
                     } else if (button.dataset.workspaceAction === "shareMoves") {
                         openShareMovesDialog();
+                    } else if (button.dataset.workspaceAction === "notationSpacing") {
+                        notationSpacingDialog.showModal();
                     }
                     event.stopPropagation();
                 });
@@ -5116,7 +5162,7 @@ Promise.resolve().then(() => {
             });
 
             document.addEventListener("keydown", event => {
-                if (event.defaultPrevented || openExerciseDialog.open || shareMovesDialog.open || numericalRewriteDialog.open ||
+                if (event.defaultPrevented || openExerciseDialog.open || shareMovesDialog.open || numericalRewriteDialog.open || notationSpacingDialog.open ||
                     (event.key === "Enter" && workspaceUtilityMenu.contains(event.target))) {
                     return;
                 }
