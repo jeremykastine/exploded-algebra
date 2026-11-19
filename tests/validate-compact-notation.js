@@ -17,7 +17,8 @@ const expression = node("sum", value("5"), node("prod", value("2"), node("sum",
     node("prod", value("4"), value("y"), value("y")), node("prod", value("7"), value("z")), value("8"))),
     node("prod", value("-1"), value("6")));
 assert.equal(compact(expression), [
-    "5 + 2*(3*x*(x + 1)",
+    "5 + 2*(",
+    "       3*x*(x + 1)",
     "       + 4*y*y",
     "       + 7*z",
     "       + 8",

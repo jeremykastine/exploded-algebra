@@ -2378,9 +2378,11 @@ function expressionToCompactText(rootOrData, builder = false) {
         const positions = [candidate.start, ...candidate.breaks, candidate.end];
         const indent = " ".repeat(candidate.start);
         const lines = positions.slice(0, -1).map((start, index) =>
-            (index ? indent : doc.text.slice(0, candidate.start)) +
+            indent +
             (index ? doc.text.slice(start, positions[index + 1]).trimStart()
                 : doc.text.slice(start, positions[index + 1])));
+        const prefix = doc.text.slice(0, candidate.start);
+        if (prefix) lines.unshift(prefix);
         const suffix = doc.text.slice(candidate.end);
         const blockWidth = Math.max(...lines.map(line => line.length));
         if (suffix) lines.push(" ".repeat(blockWidth) + suffix);
