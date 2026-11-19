@@ -2383,7 +2383,7 @@ function expressionToCompactText(rootOrData, builder = false) {
                 : doc.text.slice(start, positions[index + 1])));
         const suffix = doc.text.slice(candidate.end);
         const blockWidth = Math.max(...lines.map(line => line.length));
-        if (suffix) lines[lines.length - 1] = lines.at(-1).padEnd(blockWidth) + suffix;
+        if (suffix) lines.push(" ".repeat(blockWidth) + suffix);
         const width = Math.max(...lines.map(line => line.length));
         if (width < best.width || width === best.width && lines.length < best.rows) {
             best = { text: lines.join("\n"), width, rows: lines.length };

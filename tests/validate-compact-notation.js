@@ -20,7 +20,8 @@ assert.equal(compact(expression), [
     "5 + 2*(3*x*(x + 1)",
     "       + 4*y*y",
     "       + 7*z",
-    "       + 8        ) - 6"
+    "       + 8",
+    "                  ) - 6"
 ].join("\n"));
 assert.equal(widest(compact(expression)), 23);
 
