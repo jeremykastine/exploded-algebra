@@ -2213,7 +2213,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
     function product(factors, markup, leadingMinus = false) {
         return factors.map((factor, index) => {
             if (index > 0 && factor.type === "inv") {
-                return ` / ${render(factor.args[0], "divisor", markup)}`;
+                return `/${render(factor.args[0], "divisor", markup)}`;
             }
             const body = negativeOne(factor) && (index > 0 || leadingMinus)
                 ? group("-1", markup) : render(factor, "factor", markup);
@@ -2265,7 +2265,7 @@ function expressionToCodeMarkup(rootOrData, builder = false, stackGroups = false
             return parent === "divisor" && value.startsWith("-") ? group(text, markup) : text;
         }
         if (node.type === "inv") {
-            const body = `1 / ${render(node.args[0], "divisor", markup)}`;
+            const body = `1/${render(node.args[0], "divisor", markup)}`;
             return parent === "divisor" ? group(body, markup) : body;
         }
         if (node.type === "sum") {
