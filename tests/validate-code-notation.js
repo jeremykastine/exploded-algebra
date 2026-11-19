@@ -10,11 +10,11 @@ const value = text => new renderer.ExprNode("value", [], text);
 const code = renderer.expressionToCodeMarkup;
 
 assert.equal(code(node("prod", value("2"), value("x"), value("x"))), "2*x*x");
-assert.equal(code(node("prod", node("sum", value("x"), value("2")), node("inv", node("sum", value("x"), value("3"))))), "(x   +   2) / (x   +   3)");
+assert.equal(code(node("prod", node("sum", value("x"), value("2")), node("inv", node("sum", value("x"), value("3"))))), "(x + 2) / (x + 3)");
 assert.equal(code(node("inv", node("prod", value("2"), value("x")))), "1 / (2*x)");
 assert.equal(code(node("inv", node("inv", value("x")))), "1 / (1 / x)");
 assert.equal(code(node("prod", value("3"), node("inv", value("-1")))), "3 / (-1)");
-assert.equal(code(node("sum", value("x"), node("prod", value("-1"), node("sum", value("y"), value("2"))))), "x - (y   +   2)");
+assert.equal(code(node("sum", value("x"), node("prod", value("-1"), node("sum", value("y"), value("2"))))), "x - (y + 2)");
 assert.equal(code(value('<img src=x onerror="alert(1)">')), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
 const placeholder = value("");
 placeholder.isBuilderPlaceholder = true;
@@ -22,7 +22,7 @@ assert.equal(code(placeholder, true), "□");
 const sequence = node("sum", value("2"), value("x"));
 sequence.isBuilderSequence = true;
 sequence.builderOperators = ["prod", "sum"];
-assert.equal(code(sequence, true), "2*x   +   ");
+assert.equal(code(sequence, true), "2*x + ");
 const preview = node("prod", value("6"), node("prod", value("2"), value("3")));
 preview.isReplacementBuilderPreview = true;
 preview.rewriteOriginalOpacity = 0.28;
@@ -33,3 +33,19 @@ assert(!markup.includes('>6<'), "The fading original must not contaminate copied
 preview.preserveOriginalLayoutWhenEmpty = true;
 assert.equal(code(preview, true), '<span style="opacity:0.28">6</span>');
 console.log("Code notation preserves grouping, explicit operators, safe text, and live replacement previews.");
+
+// Stacked groups preserve the exact copyable expression in DOM order.
+const nested = node("prod", value("2"), node("sum", value("x"), node("inv",
+    node("prod", node("sum", value("y"), value("1")), node("sum", value("z"), value("2"))))));
+const stacked = code(nested, false, true);
+assert.equal(stacked.replace(/<[^>]*>/g, ""), code(nested));
+assert.equal((stacked.match(/class="workspace-code-group"/g) || []).length, 4);
+assert(stacked.includes('class="workspace-code-contents">x + 1 / '));
+const stackedPreview = node("rewritePreview", nested, value("9"));
+stackedPreview.isReplacementBuilderPreview = true;
+stackedPreview.rewriteOriginalOpacity = 0.14;
+const previewMarkup = code(stackedPreview, true, true);
+assert(previewMarkup.includes('workspace-code-group'), "Fading originals retain stacked parentheses");
+assert.equal(previewMarkup.replace(/<[^>]*>/g, ""), "9", "Fading originals do not enter copied text");
+assert.equal(code(value('<img onerror="oops">'), false, true), "&lt;img onerror=&quot;oops&quot;&gt;");
+console.log("Stacked parentheses preserve nesting, copy order, escaping, and fading originals.");

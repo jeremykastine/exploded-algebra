@@ -85,8 +85,8 @@ for (const corner of ["ne", "se", "sw"]) {
 assert(
     playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceCurrentNotation"') &&
         playerHtml.includes('id="workspaceGoalNotation"') && playerHtml.includes('id="workspaceGoalConnector"') &&
-        /\.workspace-conventional-line \{[^}]*white-space: nowrap;/.test(playerHtml),
-    "Current and goal notation must each occupy a single line"
+        /\.workspace-conventional-line \{[^}]*white-space: pre;/.test(playerHtml),
+    "Conventional notation must preserve operator spacing and grouped horizontal alignment"
 );
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");

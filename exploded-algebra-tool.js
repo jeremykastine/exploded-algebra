@@ -1811,9 +1811,9 @@ Promise.resolve().then(() => {
 
         function renderWorkspaceNotation(displayRoot, builder) {
             workspaceCurrentNotation.hidden = !displayRoot;
-            // This serializer escapes values and emits only local preview spans.
+            // This serializer escapes values and builds aligned, nested notation groups.
             workspaceCurrentNotation.innerHTML = displayRoot
-                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder) || "□" : "";
+                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, true) || "□" : "";
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.
@@ -1825,7 +1825,9 @@ Promise.resolve().then(() => {
             const bounds = getExpressionBounds();
             const gap = parseFloat(getComputedStyle(workspaceCurrentNotation).lineHeight) || 24;
             workspaceCurrentNotation.style.left = `${bounds.left}px`;
-            workspaceCurrentNotation.style.top = `${bounds.top - workspaceCurrentNotation.offsetHeight - gap}px`;
+            const outlinePadding = SETTINGS.expressionOutline === false ? 0
+                : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
+            workspaceCurrentNotation.style.top = `${bounds.bottom + outlinePadding + gap}px`;
             if (!workspaceGoalNotation.hidden) {
                 const center = (bounds.left + bounds.right) / 2;
                 // Clear the outline as well as the expression's layout bounds.
@@ -5399,7 +5401,7 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            // The shared content bounds begin at the current conventional expression.
+            // Anchor zoom to the combined exploded and conventional expression bounds.
             const { left, top } = expressionRoot ? getWorkspaceContentBounds() : { left: 0, top: 0 };
             const anchorPadding = 8;
             const zoomDelta = workspaceZoom - boundedZoom;

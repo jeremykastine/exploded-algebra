@@ -4016,6 +4016,16 @@
             pointer-events: auto;
             cursor: text;
         }
+        .workspace-code-group {
+            display: inline-grid;
+            grid-template-columns: 1ch max-content 1ch;
+            grid-template-rows: 1.25em auto;
+            vertical-align: top;
+            line-height: 1.25;
+        }
+        .workspace-code-open { grid-column: 1; grid-row: 1; }
+        .workspace-code-contents { grid-column: 2; grid-row: 2; }
+        .workspace-code-close { grid-column: 3; grid-row: 1; }
         .workspace-goal-connector {
             position: absolute;
             width: 12px;
@@ -4039,7 +4049,8 @@
             -webkit-user-select: none;
             pointer-events: none;
         }
-        .workspace-rewrite-original::before { content: attr(data-code); }
+        .workspace-rewrite-original::before,
+        .workspace-rewrite-original-text::before { content: attr(data-code); }
 
         .bottom-controls-panel {
             --palette-handle-rail: clamp(0.5rem, 1.5vmin, 0.75rem);
@@ -4365,7 +4376,7 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-18T18:25:45-05:00">11/18/26, 6:25 PM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-18T19:21:12-05:00">11/18/26, 7:21 PM EST</time></p>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
