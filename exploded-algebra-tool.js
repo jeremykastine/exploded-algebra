@@ -1818,9 +1818,14 @@ Promise.resolve().then(() => {
             // Keep the single-line view plain while retaining live rewrite fading.
             workspaceCurrentNotation.innerHTML = displayRoot
                 ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false) || "□" : "";
-            workspaceCompactNotation.hidden = !displayRoot;
-            workspaceCompactNotation.textContent = displayRoot
-                ? ExplodedAlgebraRenderer.expressionToCompactText(displayRoot, !!builder) || "□" : "";
+            // Keep the expanded notation on the committed expression until the
+            // numerical rewrite or inverse/opposite insertion is submitted.
+            const deferCompactUpdate = builder && (isNumericalBuilderTool(builder.tool) ||
+                ["replaceOneWithInverseProduct", "cancelOpposites"].includes(builder.tool));
+            const compactRoot = deferCompactUpdate ? builder.originalRoot : displayRoot;
+            workspaceCompactNotation.hidden = !compactRoot;
+            workspaceCompactNotation.textContent = compactRoot
+                ? ExplodedAlgebraRenderer.expressionToCompactText(compactRoot, !!builder && !deferCompactUpdate) || "□" : "";
 
             // Guided recordings identify the next action through highlighting.
             // Keep the legacy goal containers empty and outside layout bounds.
