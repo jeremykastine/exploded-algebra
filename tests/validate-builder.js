@@ -15,7 +15,7 @@ const rendererJs = read("exploded-algebra-renderer.js");
 
 assert(builderHtml.includes('content="0;url=exploded-algebra.html"'), "The old editor URL must forward to Free Play");
 assert(!fs.existsSync(path.join(root, "problem-builder.js")), "The retired editor implementation must be removed");
-assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false, notationSpacingPreference)") &&
+assert(playerJs.includes("ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false)") &&
   playerJs.includes("renderWorkspaceNotation(explodedDisplayRoot, builder)"), "Both notation views must use the same live replacement tree");
 assert(playerJs.includes("const selectionPath = findPathToNode(expressionRoot, selection.node)") && playerJs.includes("path: selectionPath.slice()"), "Recorded selections must preserve their exact expression-tree path");
 assert(playerJs.includes("const exactTarget = findDemoSelectionTargetByPath(step, targetNode)") && playerJs.includes("isSelectionTargetInside(selection, target)"), "Guided playback must prefer the recorded path and require selection within the outlined occurrence");

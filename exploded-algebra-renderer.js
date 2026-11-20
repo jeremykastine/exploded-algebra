@@ -56,6 +56,8 @@ const SETTINGS = {
     negativeUnitFillColor: "black",
     negativeUnitTextColor: "white",
     bufferSize: 16,
+    sumGap: null,
+    productGap: null,
     operatorThickness: 12,
     operationStyle: "filled",
     operationSize: "100",
@@ -110,6 +112,8 @@ function scaledSettings(baseSettings, scale, overrides = {}) {
         marginY: baseSettings.marginY * scale,
         textFont: scaleFont(baseSettings.textFont, scale),
         bufferSize: (baseSettings.bufferSize || baseSettings.debugComponentBuffer || 16) * scale,
+        sumGap: getOperationGap(baseSettings, "sum") * scale,
+        productGap: getOperationGap(baseSettings, "prod") * scale,
         expressionOutlinePadding: getExpressionOutlinePadding(baseSettings) * scale,
         operatorThickness: (baseSettings.operatorThickness || baseSettings.flare * 2 || 12) * scale,
         debugComponentLineWidth: Math.max(0.5, (baseSettings.debugComponentLineWidth || 1) * scale),
@@ -171,6 +175,11 @@ function getInverseCornerRadius(settings) {
 
 function getComponentGap(settings) {
     return settings.bufferSize || settings.debugComponentBuffer || 16;
+}
+
+function getOperationGap(settings, type) {
+    const value = type === "sum" ? settings.sumGap : settings.productGap;
+    return Number.isFinite(value) && value >= 0 ? value : getComponentGap(settings);
 }
 
 function getExpressionOutlinePadding(settings) {
@@ -903,7 +912,7 @@ function measureNode(node) {
 
 function measureNodeWithContext(node, drawingContext, settings) {
     const p = settings.padding;
-    const gap = getComponentGap(settings);
+    const gap = getOperationGap(settings, node.type);
     const operatorHalf = getOperatorHalfSize(settings);
 
     if (node.isReplacementBuilderPreview) {
@@ -1096,7 +1105,7 @@ function placeNode(node, x, y) {
 
 function placeNodeWithSettings(node, x, y, settings) {
     const p = settings.padding;
-    const gap = getComponentGap(settings);
+    const gap = getOperationGap(settings, node.type);
     const operatorThickness = getOperatorThickness(settings);
     node.layout.x = x;
     node.layout.y = y;
@@ -1415,7 +1424,7 @@ function drawOperationMark(drawingContext, type, x, y, settings, highlightFill) 
 // operator thickness plus both component gaps on the perpendicular axis.
 function drawSeparatorBufferBounds(drawingContext, node, type, x, y, settings) {
     if (!settings.debugSeparatorBounds) return;
-    const halfSlot = getOperatorHalfSize(settings) + getComponentGap(settings);
+    const halfSlot = getOperatorHalfSize(settings) + getOperationGap(settings, type);
     drawingContext.save();
     drawingContext.strokeStyle = "rgba(30, 120, 220, 0.65)";
     drawingContext.lineWidth = getStructuralStrokeWidth(settings);
