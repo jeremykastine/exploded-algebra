@@ -5275,6 +5275,8 @@ ctx.font = SETTINGS.textFont;
         ctx.textBaseline = "middle";
 
         let workspacePointerStart = null;
+        const workspacePointers = new Map();
+        let workspacePinchStart = null;
         const selection = {
             status: "no",
             node: null,
@@ -13022,6 +13024,22 @@ function renderToolArea() {
         }
 
         function updateWorkspacePan(event) {
+            if (!workspacePointers.has(event.pointerId)) return;
+            const pointer = workspacePointers.get(event.pointerId);
+            pointer.clientX = event.clientX;
+            pointer.clientY = event.clientY;
+            if (workspacePinchStart) {
+                const gesture = getWorkspacePinchGeometry();
+                const start = workspacePinchStart;
+                workspaceZoom = Math.max(WORKSPACE_ZOOM_MIN, Math.min(WORKSPACE_ZOOM_MAX,
+                    start.zoom * gesture.distance / start.distance));
+                // Scale the existing SVG and notation together without rebuilding
+                // the expression on every touch movement.
+                applyWorkspaceZoomSizing();
+                setWorkspacePan(gesture.x - start.contentX * workspaceZoom,
+                    gesture.y - start.contentY * workspaceZoom);
+                return;
+            }
             const start = workspacePointerStart;
             if (!start || event.pointerId !== start.pointerId || (!start.dragging && isWorkspaceTap(event, start))) {
                 return;
@@ -13040,41 +13058,85 @@ function renderToolArea() {
             }
         }
 
-        function finishWorkspacePointer(event) {
-            const start = workspacePointerStart;
-            if (!start || event.pointerId !== start.pointerId) {
-                return;
-            }
-            updateWorkspacePan(event);
+        function getWorkspacePinchGeometry() {
+            const [first, second] = workspacePointers.values();
+            const bounds = svgContainer.getBoundingClientRect();
+            return {
+                x: (first.clientX + second.clientX) / 2 - bounds.left,
+                y: (first.clientY + second.clientY) / 2 - bounds.top,
+                distance: Math.max(1, Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY))
+            };
+        }
+
+        function beginWorkspacePinch() {
+            const gesture = getWorkspacePinchGeometry();
+            workspacePinchStart = {
+                distance: gesture.distance,
+                zoom: workspaceZoom,
+                contentX: (gesture.x - workspacePanX) / workspaceZoom,
+                contentY: (gesture.y - workspacePanY) / workspaceZoom
+            };
+            workspacePointerStart = null;
+            workspaceViewManuallyPanned = true;
+            document.body.classList.add("workspace-panning");
+        }
+
+        function startWorkspacePointer(pointer, tapBlocked) {
+            workspacePointerStart = {
+                ...pointer,
+                panX: workspacePanX,
+                panY: workspacePanY,
+                dragging: false,
+                tapBlocked
+            };
+        }
+
+        function removeWorkspacePointer(pointerId) {
+            workspacePointers.delete(pointerId);
+            workspacePinchStart = null;
             releaseWorkspacePointer();
-            if (!start.dragging && !start.tapBlocked) {
+            if (workspacePointers.size >= 2) {
+                beginWorkspacePinch();
+            } else if (workspacePointers.size === 1) {
+                // Rebase the remaining finger at the current view so it can pan
+                // smoothly, but never turn the end of a pinch into a selection.
+                startWorkspacePointer(workspacePointers.values().next().value, true);
+            }
+        }
+
+        function finishWorkspacePointer(event) {
+            if (!workspacePointers.has(event.pointerId)) return;
+            const start = workspacePointerStart;
+            const wasPinching = !!workspacePinchStart;
+            updateWorkspacePan(event);
+            removeWorkspacePointer(event.pointerId);
+            if (!wasPinching && start && !start.dragging && !start.tapBlocked) {
                 handleWorkspaceTap(event, start);
             }
         }
 
         function cancelWorkspacePointer(event) {
-            if (event.pointerId === workspacePointerStart?.pointerId) {
-                releaseWorkspacePointer();
-            }
+            if (workspacePointers.has(event.pointerId)) removeWorkspacePointer(event.pointerId);
         }
 
         svgContainer.addEventListener("pointerdown", event => {
             if (!currentExpressionRoot || (event.target !== svgContainer && !workspaceSvg.contains(event.target))) {
                 return;
             }
-            if (workspacePointerStart || (event.pointerType === "mouse" && event.button !== 0)) {
+            if ((event.pointerType === "mouse" && event.button !== 0) ||
+                (workspacePointers.size && (event.pointerType !== "touch" ||
+                    [...workspacePointers.values()].some(pointer => pointer.pointerType !== "touch")))) {
                 return;
             }
-            workspacePointerStart = {
+            const pointer = {
                 pointerId: event.pointerId,
                 clientX: event.clientX,
                 clientY: event.clientY,
-                pointerType: event.pointerType || "mouse",
-                panX: workspacePanX,
-                panY: workspacePanY,
-                dragging: false,
-                tapBlocked: event.defaultPrevented
+                pointerType: event.pointerType || "mouse"
             };
+            workspacePointers.set(event.pointerId, pointer);
+            if (workspacePointers.size >= 2) beginWorkspacePinch();
+            else startWorkspacePointer(pointer, event.defaultPrevented);
             try {
                 svgContainer.setPointerCapture(event.pointerId);
             } catch (error) {

@@ -12,6 +12,7 @@ const documentListeners = {};
 const classes = new Set();
 const workspace = {
     addEventListener(type, listener) { workspaceListeners[type] = listener; },
+    getBoundingClientRect() { return { left: 40, top: 60 }; },
     setPointerCapture() { throw new Error("Pointer capture unavailable"); }
 };
 const svgChild = {};
@@ -19,11 +20,19 @@ const taps = [];
 const context = vm.createContext({
     currentExpressionRoot: {},
     workspacePointerStart: null,
+    workspacePointers: new Map(),
+    workspacePinchStart: null,
+    workspaceZoom: 1,
+    WORKSPACE_ZOOM_MIN: 0.5,
+    WORKSPACE_ZOOM_MAX: 3,
     workspaceViewManuallyPanned: false,
     workspacePanX: 0,
     workspacePanY: 0,
     svgContainer: workspace,
-    workspaceSvg: { contains: target => target === svgChild },
+    workspaceSvg: { contains: target => target === svgChild, style: {} },
+    workspaceNotationLayer: { style: {} },
+    getSvgWidth: () => 500,
+    getSvgHeight: () => 400,
     document: {
         body: { classList: { add: value => classes.add(value), remove: value => classes.delete(value) } },
         addEventListener(type, listener) { documentListeners[type] = listener; }
@@ -31,10 +40,11 @@ const context = vm.createContext({
     setWorkspacePan(x, y) {
         context.workspacePanX = x;
         context.workspacePanY = y;
+        context.applyWorkspaceContentTransform();
     },
     handleWorkspaceTap(event) { taps.push(event); }
 });
-for (const name of ["releaseWorkspacePointer", "isWorkspaceTap"]) {
+for (const name of ["releaseWorkspacePointer", "isWorkspaceTap", "applyWorkspaceZoomSizing", "applyWorkspaceContentTransform"]) {
     const start = playerJs.indexOf(`        function ${name}(`);
     const end = playerJs.indexOf("\n        function ", start + 1);
     vm.runInContext(playerJs.slice(start, end), context);
@@ -75,6 +85,80 @@ assert(!classes.has("workspace-panning"));
 documentListeners.pointerup(pointer(35, 20));
 assert.equal(taps.length, 1, "A cancelled drag must not select");
 
+function touch(id, x, y) {
+    return pointer(x, y, { pointerId: id, pointerType: "touch" });
+}
+function resetView() {
+    for (const pointer of [...context.workspacePointers.values()]) documentListeners.pointercancel(pointer);
+    context.workspaceZoom = 1;
+    context.workspacePanX = 20;
+    context.workspacePanY = 30;
+    context.workspaceViewManuallyPanned = false;
+}
+function beginPinch() {
+    workspaceListeners.pointerdown(touch(1, 140, 160));
+    workspaceListeners.pointerdown(touch(2, 240, 160));
+}
+resetView();
+beginPinch();
+assert.equal(context.workspaceViewManuallyPanned, true, "A pinch preserves the view during builder redraws");
+assert.equal(context.workspacePointerStart, null, "Pinching suspends single-pointer selection/pan");
+documentListeners.pointermove(touch(1, 90, 160));
+documentListeners.pointermove(touch(2, 290, 160));
+assert.equal(context.workspaceZoom, 2, "Doubling the finger distance doubles app zoom");
+assert.equal(context.workspacePanX, -110);
+assert.equal(context.workspacePanY, -40);
+assert.equal((150 - context.workspacePanX) / context.workspaceZoom, 130,
+    "The expression point beneath the pinch midpoint stays fixed, including workspace offsets");
+assert.equal(context.workspaceSvg.style.width, "1000px", "The exploded SVG scales with the pinch");
+assert.equal(context.workspaceNotationLayer.style.transform, "translate3d(-110px, -40px, 0) scale(2)",
+    "Conventional notation shares app zoom while controls remain outside the transform");
+documentListeners.pointerup(touch(2, 290, 160));
+assert.equal(context.workspaceZoom, 2);
+assert.equal(context.workspacePanX, -110, "Lifting a finger must not move the view");
+assert.equal(context.workspacePointerStart.tapBlocked, true);
+documentListeners.pointermove(touch(1, 120, 180));
+assert.equal(context.workspacePanX, -80, "The remaining finger resumes panning from its current position");
+assert.equal(context.workspacePanY, -20);
+documentListeners.pointerup(touch(1, 120, 180));
+assert.equal(taps.length, 1, "Neither finger of a pinch may select");
+assert.equal(context.workspacePointers.size, 0);
+assert(!classes.has("workspace-panning"));
+
+resetView();
+beginPinch();
+documentListeners.pointermove(touch(1, 180, 185));
+documentListeners.pointermove(touch(2, 280, 185));
+assert.equal(context.workspaceZoom, 1, "Moving both fingers together only pans");
+assert.equal(context.workspacePanX, 60);
+assert.equal(context.workspacePanY, 55);
+// Extra fingers and cancelled pointer capture must rebase without jumps.
+workspaceListeners.pointerdown(touch(3, 330, 200));
+const viewBeforeCancel = [context.workspaceZoom, context.workspacePanX, context.workspacePanY];
+documentListeners.pointercancel(touch(1, 180, 185));
+documentListeners.pointermove(touch(2, 280, 185));
+assert.deepEqual([context.workspaceZoom, context.workspacePanX, context.workspacePanY], viewBeforeCancel);
+workspaceListeners.lostpointercapture(touch(3, 330, 200));
+documentListeners.pointerup(touch(2, 280, 185));
+assert.equal(taps.length, 1, "Cancelled or extra fingers must not become taps");
+assert.equal(context.workspacePinchStart, null);
+
+resetView();
+beginPinch();
+documentListeners.pointermove(touch(2, 1140, 160));
+assert.equal(context.workspaceZoom, 3, "Pinch zoom respects the existing maximum");
+documentListeners.pointermove(touch(2, 141, 160));
+assert.equal(context.workspaceZoom, 0.5, "Pinch zoom respects the existing minimum");
+assert(Number.isFinite(context.workspacePanX) && Number.isFinite(context.workspacePanY));
+resetView();
+beginPinch();
+documentListeners.pointerup(touch(1, 140, 160));
+documentListeners.pointerup(touch(2, 240, 160));
+assert.equal(taps.length, 1, "Even a two-finger gesture with no movement must not select");
+workspaceListeners.pointerdown(touch(1, 140, 160));
+documentListeners.pointerup(touch(1, 140, 160));
+assert.equal(taps.length, 2, "A fresh single-finger tap still selects after a pinch");
+
 assert(
     /function getDefaultWorkspacePan\(\)[\s\S]*?getWorkspaceContentBounds\(\)[\s\S]*?viewportBounds\.left[\s\S]*?contentBounds\.top \* workspaceZoom[\s\S]*?function resetWorkspacePanToDefault/.test(playerJs)
         && /scheduleResponsiveLayoutRecalculation\(\)[\s\S]*?workspaceViewManuallyPanned[\s\S]*?resetWorkspacePanToDefault\(\)/.test(playerJs),
@@ -104,7 +188,7 @@ assert(
     "Conventional expressions must have no long-hold interaction"
 );
 
-console.log("Workspace pan checks passed.");
+console.log("Workspace pan and pinch zoom checks passed.");
 
 // The enlarged outer outline belongs to the pan/zoom bounds, so default placement
 // cannot clip its left edge when conventional notation shares the same anchor.

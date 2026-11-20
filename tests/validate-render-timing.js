@@ -62,7 +62,7 @@ const playerContext = vm.createContext({
     getWorkspaceGoalKatex: () => goalKatex,
     getExpressionBounds: () => ({ left: 20, top: 48, bottom: 120, right: 80 })
 });
-for (const name of ["renderWorkspaceMath", "renderWorkspaceNotation", "positionWorkspaceNotation"]) {
+for (const name of ["isNumericalBuilderTool", "renderWorkspaceMath", "renderWorkspaceNotation", "positionWorkspaceNotation"]) {
     loadFunction(playerContext, player, name, 8);
 }
 playerContext.renderWorkspaceNotation("2+3", null);
