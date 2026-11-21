@@ -50,10 +50,13 @@ the run and file actions. The palette stays fully inside the visible viewport an
 user's chosen size. It keeps the button arrangement fixed while labels and icons
 scale gently. Tap inside the selection or outside the
 expression to clear it; guided demonstrations ignore off-target selections and
-empty-workspace clicks. Guided selection prompts fill only the next recorded
-click target in yellow. Multi-click selections prompt each click in its original
-order, followed by the tool button. Inverse prompts cover only the header when
-the inverse itself was clicked, and operation clicks highlight the separator.
+empty-workspace clicks. Guided selection prompts draw a yellow outline around the entire required
+region. Learners can tap values, inverse headers, or operations within that
+region in any order until the selection is complete, then follow the tool
+button. Taps that would extend beyond the outlined region are ignored. The
+recorded moves and shared-link format are unchanged. Completing a Guided Replay
+launches colorful confetti bursts, with a quiet, mostly static version when
+reduced motion is requested. Reset or Undo clears the celebration.
 Each notation row stays non-wrapping, and long expressions remain reachable by
 panning the shared workspace. The outer outline leaves 16 pixels around the
 expression, independently of internal component spacing and selection buffers.
@@ -65,9 +68,9 @@ Undo returns through completed transformations, then reverses Enter to reopen
 the starting-expression builder with its entry history and cursor intact.
 Further Undo presses remove builder entries. Ctrl/Cmd+Z also works across this
 transition and within the builder when focus is not in a text field.
-In Guided Replay, Undo navigates backward one recorded click or button press,
-including build entry, selection, tool activation, and completed steps. The next
-yellow highlight then guides the learner forward again. Reconstructing the prior
+In Guided Replay, Undo navigates backward one learner tap or button press,
+including build entry, selection, tool activation, and completed steps. The yellow
+outline or highlighted button then guides the learner forward again. Reconstructing the prior
 step preserves pan and zoom, adds no Undo event, and leaves the original shared
 recording unchanged. Reset clears this navigation history.
 Undo is never recorded; Free Play shares only the surviving build inputs and

@@ -1414,6 +1414,9 @@ Promise.resolve().then(() => {
         let demoSelectionClickIndex = 0;
         let guidedUndoHistory = [];
         let restoringGuidedUndo = false;
+        let guidedCompletionCelebrated = false;
+        let guidedCelebrationFrame = null;
+        let stopGuidedConfetti = null;
 
         let currentLevelIndex = 0;
         let completedSteps = [];
@@ -2925,7 +2928,8 @@ Promise.resolve().then(() => {
             return isDemoModeActive() && !restoringGuidedUndo ? {
                 building: buildingStartingExpression,
                 step: demoStepIndex,
-                click: demoSelectionClickIndex
+                click: demoSelectionClickIndex,
+                selectionClicks: clonePlainData(selection.clicks || [])
             } : null;
         }
 
@@ -2940,11 +2944,16 @@ Promise.resolve().then(() => {
                 demoSelectionClickIndex === point.click;
         }
 
-        function replayGuidedActionForUndo() {
+        function replayGuidedActionForUndo(point) {
             const step = getCurrentDemoStep();
             if (!step) return false;
             if (step.type === "select") {
-                const target = getDemoSelectionClickTargets(step)[demoSelectionClickIndex];
+                // Partial selections must follow this learner's taps, which may differ
+                // from the recording's original route to the same region.
+                const click = point && point.building === buildingStartingExpression && point.step === demoStepIndex
+                    ? point.selectionClicks?.[demoSelectionClickIndex] : null;
+                const target = click ? { ...click, node: nodeAtPath(expressionRoot, click.path) }
+                    : getDemoSelectionClickTargets(step)[demoSelectionClickIndex];
                 return !!target && selectWorkspaceTarget(target);
             }
             if (step.type === "builder") return performBuilderAction(step.action, step.value || "");
@@ -2982,7 +2991,7 @@ Promise.resolve().then(() => {
                 let remaining = 100000;
                 while (!guidedProgressMatches(point)) {
                     const before = `${buildingStartingExpression}:${demoStepIndex}:${demoSelectionClickIndex}`;
-                    if (--remaining < 0 || replayGuidedActionForUndo() === false ||
+                    if (--remaining < 0 || replayGuidedActionForUndo(point) === false ||
                         before === `${buildingStartingExpression}:${demoStepIndex}:${demoSelectionClickIndex}`) {
                         throw new Error("The previous guided step could not be restored.");
                     }
@@ -3778,6 +3787,7 @@ Promise.resolve().then(() => {
         }
 
         function resetDemoStateForCurrentLevel() {
+            resetGuidedCelebration();
             demoStepIndex = 0;
             demoSelectionClickIndex = 0;
             updateModeControls();
@@ -4170,53 +4180,17 @@ Promise.resolve().then(() => {
             }
         }
 
-        function sameSelectionClickTarget(actual, expected) {
-            return !!actual && !!expected && actual.node === expected.node &&
-                actual.firstPart === expected.firstPart && actual.lastPart === expected.lastPart;
-        }
-
-        function getDemoClickHighlightRectangle(target) {
-            const node = target?.node;
-            if (!node) return null;
-            const pad = 3;
-            if (node.type === "inv") {
-                return { x: node.left() - pad, y: node.top() - pad,
-                    width: node.right() - node.left() + 2 * pad,
-                    height: getInverseHeaderBottom(node) - node.top() + 2 * pad };
-            }
-            if (node.type === "value") {
-                return { x: node.left() - pad, y: node.top() - pad,
-                    width: node.right() - node.left() + 2 * pad, height: node.bottom() - node.top() + 2 * pad };
-            }
-            if ((node.type === "sum" || node.type === "prod") && target.lastPart === target.firstPart + 1) {
-                const half = Math.max(4, SETTINGS.operatorThickness || SETTINGS.flare * 2 || 12) / 2 + pad;
-                const bar = nodeHasSeparators(node);
-                if (node.type === "prod") {
-                    const x = relVLine(node, target.lastPart);
-                    const y = (node.top() + node.bottom()) / 2;
-                    return { x: x - half, y: bar ? node.top() - pad : y - half,
-                        width: 2 * half, height: bar ? node.bottom() - node.top() + 2 * pad : 2 * half };
-                }
-                const x = (node.left() + node.right()) / 2;
-                const y = relHLine(node, target.lastPart);
-                return { x: bar ? node.left() - pad : x - half, y: y - half,
-                    width: bar ? node.right() - node.left() + 2 * pad : 2 * half, height: 2 * half };
-            }
-            return getSelectionRectangleForNodeRange(node, target.firstPart, target.lastPart);
-        }
-
-        function drawYellowDemoClickHighlight(target, commute = false) {
-            const rect = commute ? getSelectionRectangleForNodeRange(target.node, target.firstPart, target.lastPart)
-                : getDemoClickHighlightRectangle(target);
+        function drawYellowDemoSelectionOutline(target) {
+            const rect = getSelectionRectangleForNodeRange(target.node, target.firstPart, target.lastPart);
             if (!rect) return;
-            const highlight = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            const outline = document.createElementNS("http://www.w3.org/2000/svg", "rect");
             for (const [name, value] of Object.entries({ ...rect,
-                fill: "rgba(255, 210, 0, 0.45)", "pointer-events": "none",
-                "aria-hidden": "true", "data-guided-click-highlight": "true" })) {
-                highlight.setAttribute(name, String(value));
+                fill: "none", stroke: "#e6b800", "stroke-width": 3, rx: 4,
+                "vector-effect": "non-scaling-stroke", "pointer-events": "none",
+                "aria-hidden": "true", "data-guided-selection-outline": "true" })) {
+                outline.setAttribute(name, String(value));
             }
-            // Draw above the blue selection layer while letting input pass through.
-            workspaceSvg.appendChild(highlight);
+            workspaceSvg.appendChild(outline);
         }
 
         function drawDemoSelectionPrompt() {
@@ -4226,12 +4200,12 @@ Promise.resolve().then(() => {
             if (!step) return;
             if (step.type === "commuteChoice" && uiState.stage === "preview") {
                 const index = getDemoCommuteChoiceAbsoluteIndex(step);
-                if (index >= 0) drawYellowDemoClickHighlight({ node: selection.node, firstPart: index, lastPart: index }, true);
+                if (index >= 0) drawYellowDemoSelectionOutline({ node: selection.node, firstPart: index, lastPart: index });
                 return;
             }
             if (uiState.stage === "preview" || step.type !== "select") return;
-            const target = getDemoSelectionClickTargets(step)[demoSelectionClickIndex];
-            if (target) drawYellowDemoClickHighlight(target);
+            const target = findDemoSelectionTarget(step);
+            if (target) drawYellowDemoSelectionOutline(target);
         }
 
         function expressionMatchesParenthesizedText(parenthesizedText) {
@@ -12656,9 +12630,31 @@ function renderToolArea() {
             }
         }
 
+        function resetGuidedCelebration() {
+            if (guidedCelebrationFrame !== null) cancelAnimationFrame(guidedCelebrationFrame);
+            guidedCelebrationFrame = null;
+            stopGuidedConfetti?.();
+            stopGuidedConfetti = null;
+            guidedCompletionCelebrated = false;
+        }
+
+        function maybeCelebrateGuidedCompletion() {
+            if (compilingMoves || restoringGuidedUndo || guidedCompletionCelebrated || guidedCelebrationFrame !== null) return;
+            // A final tool advances the guide before starting its animation.
+            // Wait until that action has actually settled before celebrating.
+            guidedCelebrationFrame = requestAnimationFrame(() => {
+                guidedCelebrationFrame = null;
+                if (!isDemoModeActive() || compilingMoves || restoringGuidedUndo || buildingStartingExpression ||
+                    !(getCurrentDemoSteps().length || getCurrentLevel()?.initialBuilderActions?.length) || getCurrentDemoStep() || uiState.stage !== "idle" || uiState.activeTool) return;
+                guidedCompletionCelebrated = true;
+                stopGuidedConfetti = window.ExplodedAlgebraConfetti?.start();
+            });
+        }
+
         function refreshStatus() {
             if (compilingMoves) return;
             if (isDemoModeActive() && !getCurrentDemoStep() && uiState.stage !== "postview") {
+                maybeCelebrateGuidedCompletion();
                 setStatus("Guided replay complete. Use Reset to replay it or Free Play to start a new expression.");
                 return;
             }
@@ -12903,11 +12899,6 @@ function renderToolArea() {
         function selectWorkspaceTarget(target) {
             if (!target) return false;
             const step = getCurrentDemoStep();
-            const clicks = step?.type === "select" ? getDemoSelectionClickTargets(step) : [];
-            if (isDemoModeActive() && step?.type === "select") {
-                const expected = clicks[demoSelectionClickIndex];
-                if (!sameSelectionClickTarget(target, expected)) return false;
-            }
             const undoPoint = captureGuidedUndoPoint();
             const selectionUndo = !isDemoModeActive() && !compilingMoves ? captureSelectionUndoState() : null;
             if (!growSelectionToInclude(target)) {
@@ -12917,7 +12908,7 @@ function renderToolArea() {
             updateWorkspaceToolbar();
             clearInteraction();
             if (isDemoModeActive() && step?.type === "select") demoSelectionClickIndex++;
-            if (isDemoModeActive() && demoSelectionClickIndex >= clicks.length && currentSelectionMatchesDemoStep()) {
+            if (isDemoModeActive() && currentSelectionMatchesDemoStep()) {
                 advanceDemoStep();
             } else {
                 refreshStatus();

@@ -12,6 +12,7 @@ let controls = 0;
 const scope = {
   isDemoModeActive: () => true, restoringGuidedUndo: false,
   buildingStartingExpression: true, demoStepIndex: 2, demoSelectionClickIndex: 0,
+  selection: { clicks: [] }, clonePlainData: v => JSON.parse(JSON.stringify(v)),
   guidedUndoHistory: [], updateWorkspaceToolbar() { controls++; }
 };
 vm.createContext(scope);
@@ -59,3 +60,20 @@ assert.deepEqual([scope.workspaceZoom, scope.workspacePanX, scope.workspacePanY,
 assert.equal(scope.originalRecording, 'unchanged');
 assert(controls >= 3);
 console.log('Guided Undo tracks build/selection progress, suppresses reconstruction history, preserves view and original recording.');
+
+// Reconstruct a partial selection using the learner's alternative first tap.
+const leaf = { value: 'learner target' };
+const recordedLeaf = { value: 'recorded target' };
+const replay = vm.createContext({
+  getCurrentDemoStep: () => ({ type: 'select' }),
+  buildingStartingExpression: false, demoStepIndex: 4, demoSelectionClickIndex: 0,
+  expressionRoot: {}, nodeAtPath: (_root, path) => path[0] === 1 ? leaf : recordedLeaf,
+  getDemoSelectionClickTargets: () => [{ node: recordedLeaf }],
+  selectWorkspaceTarget: target => { replay.chosen = target; return true; }
+});
+vm.runInContext(extract('replayGuidedActionForUndo'), replay);
+assert(replay.replayGuidedActionForUndo({ building: false, step: 4,
+  selectionClicks: [{ path: [1], firstPart: 0, lastPart: 0 }] }));
+assert.equal(replay.chosen.node, leaf);
+assert(replay.replayGuidedActionForUndo({ building: false, step: 5, selectionClicks: [] }));
+assert.equal(replay.chosen.node, recordedLeaf, 'Earlier completed selections can use the original route');
