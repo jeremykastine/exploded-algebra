@@ -16,7 +16,7 @@ const ExplodedAlgebraMoves = (() => {
     return (hash >>> 0).toString(16).padStart(8, "0");
   }
 
-  function encode(events, build = true, version = 2) {
+  function encode(events, build = false, version = 2) {
     if (![1, 2].includes(version)) throw new Error("Unsupported recording version.");
     const body = events.map(event => {
       if (event.type === "position") {

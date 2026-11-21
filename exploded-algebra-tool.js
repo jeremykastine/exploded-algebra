@@ -1360,7 +1360,7 @@ Promise.resolve().then(() => {
         let compilingMoves = false;
         let compactReplayVersion = 1;
         let sharePayload = "";
-        let shareBuildDefault = true;
+        let shareBuildDefault = false;
         const toolOptionMenu = document.getElementById("toolOptionMenu");
         const leftPanel = document.getElementById("leftPanel");
         const appContainer = document.querySelector(".app-container");
@@ -3812,7 +3812,7 @@ Promise.resolve().then(() => {
             }
             const hasBuild = Array.isArray(level.initialBuilderActions) && level.initialBuilderActions.some(step => step && step.type !== "view");
             buildFirstEnabled = level.creative === true ? buildFirst === true
-                : hasBuild && (buildFirst === undefined ? playerQuery.get("build") !== "0" : buildFirst === true);
+                : hasBuild && (buildFirst === undefined ? playerQuery.get("build") === "1" : buildFirst === true);
             document.body.classList.remove("no-level-loaded");
             exerciseLoadStatus.hidden = true;
             loadLevel(0, buildFirstEnabled);
@@ -4907,7 +4907,7 @@ Promise.resolve().then(() => {
                 try {
                     const text = (await file.text()).trim();
                     if (levelFileInput.files[0] !== file) return;
-                    openBuildInput.checked = text.startsWith("{") ? true : ExplodedAlgebraMoves.decode(text).build;
+                    openBuildInput.checked = text.startsWith("{") ? false : ExplodedAlgebraMoves.decode(text).build;
                 } catch (error) {
                     openExerciseError.textContent = error.message;
                     openExerciseError.hidden = false;

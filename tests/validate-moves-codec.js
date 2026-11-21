@@ -25,7 +25,7 @@ for (const command of moves.commands) {
 }
 const text = moves.encode(events);
 assert.throws(() => moves.decode(text.slice(0, -1)), /incomplete/);
-assert.throws(() => moves.decode(text.replace('.1.', '.0.')), /incomplete/);
+assert.throws(() => moves.decode(text.replace('.0.', '.1.')), /incomplete/);
 assert.throws(() => moves.decode(text.replace('6I', '7I')), /incomplete/);
 assert.throws(() => moves.decode('3.1.0.12345678'), /not a supported/);
 
