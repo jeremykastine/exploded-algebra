@@ -58,8 +58,14 @@ assert.equal(current.innerHTML, "5");
 playerContext.renderWorkspaceNotation(null, null);
 assert.equal(current.hidden, true);
 assert.equal(current.innerHTML, "");
-playerContext.renderWorkspaceNotation("□", { tool: "studentInitial" });
-assert.equal(current.innerHTML, "□");
+for (const tool of ["studentInitial", "numericalRewrite", "replaceOneWithInverseProduct", "cancelOpposites"]) {
+    playerContext.renderWorkspaceNotation("2+3", { tool });
+    assert.equal(current.hidden, true, `${tool} hides conventional notation during entry`);
+    assert.equal(current.innerHTML, "");
+}
+playerContext.renderWorkspaceNotation("5", null);
+assert.equal(current.hidden, false, "Completed or cancelled entry restores conventional notation");
+assert.equal(current.innerHTML, "5");
 assert(!playerHtml.includes('id="workspaceCompactNotation"'));
 assert(!playerHtml.includes('id="workspaceGoalNotation"'));
 console.log("Startup visibility, static examples, and fixed current notation checks passed.");

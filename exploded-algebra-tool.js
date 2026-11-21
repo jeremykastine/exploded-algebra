@@ -1799,10 +1799,11 @@ Promise.resolve().then(() => {
         }
 
         function renderWorkspaceNotation(displayRoot, builder) {
-            workspaceCurrentNotation.hidden = !displayRoot;
-            // The fixed, single-line field retains selectable text and live rewrite fading.
-            workspaceCurrentNotation.innerHTML = displayRoot
-                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false) || "□" : "";
+            const showNotation = !!displayRoot && !builder;
+            workspaceCurrentNotation.hidden = !showNotation;
+            // Show conventional notation only for the committed expression.
+            workspaceCurrentNotation.innerHTML = showNotation
+                ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, false, false) || "□" : "";
         }
 
         function getMatchingParenthesisPairs(text) {
