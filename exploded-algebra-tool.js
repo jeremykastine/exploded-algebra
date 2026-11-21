@@ -1368,11 +1368,7 @@ Promise.resolve().then(() => {
         const bottomControlsPanel = document.getElementById("bottomControlsPanel");
         const bottomPaletteContent = bottomControlsPanel && bottomControlsPanel.querySelector(".palette-content");
         const svgContainer = document.getElementById("svgContainer");
-        const workspaceNotationLayer = document.getElementById("workspaceNotationLayer");
         const workspaceCurrentNotation = document.getElementById("workspaceCurrentNotation");
-        const workspaceCompactNotation = document.getElementById("workspaceCompactNotation");
-        const workspaceGoalNotation = document.getElementById("workspaceGoalNotation");
-        const workspaceGoalConnector = document.getElementById("workspaceGoalConnector");
         const targetExpressionSvg = document.getElementById("targetExpressionSvg");
         const targetExpressionCtx = targetExpressionSvg ? createSvgContext(targetExpressionSvg) : null;
         const currentExpressionSvg = document.getElementById("currentExpressionSvg");
@@ -1802,55 +1798,11 @@ Promise.resolve().then(() => {
                 : "";
         }
 
-        function renderWorkspaceMath(element, source, options = {}) {
-            element.hidden = !source;
-            if (!source) {
-                element.replaceChildren();
-            } else if (window.katex) {
-                window.katex.render(source, element, { throwOnError: false, ...options });
-            } else {
-                element.textContent = source === "\\square" ? "□" : source;
-            }
-        }
-
         function renderWorkspaceNotation(displayRoot, builder) {
             workspaceCurrentNotation.hidden = !displayRoot;
-            // Keep the single-line view plain while retaining live rewrite fading.
+            // The fixed, single-line field retains selectable text and live rewrite fading.
             workspaceCurrentNotation.innerHTML = displayRoot
                 ? ExplodedAlgebraRenderer.expressionToCodeMarkup(displayRoot, !!builder, false) || "□" : "";
-            // Keep the expanded notation on the committed expression until the
-            // numerical rewrite or inverse/opposite insertion is submitted.
-            const deferCompactUpdate = builder && (isNumericalBuilderTool(builder.tool) ||
-                ["replaceOneWithInverseProduct", "cancelOpposites"].includes(builder.tool));
-            const compactRoot = deferCompactUpdate ? builder.originalRoot : displayRoot;
-            workspaceCompactNotation.hidden = !compactRoot;
-            workspaceCompactNotation.textContent = compactRoot
-                ? ExplodedAlgebraRenderer.expressionToCompactText(compactRoot, !!builder && !deferCompactUpdate) || "□" : "";
-
-            // Guided recordings identify the next action through highlighting.
-            // Keep the legacy goal containers empty and outside layout bounds.
-            renderWorkspaceMath(workspaceGoalNotation, "");
-            workspaceGoalConnector.hidden = true;
-        }
-
-        function positionWorkspaceNotation() {
-            const bounds = getExpressionBounds();
-            const gap = parseFloat(getComputedStyle(workspaceCurrentNotation).lineHeight) || 24;
-            workspaceCurrentNotation.style.left = `${bounds.left}px`;
-            const outlinePadding = SETTINGS.expressionOutline === false ? 0
-                : Number.isFinite(SETTINGS.expressionOutlinePadding) ? SETTINGS.expressionOutlinePadding : getSelectionMargin();
-            workspaceCurrentNotation.style.top = `${bounds.top - outlinePadding - gap - workspaceCurrentNotation.offsetHeight}px`;
-            workspaceCompactNotation.style.left = `${bounds.left}px`;
-            workspaceCompactNotation.style.top = `${bounds.bottom + outlinePadding + gap}px`;
-            if (!workspaceGoalNotation.hidden) {
-                const center = (bounds.left + bounds.right) / 2;
-                // Clear the outline as well as the expression's layout bounds.
-                const arrowTop = bounds.bottom + gap;
-                workspaceGoalConnector.style.left = `${center}px`;
-                workspaceGoalConnector.style.top = `${arrowTop}px`;
-                workspaceGoalNotation.style.left = `${center - workspaceGoalNotation.offsetWidth / 2}px`;
-                workspaceGoalNotation.style.top = `${arrowTop + workspaceGoalConnector.offsetHeight + gap / 2}px`;
-            }
         }
 
         function getMatchingParenthesisPairs(text) {
@@ -5336,9 +5288,6 @@ ctx.font = SETTINGS.textFont;
 
         function applyWorkspaceContentTransform() {
             workspaceSvg.style.transform = `translate3d(${workspacePanX}px, ${workspacePanY}px, 0)`;
-            if (workspaceNotationLayer) {
-                workspaceNotationLayer.style.transform = `translate3d(${workspacePanX}px, ${workspacePanY}px, 0) scale(${workspaceZoom})`;
-            }
         }
 
         function updateWorkspaceToolbar() {
@@ -5394,16 +5343,6 @@ ctx.font = SETTINGS.textFont;
             bounds.top -= outlinePadding;
             bounds.right += outlinePadding;
             bounds.bottom += outlinePadding;
-            for (const line of [workspaceCurrentNotation, workspaceCompactNotation, workspaceGoalNotation]) {
-                if (line.hidden) continue;
-                const left = parseFloat(line.style.left);
-                const top = parseFloat(line.style.top);
-                if (!Number.isFinite(left) || !Number.isFinite(top)) continue;
-                bounds.left = Math.min(bounds.left, left);
-                bounds.top = Math.min(bounds.top, top);
-                bounds.right = Math.max(bounds.right, left + line.offsetWidth);
-                bounds.bottom = Math.max(bounds.bottom, top + line.offsetHeight);
-            }
             return bounds;
         }
 
@@ -5439,9 +5378,11 @@ ctx.font = SETTINGS.textFont;
             const contentBounds = getWorkspaceContentBounds();
             const containerBounds = svgContainer.getBoundingClientRect();
             const viewportBounds = getFloatingPaletteViewportBounds();
+            const notationBottom = workspaceCurrentNotation.hidden ? 0
+                : workspaceCurrentNotation.getBoundingClientRect().bottom + 8;
             return clampWorkspacePan(
                 viewportBounds.left - containerBounds.left - contentBounds.left * workspaceZoom,
-                viewportBounds.top - containerBounds.top - contentBounds.top * workspaceZoom
+                Math.max(viewportBounds.top, notationBottom) - containerBounds.top - contentBounds.top * workspaceZoom
             );
         }
 
@@ -5463,7 +5404,7 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            // Anchor zoom to the combined exploded and conventional expression bounds.
+            // Anchor zoom to the exploded expression bounds.
             const { left, top } = expressionRoot ? getWorkspaceContentBounds() : { left: 0, top: 0 };
             const anchorPadding = 8;
             const zoomDelta = workspaceZoom - boundedZoom;
@@ -6069,7 +6010,6 @@ ctx.font = SETTINGS.textFont;
                 : expressionRoot;
             renderWorkspaceNotation(explodedDisplayRoot, builder);
             if (uiState.mode === "inspect") {
-                positionWorkspaceNotation();
                 return;
             }
 
@@ -6118,7 +6058,6 @@ ctx.font = SETTINGS.textFont;
 
             drawExpressionOutlineToContext(explodedDisplayRoot, ctx, SETTINGS);
             drawDemoSelectionPrompt();
-            positionWorkspaceNotation();
             if (builder && !workspaceViewManuallyPanned) {
                 resetWorkspacePanToDefault();
             }

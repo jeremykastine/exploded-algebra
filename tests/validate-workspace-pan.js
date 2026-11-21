@@ -111,8 +111,8 @@ assert.equal(context.workspacePanY, -40);
 assert.equal((150 - context.workspacePanX) / context.workspaceZoom, 130,
     "The expression point beneath the pinch midpoint stays fixed, including workspace offsets");
 assert.equal(context.workspaceSvg.style.width, "1000px", "The exploded SVG scales with the pinch");
-assert.equal(context.workspaceNotationLayer.style.transform, "translate3d(-110px, -40px, 0) scale(2)",
-    "Conventional notation shares app zoom while controls remain outside the transform");
+assert.deepEqual(context.workspaceNotationLayer.style, {},
+    "The conventional field stays fixed while the exploded expression pans and zooms");
 documentListeners.pointerup(touch(2, 290, 160));
 assert.equal(context.workspaceZoom, 2);
 assert.equal(context.workspacePanX, -110, "Lifting a finger must not move the view");
@@ -173,16 +173,11 @@ assert(
     "Button clusters must float above rather than reduce the workspace"
 );
 assert(
-    /\.workspace-notation-layer \{[\s\S]*?position: absolute;[\s\S]*?pointer-events: none;[\s\S]*?transform-origin: 0 0;/.test(playerHtml)
-        && /function applyWorkspaceContentTransform\(\)[\s\S]*?workspaceSvg\.style\.transform[\s\S]*?workspaceNotationLayer\.style\.transform/.test(playerJs),
-    "The conventional line must share the exploded expression's pan and zoom transform"
+    /\.workspace-conventional-line \{[^}]*position: fixed;[^}]*overflow-x: auto;[^}]*touch-action: pan-x;/.test(playerHtml),
+    "The conventional field must stay fixed and scroll horizontally on touch screens"
 );
-assert(
-    /workspaceCurrentNotation\.style\.top = `\$\{bounds\.top - outlinePadding - gap - workspaceCurrentNotation\.offsetHeight\}px`/.test(playerJs)
-        && /workspaceCompactNotation\.style\.left = `\$\{bounds\.left\}px`/.test(playerJs)
-        && /workspaceCompactNotation\.style\.top = `\$\{bounds\.bottom \+ outlinePadding \+ gap\}px`/.test(playerJs),
-    "The plain and expanded views clear the outline above and below, both aligned to its left"
-);
+assert(!playerJs.includes("workspaceCurrentNotation.style.top"),
+    "Notation must remain independent of exploded expression positioning");
 assert(
     !playerJs.includes('step-card step-hold-target'),
     "Conventional expressions must have no long-hold interaction"
@@ -191,7 +186,7 @@ assert(
 console.log("Workspace pan and pinch zoom checks passed.");
 
 // The enlarged outer outline belongs to the pan/zoom bounds, so default placement
-// cannot clip its left edge when conventional notation shares the same anchor.
+// cannot clip its left edge; conventional notation is independent of these bounds.
 const boundsScope = vm.createContext({
     SETTINGS: { expressionOutline: true, expressionOutlinePadding: 16 },
     getExpressionBounds: () => ({ left: 20, top: 20, right: 60, bottom: 80 }),
@@ -211,5 +206,9 @@ assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getDefaultWorkspacePan())
 boundsScope.SETTINGS.expressionOutline = false;
 assert.equal(boundsScope.getWorkspaceContentBounds().left, 20);
 boundsScope.workspaceCompactNotation = { hidden: false, style: { left: "100px", top: "20px" }, offsetWidth: 240, offsetHeight: 150 };
-assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getWorkspaceContentBounds())), { left: 20, top: 20, right: 340, bottom: 170 },
-    "The compact notation remains reachable through the shared workspace pan bounds");
+assert.deepEqual(JSON.parse(JSON.stringify(boundsScope.getWorkspaceContentBounds())), { left: 20, top: 20, right: 60, bottom: 80 },
+    "Conventional notation never enlarges the exploded workspace pan bounds");
+
+boundsScope.workspaceCurrentNotation = { hidden: false, getBoundingClientRect: () => ({ bottom: 54 }) };
+assert.equal(boundsScope.getDefaultWorkspacePan().y, 42,
+    "Reset places the exploded expression below the fixed conventional field");

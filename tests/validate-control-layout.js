@@ -37,7 +37,7 @@ assert(!playerJs.includes("finalOnlyMode") && !playerJs.includes("ASSISTANCE_MOD
 assert(playerHtml.includes('grid-template-columns: repeat(6, minmax(0, 1fr));'));
 assert(playerHtml.includes('grid-template-rows: repeat(4, minmax(0, 1fr));'));
 const workspaceMenu = playerHtml.match(/id="workspaceUtilityMenuItems"[^>]*>([\s\S]*?)<\/div>/)[1];
-for (const label of ["Reset", "Free Play / New Expression", "Guided Replay…", "Share / Download Moves…", "Notation Spacing…"]) {
+for (const label of ["Reset", "Free Play / New Expression", "Guided Replay…", "Share / Download Moves…", "Exploded Operation Spacing…"]) {
     assert(workspaceMenu.includes(">" + label + "</button>"), "Workspace menu must provide " + label);
 }
 assert.equal((workspaceMenu.match(/role="menuitem"/g) || []).length, 5);
@@ -83,10 +83,9 @@ for (const corner of ["ne", "se", "sw"]) {
     assert(!playerHtml.includes(`data-palette-resize="${corner}"`), `The controls palette must not retain its ${corner} resize handle`);
 }
 assert(
-    playerHtml.includes('id="workspaceNotationLayer"') && playerHtml.includes('id="workspaceCurrentNotation"') &&
-        playerHtml.includes('id="workspaceGoalNotation"') && playerHtml.includes('id="workspaceGoalConnector"') &&
+    playerHtml.includes('id="workspaceCurrentNotation"') &&
         /\.workspace-conventional-line \{[^}]*white-space: pre;/.test(playerHtml),
-    "Conventional notation must preserve operator spacing and grouped horizontal alignment"
+    "The single-line conventional notation must preserve operator spacing"
 );
 assert(!playerHtml.includes('id="topPanelResizeHandle"'), "The removed conventional box must not retain a resize handle");
 assert(/\.left-panel,[\s\S]*?\.top-panel-resize-handle \{ display: none !important; \}/.test(playerHtml), "The former conventional history box must remain absent");

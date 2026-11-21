@@ -3961,9 +3961,8 @@
             }
         }
 
-        /* The expression workspace fills the screen. The conventional lines
-           pan with the exploded notation, while the controls remain a
-           fixed, lower-right foreground palette. */
+        /* The expression workspace fills the screen beneath the fixed notation
+           field and lower-right controls palette. */
         .app-container,
         body.expression-builder-active .app-container,
         body.expression-builder-active.builder-entry-mode .app-container {
@@ -3986,28 +3985,32 @@
         .left-panel,
         .top-panel-resize-handle { display: none !important; }
 
-        .workspace-notation-layer {
-            position: absolute;
-            z-index: 4;
-            top: 0;
-            left: 0;
-            width: 0;
-            height: 0;
-            overflow: visible;
-            pointer-events: none;
-            transform-origin: 0 0;
-        }
         .exercise-load-status {
             position: absolute;
-            top: 2rem;
+            top: calc(max(0.65rem, env(safe-area-inset-top)) + 3.25rem);
             left: 1rem;
             max-width: min(34rem, calc(100% - 5rem));
             z-index: 6;
         }
         #openExerciseError { color: #a00000; overflow-wrap: anywhere; }
         .workspace-conventional-line {
-            position: absolute;
-            width: max-content;
+            position: fixed;
+            z-index: 125;
+            top: max(0.65rem, env(safe-area-inset-top));
+            left: max(0.65rem, env(safe-area-inset-left));
+            right: calc(max(0.65rem, env(safe-area-inset-right)) + 3.25rem);
+            min-width: 0;
+            min-height: 2.75rem;
+            box-sizing: border-box;
+            padding: 0.5rem 0.65rem;
+            border: 1px solid rgba(45, 55, 70, 0.3);
+            border-radius: 0.45rem;
+            background: rgba(255, 255, 255, 0.96);
+            overflow-x: auto;
+            overflow-y: hidden;
+            overscroll-behavior-x: contain;
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
             color: #777;
             font: 20px/1.25 ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
             white-space: pre;
@@ -4016,15 +4019,6 @@
             pointer-events: auto;
             cursor: text;
         }
-        .workspace-goal-connector {
-            position: absolute;
-            width: 12px;
-            height: 24px;
-            color: #606974;
-            transform: translateX(-50%);
-        }
-        .workspace-goal-connector[hidden] { display: none; }
-        .workspace-goal-connector svg { width: 100%; height: 100%; }
         .workspace-rewrite-preview {
             display: inline-grid;
             grid-template-columns: max-content;
@@ -4375,7 +4369,8 @@
 
 </head>
 <body class="no-level-loaded">
-    <p class="page-last-updated">Last updated: <time datetime="2026-11-20T05:23:27-05:00">11/20/26, 05:23 AM EST</time></p>
+    <p class="page-last-updated">Last updated: <time datetime="2026-11-20T23:15:08-05:00">11/20/26, 11:15 PM EST</time></p>
+    <div id="workspaceCurrentNotation" class="workspace-conventional-line" role="region" aria-label="Current expression in conventional notation" aria-live="polite" tabindex="0" hidden></div>
     <div class="app-container">
         <div id="leftPanel" class="left-panel" hidden aria-hidden="true">
             <div id="levelContent"></div>
@@ -4455,16 +4450,6 @@
                 </div>
             </div>
             <div id="svgContainer" class="right-svg-wrap">
-                <div id="workspaceNotationLayer" class="workspace-notation-layer" aria-live="polite">
-                    <div id="workspaceCurrentNotation" class="workspace-conventional-line" role="group" aria-label="Current expression" hidden></div>
-                    <div id="workspaceCompactNotation" class="workspace-conventional-line" role="group" aria-label="Current expression in compact vertical notation" hidden></div>
-                    <div id="workspaceGoalConnector" class="workspace-goal-connector" aria-hidden="true" hidden>
-                        <svg viewBox="0 0 12 24" focusable="false">
-                            <path d="M6 1 V22 M1.5 17.5 L6 22 L10.5 17.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div id="workspaceGoalNotation" class="workspace-conventional-line" role="group" aria-label="Goal expression" hidden></div>
-                </div>
                 <svg id="expressionWorkspaceSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Exploded Algebra expression workspace"></svg>
                 <p id="exerciseLoadStatus" class="exercise-load-status" role="status" hidden></p>
                 <div id="floatingToolMenu" class="floating-tool-menu hidden"></div>
@@ -4537,7 +4522,7 @@
     <script src="exploded-algebra-renderer.js?v=20261119-exploded-operation-spacing"></script>
     <script src="moves-codec.js?v=20261117-click-targets-v2"></script>
     <script src="level-transfer.js?v=20261116-player-menu"></script>
-    <script src="exploded-algebra-tool.js?v=20261120-workspace-pinch"></script>
+    <script src="exploded-algebra-tool.js?v=20261120-fixed-conventional-field"></script>
 
 </body>
 </html>

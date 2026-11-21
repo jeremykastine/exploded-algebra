@@ -44,57 +44,22 @@ function notationElement(id, offsetWidth, offsetHeight) {
     return { style: {}, offsetWidth, offsetHeight, replaceChildren() { this.textContent = ""; } };
 }
 const current = notationElement("workspaceCurrentNotation", 40, 25);
-const compact = notationElement("workspaceCompactNotation", 100, 75);
-const goal = notationElement("workspaceGoalNotation", 10, 25);
-const connector = notationElement("workspaceGoalConnector", 12, 24);
-let goalKatex = "5";
 const playerContext = vm.createContext({
-    window: {},
-    SETTINGS: { expressionOutlinePadding: 16 },
-    notationSpacingPreference: { plus: 1, times: 0 },
-    getComputedStyle: () => ({ lineHeight: "25px" }),
     workspaceCurrentNotation: current,
-    workspaceCompactNotation: compact,
-    workspaceGoalNotation: goal,
-    workspaceGoalConnector: connector,
-    ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node, expressionToCompactText: node => node },
-    getCurrentLevel: () => ({}),
-    getWorkspaceGoalKatex: () => goalKatex,
-    getExpressionBounds: () => ({ left: 20, top: 48, bottom: 120, right: 80 })
+    ExplodedAlgebraRenderer: { expressionToCodeMarkup: node => node }
 });
-for (const name of ["isNumericalBuilderTool", "renderWorkspaceMath", "renderWorkspaceNotation", "positionWorkspaceNotation"]) {
-    loadFunction(playerContext, player, name, 8);
-}
+loadFunction(playerContext, player, "renderWorkspaceNotation", 8);
 playerContext.renderWorkspaceNotation("2+3", null);
-playerContext.positionWorkspaceNotation();
 assert.equal(current.innerHTML, "2+3");
-assert.deepEqual(current.style, { left: "20px", top: "-18px" });
-assert.equal(compact.textContent, "2+3");
-assert.deepEqual(compact.style, { left: "20px", top: "161px" });
-assert.equal(goal.textContent, "");
-assert.equal(goal.hidden, true);
-assert.deepEqual(goal.style, {});
-assert.equal(connector.hidden, true);
-assert.deepEqual(connector.style, {});
-
-goal.offsetWidth = 100;
-playerContext.positionWorkspaceNotation();
-assert.deepEqual(goal.style, {}, "A legacy goal must not reserve any workspace below the expression");
-
-goalKatex = "";
+assert.equal(current.hidden, false);
+assert.deepEqual(current.style, {}, "Rendering does not position notation relative to the exploded expression");
 playerContext.renderWorkspaceNotation("5", null);
 assert.equal(current.innerHTML, "5");
-assert.equal(compact.textContent, "5", "The compact view updates on every expression render");
-assert.equal(goal.hidden, true);
-assert.equal(connector.hidden, true);
 playerContext.renderWorkspaceNotation(null, null);
-assert.equal(compact.hidden, true);
-assert.equal(compact.textContent, "");
-
-goalKatex = "2+3";
+assert.equal(current.hidden, true);
+assert.equal(current.innerHTML, "");
 playerContext.renderWorkspaceNotation("□", { tool: "studentInitial" });
 assert.equal(current.innerHTML, "□");
-assert.equal(goal.textContent, "");
-assert.equal(goal.hidden, true, "Building must not reveal target notation");
-assert.equal(connector.hidden, true);
-console.log("Startup visibility, static examples, and current-only workspace notation checks passed.");
+assert(!playerHtml.includes('id="workspaceCompactNotation"'));
+assert(!playerHtml.includes('id="workspaceGoalNotation"'));
+console.log("Startup visibility, static examples, and fixed current notation checks passed.");
