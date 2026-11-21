@@ -60,8 +60,8 @@ assert.equal(current.hidden, true);
 assert.equal(current.innerHTML, "");
 for (const tool of ["studentInitial", "numericalRewrite", "replaceOneWithInverseProduct", "cancelOpposites"]) {
     playerContext.renderWorkspaceNotation("2+3", { tool });
-    assert.equal(current.hidden, true, `${tool} hides conventional notation during entry`);
-    assert.equal(current.innerHTML, "");
+    assert.equal(current.hidden, false, `${tool} keeps the field visible during entry`);
+    assert.equal(current.innerHTML, "Building expression…");
 }
 playerContext.renderWorkspaceNotation("5", null);
 assert.equal(current.hidden, false, "Completed or cancelled entry restores conventional notation");
