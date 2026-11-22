@@ -4887,7 +4887,7 @@ Promise.resolve().then(() => {
             layoutFloatingPalette();
             setStepsTextSizePreference("medium");
             updatePanelResizeHandleOrientation();
-            SETTINGS.operationStyle = "filled";
+            SETTINGS.operationStyle = "bare";
             SETTINGS.operationSize = "100";
             openExerciseForm.addEventListener("submit", event => {
                 if (event.submitter?.value === "cancel") return;

@@ -59,7 +59,7 @@ const SETTINGS = {
     sumGap: null,
     productGap: null,
     operatorThickness: 12,
-    operationStyle: "filled",
+    operationStyle: "bare",
     operationSize: "100",
     sumBeamStyle: "midline",
     sumBeamEdgeColor: "black",
@@ -1380,11 +1380,13 @@ function getOperationMarkGeometry(settings, type) {
     const diameter = getOperatorThickness(settings) * proportion;
     const half = diameter / 2;
     const style = ["bare", "outlined", "filled"].includes(settings.operationStyle)
-        ? settings.operationStyle : "filled";
+        ? settings.operationStyle : "bare";
     const outlineWidth = Math.max(1, getOperatorCircleStrokeWidth(settings) * proportion);
-    const strokeWidth = Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
+    const strokeWidth = style === "bare"
+        ? Math.max(1, diameter * 0.25)
+        : Math.max(1, getOperatorIconStrokeWidth(settings) * proportion);
     const markHalf = half * (style === "bare" ? 0.68 : 0.52);
-    const dotRadius = Math.max(0.8, markHalf * 0.58);
+    const dotRadius = Math.max(0.8, style === "bare" ? half * 0.65 : markHalf * 0.58);
     const width = style === "bare"
         ? (type === "sum" ? markHalf * 2 + strokeWidth : dotRadius * 2)
         : diameter + (style === "outlined" ? outlineWidth : 0);

@@ -248,7 +248,7 @@ assert(/button\.contextual-rule-button,[\s\S]*?button\.contextual-commute-button
 assert(/\.main-action-panel \.intent-category-actions > button\.contextual-rule-button \{[\s\S]*?display: grid;[\s\S]*?padding: 0;/.test(playerHtml));
 assert(/src="exploded-algebra-tool\.js\?v=\d{8}-[a-z0-9-]+"/.test(playerHtml));
 assert(!playerJs.includes('function cycleQuickSetting(setting)'));
-assert(playerJs.includes('SETTINGS.operationStyle = "filled";') && playerJs.includes('SETTINGS.operationSize = "100";'), "The default appearance must be fixed");
+assert(playerJs.includes('SETTINGS.operationStyle = "bare";') && playerJs.includes('SETTINGS.operationSize = "100";'), "The default appearance must be fixed");
 assert(playerJs.includes('const STEPS_TEXT_SIZE_OPTIONS = ["large", "medium", "small"];'));
 assert(playerJs.includes('function calculateContextualStepsFontSizes'));
 assert(playerJs.includes('function fitStepsFontSizeToPanelWidth'));

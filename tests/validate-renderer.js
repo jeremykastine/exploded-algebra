@@ -164,7 +164,7 @@ assert.ok(compact.layout.width >= 12, "Simple sums reserve space for the chosen 
 assert.equal(vm.runInContext("SETTINGS.sumBeamStyle", rendererContext), "midline");
 assert.equal(vm.runInContext("SETTINGS.productBeamStyle", rendererContext), "midline");
 assert.equal(vm.runInContext("SETTINGS.operationBarShading", rendererContext), "gradient-gray");
-assert.equal(vm.runInContext("SETTINGS.operationStyle", rendererContext), "filled");
+assert.equal(vm.runInContext("SETTINGS.operationStyle", rendererContext), "bare");
 function positionedParent(type, alignment) {
     const narrow = new ExprNode("value", [], "a");
     narrow.layout.width = 10;
