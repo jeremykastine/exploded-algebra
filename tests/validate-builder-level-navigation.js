@@ -37,7 +37,20 @@ const functionNames = [
     "moveDirectBuilderOperationUp",
     "canCycleDirectBuilderOperationWithButton",
     "insertDirectBuilderOperation",
-    "enterDirectBuilderInverse"
+    "enterDirectBuilderInverse",
+    "buildExpressionBuilderHtml",
+    "builderValidationFailed",
+    "legacyBuilderNeedsProduct",
+    "performCompactButton",
+    "getCurrentDemoStep",
+    "builderAllowsVariables",
+    "builderAllowsNegativeOne",
+    "getBuilderOperationTypes",
+    "appendIntegratedBuilderDigit",
+    "enterIntegratedBuilderValue",
+    "insertIntegratedBuilderOperation",
+    "enterIntegratedBuilderInverse",
+    "performBuilderAction"
 ];
 
 const context = {
@@ -49,7 +62,12 @@ const context = {
             this.value = value;
         }
     },
-    uiState: { expressionBuilder: null, message: "" },
+    uiState: { expressionBuilder: null, message: "", stage: "builder" },
+    isIntegratedExpressionBuilder: builder => !!builder && builder.flowVersion >= 3,
+    getBuilderSymbolIcon: () => "<svg></svg>",
+    getCurrentDemoSteps: () => context.demoSteps || [],
+    isDemoModeActive: () => true,
+    demoStepIndex: 0,
     expressionRoot: null,
     isDirectNotationExpressionBuilder: builder => !!builder && builder.flowVersion >= 5,
     valueNode: value => new context.ExprNode("value", [], String(value)),
@@ -197,9 +215,13 @@ assertNoAdjacentMatchingOperations(inverseBuilder.root);
 for (const variable of context.BUILDER_VARIABLES) {
     const valueThenVariable = makeBuilder(value("2"));
     context.uiState.expressionBuilder = valueThenVariable;
-    assert.equal(context.api.enterDirectBuilderValue(variable), true, `${variable} after a value must insert multiplication`);
-    assert.equal(valueThenVariable.root.type, "prod");
-    assertJsonEqual(valueThenVariable.root.args.map(node => node.value), ["2", variable], "Implicit multiplication must use the lowest level");
+    const before = JSON.stringify(valueThenVariable);
+    assert.equal(context.api.enterDirectBuilderValue(variable), false, `${variable} after a value must require an operation`);
+    assert.equal(JSON.stringify(valueThenVariable), before, "A rejected variable must not change the builder");
+    assert.equal(context.uiState.message, "", "A rejected entry must not create a message");
+    assert.equal(context.api.insertDirectBuilderOperation("prod"), true);
+    assert.equal(context.api.enterDirectBuilderValue(variable), true);
+    assertJsonEqual(valueThenVariable.root.args.map(node => node.value), ["2", variable], "An explicit Times press must create the product");
 }
 
 const valueThenNegativeOne = makeBuilder(new context.ExprNode("prod", [value("2"), value("3")], null));
@@ -212,18 +234,89 @@ assert.equal(valueThenNegativeOne.root.args[1].value, "3", "Rejected implicit ad
 const valueThenInverse = makeBuilder(new context.ExprNode("sum", [value("2"), value("3")], null));
 valueThenInverse.currentPath = [1];
 context.uiState.expressionBuilder = valueThenInverse;
-assert.equal(context.api.enterDirectBuilderInverse(), true, "an inverse after a value must insert multiplication");
+const beforeInverse = JSON.stringify(valueThenInverse);
+assert.equal(context.api.enterDirectBuilderInverse(), false, "An inverse after a value must require an operation");
+assert.equal(JSON.stringify(valueThenInverse), beforeInverse);
+assert.equal(context.api.insertDirectBuilderOperation("prod"), true);
+assert.equal(context.api.enterDirectBuilderInverse(), true, "An inverse must work after explicit Times");
 assert.equal(valueThenInverse.root.type, "sum");
 assert.equal(valueThenInverse.root.args[1].type, "prod");
 assert.equal(valueThenInverse.root.args[1].args[0].value, "3");
 assert.equal(valueThenInverse.root.args[1].args[1].type, "inv");
 assert.equal(context.api.isBuilderPlaceholder(valueThenInverse.root.args[1].args[1].args[0]), true);
-assertJsonEqual(valueThenInverse.currentPath, [1, 1, 0], "Entry must move inside the lowest-level implicitly multiplied inverse");
+assertJsonEqual(valueThenInverse.currentPath, [1, 1, 0], "Entry must move inside the explicitly multiplied inverse");
 
 const negativeOneThenDigit = makeBuilder(value("-1"));
 context.uiState.expressionBuilder = negativeOneThenDigit;
-assert.equal(context.api.appendDirectBuilderDigit("4"), true, "a digit after negative one must insert multiplication");
+assert.equal(context.api.appendDirectBuilderDigit("4"), false, "A digit after negative one must require an operation");
+assert.equal(negativeOneThenDigit.root.value, "-1");
+assert.equal(context.api.insertDirectBuilderOperation("prod"), true);
+assert.equal(context.api.appendDirectBuilderDigit("4"), true);
 assert.equal(negativeOneThenDigit.root.type, "prod");
-assertJsonEqual(negativeOneThenDigit.root.args.map(node => node.value), ["-1", "4"], "Implicit multiplication after negative one must use the lowest level");
+assertJsonEqual(negativeOneThenDigit.root.args.map(node => node.value), ["-1", "4"], "Explicit multiplication after negative one must use the lowest level");
 
-console.log("Expression Builder direct-notation checks passed.");
+const digits = makeBuilder(context.api.makePlaceholderNode());
+context.uiState.expressionBuilder = digits;
+assert.equal(context.api.appendDirectBuilderDigit("8"), true);
+assert.equal(context.api.appendDirectBuilderDigit("2"), true);
+assert.equal(digits.root.value, "82", "Successive digits must remain one number");
+assert.equal(context.api.enterDirectBuilderValue("x"), false);
+assert.equal(context.api.insertDirectBuilderOperation("sum"), true);
+assert.equal(context.api.enterDirectBuilderValue("x"), true);
+assertJsonEqual(digits.root.args.map(node => node.value), ["82", "x"]);
+const pending = makeBuilder(context.api.makePlaceholderNode());
+context.uiState.expressionBuilder = pending;
+assert.equal(context.api.insertDirectBuilderOperation("sum"), false);
+assert.equal(context.api.insertDirectBuilderOperation("prod"), false);
+assert.equal(context.uiState.message, "");
+assert(!context.api.buildExpressionBuilderHtml().includes(" disabled"), "Unavailable builder buttons must remain visually enabled");
+assert.equal(context.api.builderValidationFailed("incorrect entry"), false);
+assert.equal(context.uiState.message, "", "Invalid Submit must remain silent");
+
+// Old recordings must request a real Times action rather than restore shortcuts.
+const imported = makeBuilder(value("8"));
+context.uiState.expressionBuilder = imported;
+context.demoSteps = [{ type: "builder", action: "value", value: "x" }];
+assert.equal(context.api.getCurrentDemoStep().action, "pendingOperation");
+assert.equal(context.api.getCurrentDemoStep().legacyExplicitOperation, true);
+context.api.insertDirectBuilderOperation("prod");
+assert.equal(context.api.getCurrentDemoStep().action, "value");
+context.uiState.expressionBuilder = makeBuilder(value("8"));
+const replayed = [];
+context.performBuilderAction = (action, entry) => {
+    replayed.push([action, entry]);
+    return action === "pendingOperation" ? context.api.insertDirectBuilderOperation(entry)
+        : context.api.enterDirectBuilderValue(entry);
+};
+assert.equal(context.api.performCompactButton("value:x"), true);
+assertJsonEqual(replayed, [["pendingOperation", "prod"], ["value", "x"]]);
+assertJsonEqual(context.uiState.expressionBuilder.root.args.map(node => node.value), ["8", "x"]);
+// Button and keyboard actions use the same silent restriction checks.
+context.isDemoModeActive = () => false;
+context.isDemoBuilderActionAllowed = () => true;
+context.isNumericalBuilderTool = tool => ["evaluate", "factorNumber"].includes(tool);
+context.isNumericalRewriteTool = () => false;
+context.captureGuidedUndoPoint = () => null;
+context.getExpressionTextForTrace = () => "";
+let recorded = 0;
+context.recordBuilderForSolution = () => { recorded++; };
+context.rememberGuidedUndoPoint = () => {};
+context.advanceDemoStep = () => {};
+context.uiState.expressionBuilder = { ...makeBuilder(value("8")), tool: "evaluate" };
+const numericBefore = JSON.stringify(context.uiState.expressionBuilder);
+for (const [action, entry] of [["value", "x"], ["cycleVariable", "y"], ["negativeOne", ""],
+    ["pendingOperation", "prod"], ["pendingOperation", "sum"], ["enterInverse", ""]]) {
+    assert.equal(context.api.performBuilderAction(action, entry), false);
+    assert.equal(JSON.stringify(context.uiState.expressionBuilder), numericBefore);
+    assert.equal(context.uiState.message, "");
+}
+assert(!context.api.buildExpressionBuilderHtml().includes(" disabled"), "Restricted numerical-builder buttons must stay visually enabled");
+assert.equal(context.api.performBuilderAction("digit", "2"), true);
+assert.equal(context.uiState.expressionBuilder.root.value, "82");
+assert.equal(recorded, 1, "Rejected presses must not enter the recording");
+context.uiState.expressionBuilder = { ...makeBuilder(value("8")), tool: "studentInitial" };
+assert.equal(context.api.performBuilderAction("value", "x"), false);
+assert.equal(context.api.performBuilderAction("enterInverse"), false);
+assert.equal(context.uiState.expressionBuilder.root.value, "8");
+assert.equal(recorded, 1);
+console.log("Explicit builder operations, silent invalid entries, enabled buttons, level navigation, and old recording imports passed.");

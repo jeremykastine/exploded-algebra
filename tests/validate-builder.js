@@ -54,9 +54,7 @@ assert(/function installLiftedDirectBuilderOperation[\s\S]*?parent\.type === lif
 assert(playerJs.includes("function cycleDirectBuilderOperationToLowestLevel") && playerJs.includes("cloneBuilderMoveCycle(builder.moveCycle)"), "Repeated operation presses must cycle from the highest level back to the lowest placement");
 assert(/function getBuilderUndoSnapshot[\s\S]*?lastOperation[\s\S]*?moveCycle/.test(playerJs), "Undo snapshots must preserve the operation target and movement cycle");
 assert(playerJs.includes('collapseCompletedIntegratedBuilderNode') && playerJs.includes('if (isBuilderPlaceholder(node)) return null;'), "Submit must reject an unfinished direct-notation operand");
-assert(/function enterDirectBuilderValue[\s\S]*?implicitOperation = BUILDER_VARIABLES\.includes\(value\) \? "prod" : null/.test(playerJs), "Expression Builder must insert multiplication before each variable without inserting addition before negative one");
-assert(/function enterDirectBuilderInverse[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication before an inverse");
-assert(/function appendDirectBuilderDigit[\s\S]*?String\(current\.value\) === "-1"[\s\S]*?placeDirectBuilderOperationAtLowestLevel\(builder, "prod"\)/.test(playerJs), "Expression Builder must insert multiplication between negative one and a following digit");
+assert(/function enterDirectBuilderValue[\s\S]*?if \(!directBuilderExpectsValue\(builder\)\) return false/.test(playerJs), "Expression Builder values must require an explicit operation");
 assert(playerJs.includes("maximumExplicitCommonCount") && playerJs.includes("Math.min(matchedCommonCount, maximumExplicitCommonCount)"), "Factoring must not synthesize a coefficient of 1 when a term is entirely factored");
 assert(/activeTool === "commute"[\s\S]{0,350}uiState\.stage === "preview"[\s\S]{0,350}return "";/.test(playerJs), "Three-or-more-item commute must not show bottom instructions or buttons");
 assert(playerJs.includes("function getClosestIndexWithinSelection(x, y)") && playerJs.includes("releasedIndex === pressedIndex"), "Commute choices must match the closest region at pointer down and pointer up");
@@ -124,7 +122,7 @@ assert(collapseContext.collapseCompletedIntegratedBuilderNode(
 ) === null, "Submit must remain disabled when an inverse contains a genuinely missing entry");
 assert(!playerJs.includes('authoring-variable-select'), "Authoring must not use a variable dropdown");
 assert(playerHtml.includes('data-builder-action="value" data-value="x">XYZ</button>'), "The shared builder must expose XYZ");
-assert(playerJs.includes('builderVariableButton.disabled = !builderAllowsVariables(uiState.activeTool);'), "XYZ must stay visible and become disabled when variables are unavailable");
+assert(playerJs.includes('builderVariableButton.disabled = false;'), "XYZ must stay visually enabled when variables are unavailable");
 assert(playerJs.includes('flowVersion: 5') && playerJs.includes('root: makePlaceholderNode()'), "New Expression Builder sessions must begin directly in exploded notation rather than a diagonal sequence");
 assert(!rendererJs.includes('builderItemOutlineBoxes'), "Builder entries must not have surrounding boxes");
 assert(rendererJs.includes('builderOperationFill: "rgb(235, 235, 235)"'), "Unresolved Builder operations must use a light-gray fill");

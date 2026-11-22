@@ -1721,10 +1721,6 @@ Promise.resolve().then(() => {
                     cancelExpressionBuilder();
                     return true;
                 }
-                if (builder) {
-                    uiState.message = "There is nothing to undo yet.";
-                    renderToolArea();
-                }
                 return false;
             }
             const snapshot = builder.history.pop();
@@ -3741,9 +3737,12 @@ Promise.resolve().then(() => {
 
         function getCurrentDemoStep() {
             const steps = getCurrentDemoSteps();
-            return isDemoModeActive() && demoStepIndex >= 0 && demoStepIndex < steps.length
-                ? steps[demoStepIndex]
-                : null;
+            const step = isDemoModeActive() && demoStepIndex >= 0 && demoStepIndex < steps.length
+                ? steps[demoStepIndex] : null;
+            if (step?.type === "builder" && legacyBuilderNeedsProduct(step.action, step.value)) {
+                return { type: "builder", action: "pendingOperation", value: "prod", legacyExplicitOperation: true };
+            }
+            return step;
         }
 
         function getDemoCommuteChoiceAbsoluteIndex(step = getCurrentDemoStep()) {
@@ -4328,7 +4327,19 @@ Promise.resolve().then(() => {
             return events;
         }
 
+        function legacyBuilderNeedsProduct(action, value) {
+            const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
+            const current = getDirectBuilderCurrentNode(builder);
+            if (!current || isBuilderPlaceholder(current)) return false;
+            return action === "enterInverse" || action === "value" && BUILDER_VARIABLES.includes(value) ||
+                action === "digit" && current.type === "value" && current.value === "-1";
+        }
+
         function performCompactButton(command) {
+            const action = command === "inv" ? "enterInverse" : command.split(":")[0];
+            const value = command.includes(":") ? command.slice(command.indexOf(":") + 1) : "";
+            // Expand shortcuts only while importing a recording, never on learner input.
+            if (legacyBuilderNeedsProduct(action, value) && !performBuilderAction("pendingOperation", "prod")) return false;
             if (command.startsWith("digit:")) return performBuilderAction("digit", command.slice(6));
             if (command.startsWith("value:")) return performBuilderAction("value", command.slice(6));
             if (command === "cycleVariable") {
@@ -5267,12 +5278,10 @@ ctx.font = SETTINGS.textFont;
             }
             const undoExpressionButton = workspaceToolbar.querySelector('button[data-workspace-action="undoExpression"]');
             const builder = uiState.stage === "builder" ? uiState.expressionBuilder : null;
-            const builderUndoAction = isIntegratedExpressionBuilder(builder) ? "undo" : "undoBackspace";
             if (undoExpressionButton) {
-                undoExpressionButton.disabled = isDemoModeActive()
+                undoExpressionButton.disabled = !builder && (isDemoModeActive()
                     ? guidedUndoHistory.length === 0
-                    : builder ? (buildingStartingExpression && !builder.history.length) || !isDemoBuilderActionAllowed(builderUndoAction)
-                        : expressionUndoHistory.length === 0 || !isDemoUndoAllowed();
+                    : expressionUndoHistory.length === 0 || !isDemoUndoAllowed());
                 undoExpressionButton.setAttribute("aria-label", isDemoModeActive() ? "Undo previous guided action"
                     : builder ? "Undo builder entry" : "Undo previous expression or selection step");
                 undoExpressionButton.setAttribute("aria-keyshortcuts", builder ? "Backspace Delete" : "Control+Z Meta+Z");
@@ -8814,8 +8823,8 @@ ctx.font = SETTINGS.textFont;
                 return [];
             }
             if (isNumericalRewriteTool(toolName)) {
-                // Keep all numerical operations available so Submit can explain
-                // any exercise-specific restriction the learner has exceeded.
+                // Numerical rewrites accept these operations; Submit silently
+                // rejects entries outside the exercise's restrictions.
                 return ["sum", "prod", "inv"];
             }
             if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct" || toolName === "numProductPositive" || toolName === "numProductWithNegatives") {
@@ -9229,13 +9238,7 @@ ctx.font = SETTINGS.textFont;
                 pushExpressionBuilderUndoState();
                 current.value += String(digit);
                 current.isBuilderActive = true;
-            } else if (current.type === "value" && String(current.value) === "-1") {
-                pushExpressionBuilderUndoState();
-                if (!placeDirectBuilderOperationAtLowestLevel(builder, "prod")) return false;
-                setDirectBuilderCurrentValue(builder, digit);
             } else {
-                uiState.message = "Choose an operation before entering another value.";
-                renderToolArea();
                 return false;
             }
             refreshExpressionBuilderPreview();
@@ -9244,22 +9247,8 @@ ctx.font = SETTINGS.textFont;
 
         function enterDirectBuilderValue(value) {
             const builder = uiState.expressionBuilder;
-            const current = getDirectBuilderCurrentNode(builder);
-            if (!current) return false;
-            let implicitOperation = null;
-            if (!isBuilderPlaceholder(current)) {
-                implicitOperation = BUILDER_VARIABLES.includes(value) ? "prod" : null;
-                if (!implicitOperation) {
-                    uiState.message = "Choose an operation before entering another value.";
-                    renderToolArea();
-                    return false;
-                }
-            }
-
+            if (!directBuilderExpectsValue(builder)) return false;
             pushExpressionBuilderUndoState();
-            if (implicitOperation && !placeDirectBuilderOperationAtLowestLevel(builder, implicitOperation)) {
-                return false;
-            }
             setDirectBuilderCurrentValue(builder, value);
             refreshExpressionBuilderPreview();
             return true;
@@ -9277,8 +9266,6 @@ ctx.font = SETTINGS.textFont;
                 if (canCycleDirectBuilderOperationWithButton(builder, type)) {
                     return moveDirectBuilderOperationUp();
                 }
-                uiState.message = "Enter a value before choosing an operation.";
-                renderToolArea();
                 return false;
             }
             pushExpressionBuilderUndoState();
@@ -9290,12 +9277,8 @@ ctx.font = SETTINGS.textFont;
         function enterDirectBuilderInverse() {
             const builder = uiState.expressionBuilder;
             const current = getDirectBuilderCurrentNode(builder);
-            if (!current) return false;
+            if (!current || !isBuilderPlaceholder(current)) return false;
             pushExpressionBuilderUndoState();
-            if (!isBuilderPlaceholder(current) &&
-                !placeDirectBuilderOperationAtLowestLevel(builder, "prod")) {
-                return false;
-            }
             const inner = makePlaceholderNode();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
@@ -9561,27 +9544,11 @@ ctx.font = SETTINGS.textFont;
             if (!sequence) return false;
             const last = sequence.args[sequence.args.length - 1];
             const extendingNumber = last && last.isBuilderActive && /^\d+$/.test(last.value);
-            const autoMultiplyAfterNegativeOne = !builderSequenceExpectsValue(sequence) &&
-                last && String(last.value) === "-1";
-            if (!builderSequenceExpectsValue(sequence) && !extendingNumber && !autoMultiplyAfterNegativeOne) {
-                uiState.message = "Choose an operation before entering another value.";
-                renderToolArea();
-                return false;
-            }
+            if (!builderSequenceExpectsValue(sequence) && !extendingNumber) return false;
             pushExpressionBuilderUndoState();
             if (extendingNumber) {
                 last.value += String(digit);
             } else {
-                if (autoMultiplyAfterNegativeOne) {
-                    finalizeIntegratedBuilderValue(sequence);
-                    const targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
-                    if (!targetSequence) return false;
-                    const active = valueNode(String(digit));
-                    active.isBuilderActive = true;
-                    targetSequence.args.push(active);
-                    refreshExpressionBuilderPreview();
-                    return true;
-                }
                 const active = valueNode(String(digit));
                 active.isBuilderActive = true;
                 sequence.args.push(active);
@@ -9596,28 +9563,12 @@ ctx.font = SETTINGS.textFont;
                 return enterDirectBuilderValue(value);
             }
             const sequence = getIntegratedBuilderSequence(builder);
-            if (!sequence) return false;
-            const needsImplicitOperation = !builderSequenceExpectsValue(sequence);
-            const implicitOperation = !needsImplicitOperation
-                ? null
-                : BUILDER_VARIABLES.includes(value)
-                    ? "prod"
-                    : null;
-            if (needsImplicitOperation && !implicitOperation) {
-                uiState.message = "Choose an operation before entering another value.";
-                renderToolArea();
-                return false;
-            }
+            if (!sequence || !builderSequenceExpectsValue(sequence)) return false;
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
-            let targetSequence = sequence;
-            if (implicitOperation) {
-                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, implicitOperation);
-                if (!targetSequence) return false;
-            }
             const active = valueNode(String(value));
             active.isBuilderActive = true;
-            targetSequence.args.push(active);
+            sequence.args.push(active);
             refreshExpressionBuilderPreview();
             return true;
         }
@@ -9629,11 +9580,7 @@ ctx.font = SETTINGS.textFont;
             }
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence || !["sum", "prod"].includes(type)) return false;
-            if (builderSequenceExpectsValue(sequence)) {
-                uiState.message = "Enter a value before choosing an operation.";
-                renderToolArea();
-                return false;
-            }
+            if (builderSequenceExpectsValue(sequence)) return false;
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
             if (!placeIntegratedBuilderOperationAtLowestLevel(builder, type)) return false;
@@ -9647,20 +9594,13 @@ ctx.font = SETTINGS.textFont;
                 return enterDirectBuilderInverse();
             }
             const sequence = getIntegratedBuilderSequence(builder);
-            if (!sequence) return false;
-            const needsImplicitProduct = builderSequenceExpectsValue(sequence) === false;
+            if (!sequence || !builderSequenceExpectsValue(sequence)) return false;
             pushExpressionBuilderUndoState();
-            let targetSequence = sequence;
-            if (needsImplicitProduct) {
-                finalizeIntegratedBuilderValue(sequence);
-                targetSequence = placeIntegratedBuilderOperationAtLowestLevel(builder, "prod");
-                if (!targetSequence) return false;
-            }
             const inner = makeBuilderSequence();
             const inverse = new ExprNode("inv", [inner], null);
             inverse.isBuilderInverseOpen = true;
-            const inverseIndex = targetSequence.args.length;
-            targetSequence.args.push(inverse);
+            const inverseIndex = sequence.args.length;
+            sequence.args.push(inverse);
             builder.currentPath = builder.currentPath.concat(inverseIndex, 0);
             refreshExpressionBuilderPreview();
             return true;
@@ -9764,11 +9704,7 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const sequence = getIntegratedBuilderSequence(builder);
             if (!sequence || builder.currentPath.length < 2) return false;
-            if (builderSequenceExpectsValue(sequence)) {
-                uiState.message = "Finish the current entry inside the inverse before exiting it.";
-                renderToolArea();
-                return false;
-            }
+            if (builderSequenceExpectsValue(sequence)) return false;
             pushExpressionBuilderUndoState();
             finalizeIntegratedBuilderValue(sequence);
             const inversePath = builder.currentPath.slice(0, -1);
@@ -9978,7 +9914,7 @@ ctx.font = SETTINGS.textFont;
             const builder = uiState.expressionBuilder;
             const node = builder ? getNodeAtPath(builder.root, builder.currentPath) : null;
             if (!node || node.type !== "value") {
-                uiState.message = "Digits can only be entered after you have drilled down to a value box.";
+
                 renderToolArea();
                 return false;
             }
@@ -9990,7 +9926,7 @@ ctx.font = SETTINGS.textFont;
                 pushExpressionBuilderUndoState();
                 node.value += String(digit);
             } else {
-                uiState.message = "Use Move On before entering a different value.";
+
                 renderToolArea();
                 return false;
             }
@@ -10062,7 +9998,7 @@ ctx.font = SETTINGS.textFont;
                 builder.currentPath = next;
                 refreshExpressionBuilderPreview();
             } else {
-                uiState.message = "There is no next empty part. You can submit or add more structure before filling the last value.";
+
                 renderToolArea();
             }
             return true;
@@ -10119,15 +10055,7 @@ ctx.font = SETTINGS.textFont;
             return evaluateWholeNumberBuilderNode(normalized);
         }
 
-        function builderValidationFailed(message) {
-            if (uiState.expressionBuilder && isNumericalRewriteTool(uiState.expressionBuilder.tool)) {
-                showNumericalRewriteError(message);
-                uiState.message = "";
-            } else {
-                uiState.message = message;
-            }
-            renderToolArea();
-            refreshExpressionBuilderPreview();
+        function builderValidationFailed() {
             return false;
         }
 
@@ -10299,12 +10227,7 @@ ctx.font = SETTINGS.textFont;
                 if (!workspaceViewManuallyPanned) resetWorkspacePanToDefault();
                 return true;
             }
-            if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) {
-                uiState.message = "That expression is always 0, so its inverse would be undefined. Choose a nonzero expression.";
-                renderToolArea();
-                refreshExpressionBuilderPreview();
-                return false;
-            }
+            if (builder.tool === "replaceOneWithInverseProduct" && isAlwaysZeroExpression(completed)) return false;
             let replacement;
             if (builder.tool === "replaceOneWithInverseProduct") {
                 replacement = new ExprNode("prod", [cloneNode(completed), makeInverseNode(cloneNode(completed))], null);
@@ -11131,7 +11054,7 @@ ctx.font = SETTINGS.textFont;
 
             builderVariableButton.dataset.builderAction = action;
             builderVariableButton.dataset.value = value;
-            builderVariableButton.disabled = !builderAllowsVariables(uiState.activeTool);
+            builderVariableButton.disabled = false;
             const label = action === "cycleVariable" ? `Change variable to ${value}` : `Insert ${value}`;
             builderVariableButton.setAttribute("aria-label", `XYZ: ${label}`);
             builderVariableButton.title = label;
@@ -11145,43 +11068,33 @@ ctx.font = SETTINGS.textFont;
         function buildExpressionBuilderHtml() {
             const builder = uiState.expressionBuilder;
             if (isIntegratedExpressionBuilder(builder)) {
-                const operationTypes = getBuilderOperationTypes(uiState.activeTool);
-                const expectsValue = isDirectNotationExpressionBuilder(builder)
-                    ? directBuilderExpectsValue(builder)
-                    : builderSequenceExpectsValue(getIntegratedBuilderSequence(builder));
                 const negativeOneButton = `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`;
                 const buildOperationButton = type => {
                     const glyph = type === "sum" ? "+" : "·";
                     const shortcut = type === "sum" ? "+" : "*";
                     const operationName = type === "sum" ? "addition" : "multiplication";
                     const cyclesLevel = canCycleDirectBuilderOperationWithButton(builder, type);
-                    const disabled = !operationTypes.includes(type) || expectsValue && !cyclesLevel;
                     const label = cyclesLevel
                         ? `Cycle the most recent ${operationName} to its next level`
                         : `Insert ${operationName}`;
-                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="Keyboard shortcut: ${shortcut}"${disabled ? " disabled" : ""}><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
+                    return `<button class="builder-operator-button builder-${type}-button builder-labeled-key" data-builder-action="pendingOperation" data-value="${type}" aria-label="${label}" title="Keyboard shortcut: ${shortcut}"><span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${glyph}</span></button>`;
                 };
-                const inverseDisabled = !operationTypes.includes("inv");
-                const isStudentInitial = builder.tool === "studentInitial";
-                const submitDisabled = !isStudentInitial && !getIntegratedBuilderCompletedRoot(builder);
                 return `<div class="expression-builder-panel integrated-builder-panel">
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
-                        <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /"${inverseDisabled ? " disabled" : ""}>${getBuilderSymbolIcon("inv")}</button>
-                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter"${submitDisabled ? " disabled" : ""}>Enter</button>
+                        <button class="builder-operator-button builder-inv-button" data-builder-action="enterInverse" aria-label="Insert inverse" title="Keyboard shortcut: /">${getBuilderSymbolIcon("inv")}</button>
+                        <button class="builder-submit-button" data-builder-action="submit" title="Keyboard shortcut: Enter">Enter</button>
                         ${negativeOneButton}
                     </div></div>
                 </div>`;
             }
             const toolName = uiState.activeTool;
-            const operationTypes = getBuilderOperationTypes(toolName);
             const operationShortcuts = { sum: "+", prod: "*", inv: "/" };
             const operationNames = { prod: "Insert product structure", sum: "Insert sum structure", inv: "Insert inverse structure" };
             const buildOperationButton = type => {
-                const enabled = operationTypes.includes(type);
-                const title = enabled ? ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"` : "";
-                const actionAttrs = enabled ? ` data-builder-action="operation" data-value="${type}"` : " disabled";
+                const title = ` title="Keyboard shortcut: ${operationShortcuts[type] || ""}"`;
+                const actionAttrs = ` data-builder-action="operation" data-value="${type}"`;
                 const plainGlyph = type === "sum" ? "+" : type === "prod" ? "·" : "";
                 const content = plainGlyph
                     ? `<span class="builder-key-label">${type === "sum" ? "Plus" : "Times"}</span><span class="builder-key-symbol">${plainGlyph}</span>`
@@ -11189,9 +11102,7 @@ ctx.font = SETTINGS.textFont;
                 const keyClass = plainGlyph ? " builder-labeled-key" : "";
                 return `<button class="builder-operator-button builder-${type}-button${keyClass}" aria-label="${operationNames[type]}"${actionAttrs}${title}>${content}</button>`;
             };
-            const negativeOneButton = builderAllowsNegativeOne(toolName)
-                ? `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`
-                : `<button class="builder-negative-one-button" aria-label="Insert negative one" disabled>${getBuilderSymbolIcon("value", "−1")}</button>`;
+            const negativeOneButton = `<button class="builder-negative-one-button" data-builder-action="negativeOne" aria-label="Insert negative one" title="Keyboard shortcut: -">${getBuilderSymbolIcon("value", "−1")}</button>`;
             const hasNextPlaceholder = !!(builder && findNextPlaceholderPath(builder.root, builder.currentPath));
             const nextOrSubmitAction = hasNextPlaceholder ? "next" : "submit";
             const nextOrSubmitTitle = hasNextPlaceholder
@@ -11606,8 +11517,15 @@ ctx.font = SETTINGS.textFont;
                 return false;
             }
 
-            const undoPoint = captureGuidedUndoPoint();
+            const legacyExplicitOperation = getCurrentDemoStep()?.legacyExplicitOperation === true;
             const builderAtStart = uiState.expressionBuilder;
+            const tool = builderAtStart.tool || uiState.activeTool;
+            if ((action === "value" || action === "cycleVariable") && !builderAllowsVariables(tool)) return false;
+            if (action === "negativeOne" && !builderAllowsNegativeOne(tool)) return false;
+            const operation = action === "enterInverse" ? "inv"
+                : action === "pendingOperation" || action === "operation" ? value : null;
+            if (operation && !getBuilderOperationTypes(tool).includes(operation)) return false;
+            const undoPoint = captureGuidedUndoPoint();
             const beforeExpression = isIntegratedExpressionBuilder(builderAtStart) && builderAtStart.mainRoot
                 ? expressionToFullyParenthesizedText(builderAtStart.mainRoot)
                 : getExpressionTextForTrace();
@@ -11675,7 +11593,7 @@ ctx.font = SETTINGS.textFont;
                             builderAtStart.initialActions.push({ type: "builder", action, ...(value && { value }) });
                         }
                     }
-                    advanceDemoStep();
+                    if (!legacyExplicitOperation) advanceDemoStep();
                 }
             } else {
                 if (action !== "undo" && action !== "undoBackspace") {
@@ -11690,7 +11608,7 @@ ctx.font = SETTINGS.textFont;
                     stableExpressionState.recorderActionCount = solutionRecorder.actions.length;
                     stableExpressionState.recorderDemoStepCount = solutionRecorder.demoSteps.length;
                 }
-                advanceDemoStep();
+                if (!legacyExplicitOperation) advanceDemoStep();
             }
             rememberGuidedUndoPoint(undoPoint);
             return true;
