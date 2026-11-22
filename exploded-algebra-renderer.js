@@ -2227,8 +2227,8 @@ function expressionToCodeMarkup(rootOrData, builder = false, highlightGroups = f
     const negativeOne = node => node?.type === "value" && node.value === "-1";
     const negativeProduct = node => node?.type === "prod" && node.args.length > 1 && negativeOne(node.args[0]);
     const group = (text, markup) => highlightGroups && markup
-        ? `<span class="workspace-code-group">(${text})</span>`
-        : `(${text})`;
+        ? `<span class="workspace-code-group">( ${text} )</span>`
+        : `( ${text} )`;
 
     function product(factors, markup) {
         return factors.map((factor, index) => {

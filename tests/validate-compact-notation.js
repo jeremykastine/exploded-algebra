@@ -71,7 +71,7 @@ for (const plus of [0, 1, 4, 20]) {
         const plusOperator = " ".repeat(plus) + "+" + " ".repeat(plus);
         const timesOperator = " ".repeat(times) + "*" + " ".repeat(times);
         const unexpanded = renderer.expressionToCodeMarkup(spacedExpression, false, false, spacing);
-        assert.equal(unexpanded, `2${timesOperator}x${plusOperator}3/(y${plusOperator}1)`);
+        assert.equal(unexpanded, `2${timesOperator}x${plusOperator}3/( y${plusOperator}1 )`);
         const expanded = compact(spacedExpression, false, spacing);
         assert.equal(tokens(expanded), tokens(unexpanded));
         assert(widest(expanded) <= unexpanded.length, "Width selection must measure the selected operator spacing");

@@ -10,11 +10,11 @@ const value = text => new renderer.ExprNode("value", [], text);
 const code = renderer.expressionToCodeMarkup;
 
 assert.equal(code(node("prod", value("2"), value("x"), value("x"))), "2*x*x");
-assert.equal(code(node("prod", node("sum", value("x"), value("2")), node("inv", node("sum", value("x"), value("3"))))), "(x + 2)/(x + 3)");
-assert.equal(code(node("inv", node("prod", value("2"), value("x")))), "1/(2*x)");
-assert.equal(code(node("inv", node("inv", value("x")))), "1/(1/x)");
+assert.equal(code(node("prod", node("sum", value("x"), value("2")), node("inv", node("sum", value("x"), value("3"))))), "( x + 2 )/( x + 3 )");
+assert.equal(code(node("inv", node("prod", value("2"), value("x")))), "1/( 2*x )");
+assert.equal(code(node("inv", node("inv", value("x")))), "1/( 1/x )");
 assert.equal(code(node("prod", value("3"), node("inv", value("-1")))), "3/-1");
-assert.equal(code(node("sum", value("x"), node("prod", value("-1"), node("sum", value("y"), value("2"))))), "x - (y + 2)");
+assert.equal(code(node("sum", value("x"), node("prod", value("-1"), node("sum", value("y"), value("2"))))), "x - ( y + 2 )");
 assert.equal(code(value('<img src=x onerror="alert(1)">')), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
 const placeholder = value("");
 placeholder.isBuilderPlaceholder = true;
@@ -40,7 +40,7 @@ const nested = node("prod", value("2"), node("sum", value("x"), node("inv",
 const highlighted = code(nested, false, true);
 assert.equal(highlighted.replace(/<[^>]*>/g, ""), code(nested));
 assert.equal((highlighted.match(/class="workspace-code-group"/g) || []).length, 4);
-assert(highlighted.includes('class="workspace-code-group">(x + 1/'));
+assert(highlighted.includes('class="workspace-code-group">( x + 1/'));
 assert(!highlighted.includes('workspace-code-contents'));
 assert.equal(code(node("prod", value("2"), value("-1"), value("x")), false, true), "2*-1*x");
 assert.equal(code(node("inv", value("-1")), false, true), "1/-1");
