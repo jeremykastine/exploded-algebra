@@ -862,7 +862,6 @@ Promise.resolve().then(() => {
                 html += `</div>`;
                 return html;
             }
-            html += `<div class="small-note">More than one rule applies. Choose the one you intend.</div>`;
             html += `<div class="tool-form-grid applicable-tool-list intent-category-choices">`;
             tools.forEach(toolName => {
                 const entry = getIntentCategoryExplodedChoiceEntry(toolName, categoryId);
@@ -1016,7 +1015,6 @@ Promise.resolve().then(() => {
                 : [];
             let html = `<div class="tool-form-section-title">Custom numerical equivalences</div>`;
             if (!custom.length) {
-                html += `<div class="small-note">No custom numerical equivalences have been added to this level yet.</div>`;
                 return html;
             }
             html += `<div class="tool-grid">`;
@@ -1302,7 +1300,6 @@ Promise.resolve().then(() => {
             const entries = collectApplicableTransformationEntries();
             let html = `<div class="tool-form-grid applicable-tool-list">`;
             if (!entries.length) {
-                html += `<div class="small-note">No applicable transformation rules are available for the current selection.</div>`;
                 html += `</div>`;
                 return html;
             }
@@ -1336,7 +1333,6 @@ Promise.resolve().then(() => {
         const builderVariableButton = document.getElementById("builderVariableButton");
         const builderExtraValues = document.getElementById("builderExtraValues");
         const builderDigitRail = document.getElementById("builderDigitRail");
-        const startingExpressionStatus = document.getElementById("startingExpressionStatus");
         const numericalRewriteError = document.getElementById("numericalRewriteError");
         const numericalRewriteDialog = document.getElementById("numericalRewriteDialog");
         const workspaceToolbar = document.getElementById("workspaceToolbar");
@@ -11068,34 +11064,6 @@ ctx.font = SETTINGS.textFont;
 
 
 
-        function getExpressionBuilderNote() {
-            const toolName = uiState.activeTool;
-            if (toolName === "numericalEquivalence") {
-                return "Build an equivalent whole-number expression using the buttons.";
-            }
-            if (isNumericalRewriteTool(toolName)) {
-                return "Build the proposed replacement shown beside the selected expression. Submit checks that the two expressions have the same value.";
-            }
-            if (toolName === "factorNumber" || toolName === "numWritePositiveNumberAsProduct") {
-                return "Build the proposed product shown beside the selected number.";
-            }
-            if (toolName === "writeNumberAsSum" || toolName === "numWritePositiveNumberAsSum") {
-                return "Build the proposed sum shown beside the selected number.";
-            }
-            if (toolName === "numExpressNumberAsDifference") {
-                return "Build the proposed difference as a sum with a negative product.";
-            }
-            if (toolName === "evaluate") {
-                return "Enter the evaluated whole number using the digit buttons. Keep trying until correct, or cancel to exit.";
-            }
-
-            let note = "Multiplication is inserted automatically before x or an inverse, and between negative one and a following digit. Any remaining empty boxes are filled on Submit.";
-            if (toolName === "replaceOneWithInverseProduct") {
-                note += " For inverse products, the completed expression may not be always equal to 0.";
-            }
-            return note;
-        }
-
         function makeBuilderIconPlaceholder() {
             const node = new ExprNode("value", [], "");
             node.isBuilderPlaceholder = true;
@@ -11197,7 +11165,6 @@ ctx.font = SETTINGS.textFont;
                 const isStudentInitial = builder.tool === "studentInitial";
                 const submitDisabled = !isStudentInitial && !getIntegratedBuilderCompletedRoot(builder);
                 return `<div class="expression-builder-panel integrated-builder-panel">
-                    ${uiState.message && !isStudentInitial ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                     <div class="builder-controls"><div class="builder-action-row" aria-label="Expression entry actions">
                         ${buildOperationButton("prod")}
                         ${buildOperationButton("sum")}
@@ -11232,8 +11199,6 @@ ctx.font = SETTINGS.textFont;
                 : "Submit the completed expression. Keyboard shortcut: Enter";
             const nextOrSubmitButton = `<button class="builder-next-submit-button" data-builder-action="${nextOrSubmitAction}" title="${nextOrSubmitTitle}">Next / Enter</button>`;
             return `<div class="expression-builder-panel">
-                <div class="builder-instruction">${escapeHtml(getExpressionBuilderNote())}</div>
-                ${uiState.message ? `<div class="builder-message small-note">${escapeHtml(uiState.message)}</div>` : ""}
                 <div class="builder-controls">
                     <div class="builder-action-row" aria-label="Expression builder actions">
                         ${nextOrSubmitButton}
@@ -11339,7 +11304,6 @@ ctx.font = SETTINGS.textFont;
             html += `<div class="panel-menu-title">${escapeHtml(category.label)}</div>`;
 
             if (visibleKeys.length === 0) {
-                html += `<div class="small-note">No rules in this category are available in the current level.</div>`;
                 return html;
             }
 
@@ -11385,7 +11349,6 @@ ctx.font = SETTINGS.textFont;
             ) {
                 return "";
             } else if (uiState.activeTool === "insertIdentity" && uiState.stage === "choosePosition") {
-                html += `<div class="small-note">Choose what identity to introduce.</div>`;
                 html += `<div class="tool-grid">
                     <button data-action="insertIdentityOption" data-value="addZero:top">An additive identity may be introduced above the selected expression.</button>
                     <button data-action="insertIdentityOption" data-value="addZero:bottom">An additive identity may be introduced below the selected expression.</button>
@@ -11401,22 +11364,15 @@ ctx.font = SETTINGS.textFont;
                 const label = numericalMode === "expand"
                     ? "Enter an equivalent sum or product of whole numbers, such as 2+3+4 or 2*3*4."
                     : "Enter the equivalent whole number for the selected sum or product. Level 1 uses n-ary sums and products of whole numbers.";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
+                html += `<input class="number-input input-box" aria-label="${escapeHtml(label)}" value="${escapeHtml(uiState.inputText)}">`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 isStructuredNumericalTool(uiState.activeTool) &&
                 uiState.stage === "input"
             ) {
-                html += `<div class="small-note">${escapeHtml(getStructuredNumericalToolInputLabel(uiState.activeTool))}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
+                const label = getStructuredNumericalToolInputLabel(uiState.activeTool);
+                html += `<input class="number-input input-box" aria-label="${escapeHtml(label)}" value="${escapeHtml(uiState.inputText)}">`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 (uiState.activeTool === "factorNumber" || uiState.activeTool === "writeNumberAsSum") &&
                 uiState.stage === "input"
@@ -11424,33 +11380,21 @@ ctx.font = SETTINGS.textFont;
                 const label = uiState.activeTool === "factorNumber"
                     ? "Enter factors separated by spaces, commas, x, or *"
                     : "Enter addends separated by spaces, commas, or +";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
+                html += `<input class="number-input input-box" aria-label="${escapeHtml(label)}" value="${escapeHtml(uiState.inputText)}">`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 uiState.activeTool === "evaluate" &&
                 uiState.stage === "input"
             ) {
                 const label = "Enter the value of the selected sum or product. Evaluation level 1 allows only addition or multiplication of non-negative whole numbers, not mixed product-sum expressions. Keep trying until correct, or exit.";
-                html += `<div class="small-note">${label}</div>`;
-                html += `<input class="number-input input-box" value="${escapeHtml(uiState.inputText)}">`;
+                html += `<input class="number-input input-box" aria-label="${escapeHtml(label)}" value="${escapeHtml(uiState.inputText)}">`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 uiState.activeTool === "cancelOpposites" &&
                 uiState.stage === "input"
             ) {
-                html += `<div class="small-note">Enter an expression in fully parenthesized form. The selected 0 will become that expression plus its additive inverse, for example ((x)+((-1)*(x))).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
+                html += `<textarea class="number-input input-box" aria-label="Replacement expression" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
 
             } else if (
                 isExpressionBuilderTool(uiState.activeTool) &&
@@ -11461,25 +11405,14 @@ ctx.font = SETTINGS.textFont;
                 uiState.activeTool === "replaceOneWithInverseProduct" &&
                 uiState.stage === "input"
             ) {
-                html += `<div class="small-note">Enter an integer or fully parenthesized expression. The selected 1 will become that expression times its inverse, for example ((5)*((1)/(5))) or (((x)+(2))*((1)/((x)+(2)))).</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
+                html += `<textarea class="number-input input-box" aria-label="Replacement expression" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 uiState.activeTool === "insertZeroProduct" &&
                 uiState.stage === "input"
             ) {
-                const orientationLabel = uiState.zeroProductOrientation === "right"
-                    ? "The selected 0 will become that expression times 0, for example ((x)*(0)) or (((x)+(2))*(0))."
-                    : "The selected 0 will become 0 times that expression, for example ((0)*(x)) or ((0)*((x)+(2))).";
-                html += `<div class="small-note">Enter the expression to multiply by zero. ${orientationLabel}</div>`;
-                html += `<textarea class="number-input input-box" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
+                html += `<textarea class="number-input input-box" aria-label="Replacement expression" rows="3">${escapeHtml(uiState.inputText)}</textarea>`;
                 html += `<div class="tool-row"><button data-action="execute">Execute</button><button data-action="done">Exit</button></div>`;
-                if (uiState.message) {
-                    html += `<div class="small-note">${escapeHtml(uiState.message)}</div>`;
-                }
             } else if (
                 (uiState.activeTool === "commute" || uiState.activeTool === "commuteTerms" || uiState.activeTool === "commuteFactors") &&
                 uiState.stage === "preview"
@@ -12062,16 +11995,6 @@ function renderToolArea() {
                 renderLevelInfo(currentLevelIndex);
             }
             applyResponsiveMainButtonSize();
-            const showStartingStatus = builderActive && buildingStartingExpression;
-            const startingMessage = showStartingStatus
-                ? uiState.message || (assistanceMode === ASSISTANCE_MODES.guided
-                    ? getStartingExpressionHint(uiState.expressionBuilder.mainRoot)
-                    : "")
-                : "";
-            startingExpressionStatus.hidden = !startingMessage;
-            if (startingExpressionStatus.textContent !== startingMessage) {
-                startingExpressionStatus.textContent = startingMessage;
-            }
             if (builderKeypadPanel) {
                 builderKeypadPanel.classList.toggle("hidden", !builderActive);
             }
