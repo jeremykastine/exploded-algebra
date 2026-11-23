@@ -192,6 +192,33 @@ assert.equal(positionedParent("prod", "right").narrow.top(), 22,
 assert.equal(positionedParent("prod", "end").narrow.top(), 22,
     "Legacy alignment preferences must leave product factors centered");
 
+// An empty operand reserves exactly the geometry of 1, including in nested layouts.
+const layoutSettings = rendererContext.window.ExplodedAlgebraRenderer.SETTINGS;
+for (const scale of [0.75, 1, 2]) {
+    const measuringContext = {
+        measureText(text) {
+            const width = String(text).length * 9 * scale;
+            return { width: width + scale, actualBoundingBoxLeft: scale,
+                actualBoundingBoxRight: width - scale,
+                actualBoundingBoxAscent: 12 * scale, actualBoundingBoxDescent: 2 * scale };
+        }
+    };
+    for (const type of [null, "sum", "prod", "inv"]) {
+        const blank = new ExprNode("value", [], "?");
+        blank.isBuilderPlaceholder = true;
+        const root = type ? new ExprNode(type, type === "inv" ? [blank] : [new ExprNode("value", [], "8"), blank]) : blank;
+        const dimensions = () => [root.layout.width, root.layout.height, blank.left(), blank.top(), blank.layout.width, blank.layout.height];
+        rendererContext.layoutExpressionWithSettings(root, measuringContext, layoutSettings, 20, 20);
+        const before = dimensions();
+        assert.equal(blank.layout.width, 9 * scale);
+        assert.equal(blank.layout.height, 14 * scale);
+        blank.isBuilderPlaceholder = false;
+        blank.value = "1";
+        rendererContext.layoutExpressionWithSettings(root, measuringContext, layoutSettings, 20, 20);
+        assert.deepEqual(dimensions(), before, "Entering 1 must preserve the blank slot and surrounding layout");
+    }
+}
+
 console.log("Exploded Algebra renderer checks passed.");
 
 // Outline breathing room is separate from the component and selection buffers.

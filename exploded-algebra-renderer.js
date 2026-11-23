@@ -66,8 +66,8 @@ const SETTINGS = {
     productBeamStyle: "midline",
     productBeamEdgeColor: "black",
     operationBarShading: "gradient-gray",
-    builderPlaceholderWidth: 24,
-    builderPlaceholderHeight: 20,
+    builderPlaceholderWidth: null,
+    builderPlaceholderHeight: null,
     builderOperationFill: "rgb(235, 235, 235)",
     debugSeparatorBounds: false, // Enable only when inspecting separator buffer alignment.
     debugComponentBounds: false,
@@ -975,21 +975,16 @@ function measureNodeWithContext(node, drawingContext, settings) {
     }
 
     if (node.type === "value") {
-        if (node.isBuilderPlaceholder) {
-            node.layout.textWidth = Math.max(1, Number(settings.builderPlaceholderWidth) || 24);
-            node.layout.textHeight = Math.max(1, Number(settings.builderPlaceholderHeight) || 20);
-            node.layout.width = node.layout.textWidth;
-            node.layout.height = node.layout.textHeight;
-            node.layout.childBoxes = [];
-            node.layout.vLines = [0, node.layout.width];
-            node.layout.hLines = [0, node.layout.height];
-            return;
-        }
-        const metrics = drawingContext.measureText(node.value);
+        // Empty entry slots reserve only the footprint of a single digit.
+        const metrics = drawingContext.measureText(node.isBuilderPlaceholder ? "1" : node.value);
         const textWidth = Math.abs(metrics.actualBoundingBoxLeft || 0) + Math.abs(metrics.actualBoundingBoxRight || 0);
         const textHeight = Math.abs(metrics.actualBoundingBoxAscent || 0) + Math.abs(metrics.actualBoundingBoxDescent || 0);
         node.layout.textWidth = Math.max(1, textWidth || metrics.width || 0);
         node.layout.textHeight = Math.max(1, textHeight);
+        if (node.isBuilderPlaceholder) {
+            node.layout.textWidth = Math.max(1, Number(settings.builderPlaceholderWidth) || node.layout.textWidth);
+            node.layout.textHeight = Math.max(1, Number(settings.builderPlaceholderHeight) || node.layout.textHeight);
+        }
         if (isNegativeUnit(node)) {
             const pad = getNegativeUnitPadding(settings);
             node.layout.negativeUnitPadding = pad;
